@@ -101,6 +101,9 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 
 # REST Framework
 REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
 }
@@ -110,6 +113,12 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=12),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
+
+# CSRF trusted origins (for admin panel access from these domains)
+CSRF_TRUSTED_ORIGINS = [
+    "https://iterva.pythonanywhere.com",
+    "https://frontend-cyan-alpha-34.vercel.app",
+]
 
 # MyL API
 MYL_API_BASE_URL = "https://api.myl.cl"

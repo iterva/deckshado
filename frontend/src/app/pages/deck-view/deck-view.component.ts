@@ -165,6 +165,47 @@ export class DeckViewComponent implements OnInit {
     this.previewAbility = null;
   }
 
+  /** Flat list of cards expanded by quantity (for horizontal export) */
+  get expandedEntries(): Card[] {
+    if (!this.deck?.entries) return [];
+    const cards: Card[] = [];
+    for (const entry of this.deck.entries) {
+      for (let i = 0; i < entry.quantity; i++) {
+        cards.push(entry.card_detail);
+      }
+    }
+    return cards;
+  }
+
+  get expandedSideEntries(): Card[] {
+    if (!this.deck?.sideboard_entries) return [];
+    const cards: Card[] = [];
+    for (const entry of this.deck.sideboard_entries) {
+      for (let i = 0; i < entry.quantity; i++) {
+        cards.push(entry.card_detail);
+      }
+    }
+    return cards;
+  }
+
+  get formatLabel(): string {
+    return 'Imperio';
+  }
+
+  get raceLabel(): string {
+    if (!this.deck?.race) return '';
+    const names: Record<string, string> = {
+      dream: 'Dream', totem: 'Tótem', eterno: 'Eterno', faerie: 'Faerie',
+      dragon: 'Dragón', sombra: 'Sombra', heroe: 'Héroe', sacerdote: 'Sacerdote',
+      guerrero: 'Guerrero', bestia: 'Bestia', caballero: 'Caballero',
+    };
+    return names[this.deck.race] || this.deck.race;
+  }
+
+  get todayFormatted(): string {
+    return new Date().toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
   async exportImage() {
     if (!this.deckContent || this.exporting) return;
     this.exporting = true;

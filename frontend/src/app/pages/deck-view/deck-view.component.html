@@ -44,7 +44,37 @@
       <p class="deck-description">{{ deck.description }}</p>
     }
 
-    <div #deckContent class="deck-export-area" [class.export-horizontal]="exportOrientation === 'horizontal'">
+    <!-- Hidden export area (rendered offscreen, captured by html2canvas) -->
+    <div #deckContent class="deck-export-area" [class.export-horizontal]="exportOrientation === 'horizontal'" [class.export-vertical]="exportOrientation === 'vertical'" [class.export-visible]="exporting">
+      <div class="export-header">
+        <h2 class="export-deck-name">{{ deck.name }}</h2>
+        <div class="export-meta">
+          @if (raceLabel) { <span>Raza: {{ raceLabel }}</span> }
+          <span>Formato: {{ formatLabel }}</span>
+          <span>Fecha: {{ todayFormatted }}</span>
+          <span>Creado por: <strong>{{ deck.owner_username }}</strong></span>
+        </div>
+      </div>
+      <div class="export-card-grid">
+        @for (card of expandedEntries; track $index) {
+          <div class="export-card">
+            <img [src]="card.image_url" [alt]="card.name" loading="lazy">
+          </div>
+        }
+      </div>
+      @if (expandedSideEntries.length > 0) {
+        <h3 class="export-side-title">Sidedeck</h3>
+        <div class="export-card-grid">
+          @for (card of expandedSideEntries; track $index) {
+            <div class="export-card">
+              <img [src]="card.image_url" [alt]="card.name" loading="lazy">
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Normal web view -->
     @if (viewMode === 'grid') {
       <div class="card-grid">
         @for (entry of deck.entries; track entry.id) {
@@ -153,7 +183,6 @@
         </div>
       }
     }
-    </div>
   } @else {
     <p class="empty">Mazo no encontrado.</p>
   }

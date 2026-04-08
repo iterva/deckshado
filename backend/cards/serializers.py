@@ -56,6 +56,10 @@ class CardListSerializer(serializers.ModelSerializer):
         ]
 
     def get_image_url(self, obj):
+        # Prefer custom URL for promo/extra cards
+        custom = getattr(obj, 'custom_image_url', None)
+        if custom:
+            return custom
         # Use annotated value if present, otherwise compute
         if hasattr(obj, '_image_url_cache'):
             return obj._image_url_cache

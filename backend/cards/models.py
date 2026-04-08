@@ -84,6 +84,7 @@ class Card(models.Model):
     damage = models.CharField(max_length=10, blank=True, null=True)
     ability = models.TextField(blank=True, null=True)
     flavour = models.TextField(blank=True, null=True)
+    custom_image_url = models.URLField(blank=True, null=True, help_text="URL personalizada para cartas sin imagen en CDN")
 
     class Meta:
         ordering = ["edition", "edid"]

@@ -56,6 +56,7 @@ class CardListView(generics.ListAPIView):
     def get_queryset(self):
         qs = Card.objects.select_related("edition", "rarity", "race", "card_type").only(
             "id", "myl_id", "edid", "slug", "name", "cost", "damage", "ability",
+            "custom_image_url",
             "edition__slug", "edition__title", "edition__myl_id",
             "rarity__name", "race__name", "race__slug", "card_type__name",
         ).annotate(

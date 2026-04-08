@@ -3,7 +3,7 @@
   <div class="card-browser">
     <h2>Cartas Disponibles · {{ formatName }}@if (raceName) { · {{ raceName }} }</h2>
     <div class="browser-filters">
-      <input type="text" placeholder="Buscar carta..." [(ngModel)]="search" (keyup.enter)="onSearch()">
+      <input #searchInput type="text" placeholder="Buscar carta..." [(ngModel)]="search" (keyup.enter)="onSearch()">
       <div class="filter-row">
         <select [(ngModel)]="selectedSubFormat" (change)="onSubFormatChange()">
           <option value="racial">Formato Racial</option>
@@ -171,6 +171,11 @@
     </div>
   </div>
 </div>
+
+<!-- Mobile Search Button -->
+<button class="mobile-search-toggle" (click)="focusSearch()">
+  🔍
+</button>
 
 <!-- Mobile Deck Toggle Button -->
 <button class="mobile-deck-toggle" (click)="toggleDeckPanel()" [class.active]="showDeckPanel">

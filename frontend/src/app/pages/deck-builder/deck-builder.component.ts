@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CardService } from '../../services/card.service';
@@ -69,6 +69,8 @@ export class DeckBuilderComponent implements OnInit {
 
   // Mobile deck panel toggle
   showDeckPanel = false;
+
+  @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
 
   constructor(
     private cardService: CardService,
@@ -538,5 +540,11 @@ export class DeckBuilderComponent implements OnInit {
 
   toggleDeckPanel() {
     this.showDeckPanel = !this.showDeckPanel;
+  }
+
+  focusSearch() {
+    this.showDeckPanel = false;
+    this.searchInput.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => this.searchInput.nativeElement.focus(), 300);
   }
 }

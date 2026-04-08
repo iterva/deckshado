@@ -671,6 +671,30 @@
   to { opacity: 0; }
 }
 
+// Mobile search toggle button
+.mobile-search-toggle {
+  display: none;
+  position: fixed;
+  bottom: 170px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 2px solid #e94560;
+  color: #e94560;
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s;
+
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  }
+}
+
 // Mobile deck toggle button
 .mobile-deck-toggle {
   display: none;
@@ -703,6 +727,12 @@
 
 // Mobile responsive styles
 @media (max-width: 900px) {
+  .mobile-search-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   .mobile-deck-toggle {
     display: flex;
     align-items: center;

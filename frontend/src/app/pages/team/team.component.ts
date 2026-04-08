@@ -1,6 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { TeamService } from '../../services/team.service';
 import { AuthService } from '../../services/auth.service';
 import { Team, JoinRequest } from '../../models';
@@ -8,7 +7,7 @@ import { Team, JoinRequest } from '../../models';
 @Component({
   selector: 'app-team',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule],
   templateUrl: './team.component.html',
   styleUrl: './team.component.scss',
 })

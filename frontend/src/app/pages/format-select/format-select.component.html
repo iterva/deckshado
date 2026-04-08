@@ -1,0 +1,40 @@
+<div class="format-select-page">
+  @if (step === 'format') {
+    <h1>Crear Mazo</h1>
+    <p class="subtitle">Elige el formato para tu mazo</p>
+
+    @if (loading) {
+      <p class="loading">Cargando formatos...</p>
+    } @else {
+      <div class="format-grid">
+        @for (f of formats; track f.id) {
+          <div class="format-card" [class.disabled]="!isEnabled(f.code)" (click)="selectFormat(f.code)">
+            <span class="format-code">{{ f.code | uppercase }}</span>
+            <span class="format-name">{{ f.name }}</span>
+            @if (!isEnabled(f.code)) {
+              <span class="coming-soon">Próximamente</span>
+            }
+          </div>
+        }
+      </div>
+    }
+  } @else {
+    <h1>{{ selectedFormatName }}</h1>
+    <p class="subtitle">Elige la raza de tu mazo</p>
+
+    <div class="race-grid">
+      @for (r of races; track r.slug) {
+        <div class="race-card" (click)="selectRace(r.slug)">
+          <span class="race-name">{{ r.name }}</span>
+          <span class="race-desc">{{ r.description }}</span>
+        </div>
+      }
+    </div>
+
+    <button class="btn btn-secondary" (click)="backToFormats()">← Volver a formatos</button>
+  }
+
+  <div class="back-link">
+    <a routerLink="/decks" class="btn btn-secondary">← Volver a mis mazos</a>
+  </div>
+</div>

@@ -1,0 +1,101 @@
+<div class="container">
+  <h1 class="page-title">Colección de Cartas</h1>
+
+  <div class="filters">
+    <div class="search-bar">
+      <input type="text" placeholder="Buscar por nombre..." [(ngModel)]="search" (keyup.enter)="onSearch()">
+      <button class="btn btn-primary btn-sm" (click)="onSearch()">Buscar</button>
+    </div>
+    <div class="filter-row">
+      <select [(ngModel)]="selectedEdition" (change)="onFilterChange()">
+        <option value="">Todas las ediciones</option>
+        @for (ed of editions; track ed.id) {
+          <option [value]="ed.slug">{{ ed.title }}</option>
+        }
+      </select>
+      <select [(ngModel)]="selectedType" (change)="onFilterChange()">
+        <option value="">Todos los tipos</option>
+        @for (t of types; track t.id) {
+          <option [value]="t.slug">{{ t.name }}</option>
+        }
+      </select>
+      <select [(ngModel)]="selectedRace" (change)="onFilterChange()">
+        <option value="">Todas las razas</option>
+        @for (r of races; track r.id) {
+          <option [value]="r.slug">{{ r.name }}</option>
+        }
+      </select>
+      <select [(ngModel)]="selectedRarity" (change)="onFilterChange()">
+        <option value="">Todas las frecuencias</option>
+        @for (r of rarities; track r.id) {
+          <option [value]="r.slug">{{ r.name }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <p class="results-count">Mostrando {{ cards.length }} de {{ totalCards }} cartas</p>
+
+  @if (loading) {
+    <div class="loading">Cargando...</div>
+  }
+
+  <div class="card-grid">
+    @for (card of cards; track card.id) {
+      <div class="card-item" [class.selected]="selectedCard?.id === card.id" (click)="selectCard(card)">
+        <div class="card-image">
+          <img [src]="card.image_url" [alt]="card.name" loading="lazy">
+        </div>
+        <div class="card-info">
+          <h4>{{ card.name }}</h4>
+          <span class="card-type">{{ card.type_name }}</span>
+          @if (card.cost !== null) {
+            <span class="card-cost">💰 {{ card.cost }}</span>
+          }
+          @if (card.damage !== null) {
+            <span class="card-damage">⚔️ {{ card.damage }}</span>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (selectedCard) {
+    <div class="card-detail-overlay" (click)="selectedCard = null">
+      <div class="card-detail" (click)="$event.stopPropagation()">
+        <button class="close-btn" (click)="selectedCard = null">✕</button>
+        <img [src]="selectedCard.image_url" [alt]="selectedCard.name" class="detail-image">
+        <div class="detail-info">
+          <h2>{{ selectedCard.name }}</h2>
+          <div class="detail-meta">
+            @if (selectedCard.type_name) { <span class="badge">{{ selectedCard.type_name }}</span> }
+            @if (selectedCard.race_name) { <span class="badge">{{ selectedCard.race_name }}</span> }
+            @if (selectedCard.rarity_name) { <span class="badge rarity">{{ selectedCard.rarity_name }}</span> }
+          </div>
+          <div class="detail-stats">
+            @if (selectedCard.cost !== null) { <span>💰 Coste: {{ selectedCard.cost }}</span> }
+            @if (selectedCard.damage !== null) { <span>⚔️ Fuerza: {{ selectedCard.damage }}</span> }
+          </div>
+          @if (selectedCard.ability) {
+            <div class="detail-ability">
+              <h4>Habilidad</h4>
+              <p>{{ selectedCard.ability }}</p>
+            </div>
+          }
+          @if (selectedCard.flavour) {
+            <p class="flavour"><em>{{ selectedCard.flavour }}</em></p>
+          }
+          <p class="detail-edition">{{ selectedCard.edition_title }}</p>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (totalPages > 1) {
+    <div class="pagination">
+      <button class="btn btn-secondary btn-sm" (click)="prevPage()" [disabled]="currentPage === 1">← Anterior</button>
+      <span>Página {{ currentPage }} de {{ totalPages }}</span>
+      <button class="btn btn-secondary btn-sm" (click)="nextPage()" [disabled]="currentPage >= totalPages">Siguiente →</button>
+    </div>
+  }
+</div>

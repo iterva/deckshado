@@ -1,0 +1,19 @@
+# Proyecto ignorados
+venv/
+__pycache__/
+*.pyc
+backend/staticfiles/
+
+# Angular
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# IDE
+.idea/
+.vscode/
+.cursor/
+*.swp
+
+# Temporales
+banlist_raw.html

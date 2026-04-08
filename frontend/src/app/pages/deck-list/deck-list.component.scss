@@ -1,0 +1,150 @@
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+
+  button {
+    padding: 0.5rem 1.5rem;
+    border: 1px solid #333;
+    background: transparent;
+    color: #888;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &.active {
+      background: #e94560;
+      border-color: #e94560;
+      color: #fff;
+    }
+
+    &:hover:not(.active) {
+      border-color: #e94560;
+      color: #e94560;
+    }
+  }
+}
+
+.search-bar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+
+  input {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    outline: none;
+    &:focus { border-color: #e94560; }
+  }
+}
+
+.my-decks-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1.5rem;
+}
+
+.deck-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.deck-card {
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 12px;
+  padding: 1.2rem;
+  transition: all 0.2s;
+  text-decoration: none;
+  color: inherit;
+
+  &:hover {
+    border-color: #e94560;
+    transform: translateY(-2px);
+  }
+
+  .deck-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+
+    h3 {
+      font-size: 1.1rem;
+      color: #fff;
+    }
+
+    .card-count {
+      background: #16213e;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      color: #ffbd39;
+      white-space: nowrap;
+    }
+
+    .deck-tags {
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .race-tag {
+      background: #1a2e1a;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      color: #4ade80;
+      white-space: nowrap;
+    }
+  }
+
+  .deck-desc {
+    color: #888;
+    font-size: 0.85rem;
+    margin-bottom: 0.8rem;
+    line-height: 1.4;
+  }
+
+  .deck-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .deck-author {
+      color: #666;
+      font-size: 0.8rem;
+    }
+
+    .deck-visibility {
+      font-size: 0.8rem;
+      color: #666;
+      &.public { color: #4ade80; }
+    }
+
+    .deck-actions {
+      display: flex;
+      gap: 0.4rem;
+    }
+  }
+}
+
+.empty {
+  color: #666;
+  text-align: center;
+  padding: 3rem;
+  grid-column: 1 / -1;
+
+  a {
+    color: #e94560;
+    &:hover { text-decoration: underline; }
+  }
+}

@@ -1,0 +1,89 @@
+.hero {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  padding: 4rem 2rem;
+  text-align: center;
+  border-bottom: 2px solid #e94560;
+
+  .hero-title {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+
+    .icon {
+      font-size: 2.5rem;
+    }
+
+    background: linear-gradient(90deg, #e94560, #ffbd39);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .hero-subtitle {
+    color: #aaa;
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+  }
+
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+
+      .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #ffbd39;
+      }
+
+      .stat-label {
+        color: #888;
+        font-size: 0.9rem;
+      }
+    }
+  }
+}
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+
+  .feature-card {
+    background: #1a1a2e;
+    border: 1px solid #2a2a4a;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+
+    &:hover {
+      border-color: #e94560;
+      transform: translateY(-4px);
+      box-shadow: 0 8px 25px rgba(233, 69, 96, 0.2);
+    }
+
+    .feature-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+
+    h3 {
+      font-size: 1.2rem;
+      margin-bottom: 0.5rem;
+      color: #fff;
+    }
+
+    p {
+      color: #888;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+  }
+}

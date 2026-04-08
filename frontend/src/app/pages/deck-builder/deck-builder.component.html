@@ -1,0 +1,242 @@
+<div class="builder-layout">
+  <!-- Left panel: Card Browser -->
+  <div class="card-browser">
+    <h2>Cartas Disponibles · {{ formatName }}@if (raceName) { · {{ raceName }} }</h2>
+    <div class="browser-filters">
+      <input type="text" placeholder="Buscar carta..." [(ngModel)]="search" (keyup.enter)="onSearch()">
+      <div class="filter-row">
+        <select [(ngModel)]="selectedSubFormat" (change)="onSubFormatChange()">
+          <option value="racial">Formato Racial</option>
+          <!-- VCR y Triadas ocultos hasta activación futura -->
+          <!-- <option value="vcr">VCR</option> -->
+          <!-- <option value="triadas">Triadas</option> -->
+        </select>
+        <select [(ngModel)]="selectedEdition" (change)="onSearch()">
+          <option value="">Todas las ediciones</option>
+          @for (ed of editions; track ed.id) {
+            <option [value]="ed.slug">{{ ed.title }}</option>
+          }
+        </select>
+        <select [(ngModel)]="selectedType" (change)="onSearch()">
+          <option value="">Todos los tipos</option>
+          @for (t of types; track t.id) {
+            <option [value]="t.slug">{{ t.name }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    @if (loading) {
+      <p class="info-text">Cargando...</p>
+    }
+
+    <div class="available-cards">
+      @for (card of availableCards; track card.id) {
+        <div class="mini-card"
+             [class.in-deck]="getQuantityInDeck(card.id) > 0"
+             [class.banned]="getBanStatus(card)?.status === 'banned'"
+             [class.name-taken]="hasDifferentVersion(card)">
+          <div class="img-wrapper">
+            <img [src]="card.image_url" [alt]="card.name" loading="lazy">
+            <span class="eye-icon" (click)="showPreview(card, $event)">👁</span>
+          </div>
+          <div class="mini-info">
+            <span class="mini-name">{{ card.name }}</span>
+            <span class="mini-type">{{ card.type_name }}
+              @if (card.cost !== null) { · 💰{{ card.cost }} }
+              @if (card.damage !== null) { · ⚔️{{ card.damage }} }
+            </span>
+          </div>
+          <div class="actions-column">
+            <div class="mini-actions main-actions">
+              <span class="main-label">M</span>
+              @if (getQuantityInDeck(card.id) > 0) {
+                <button class="circle-btn remove" (click)="removeCard(card.id); $event.stopPropagation()">−</button>
+                <span class="mini-qty">{{ getQuantityInDeck(card.id) }}</span>
+              }
+              <button class="circle-btn add" (click)="addCard(card); $event.stopPropagation()"
+                      [disabled]="getBanStatus(card)?.status === 'banned' || hasDifferentVersion(card) || getTotalCopies(card.id) >= getMaxCopies(card) || totalDeckCards >= 50 || !isCardAllowedByRace(card)">+</button>
+            </div>
+            <div class="mini-actions side-actions">
+              <span class="side-label">S</span>
+              @if (getQuantityInSide(card.id) > 0) {
+                <button class="circle-btn remove" (click)="removeFromSide(card.id); $event.stopPropagation()">−</button>
+                <span class="mini-qty">{{ getQuantityInSide(card.id) }}</span>
+              }
+              <button class="circle-btn add side" (click)="addToSide(card); $event.stopPropagation()"
+                      [disabled]="getBanStatus(card)?.status === 'banned' || hasDifferentVersion(card) || getTotalCopies(card.id) >= getMaxCopies(card) || totalSideCards >= 15 || !isCardAllowedByRace(card)">+</button>
+            </div>
+          </div>
+          @if (getBanStatus(card); as ban) {
+            @if (ban.status === 'banned') {
+              <span class="ban-badge banned">⛔ Prohibida</span>
+            } @else if (ban.status === 'limited_1') {
+              <span class="ban-badge limited">☢️ Límite 1</span>
+            } @else if (ban.status === 'limited_2') {
+              <span class="ban-badge limited">☢️ Límite 2</span>
+            }
+          }
+        </div>
+      }
+    </div>
+
+    @if (totalPages > 1) {
+      <div class="pagination">
+        <button class="btn btn-secondary btn-sm" (click)="prevPage()" [disabled]="currentPage === 1">←</button>
+        <span>{{ currentPage }}/{{ totalPages }}</span>
+        <button class="btn btn-secondary btn-sm" (click)="nextPage()" [disabled]="currentPage >= totalPages">→</button>
+      </div>
+    }
+  </div>
+
+  <!-- Right panel: Deck -->
+  <div class="deck-panel">
+    <h2>{{ deckId ? 'Editar Mazo' : 'Nuevo Mazo' }}</h2>
+
+    <div class="form-group" [class.has-error]="fieldErrors.name">
+      <label>Nombre del mazo</label>
+      <input type="text" [(ngModel)]="deckName" placeholder="Mi mazo increíble" (input)="fieldErrors.name = false">
+    </div>
+
+    <div class="form-group">
+      <label>Descripción (opcional)</label>
+      <input type="text" [(ngModel)]="deckDescription" placeholder="Descripción del mazo...">
+    </div>
+
+    <label class="checkbox-label">
+      <input type="checkbox" [(ngModel)]="deckIsPublic">
+      Mazo público
+    </label>
+
+    <label class="checkbox-label">
+      <input type="checkbox" [(ngModel)]="sharedWithTeam">
+      Compartir con equipo
+    </label>
+
+    <div class="deck-summary" [class.has-error]="fieldErrors.cards">
+      <span class="total-cards">{{ totalDeckCards }} / 50 cartas</span>
+    </div>
+
+    <div class="deck-entries">
+      @for (dc of deckCards; track dc.card.id) {
+        <div class="deck-entry">
+          <img [src]="dc.card.image_url" [alt]="dc.card.name">
+          <div class="entry-info">
+            <span class="entry-name">{{ dc.card.name }}@if (dc.card.is_unique) { <span class="unique-badge">Única</span> }@if (getBanStatus(dc.card); as ban) { @if (ban.status === 'limited_1') { <span class="ban-badge-sm limited">☢️1</span> } @else if (ban.status === 'limited_2') { <span class="ban-badge-sm limited">☢️2</span> } }</span>
+            <span class="entry-type">{{ dc.card.type_name }}</span>
+          </div>
+          <div class="entry-controls">
+            <button class="ctrl-btn" (click)="removeCard(dc.card.id)">−</button>
+            <span class="entry-qty">{{ dc.quantity }}</span>
+            <button class="ctrl-btn" (click)="addCard(dc.card)" [disabled]="getTotalCopies(dc.card.id) >= getMaxCopies(dc.card) || hasDifferentVersion(dc.card) || totalDeckCards >= 50">+</button>
+          </div>
+        </div>
+      } @empty {
+        <p class="info-text">Haz click en las cartas para agregarlas al mazo</p>
+      }
+    </div>
+
+    <!-- Sidedeck -->
+    <div class="deck-summary side-summary">
+      <span class="total-cards">Sidedeck: {{ totalSideCards }} / 15 cartas</span>
+    </div>
+
+    <div class="deck-entries side-entries">
+      @for (dc of sideCards; track dc.card.id) {
+        <div class="deck-entry side">
+          <img [src]="dc.card.image_url" [alt]="dc.card.name">
+          <div class="entry-info">
+            <span class="entry-name">{{ dc.card.name }}@if (dc.card.is_unique) { <span class="unique-badge">Única</span> }</span>
+            <span class="entry-type">{{ dc.card.type_name }}</span>
+          </div>
+          <div class="entry-controls">
+            <button class="ctrl-btn" (click)="removeFromSide(dc.card.id)">−</button>
+            <span class="entry-qty">{{ dc.quantity }}</span>
+            <button class="ctrl-btn" (click)="addToSide(dc.card)" [disabled]="getTotalCopies(dc.card.id) >= getMaxCopies(dc.card) || totalSideCards >= 15">+</button>
+          </div>
+        </div>
+      } @empty {
+        <p class="info-text side-empty">Sin cartas en el sidedeck</p>
+      }
+    </div>
+
+    <div class="deck-actions">
+      <button class="btn btn-gold" (click)="saveDeck()" [disabled]="saving">
+        {{ saving ? 'Guardando...' : (deckId ? 'Actualizar Mazo' : 'Guardar Mazo') }}
+      </button>
+      <a routerLink="/decks" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </div>
+</div>
+
+<!-- Card Preview Overlay -->
+@if (previewCard) {
+  <div class="preview-overlay" (click)="hidePreview()">
+    <div class="preview-panel" (click)="$event.stopPropagation()">
+      <button class="preview-close" (click)="hidePreview()">✕</button>
+      <h3 class="preview-title">{{ previewCard.name }}</h3>
+      <hr>
+      <div class="preview-body">
+        <img [src]="previewCard.image_url" [alt]="previewCard.name">
+        <div class="preview-stats">
+          <div class="stat-row">
+            <span class="stat-label">Tipo</span>
+            <span class="stat-badge">{{ previewCard.type_name }}</span>
+          </div>
+          @if (previewCard.cost !== null) {
+            <div class="stat-row">
+              <span class="stat-label">Coste</span>
+              <span class="stat-value">{{ previewCard.cost }}</span>
+            </div>
+          }
+          @if (previewCard.damage !== null) {
+            <div class="stat-row">
+              <span class="stat-label">Daño</span>
+              <span class="stat-value">{{ previewCard.damage }}</span>
+            </div>
+          }
+          <div class="stat-row">
+            <span class="stat-label">Expansión</span>
+            <span class="stat-value">{{ previewCard.edition_title }}</span>
+          </div>
+          @if (previewCard.rarity_name) {
+            <div class="stat-row">
+              <span class="stat-label">Rareza</span>
+              <span class="stat-badge rarity">{{ previewCard.rarity_name }}</span>
+            </div>
+          }
+          @if (previewCard.race_name) {
+            <div class="stat-row">
+              <span class="stat-label">Raza</span>
+              <span class="stat-value">{{ previewCard.race_name }}</span>
+            </div>
+          }
+          @if (previewAbility) {
+            <div class="stat-section">
+              <span class="stat-label">Habilidad</span>
+              <p class="stat-ability">{{ previewAbility }}</p>
+            </div>
+          } @else if (previewAbility === null && previewCard) {
+            <div class="stat-section">
+              <span class="stat-label">Habilidad</span>
+              <p class="stat-ability loading">Cargando...</p>
+            </div>
+          }
+          <hr>
+          <button class="btn btn-gold btn-block" (click)="addCard(previewCard); hidePreview()"
+                  [disabled]="getBanStatus(previewCard)?.status === 'banned' || hasDifferentVersion(previewCard) || getQuantityInDeck(previewCard.id) >= getMaxCopies(previewCard)">
+            + Agregar al mazo
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Toast notification -->
+@if (toastVisible) {
+  <div class="toast-container" [class.error]="toastType === 'error'" [class.success]="toastType === 'success'">
+    <span class="toast-msg">{{ toastMessage }}</span>
+    <button class="toast-close" (click)="toastVisible = false">✕</button>
+  </div>
+}

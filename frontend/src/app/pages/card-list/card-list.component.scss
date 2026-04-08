@@ -1,0 +1,248 @@
+.filters {
+  margin-bottom: 1.5rem;
+
+  .search-bar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+
+    input {
+      flex: 1;
+      padding: 0.6rem 1rem;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      outline: none;
+      &:focus { border-color: #e94560; }
+    }
+  }
+
+  .filter-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.5rem;
+
+    select {
+      padding: 0.5rem 0.8rem;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      outline: none;
+      &:focus { border-color: #e94560; }
+    }
+  }
+}
+
+.results-count {
+  color: #888;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: #888;
+  font-size: 1.2rem;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.card-item {
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #e94560;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(233, 69, 96, 0.2);
+  }
+
+  &.selected {
+    border-color: #ffbd39;
+    box-shadow: 0 0 15px rgba(255, 189, 57, 0.3);
+  }
+
+  .card-image {
+    aspect-ratio: 5 / 7;
+    overflow: hidden;
+    background: #111;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  .card-info {
+    padding: 0.6rem;
+
+    h4 {
+      font-size: 0.85rem;
+      color: #fff;
+      margin-bottom: 0.3rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-type {
+      font-size: 0.75rem;
+      color: #888;
+      display: block;
+    }
+
+    .card-cost, .card-damage {
+      font-size: 0.75rem;
+      color: #ffbd39;
+      margin-right: 0.5rem;
+    }
+  }
+}
+
+// Detail overlay
+.card-detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 200;
+  padding: 1rem;
+}
+
+.card-detail {
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 16px;
+  display: flex;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow: auto;
+  position: relative;
+
+  .close-btn {
+    position: absolute;
+    top: 0.8rem;
+    right: 0.8rem;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    color: #fff;
+    font-size: 1.2rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 1;
+  }
+
+  .detail-image {
+    width: 250px;
+    min-height: 350px;
+    object-fit: cover;
+    border-radius: 16px 0 0 16px;
+  }
+
+  .detail-info {
+    padding: 1.5rem;
+    flex: 1;
+
+    h2 {
+      font-size: 1.3rem;
+      color: #fff;
+      margin-bottom: 0.8rem;
+    }
+
+    .detail-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.8rem;
+
+      .badge {
+        background: #16213e;
+        padding: 0.2rem 0.6rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        color: #aaa;
+      }
+
+      .rarity {
+        color: #ffbd39;
+        border: 1px solid #ffbd39;
+      }
+    }
+
+    .detail-stats {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      color: #ffbd39;
+      font-size: 0.9rem;
+    }
+
+    .detail-ability {
+      margin-bottom: 1rem;
+
+      h4 {
+        color: #e94560;
+        font-size: 0.9rem;
+        margin-bottom: 0.3rem;
+      }
+
+      p {
+        color: #ccc;
+        font-size: 0.85rem;
+        line-height: 1.6;
+        white-space: pre-wrap;
+      }
+    }
+
+    .flavour {
+      color: #666;
+      font-size: 0.8rem;
+      margin-bottom: 0.8rem;
+      line-height: 1.5;
+    }
+
+    .detail-edition {
+      color: #555;
+      font-size: 0.8rem;
+    }
+  }
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-bottom: 1rem;
+  color: #888;
+}
+
+@media (max-width: 600px) {
+  .card-detail {
+    flex-direction: column;
+
+    .detail-image {
+      width: 100%;
+      min-height: auto;
+      max-height: 300px;
+      border-radius: 16px 16px 0 0;
+    }
+  }
+}

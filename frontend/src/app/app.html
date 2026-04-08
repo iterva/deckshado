@@ -1,0 +1,26 @@
+<nav class="navbar">
+  <div class="navbar-brand">
+    <a routerLink="/" class="logo">
+      <span class="logo-icon">⚔️</span>
+      <span class="logo-text">DeckShado</span>
+    </a>
+  </div>
+  <div class="navbar-links">
+    <a routerLink="/cards" routerLinkActive="active">Cartas</a>
+    <a routerLink="/decks" routerLinkActive="active">Mazos</a>
+    <a routerLink="/team" routerLinkActive="active">Equipo</a>
+    @if (auth.isAuthenticated()) {
+      <a routerLink="/builder" routerLinkActive="active">Constructor</a>
+      <button class="btn-logout" (click)="auth.logout()">Salir</button>
+    } @else {
+      <a routerLink="/login" routerLinkActive="active" class="btn-login">Ingresar</a>
+    }
+  </div>
+</nav>
+<main class="content">
+  <router-outlet />
+</main>
+<footer class="footer">
+  <p>DeckShado &mdash; Deckbuilder no oficial de Mitos y Leyendas. Hecho por fans para fans.</p>
+  <p class="disclaimer">Mitos y Leyendas y sus respectivas artes de cartas son propiedad de sus creadores.</p>
+</footer>

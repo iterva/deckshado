@@ -1,0 +1,98 @@
+<div class="container">
+  <h1 class="page-title">Mazos</h1>
+
+  @if (auth.isAuthenticated()) {
+    <div class="tabs">
+      <button [class.active]="activeTab === 'public'" (click)="activeTab = 'public'">Mazos Públicos</button>
+      <button [class.active]="activeTab === 'mine'" (click)="activeTab = 'mine'">Mis Mazos</button>
+      <button [class.active]="activeTab === 'team'" (click)="activeTab = 'team'">Mazos del Equipo</button>
+    </div>
+  }
+
+  @if (activeTab === 'public') {
+    <div class="search-bar">
+      <input type="text" placeholder="Buscar mazos..." [(ngModel)]="search" (keyup.enter)="onSearch()">
+      <button class="btn btn-primary btn-sm" (click)="onSearch()">Buscar</button>
+    </div>
+
+    <div class="deck-grid">
+      @for (deck of publicDecks; track deck.id) {
+        <a [routerLink]="['/decks', deck.id]" class="deck-card">
+          <div class="deck-header">
+            <h3>{{ deck.name }}</h3>
+            <div class="deck-tags">
+              <span class="race-tag">{{ getRaceLabel(deck.race) }}</span>
+              <span class="card-count">{{ deck.card_count }} cartas</span>
+            </div>
+          </div>
+          @if (deck.description) {
+            <p class="deck-desc">{{ deck.description }}</p>
+          }
+          <div class="deck-footer">
+            <span class="deck-author">por {{ deck.owner_username }}</span>
+          </div>
+        </a>
+      } @empty {
+        <p class="empty">No hay mazos públicos aún.</p>
+      }
+    </div>
+  }
+
+  @if (activeTab === 'mine') {
+    <div class="my-decks-header">
+      <a routerLink="/builder" class="btn btn-gold">+ Crear Mazo</a>
+    </div>
+
+    <div class="deck-grid">
+      @for (deck of myDecks; track deck.id) {
+        <div class="deck-card">
+          <div class="deck-header">
+            <a [routerLink]="['/decks', deck.id]"><h3>{{ deck.name }}</h3></a>
+            <div class="deck-tags">
+              <span class="race-tag">{{ getRaceLabel(deck.race) }}</span>
+              <span class="card-count">{{ deck.card_count }} cartas</span>
+            </div>
+          </div>
+          @if (deck.description) {
+            <p class="deck-desc">{{ deck.description }}</p>
+          }
+          <div class="deck-footer">
+            <span class="deck-visibility" [class.public]="deck.is_public">
+              {{ deck.is_public ? '🌐 Público' : '🔒 Privado' }}
+            </span>
+            <div class="deck-actions">
+              <a [routerLink]="['/builder', deck.id]" class="btn btn-secondary btn-sm">Editar</a>
+              <button class="btn btn-danger btn-sm" (click)="deleteDeck(deck.id)">Eliminar</button>
+            </div>
+          </div>
+        </div>
+      } @empty {
+        <p class="empty">No tienes mazos aún. <a routerLink="/builder">Crea uno aquí</a>.</p>
+      }
+    </div>
+  }
+
+  @if (activeTab === 'team') {
+    <div class="deck-grid">
+      @for (deck of teamDecks; track deck.id) {
+        <a [routerLink]="['/decks', deck.id]" class="deck-card">
+          <div class="deck-header">
+            <h3>{{ deck.name }}</h3>
+            <div class="deck-tags">
+              <span class="race-tag">{{ getRaceLabel(deck.race) }}</span>
+              <span class="card-count">{{ deck.card_count }} cartas</span>
+            </div>
+          </div>
+          @if (deck.description) {
+            <p class="deck-desc">{{ deck.description }}</p>
+          }
+          <div class="deck-footer">
+            <span class="deck-author">por {{ deck.owner_username }}</span>
+          </div>
+        </a>
+      } @empty {
+        <p class="empty">No hay mazos compartidos por tu equipo.</p>
+      }
+    </div>
+  }
+</div>

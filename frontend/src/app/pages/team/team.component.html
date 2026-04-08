@@ -1,0 +1,144 @@
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title">Equipos</h1>
+    @if (auth.isAuthenticated() && view !== 'loading') {
+      <div class="header-actions">
+        @if (hasTeam) {
+          @if (view === 'my-team') {
+            <button class="btn btn-secondary" (click)="goToBrowse()">← Ver equipos</button>
+          } @else {
+            <button class="btn btn-gold" (click)="goToMyTeam()">Mi Equipo</button>
+          }
+        } @else {
+          <button class="btn btn-gold" (click)="showCreate = !showCreate">
+            {{ showCreate ? 'Cancelar' : '+ Crear Equipo' }}
+          </button>
+        }
+      </div>
+    }
+  </div>
+
+  @if (view === 'loading') {
+    <p class="loading-text">Cargando...</p>
+  }
+
+  <!-- CREATE FORM -->
+  @if (showCreate && !hasTeam) {
+    <div class="create-form">
+      <input type="text" placeholder="Nombre del equipo" [(ngModel)]="newName" maxlength="100">
+      <textarea placeholder="Descripción (opcional)" [(ngModel)]="newDesc" rows="2"></textarea>
+      <button class="btn btn-gold" (click)="createTeam()" [disabled]="!newName.trim()">Crear</button>
+    </div>
+  }
+
+  <!-- MY TEAM VIEW -->
+  @if (view === 'my-team' && myTeam) {
+    <div class="team-card my-team">
+      <div class="team-header">
+        <div class="team-header-left">
+          @if (myTeam.logo_url) {
+            <img [src]="myTeam.logo_url" alt="Logo" class="team-logo">
+          } @else {
+            <div class="team-logo-placeholder">⚔️</div>
+          }
+          <h2>{{ myTeam.name }}</h2>
+        </div>
+        <span class="member-badge">{{ myTeam.member_count }} miembros</span>
+      </div>
+      @if (myTeam.description) {
+        <p class="team-desc">{{ myTeam.description }}</p>
+      }
+      <div class="my-role">
+        Tu rol: <span [class]="isCaptain ? 'role-captain' : 'role-member'">{{ isCaptain ? '⭐ Capitán' : 'Miembro' }}</span>
+        @if (isCaptain) {
+          <label class="btn btn-sm btn-secondary logo-upload-btn">
+            📷 Cambiar logo
+            <input type="file" accept="image/*" (change)="onLogoSelected($event)" hidden>
+          </label>
+        }
+      </div>
+
+      <!-- Members -->
+      <h3 class="section-title">Miembros</h3>
+      <div class="members-list">
+        @for (m of myTeam.members; track m.id) {
+          <div class="member-row">
+            <span class="member-name">
+              {{ m.username }}
+              @if (m.role === 'captain') {
+                <span class="captain-star">⭐</span>
+              }
+            </span>
+            <span class="member-role">{{ m.role_display }}</span>
+            @if (isCaptain && m.role !== 'captain') {
+              <div class="member-actions">
+                <button class="btn btn-sm btn-secondary" (click)="promote(m.id)">Hacer Capitán</button>
+                <button class="btn btn-sm btn-danger" (click)="kick(m.id)">Expulsar</button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Join Requests (captain only) -->
+      @if (isCaptain) {
+        <h3 class="section-title">Solicitudes pendientes</h3>
+        @if (requests.length > 0) {
+          <div class="requests-list">
+            @for (r of requests; track r.id) {
+              <div class="request-row">
+                <span class="request-user">{{ r.username }}</span>
+                <div class="request-actions">
+                  <button class="btn btn-sm btn-success" (click)="handleRequest(r.id, 'accept')">Aceptar</button>
+                  <button class="btn btn-sm btn-danger" (click)="handleRequest(r.id, 'reject')">Rechazar</button>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="empty-text">No hay solicitudes pendientes.</p>
+        }
+      }
+
+      <div class="team-footer">
+        <button class="btn btn-danger" (click)="leaveTeam()">Salir del equipo</button>
+      </div>
+    </div>
+  }
+
+  <!-- BROWSE TEAMS -->
+  @if (view === 'browse') {
+    <div class="team-grid">
+      @for (team of teams; track team.id) {
+        <div class="team-card">
+          <div class="team-header">
+            <div class="team-header-left">
+              @if (team.logo_url) {
+                <img [src]="team.logo_url" alt="Logo" class="team-logo">
+              } @else {
+                <div class="team-logo-placeholder">⚔️</div>
+              }
+              <h3>{{ team.name }}</h3>
+            </div>
+            <span class="member-badge">{{ team.member_count }} miembros</span>
+          </div>
+          @if (team.description) {
+            <p class="team-desc">{{ team.description }}</p>
+          }
+          @if (auth.isAuthenticated() && !hasTeam) {
+            <div class="team-footer">
+              <button class="btn btn-primary btn-sm" (click)="requestJoin(team.id)">Solicitar unirse</button>
+            </div>
+          }
+        </div>
+      } @empty {
+        <p class="empty-text">No hay equipos aún.</p>
+      }
+    </div>
+  }
+
+  <!-- Toast -->
+  @if (toast) {
+    <div class="toast" [class.error]="toastType === 'error'">{{ toast }}</div>
+  }
+</div>

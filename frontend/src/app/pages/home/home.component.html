@@ -1,0 +1,38 @@
+<div class="hero">
+  <div class="hero-content">
+    <h1 class="hero-title">
+      <span class="icon">⚔️</span> DeckShado
+    </h1>
+    <p class="hero-subtitle">Construye, comparte y descubre mazos de Mitos y Leyendas</p>
+    <div class="hero-stats">
+      <div class="stat">
+        <span class="stat-number">{{ totalCards !== null ? totalCards : '...' }}</span>
+        <span class="stat-label">Cartas</span>
+      </div>
+      <div class="stat">
+        <span class="stat-number">{{ totalDecks !== null ? totalDecks : '...' }}</span>
+        <span class="stat-label">Mazos Públicos</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="features container">
+  <div class="feature-card" routerLink="/cards">
+    <div class="feature-icon">🃏</div>
+    <h3>Colección de Cartas</h3>
+    <p>Explora todas las cartas disponibles con filtros por edición, tipo, raza y más.</p>
+  </div>
+
+  <div class="feature-card" routerLink="/builder">
+    <div class="feature-icon">🔨</div>
+    <h3>Constructor de Mazos</h3>
+    <p>Construye tus propios mazos seleccionando las cartas que desees.</p>
+  </div>
+
+  <div class="feature-card" routerLink="/decks">
+    <div class="feature-icon">📚</div>
+    <h3>Mazos Públicos</h3>
+    <p>Descubre y explora los mazos compartidos por la comunidad.</p>
+  </div>
+</div>

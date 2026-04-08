@@ -43,7 +43,7 @@ class CardListView(generics.ListAPIView):
         qs = Card.objects.select_related("edition", "rarity", "race", "card_type").only(
             "id", "myl_id", "edid", "slug", "name", "cost", "damage", "ability",
             "edition__slug", "edition__title", "edition__myl_id",
-            "rarity__name", "race__name", "card_type__name",
+            "rarity__name", "race__name", "race__slug", "card_type__name",
         ).annotate(
             image_url=Concat(
                 Value(MYL_CARDS_CDN),
@@ -87,7 +87,7 @@ class CardListView(generics.ListAPIView):
                 # Matching race (including sub-races) + raceless allies
                 qs = qs.filter(
                     non_ally
-                    | Q(race__name__icontains=deck_race)
+                    | Q(race__slug__icontains=deck_race)
                     | Q(race__isnull=True)
                     | Q(race__slug="noraza")
                 )

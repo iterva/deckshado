@@ -8,6 +8,7 @@ export interface Card {
   edition_title: string;
   rarity_name: string | null;
   race_name: string | null;
+  race_slug: string | null;
   type_name: string | null;
   cost: string | null;
   damage: string | null;

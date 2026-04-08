@@ -42,6 +42,7 @@ class CardListSerializer(serializers.ModelSerializer):
     edition_title = serializers.CharField(source="edition.title", read_only=True)
     rarity_name = serializers.CharField(source="rarity.name", read_only=True, default=None)
     race_name = serializers.CharField(source="race.name", read_only=True, default=None)
+    race_slug = serializers.CharField(source="race.slug", read_only=True, default=None)
     type_name = serializers.CharField(source="card_type.name", read_only=True, default=None)
 
     class Meta:
@@ -49,7 +50,7 @@ class CardListSerializer(serializers.ModelSerializer):
         fields = [
             "id", "myl_id", "edid", "slug", "name",
             "edition_slug", "edition_title",
-            "rarity_name", "race_name", "type_name",
+            "rarity_name", "race_name", "race_slug", "type_name",
             "cost", "damage", "is_unique",
             "image_url",
         ]

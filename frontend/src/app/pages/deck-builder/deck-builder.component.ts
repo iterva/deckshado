@@ -5,6 +5,7 @@ import { CardService } from '../../services/card.service';
 import { DeckService } from '../../services/deck.service';
 import { AuthService } from '../../services/auth.service';
 import { Card, Edition, CardType, DeckEntry, BanlistEntry } from '../../models';
+import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
 
 interface DeckCard {
   card: Card;
@@ -14,7 +15,7 @@ interface DeckCard {
 @Component({
   selector: 'app-deck-builder',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, ThumbnailPipe],
   templateUrl: './deck-builder.component.html',
   styleUrl: './deck-builder.component.scss',
 })

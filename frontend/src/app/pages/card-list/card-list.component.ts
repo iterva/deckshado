@@ -2,11 +2,12 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CardService } from '../../services/card.service';
 import { Card, Edition, CardType, Race, Rarity } from '../../models';
+import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
 
 @Component({
   selector: 'app-card-list',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, ThumbnailPipe],
   templateUrl: './card-list.component.html',
   styleUrl: './card-list.component.scss',
 })

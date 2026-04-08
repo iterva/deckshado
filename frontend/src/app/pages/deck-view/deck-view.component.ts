@@ -5,11 +5,12 @@ import { DeckService } from '../../services/deck.service';
 import { CardService } from '../../services/card.service';
 import { AuthService } from '../../services/auth.service';
 import { Deck, Card } from '../../models';
+import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
 
 @Component({
   selector: 'app-deck-view',
   standalone: true,
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, ThumbnailPipe],
   templateUrl: './deck-view.component.html',
   styleUrl: './deck-view.component.scss',
 })

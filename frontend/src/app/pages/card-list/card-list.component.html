@@ -44,7 +44,7 @@
     @for (card of cards; track card.id) {
       <div class="card-item" [class.selected]="selectedCard?.id === card.id" (click)="selectCard(card)">
         <div class="card-image">
-          <img [src]="card.image_url" [alt]="card.name" loading="lazy">
+          <img [src]="card.image_url | thumb:350" [alt]="card.name" loading="lazy" decoding="async">
         </div>
         <div class="card-info">
           <h4>{{ card.name }}</h4>

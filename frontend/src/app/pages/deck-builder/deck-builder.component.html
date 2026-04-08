@@ -40,7 +40,7 @@
              [class.banned]="getBanStatus(card)?.status === 'banned'"
              [class.name-taken]="hasDifferentVersion(card)">
           <div class="img-wrapper">
-            <img [src]="card.image_url" [alt]="card.name" loading="lazy">
+            <img [src]="card.image_url | thumb:150" [alt]="card.name" loading="lazy" decoding="async">
             <span class="eye-icon" (click)="showPreview(card, $event)">👁</span>
           </div>
           <div class="mini-info">
@@ -126,7 +126,7 @@
     <div class="deck-entries">
       @for (dc of deckCards; track dc.card.id) {
         <div class="deck-entry">
-          <img [src]="dc.card.image_url" [alt]="dc.card.name">
+          <img [src]="dc.card.image_url | thumb:100" [alt]="dc.card.name" loading="lazy" decoding="async">
           <div class="entry-info">
             <span class="entry-name">{{ dc.card.name }}@if (dc.card.is_unique) { <span class="unique-badge">Única</span> }@if (getBanStatus(dc.card); as ban) { @if (ban.status === 'limited_1') { <span class="ban-badge-sm limited">☢️1</span> } @else if (ban.status === 'limited_2') { <span class="ban-badge-sm limited">☢️2</span> } }</span>
             <span class="entry-type">{{ dc.card.type_name }}</span>
@@ -150,7 +150,7 @@
     <div class="deck-entries side-entries">
       @for (dc of sideCards; track dc.card.id) {
         <div class="deck-entry side">
-          <img [src]="dc.card.image_url" [alt]="dc.card.name">
+          <img [src]="dc.card.image_url | thumb:100" [alt]="dc.card.name" loading="lazy" decoding="async">
           <div class="entry-info">
             <span class="entry-name">{{ dc.card.name }}@if (dc.card.is_unique) { <span class="unique-badge">Única</span> }</span>
             <span class="entry-type">{{ dc.card.type_name }}</span>

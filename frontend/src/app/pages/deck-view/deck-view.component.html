@@ -80,13 +80,13 @@
         @for (entry of deck.entries; track entry.id) {
           <div class="card-stack" [class.qty-2]="entry.quantity === 2" [class.qty-3]="entry.quantity >= 3">
             @if (entry.quantity >= 3) {
-              <img class="stack-shadow s3" [src]="entry.card_detail.image_url" aria-hidden="true">
+              <img class="stack-shadow s3" [src]="entry.card_detail.image_url | thumb:250" aria-hidden="true">
             }
             @if (entry.quantity >= 2) {
-              <img class="stack-shadow s2" [src]="entry.card_detail.image_url" aria-hidden="true">
+              <img class="stack-shadow s2" [src]="entry.card_detail.image_url | thumb:250" aria-hidden="true">
             }
             <div class="img-wrapper">
-              <img class="stack-top" [src]="entry.card_detail.image_url" [alt]="entry.card_detail.name" loading="lazy">
+              <img class="stack-top" [src]="entry.card_detail.image_url | thumb:250" [alt]="entry.card_detail.name" loading="lazy" decoding="async">
               <span class="eye-icon" (click)="showPreview(entry.card_detail, $event)">👁</span>
             </div>
             @if (entry.quantity > 1) {
@@ -136,13 +136,13 @@
           @for (entry of deck.sideboard_entries; track entry.id) {
             <div class="card-stack" [class.qty-2]="entry.quantity === 2" [class.qty-3]="entry.quantity >= 3">
               @if (entry.quantity >= 3) {
-                <img class="stack-shadow s3" [src]="entry.card_detail.image_url" aria-hidden="true">
+                <img class="stack-shadow s3" [src]="entry.card_detail.image_url | thumb:250" aria-hidden="true">
               }
               @if (entry.quantity >= 2) {
-                <img class="stack-shadow s2" [src]="entry.card_detail.image_url" aria-hidden="true">
+                <img class="stack-shadow s2" [src]="entry.card_detail.image_url | thumb:250" aria-hidden="true">
               }
               <div class="img-wrapper">
-                <img class="stack-top" [src]="entry.card_detail.image_url" [alt]="entry.card_detail.name" loading="lazy">
+                <img class="stack-top" [src]="entry.card_detail.image_url | thumb:250" [alt]="entry.card_detail.name" loading="lazy" decoding="async">
                 <span class="eye-icon" (click)="showPreview(entry.card_detail, $event)">👁</span>
               </div>
               @if (entry.quantity > 1) {

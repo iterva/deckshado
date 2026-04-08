@@ -292,9 +292,17 @@ export class DeckBuilderComponent implements OnInit {
   }
 
   private cardMatchesRace(card: Card, raceSlug: string): boolean {
-    if (!card.race_slug) return false;
-    const rs = card.race_slug.toLowerCase();
-    return rs === raceSlug || rs.includes(raceSlug);
+    // Primary: match by slug (accent-safe)
+    if (card.race_slug) {
+      const rs = card.race_slug.toLowerCase();
+      return rs === raceSlug || rs.includes(raceSlug);
+    }
+    // Fallback: match by name (for cached responses without race_slug)
+    if (card.race_name) {
+      const rn = card.race_name.toLowerCase();
+      return rn.includes(raceSlug);
+    }
+    return false;
   }
 
   /** Count raceless allies across main + side. */

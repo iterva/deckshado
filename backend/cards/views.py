@@ -4,6 +4,7 @@ from django.db.models import Q, Value, Case, When, BooleanField
 from django.db.models.functions import Concat, Lower
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
+import unicodedata
 from .models import Card, Edition, Format, Race, CardType, Rarity, BanlistEntry
 from .serializers import (
     CardListSerializer,
@@ -17,6 +18,19 @@ from .serializers import (
 )
 
 MYL_CARDS_CDN = "https://api.myl.cl/static/cards/"
+
+# Map base vowels/consonants to regex classes that match accented variants
+_ACCENT_MAP = {
+    'a': '[aáàâãä]', 'e': '[eéèêë]', 'i': '[iíìîï]',
+    'o': '[oóòôõö]', 'u': '[uúùûü]', 'n': '[nñ]',
+}
+
+def _accent_insensitive(text: str) -> str:
+    """Convert search text to a regex pattern that matches with or without accents."""
+    # Strip accents from search input first
+    nfkd = unicodedata.normalize('NFKD', text.lower())
+    stripped = ''.join(c for c in nfkd if not unicodedata.combining(c))
+    return ''.join(_ACCENT_MAP.get(c, c) for c in stripped)
 
 
 class CardPagination(PageNumberPagination):
@@ -73,7 +87,7 @@ class CardListView(generics.ListAPIView):
         if rarity:
             qs = qs.filter(rarity__slug=rarity)
         if search:
-            qs = qs.filter(name__icontains=search)
+            qs = qs.filter(name__iregex=_accent_insensitive(search))
 
         # deck_race: MYL racial deck filter
         deck_race = self.request.query_params.get("deck_race")

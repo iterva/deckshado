@@ -20,6 +20,41 @@
 <main class="content">
   <router-outlet />
 </main>
+<nav class="bottom-nav">
+  <a routerLink="/" routerLinkActive="active">
+    <span class="icon">🏠</span>
+    <span class="label">Inicio</span>
+  </a>
+  <a routerLink="/cards" routerLinkActive="active">
+    <span class="icon">🃏</span>
+    <span class="label">Cartas</span>
+  </a>
+  <a routerLink="/decks" routerLinkActive="active">
+    <span class="icon">📚</span>
+    <span class="label">Mazos</span>
+  </a>
+  <a routerLink="/team" routerLinkActive="active">
+    <span class="icon">👥</span>
+    <span class="label">Equipo</span>
+  </a>
+  @if (auth.isAuthenticated()) {
+    <a routerLink="/builder" routerLinkActive="active">
+      <span class="icon">🔨</span>
+      <span class="label">Constructor</span>
+    </a>
+  }
+  @if (!auth.isAuthenticated()) {
+    <a routerLink="/login" routerLinkActive="active">
+      <span class="icon">👤</span>
+      <span class="label">Ingresar</span>
+    </a>
+  } @else {
+    <button class="btn-logout-mobile" (click)="auth.logout()">
+      <span class="icon">🚪</span>
+      <span class="label">Salir</span>
+    </button>
+  }
+</nav>
 <footer class="footer">
   <p>ShadowForge &mdash; Deckbuilder no oficial de Mitos y Leyendas. Hecho por fans para fans.</p>
   <p class="disclaimer">Mitos y Leyendas y sus respectivas artes de cartas son propiedad de sus creadores.</p>

@@ -15,6 +15,7 @@ def _annotate_card_count(qs):
 class PublicDeckListView(generics.ListAPIView):
     """Lista de mazos públicos (no requiere autenticación)."""
     serializer_class = DeckListSerializer
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         qs = _annotate_card_count(Deck.objects.filter(is_public=True).select_related("owner"))
@@ -56,6 +57,7 @@ class DeckDetailView(generics.RetrieveUpdateDestroyAPIView):
 class PublicDeckDetailView(generics.RetrieveAPIView):
     """Ver un mazo público (sin autenticación)."""
     serializer_class = DeckDetailSerializer
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         return _annotate_card_count(Deck.objects.filter(is_public=True).prefetch_related("entries__card__edition", "entries__card__rarity", "entries__card__race", "entries__card__card_type"))

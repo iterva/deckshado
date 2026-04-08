@@ -11,6 +11,7 @@ from .serializers import (
 
 class TeamListView(generics.ListAPIView):
     serializer_class = TeamListSerializer
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         return Team.objects.annotate(member_count=Count("members")).order_by("-created_at")
@@ -27,6 +28,7 @@ class TeamCreateView(generics.CreateAPIView):
 
 class TeamDetailView(generics.RetrieveAPIView):
     serializer_class = TeamDetailSerializer
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         return Team.objects.annotate(member_count=Count("members")).prefetch_related("members__user")

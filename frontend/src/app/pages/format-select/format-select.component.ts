@@ -47,15 +47,18 @@ export class FormatSelectComponent {
     private router: Router,
     private cdr: ChangeDetectorRef,
   ) {
-    if (!this.auth.isAuthenticated()) {
-      this.router.navigate(['/login']);
-      return;
-    }
-    this.cardService.getFormats().subscribe(d => {
-      this.formats = d;
-      this.loading = false;
-      this.cdr.detectChanges();
-    });
+    // Check authentication after a short delay to allow user loading
+    setTimeout(() => {
+      if (!this.auth.isAuthenticated()) {
+        this.router.navigate(['/login']);
+        return;
+      }
+      this.cardService.getFormats().subscribe(d => {
+        this.formats = d;
+        this.loading = false;
+        this.cdr.detectChanges();
+      });
+    }, 100);
   }
 
   isEnabled(code: string): boolean {

@@ -67,6 +67,9 @@ export class DeckBuilderComponent implements OnInit {
   previewAbility: string | null = null;
   private abilityCache = new Map<number, string>();
 
+  // Mobile deck panel toggle
+  showDeckPanel = false;
+
   constructor(
     private cardService: CardService,
     private deckService: DeckService,
@@ -77,57 +80,60 @@ export class DeckBuilderComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    if (!this.auth.isAuthenticated()) {
-      this.router.navigate(['/login']);
-      return;
-    }
-
-    // Read format from route: /builder/new/:format or default 'imp'
-    const fmt = this.route.snapshot.paramMap.get('format');
-    if (fmt) {
-      this.selectedFormat = fmt;
-    }
-
-    // Read race from query param
-    const race = this.route.snapshot.queryParamMap.get('race');
-    if (race) {
-      this.selectedRace = race;
-      const raceNames: Record<string, string> = {
-        dream: 'Dream', totem: 'Tótem', eterno: 'Eterno', faerie: 'Faerie',
-        dragon: 'Dragón', sombra: 'Sombra', heroe: 'Héroe', sacerdote: 'Sacerdote',
-        guerrero: 'Guerrero', bestia: 'Bestia', caballero: 'Caballero',
-      };
-      this.raceName = raceNames[race] || race;
-    }
-
-    this.cardService.getFormats().subscribe(formats => {
-      const found = formats.find(f => f.code === this.selectedFormat);
-      if (found) this.formatName = found.name;
-      this.cdr.detectChanges();
-    });
-
-    this.cardService.getEditions().subscribe(d => {
-      this.allEditions = d;
-      this.filterEditions();
-      this.cdr.detectChanges();
-    });
-    this.cardService.getTypes().subscribe(d => {
-      this.types = d;
-      this.cdr.detectChanges();
-    });
-    this.loadBanlist();
-    this.loadCards();
-
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id && id !== 'new') {
-      this.deckId = Number(id);
-      this.loadDeck();
-    } else {
-      const copyFrom = history.state?.copyFrom;
-      if (copyFrom) {
-        this.loadFromCopy(copyFrom);
+    // Check authentication after a short delay to allow user loading
+    setTimeout(() => {
+      if (!this.auth.isAuthenticated()) {
+        this.router.navigate(['/login']);
+        return;
       }
-    }
+
+      // Read format from route: /builder/new/:format or default 'imp'
+      const fmt = this.route.snapshot.paramMap.get('format');
+      if (fmt) {
+        this.selectedFormat = fmt;
+      }
+
+      // Read race from query param
+      const race = this.route.snapshot.queryParamMap.get('race');
+      if (race) {
+        this.selectedRace = race;
+        const raceNames: Record<string, string> = {
+          dream: 'Dream', totem: 'Tótem', eterno: 'Eterno', faerie: 'Faerie',
+          dragon: 'Dragón', sombra: 'Sombra', heroe: 'Héroe', sacerdote: 'Sacerdote',
+          guerrero: 'Guerrero', bestia: 'Bestia', caballero: 'Caballero',
+        };
+        this.raceName = raceNames[race] || race;
+      }
+
+      this.cardService.getFormats().subscribe(formats => {
+        const found = formats.find(f => f.code === this.selectedFormat);
+        if (found) this.formatName = found.name;
+        this.cdr.detectChanges();
+      });
+
+      this.cardService.getEditions().subscribe(d => {
+        this.allEditions = d;
+        this.filterEditions();
+        this.cdr.detectChanges();
+      });
+      this.cardService.getTypes().subscribe(d => {
+        this.types = d;
+        this.cdr.detectChanges();
+      });
+      this.loadBanlist();
+      this.loadCards();
+
+      const id = this.route.snapshot.paramMap.get('id');
+      if (id && id !== 'new') {
+        this.deckId = Number(id);
+        this.loadDeck();
+      } else {
+        const copyFrom = history.state?.copyFrom;
+        if (copyFrom) {
+          this.loadFromCopy(copyFrom);
+        }
+      }
+    }, 100);
   }
 
   private loadFromCopy(deck: any) {
@@ -528,5 +534,9 @@ export class DeckBuilderComponent implements OnInit {
       this.toastVisible = false;
       this.cdr.detectChanges();
     }, 5000);
+  }
+
+  toggleDeckPanel() {
+    this.showDeckPanel = !this.showDeckPanel;
   }
 }

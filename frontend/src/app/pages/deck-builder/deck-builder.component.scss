@@ -269,10 +269,36 @@
   max-height: calc(100vh - 64px);
   background: #141428;
 
-  h2 {
-    font-size: 1.2rem;
-    color: #fff;
+  .deck-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 1rem;
+
+    h2 {
+      font-size: 1.2rem;
+      color: #fff;
+      margin: 0;
+    }
+
+    .mobile-close-btn {
+      display: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid #444;
+      background: #1a1a2e;
+      color: #ccc;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: all 0.15s;
+
+      &:hover {
+        background: #e94560;
+        border-color: #e94560;
+        color: #fff;
+      }
+    }
   }
 
   .checkbox-label {
@@ -643,4 +669,70 @@
 @keyframes toastOut {
   from { opacity: 1; }
   to { opacity: 0; }
+}
+
+// Mobile deck toggle button
+.mobile-deck-toggle {
+  display: none;
+  position: fixed;
+  bottom: 100px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 2px solid #ffbd39;
+  color: #ffbd39;
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s;
+
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  }
+
+  &.active {
+    background: linear-gradient(135deg, #ffbd39 0%, #e94560 100%);
+    color: #fff;
+    border-color: #e94560;
+  }
+}
+
+// Mobile responsive styles
+@media (max-width: 900px) {
+  .mobile-deck-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .deck-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 99;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    border-radius: 0;
+    max-height: 100vh;
+
+    &.mobile-visible {
+      transform: translateX(0);
+    }
+
+    .mobile-close-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  .card-browser {
+    padding-bottom: 100px; // Space for mobile button
+  }
 }

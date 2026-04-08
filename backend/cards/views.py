@@ -1,4 +1,4 @@
-from rest_framework import generics
+from rest_framework import generics, permissions
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q, Value, Case, When, BooleanField
 from django.db.models.functions import Concat, Lower
@@ -33,6 +33,7 @@ class CardPagination(PageNumberPagination):
 class CardListView(generics.ListAPIView):
     serializer_class = CardListSerializer
     pagination_class = CardPagination
+    permission_classes = [permissions.AllowAny]
 
     @method_decorator(cache_page(60 * 5))  # 5 min
     def get(self, request, *args, **kwargs):
@@ -98,11 +99,13 @@ class CardDetailView(generics.RetrieveAPIView):
     serializer_class = CardDetailSerializer
     queryset = Card.objects.select_related("edition", "rarity", "race", "card_type")
     lookup_field = "pk"
+    permission_classes = [permissions.AllowAny]
 
 
 class EditionListView(generics.ListAPIView):
     serializer_class = EditionSerializer
     pagination_class = None
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         qs = Edition.objects.select_related("format").all()
@@ -116,11 +119,13 @@ class FormatListView(generics.ListAPIView):
     serializer_class = FormatSerializer
     queryset = Format.objects.all()
     pagination_class = None
+    permission_classes = [permissions.AllowAny]
 
 
 class RaceListView(generics.ListAPIView):
     serializer_class = RaceSerializer
     queryset = Race.objects.all().order_by("name")
+    permission_classes = [permissions.AllowAny]
     pagination_class = None
 
 
@@ -128,17 +133,20 @@ class CardTypeListView(generics.ListAPIView):
     serializer_class = CardTypeSerializer
     queryset = CardType.objects.all().order_by("name")
     pagination_class = None
+    permission_classes = [permissions.AllowAny]
 
 
 class RarityListView(generics.ListAPIView):
     serializer_class = RaritySerializer
     queryset = Rarity.objects.all()
     pagination_class = None
+    permission_classes = [permissions.AllowAny]
 
 
 class BanlistView(generics.ListAPIView):
     serializer_class = BanlistEntrySerializer
     pagination_class = None
+    permission_classes = [permissions.AllowAny]
 
     @method_decorator(cache_page(60 * 5))
     def get(self, request, *args, **kwargs):

@@ -46,8 +46,10 @@ export class AuthService {
         this.currentUser.set(user);
         this.isLoadingUser.set(false);
       },
-      error: () => {
-        this.logout();
+      error: (err) => {
+        console.error('Error loading user:', err);
+        // Don't logout automatically, just clear user
+        this.currentUser.set(null);
         this.isLoadingUser.set(false);
       },
     });

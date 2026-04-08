@@ -24,7 +24,8 @@ export class LoginComponent {
     this.auth.login(this.username, this.password).subscribe({
       next: (tokens) => {
         this.auth.handleLoginSuccess(tokens);
-        this.router.navigate(['/builder']);
+        // Navigate to home instead of builder to avoid redirect issues
+        this.router.navigate(['/']);
       },
       error: () => {
         this.error = 'Usuario o contraseña incorrectos';

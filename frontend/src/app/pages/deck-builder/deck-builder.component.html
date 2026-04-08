@@ -90,8 +90,11 @@
   </div>
 
   <!-- Right panel: Deck -->
-  <div class="deck-panel">
-    <h2>{{ deckId ? 'Editar Mazo' : 'Nuevo Mazo' }}</h2>
+  <div class="deck-panel" [class.mobile-visible]="showDeckPanel">
+    <div class="deck-header">
+      <h2>{{ deckId ? 'Editar Mazo' : 'Nuevo Mazo' }}</h2>
+      <button class="mobile-close-btn" (click)="toggleDeckPanel()" [class.mobile-visible]="showDeckPanel">✕</button>
+    </div>
 
     <div class="form-group" [class.has-error]="fieldErrors.name">
       <label>Nombre del mazo</label>
@@ -168,6 +171,11 @@
     </div>
   </div>
 </div>
+
+<!-- Mobile Deck Toggle Button -->
+<button class="mobile-deck-toggle" (click)="toggleDeckPanel()" [class.active]="showDeckPanel">
+  📋
+</button>
 
 <!-- Card Preview Overlay -->
 @if (previewCard) {

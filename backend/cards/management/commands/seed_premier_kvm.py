@@ -166,6 +166,157 @@ PREMIER_KVM_CARDS = [
         "flavour": None,
         "image_file": "kvm_234.png",
     },
+    # ── Los 7 Pecados Capitales (KVM 222-228) ──
+    {
+        "myl_id": "custom_kvm_222",
+        "edid": "222",
+        "slug": "soberbia-kvm",
+        "name": "Soberbia",
+        "type_slug": "talisman",
+        "race_slug": None,
+        "cost": "1",
+        "damage": None,
+        "ability": (
+            "Un Aliado gana la habilidad \"En tu Vigilia, una vez por turno, "
+            "puedes Barajar todos los Aliados de menor Fuerza que este Aliado.\"\n"
+            "Si está en tu Cementerio, tu Aliado de mayor coste no puede ser afectado "
+            "por Aliados oponentes de menor coste que él."
+        ),
+        "flavour": (
+            "No inclines la cabeza ante nadie, pues tu grandeza no conoce límites. "
+            "No necesitas aliados, sólo escalones hacia la cima."
+        ),
+        "image_file": "kvm_222.png",
+    },
+    {
+        "myl_id": "custom_kvm_223",
+        "edid": "223",
+        "slug": "avaricia-kvm",
+        "name": "Avaricia",
+        "type_slug": "talisman",
+        "race_slug": None,
+        "cost": "2",
+        "damage": None,
+        "ability": (
+            "Busca en tu Castillo tres Oros. Pon dos de ellos en tu Oro Pagado, "
+            "sin habilidad por el turno, y el otro en tu mano. "
+            "Si controlas siete o más Oros, Roba dos cartas.\n"
+            "Cuando pongas un Oro en juego, puedes subir este Talismán "
+            "de tu Cementerio a tu mano."
+        ),
+        "flavour": (
+            "El mundo no es suficiente, sus deseos no conocen saciedad. "
+            "Lo que toca, lo reclama. Lo que ve, lo desea."
+        ),
+        "image_file": "kvm_223.png",
+    },
+    {
+        "myl_id": "custom_kvm_224",
+        "edid": "224",
+        "slug": "lujuria-kvm",
+        "name": "Lujuria",
+        "type_slug": "talisman",
+        "race_slug": None,
+        "cost": "1",
+        "damage": None,
+        "ability": (
+            "Busca dos Aliados en tu Castillo y ponlos en tu mano. "
+            "Hasta tu próximo turno no tienes límite de cartas en tu mano "
+            "y no puedes ser afectado por efectos oponentes este turno.\n"
+            "Puedes Desterrarlo de tu Cementerio para Barajar hasta tres cartas "
+            "de los Cementerios."
+        ),
+        "flavour": (
+            "Prometió placer, pero entregó condena. Su toque es un susurro "
+            "que arrastra reinos a la ruina, pues no hay espada que corte la obsesión."
+        ),
+        "image_file": "kvm_224.png",
+    },
+    {
+        "myl_id": "custom_kvm_225",
+        "edid": "225",
+        "slug": "ira-kvm",
+        "name": "Ira",
+        "type_slug": "talisman",
+        "race_slug": None,
+        "cost": "1",
+        "damage": None,
+        "ability": (
+            "Un Aliado gana Furia, Imbloqueable, 3 de Fuerza y hace daño al Destierro "
+            "por el turno.\n"
+            "Si está en tu Cementerio, puedes Desterrarlo para que un Aliado gane "
+            "1 de Fuerza y su ataque no pueda ser cancelado por el turno."
+        ),
+        "flavour": (
+            "No hubo dioses, ni templos, ni imperios que escaparan de su fuego. "
+            "Su grito quebró la razón y selló destinos, sólo por el placer de destruir."
+        ),
+        "image_file": "kvm_225.png",
+    },
+    {
+        "myl_id": "custom_kvm_226",
+        "edid": "226",
+        "slug": "gula-kvm",
+        "name": "Gula",
+        "type_slug": "talisman",
+        "race_slug": None,
+        "cost": "2",
+        "damage": None,
+        "ability": (
+            "Roba siete cartas. Cada vez que muevas Oros a tu Oro Pagado este turno, "
+            "Baraja hasta una carta de tu Cementerio y Roba una carta.\n"
+            "Al comienzo de la Vigilia, si está en tu Cementerio y no tienes Oros "
+            "en Reserva, Roba una carta."
+        ),
+        "flavour": (
+            "Devora cuerpos y almas, aún así, su hambre no termina. "
+            "No come por necesidad, lo hace por llenar el vacío de su alma."
+        ),
+        "image_file": "kvm_226.png",
+    },
+    {
+        "myl_id": "custom_kvm_227",
+        "edid": "227",
+        "slug": "envidia-kvm",
+        "name": "Envidia",
+        "type_slug": "talisman",
+        "race_slug": None,
+        "cost": "2",
+        "damage": None,
+        "ability": (
+            "Anula una carta de coste 3 o menos. Juega esa carta bajo tu control "
+            "sin pagar su coste. Si es un Talismán, puedes elegir nuevos objetivos.\n"
+            "Si está en tu Cementerio y si tienes menos cartas en tu mano que tu oponente, "
+            "puedes Desterrarlo para Robar una carta."
+        ),
+        "flavour": (
+            "No quería su corona, sólo quería verla caer. "
+            "Porque nada se anhela más, que lo que tienen los demás."
+        ),
+        "image_file": "kvm_227.png",
+    },
+    {
+        "myl_id": "custom_kvm_228",
+        "edid": "228",
+        "slug": "pereza-kvm",
+        "name": "Pereza",
+        "type_slug": "talisman",
+        "race_slug": None,
+        "cost": "1",
+        "damage": None,
+        "ability": (
+            "Cuando lo juegues, Destiérralo.\n"
+            "Los próximos dos turnos, no se puede atacar y no puedes jugar más de una carta "
+            "por turno.\n"
+            "Si está en tu Cementerio, no se puede poner más de una carta en juego "
+            "desde una Zona que no sea la mano por turno."
+        ),
+        "flavour": (
+            "Si nadie lo ha hecho, ¿porque debo hacerlo yo? "
+            "Los milenios pasan a su lado sin afectarle, pues vive fuera del tiempo."
+        ),
+        "image_file": "kvm_228.png",
+    },
 ]
 
 

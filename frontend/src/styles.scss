@@ -124,3 +124,23 @@ input, select, textarea {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+// Shimmer placeholder for loading images
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.card-image,
+.img-wrapper,
+.export-card {
+  background: linear-gradient(90deg, #16213e 25%, #1e2d50 50%, #16213e 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.card-image img,
+.img-wrapper img,
+.export-card img {
+  transition: opacity 0.2s;
+}

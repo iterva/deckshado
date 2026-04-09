@@ -3,7 +3,7 @@ from django.db import models
 
 
 class Deck(models.Model):
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="decks")
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="decks")
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True, default="")
     race = models.CharField(max_length=50, blank=True, default="")
@@ -21,7 +21,7 @@ class Deck(models.Model):
 
 class DeckEntry(models.Model):
     deck = models.ForeignKey(Deck, on_delete=models.CASCADE, related_name="entries")
-    card = models.ForeignKey("cards.Card", on_delete=models.CASCADE)
+    card = models.ForeignKey("cards.Card", on_delete=models.PROTECT)
     quantity = models.PositiveSmallIntegerField(default=1)
     is_sideboard = models.BooleanField(default=False)
 

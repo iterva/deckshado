@@ -38,7 +38,8 @@
         <div class="mini-card"
              [class.in-deck]="getQuantityInDeck(card.id) > 0"
              [class.banned]="getBanStatus(card)?.status === 'banned'"
-             [class.name-taken]="hasDifferentVersion(card)">
+             [class.name-taken]="hasDifferentVersion(card)"
+             [class.name-maxed]="getNameCount(card.name) >= getEffectiveMaxCopies(card)">
           <div class="img-wrapper">
             <img [src]="card.image_url | thumb:150" [alt]="card.name" loading="lazy" decoding="async">
             <span class="eye-icon" (click)="showPreview(card, $event)">👁</span>
@@ -58,7 +59,7 @@
                 <span class="mini-qty">{{ getQuantityInDeck(card.id) }}</span>
               }
               <button class="circle-btn add" (click)="addCard(card); $event.stopPropagation()"
-                      [disabled]="getBanStatus(card)?.status === 'banned' || hasDifferentVersion(card) || getTotalCopies(card.id) >= getMaxCopies(card) || totalDeckCards >= 50 || !isCardAllowedByRace(card)">+</button>
+                      [disabled]="getBanStatus(card)?.status === 'banned' || getNameCount(card.name) >= getEffectiveMaxCopies(card) || totalDeckCards >= 50 || !isCardAllowedByRace(card)">+</button>
             </div>
             <div class="mini-actions side-actions">
               <span class="side-label">S</span>
@@ -67,7 +68,7 @@
                 <span class="mini-qty">{{ getQuantityInSide(card.id) }}</span>
               }
               <button class="circle-btn add side" (click)="addToSide(card); $event.stopPropagation()"
-                      [disabled]="getBanStatus(card)?.status === 'banned' || hasDifferentVersion(card) || getTotalCopies(card.id) >= getMaxCopies(card) || totalSideCards >= 15 || !isCardAllowedByRace(card)">+</button>
+                      [disabled]="getBanStatus(card)?.status === 'banned' || getNameCount(card.name) >= getEffectiveMaxCopies(card) || totalSideCards >= 15 || !isCardAllowedByRace(card)">+</button>
             </div>
           </div>
           @if (getBanStatus(card); as ban) {
@@ -134,7 +135,7 @@
           <div class="entry-controls">
             <button class="ctrl-btn" (click)="removeCard(dc.card.id)">−</button>
             <span class="entry-qty">{{ dc.quantity }}</span>
-            <button class="ctrl-btn" (click)="addCard(dc.card)" [disabled]="getTotalCopies(dc.card.id) >= getMaxCopies(dc.card) || hasDifferentVersion(dc.card) || totalDeckCards >= 50">+</button>
+            <button class="ctrl-btn" (click)="addCard(dc.card)" [disabled]="getNameCount(dc.card.name) >= getEffectiveMaxCopies(dc.card) || totalDeckCards >= 50">+</button>
           </div>
         </div>
       } @empty {
@@ -158,7 +159,7 @@
           <div class="entry-controls">
             <button class="ctrl-btn" (click)="removeFromSide(dc.card.id)">−</button>
             <span class="entry-qty">{{ dc.quantity }}</span>
-            <button class="ctrl-btn" (click)="addToSide(dc.card)" [disabled]="getTotalCopies(dc.card.id) >= getMaxCopies(dc.card) || totalSideCards >= 15">+</button>
+            <button class="ctrl-btn" (click)="addToSide(dc.card)" [disabled]="getNameCount(dc.card.name) >= getEffectiveMaxCopies(dc.card) || totalSideCards >= 15">+</button>
           </div>
         </div>
       } @empty {
@@ -235,7 +236,7 @@
           }
           <hr>
           <button class="btn btn-gold btn-block" (click)="addCard(previewCard); hidePreview()"
-                  [disabled]="getBanStatus(previewCard)?.status === 'banned' || hasDifferentVersion(previewCard) || getQuantityInDeck(previewCard.id) >= getMaxCopies(previewCard)">
+                  [disabled]="getBanStatus(previewCard)?.status === 'banned' || getNameCount(previewCard.name) >= getEffectiveMaxCopies(previewCard)">
             + Agregar al mazo
           </button>
         </div>

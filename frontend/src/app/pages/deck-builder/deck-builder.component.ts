@@ -256,6 +256,27 @@ export class DeckBuilderComponent implements OnInit {
     return card.is_unique ? 1 : 3;
   }
 
+  /**
+   * Effective max copies for a card name, considering ALL versions in the deck.
+   * Takes the minimum of the card's own limit and the limits of versions already in deck.
+   * e.g. if Cthulhu Promo (Única=1) is in deck, Cthulhu LEG also gets max=1.
+   */
+  getEffectiveMaxCopies(card: Card): number {
+    let max = this.getMaxCopies(card);
+    const lower = card.name.toLowerCase();
+    for (const dc of this.deckCards) {
+      if (dc.card.name.toLowerCase() === lower && dc.card.id !== card.id) {
+        max = Math.min(max, this.getMaxCopies(dc.card));
+      }
+    }
+    for (const dc of this.sideCards) {
+      if (dc.card.name.toLowerCase() === lower && dc.card.id !== card.id) {
+        max = Math.min(max, this.getMaxCopies(dc.card));
+      }
+    }
+    return max;
+  }
+
   /** Total copies across main + side for all cards sharing the same name. */
   getNameCount(name: string): number {
     const lower = name.toLowerCase();
@@ -358,14 +379,11 @@ export class DeckBuilderComponent implements OnInit {
   }
 
   addCard(card: Card) {
-    const maxQty = this.getMaxCopies(card);
+    const maxQty = this.getEffectiveMaxCopies(card);
     if (maxQty === 0) return; // banned
 
-    // Rule: only one version of a card name allowed
-    if (this.hasDifferentVersion(card)) return;
-
-    // Check combined total across main + side
-    if (this.getTotalCopies(card.id) >= maxQty) return;
+    // Check combined total across main + side for all versions of this card name
+    if (this.getNameCount(card.name) >= maxQty) return;
 
     // Main deck limit: 50 cards
     if (this.totalDeckCards >= 50) return;
@@ -401,10 +419,9 @@ export class DeckBuilderComponent implements OnInit {
   }
 
   addToSide(card: Card) {
-    const maxQty = this.getMaxCopies(card);
+    const maxQty = this.getEffectiveMaxCopies(card);
     if (maxQty === 0) return;
-    if (this.hasDifferentVersion(card)) return;
-    if (this.getTotalCopies(card.id) >= maxQty) return;
+    if (this.getNameCount(card.name) >= maxQty) return;
     if (this.totalSideCards >= 15) return;
     if (!this.isCardAllowedByRace(card)) return;
 

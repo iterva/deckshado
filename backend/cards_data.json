@@ -1078,6 +1078,34 @@
     }
   },
   {
+    "model": "cards.edition",
+    "pk": 74,
+    "fields": {
+      "myl_id": "custom_chile_oscuro_2",
+      "slug": "chile_oscuro_2",
+      "title": "IMP - Chile Oscuro 2",
+      "image": null,
+      "date_release": null,
+      "date_empire_valid": null,
+      "format": 1,
+      "active": true
+    }
+  },
+  {
+    "model": "cards.edition",
+    "pk": 75,
+    "fields": {
+      "myl_id": "custom_toolkit_26_imp",
+      "slug": "toolkit_26_imperio",
+      "title": "IMP - Toolkit 26 Imperio",
+      "image": null,
+      "date_release": null,
+      "date_empire_valid": null,
+      "format": 1,
+      "active": true
+    }
+  },
+  {
     "model": "cards.race",
     "pk": 1,
     "fields": {
@@ -220397,6 +220425,348 @@
   },
   {
     "model": "cards.card",
+    "pk": 11542,
+    "fields": {
+      "myl_id": "custom_tk26_01",
+      "edid": "01",
+      "slug": "dracula-tk26",
+      "name": "Drácula",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 5,
+      "cost": null,
+      "damage": null,
+      "ability": "Las habilidades de este Oro no pueden ser canceladas.\nCuando entra en juego, Roba dos cartas.\nPuedes convertirlo en un Oro sin habilidad para prevenir que una habilidad sea cancelada o un Aliado de coste 1 sea Anulado.\nPuedes Desterrarlo de tu mano o Cementerio para cancelar el ataque de hasta dos Aliados.",
+      "flavour": "Drácula es una danza entre lo oscuro y lo sublime. El conde, vampiro eterno, acecha con sed insaciable. Castillos sombríos, barcos malditos, y Londres vulnerable son el escenario del terror inmortal.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_01.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11532,
+    "fields": {
+      "myl_id": "custom_tk26_02",
+      "edid": "02",
+      "slug": "signo-amarillo-tk26",
+      "name": "Signo Amarillo",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 5,
+      "cost": null,
+      "damage": null,
+      "ability": "Indesterrable.\nCuando entra en juego, mira cuatro cartas del tope de tu Castillo. Pon una de ahí en tu mano, otra en tu Cementerio y ordena el resto.\nPuedes convertir este Oro en un Oro sin habilidad para cancelar la habilidad de una carta fuera del juego o un Oro.",
+      "flavour": "Las máscaras caen, revelando el miedo, en Carcosa, donde la realidad se tuerce, bajo el Signo Amarillo, todo es un juego, y la cordura, en sombras, se disuelve.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_02.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11533,
+    "fields": {
+      "myl_id": "custom_tk26_03",
+      "edid": "03",
+      "slug": "escarapela-nacional-tk26",
+      "name": "Escarapela Nacional",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 5,
+      "cost": null,
+      "damage": null,
+      "ability": "Al comienzo de la Vigilia oponente, si no controlas más Oros que él puedes ponerlo en juego como si fuera tu Vigilia y no puedes poner Oros en juego en tu próximo turno.\nCuando entra en juego, Roba dos cartas o busca un Aliado u Oro en tu Castillo y ponlo en tu mano.",
+      "flavour": "Escarapela verde, blanco y rojo: latido de la patria. Águila sobre nopal, cielo y sangre. Maíz y jade, plata y volcán. Honor, memoria y coraje: México se alza, libre, eterno.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_03.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11534,
+    "fields": {
+      "myl_id": "custom_tk26_04",
+      "edid": "04",
+      "slug": "el-caleuche-tk26",
+      "name": "El Caleuche",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "1",
+      "damage": null,
+      "ability": "No puede ser Anulado. Elige un efecto:\n- En respuesta a que se juegue una carta sin pagar su coste o que no pueda ser Anulada, esa carta entra en juego sin habilidad por el turno. Si es Talismán, se resuelve sin efecto.\n- Baraja una carta de coste 2 o menos y Roba dos cartas.",
+      "flavour": "Los que lo ven escuchan risas de ultratumba y gritos atrapados. Sus tripulantes, almas perdidas, te invitan a subir. Solo un brujo poderoso podría sobrevivir a esa convocatoria.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_04.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11535,
+    "fields": {
+      "myl_id": "custom_tk26_05",
+      "edid": "05",
+      "slug": "tempilcahue-tk26",
+      "name": "Tempilcahue",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "0",
+      "damage": null,
+      "ability": "Cuando lo juegues, Destiérralo. Elige un efecto:\n- Busca una carta en tu Castillo, ponla en tu mano y Roba una carta. No puedes jugar más cartas este turno.\n- Paga dos Oros para Barajar cartas cuyos costes sumen hasta 4 y Robar dos cartas.",
+      "flavour": "Guía mi alma por los mares del oeste, abuela, cuéntame de aquella tierra más allá del mar, el Ngill chenmaywe.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_05.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11536,
+    "fields": {
+      "myl_id": "custom_tk26_06",
+      "edid": "06",
+      "slug": "cuervo-nocturno-tk26",
+      "name": "Cuervo Nocturno",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "2",
+      "damage": null,
+      "ability": "No puede ser Anulado. Si atacaste en tu turno anterior, tiene Exhumar en tu Cementerio.\nPuedes poner esta y otra carta de tu mano en el fondo de tu Castillo y Robar dos cartas. Sólo puedes utilizar esta habilidad de Cuervo Nocturno una vez por turno.\nDestierra seis cartas del tope del Castillo oponente.",
+      "flavour": "\"¡Dime cuál es tu nombre en la ribera de la Noche Plutónica!\" Y el Cuervo dijo: \"Nunca más.\" - E.A. Poe.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_06.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11537,
+    "fields": {
+      "myl_id": "custom_tk26_07",
+      "edid": "07",
+      "slug": "espada-de-ohiggins-tk26",
+      "name": "Espada de O'Higgins",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 3,
+      "cost": "1",
+      "damage": null,
+      "ability": "Exhumar.\nEl portador gana 2 de Fuerza e Indesterrable.\nEn tu Vigilia, una vez por turno, puedes Barajar una carta que no sea Oro o buscar un Oro en tu Castillo y ponerlo en tu mano.\nEn tu Fase Final, Destierra hasta tres cartas de los Cementerios y Roba dos cartas.",
+      "flavour": "En Rancagua, O'Higgins enfrentó lo imposible. Rodeado, sin más aliados que su coraje, luchó por la libertad. Su determinación encendió la llama de la patria, resistiendo hasta el final.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_07.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11538,
+    "fields": {
+      "myl_id": "custom_tk26_08",
+      "edid": "08",
+      "slug": "templo-de-hatshepsut-tk26",
+      "name": "Templo de Hatshepsut",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 4,
+      "cost": "1",
+      "damage": null,
+      "ability": "Exhumar.\nCuando entra en juego, Baraja o Destierra una carta oponente de coste 3 o menos.\nEn tu Vigilia o al comienzo de tu Fase Final, una vez por turno, puedes Desterrar o Barajar hasta tres cartas de los Cementerios.",
+      "flavour": "Para reinar tuvo que reinventarse y adaptarse, manteniendo a la vez su identidad y personalidad. Los señores que desempeñaron cargos bajo su mandato se sintieron orgullosos de servirla y honrarla.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_08.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11539,
+    "fields": {
+      "myl_id": "custom_tk26_09",
+      "edid": "09",
+      "slug": "dia-de-los-muertos-tk26",
+      "name": "Día de los Muertos",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "7",
+      "damage": null,
+      "ability": "Reduce su coste en un Oro por cada carta que no sea Oro en juego, hasta un mínimo de 1.\nConvierte los Aliados en Aliados de Fuerza 1 con la habilidad \"No puede portar Armas\".\nSi está en tu Cementerio, el daño directo y de combate que recibe tu Castillo se reduce en dos.",
+      "flavour": "Las calles se encienden con calaveras danzantes, flores vibrantes y velas titilantes, donde la vida celebra a la muerte en un eterno abrazo.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_09.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11540,
+    "fields": {
+      "myl_id": "custom_tk26_10",
+      "edid": "10",
+      "slug": "iluminar-el-camino-tk26",
+      "name": "Iluminar el Camino",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "1",
+      "damage": null,
+      "ability": "Sólo puedes jugarlo en respuesta a que tu oponente juegue su segunda carta del turno y no puede ser Anulado.\nTu oponente sólo puede jugar una carta más de ese mismo tipo este turno y tú no puedes jugar más cartas este turno.",
+      "flavour": "Entre sombras, las velas marcan senderos dorados, guiando a los espíritus con ternura hacia el calor del recuerdo eterno.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_10.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11541,
+    "fields": {
+      "myl_id": "custom_tk26_11",
+      "edid": "11",
+      "slug": "tamales-tk26",
+      "name": "Tamales",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 5,
+      "cost": null,
+      "damage": null,
+      "ability": "Oro Inicial.\nNo puede ser afectado por Aliados.\nTu oponente sólo puede utilizar las habilidades de Oros y cartas de coste 2 o más si no controla más copias de esa carta.\nEn tu Fase Final, puedes Barajar hasta tres cartas de los Cementerios.",
+      "flavour": "Envueltos en maíz y tradición, reposan como ofrenda sagrada, alimento de memoria para los que ya partieron.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_11.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11543,
+    "fields": {
+      "myl_id": "custom_tk26_13",
+      "edid": "13",
+      "slug": "la-catrina-tk26",
+      "name": "La Catrina",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 1,
+      "cost": "3",
+      "damage": "2",
+      "ability": "Exhumar.\nCuando entra en juego, Baraja las cartas oponentes que no sean Oro y por cada Oro que controle tu oponente, el Destierra la primera carta del tope de su Castillo.\nLas cartas en el Cementerio y Destierro oponente pierden su habilidad.",
+      "flavour": "Con vestido majestuoso y mirada hueca, simboliza la unión entre lo terrenal y lo eterno en la celebración de la vida.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_13.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11544,
+    "fields": {
+      "myl_id": "custom_tk26_14",
+      "edid": "14",
+      "slug": "ofrenda-a-los-abuelos-tk26",
+      "name": "Ofrenda a los Abuelos",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "1",
+      "damage": null,
+      "ability": "En respuesta a que tu oponente fuera a buscar cartas en tu Castillo o por segunda vez en su Castillo este turno, juégalo sin pagar su coste.\nBusca hasta dos cartas con distinto nombre en un Castillo y Destiérralas o prevén que tu oponente busque cartas en tu Castillo.",
+      "flavour": "Velas titilan, aromas de pan y recuerdos; los ancestros susurran, guiando pasos con cariño eterno.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_14.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11545,
+    "fields": {
+      "myl_id": "custom_tk26_16",
+      "edid": "16",
+      "slug": "guadana-de-santa-muerte-tk26",
+      "name": "Guadaña de Santa Muerte",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 3,
+      "cost": "1",
+      "damage": null,
+      "ability": "No puede portarse en Aliados de Fuerza 2 o 3.\nEl portador gana 2 de Fuerza e Indestructible.\nCuando entra en juego, puedes Destruir un Aliado.\nEn tu Fase Final, si no controlas Aliados con Furia o Imbloqueable, agrupa un Oro y muestra cartas del tope de tu Castillo hasta mostrar un Talismán y ponlo en tu mano.",
+      "flavour": "Entre humo de copal y pétalos, su guadaña guía a quienes veneran la Santa Muerte con fe profunda.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_16.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11546,
+    "fields": {
+      "myl_id": "custom_tk26_17",
+      "edid": "17",
+      "slug": "altar-de-muertos-tk26",
+      "name": "Altar de Muertos",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 4,
+      "cost": "2",
+      "damage": null,
+      "ability": "Cuando entra en juego, Baraja la mitad de los Aliados de cada jugador redondeado hacia arriba o una carta de coste 3 o menos.\nUna vez en tu turno, elige que tu oponente Bote dos o Destierra una carta del tope de su Castillo, por cada Tótem que controles. Si controlas dos Tótem o menos, Roba una carta.",
+      "flavour": "Flores, velas y recuerdos se entrelazan; el altar susurra historias de aquellos que viven en memoria.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_17.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11547,
+    "fields": {
+      "myl_id": "custom_tk26_19",
+      "edid": "19",
+      "slug": "red-de-plata-tk26",
+      "name": "Red de Plata",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "1",
+      "damage": null,
+      "ability": "Cuando lo juegues, Destiérralo.\nAnula o cancela la habilidad de un Aliado. Si tenía coste 2 o menos, Destierra ese Aliado.\nPuedes Desterrarlo de tu Cementerio para que un Aliado pierda su habilidad por el turno.",
+      "flavour": "La red de la diosa lunar atrapa los sueños y promesas de un futuro impredecible.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_19.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11548,
+    "fields": {
+      "myl_id": "custom_tk26_20",
+      "edid": "20",
+      "slug": "espada-vikinga-tk26",
+      "name": "Espada Vikinga",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 3,
+      "cost": "1",
+      "damage": null,
+      "ability": "El portador gana 2 de Fuerza.\nCuando entra en juego, Roba dos cartas y Baraja una carta oponente de coste igual o menor a la cantidad de Aliados que controles.\nPuedes pagar un Oro y Desterrar esta carta de tu mano para Anular una carta de coste 1.",
+      "flavour": "Su hoja lleva la furia del norte y runas grabadas en su alma de metal. Un arma fiel que canta con cada golpe, símbolo de honor y destino.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_20.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11549,
+    "fields": {
+      "myl_id": "custom_tk26_21",
+      "edid": "21",
+      "slug": "carcosa-tk26",
+      "name": "Carcosa",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 4,
+      "cost": "2",
+      "damage": null,
+      "ability": "Cuando entra en juego y al comienzo del turno oponente, Destierra una carta que no sea Oro o mira la mano de tu oponente y Destierra un Talismán de ahí. Roba una carta.\nAl comienzo de tu turno y cuando salga del juego, tu oponente Bota cuatro cartas.",
+      "flavour": "En Carcosa, los vivos no viven, y los muertos nunca se van, la locura y el miedo conviven, en un baile eterno sin final.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_21.png"
+    }
+  },
+  {
+    "model": "cards.card",
     "pk": 11497,
     "fields": {
       "myl_id": "custom_kvm_219",
@@ -220412,6 +220782,25 @@
       "ability": "Exhumar.\nSi está en tu Destierro puedes pagar un Oro para Barajarlo en tu Castillo y que tu oponente Destierre tres cartas del tope de su Castillo.\nBusca tres cartas de distinto tipo en el Castillo oponente, Destiérralas y Roba una carta.",
       "flavour": "Los colosos de la tierra son amalgamas de acero y voluntad. Héroes altruistas que no dudan en ponerse al frente de la lucha.",
       "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_219.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11550,
+    "fields": {
+      "myl_id": "custom_tk26_22",
+      "edid": "22",
+      "slug": "ritual-vudu-tk26",
+      "name": "Ritual Vudú",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "2",
+      "damage": null,
+      "ability": "En tu Vigilia, reduce su coste en un Oro por cada carta que jugó tu oponente este turno hasta un mínimo de 0 y no puedes jugar más Ritual Vudú este turno.\nRoba una carta, sube hasta un Aliado de tu Cementerio a tu mano y al comienzo de tu próximo turno genera un Oro y Roba dos cartas.",
+      "flavour": "Tambores resuenan, humo se eleva; espíritus obedecen al ritual que une lo humano y lo invisible.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_22.png"
     }
   },
   {
@@ -220450,6 +220839,158 @@
       "ability": "Busca dos cartas en un Castillo y Destiérralas.\nSi está en tu Cementerio, los jugadores deben Barajar una carta de su mano para jugar cartas de coste 0 o sin pagar su coste.\nAl comienzo de tu Vigilia, puedes subir esta carta de tu Cementerio a tu mano.",
       "flavour": "Las Guerras Titán cambiarán el futuro de la galaxia para siempre. Creando alianzas imposibles y forjando héroes eternos.",
       "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_221.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11505,
+    "fields": {
+      "myl_id": "custom_kvm_222",
+      "edid": "222",
+      "slug": "soberbia-kvm",
+      "name": "Soberbia",
+      "edition": 73,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "1",
+      "damage": null,
+      "ability": "Un Aliado gana la habilidad \"En tu Vigilia, una vez por turno, puedes Barajar todos los Aliados de menor Fuerza que este Aliado.\"\nSi está en tu Cementerio, tu Aliado de mayor coste no puede ser afectado por Aliados oponentes de menor coste que él.",
+      "flavour": "No inclines la cabeza ante nadie, pues tu grandeza no conoce límites. No necesitas aliados, sólo escalones hacia la cima.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_222.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11506,
+    "fields": {
+      "myl_id": "custom_kvm_223",
+      "edid": "223",
+      "slug": "avaricia-kvm",
+      "name": "Avaricia",
+      "edition": 73,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "2",
+      "damage": null,
+      "ability": "Busca en tu Castillo tres Oros. Pon dos de ellos en tu Oro Pagado, sin habilidad por el turno, y el otro en tu mano. Si controlas siete o más Oros, Roba dos cartas.\nCuando pongas un Oro en juego, puedes subir este Talismán de tu Cementerio a tu mano.",
+      "flavour": "El mundo no es suficiente, sus deseos no conocen saciedad. Lo que toca, lo reclama. Lo que ve, lo desea.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_223.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11507,
+    "fields": {
+      "myl_id": "custom_kvm_224",
+      "edid": "224",
+      "slug": "lujuria-kvm",
+      "name": "Lujuria",
+      "edition": 73,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "1",
+      "damage": null,
+      "ability": "Busca dos Aliados en tu Castillo y ponlos en tu mano. Hasta tu próximo turno no tienes límite de cartas en tu mano y no puedes ser afectado por efectos oponentes este turno.\nPuedes Desterrarlo de tu Cementerio para Barajar hasta tres cartas de los Cementerios.",
+      "flavour": "Prometió placer, pero entregó condena. Su toque es un susurro que arrastra reinos a la ruina, pues no hay espada que corte la obsesión.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_224.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11508,
+    "fields": {
+      "myl_id": "custom_kvm_225",
+      "edid": "225",
+      "slug": "ira-kvm",
+      "name": "Ira",
+      "edition": 73,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "1",
+      "damage": null,
+      "ability": "Un Aliado gana Furia, Imbloqueable, 3 de Fuerza y hace daño al Destierro por el turno.\nSi está en tu Cementerio, puedes Desterrarlo para que un Aliado gane 1 de Fuerza y su ataque no pueda ser cancelado por el turno.",
+      "flavour": "No hubo dioses, ni templos, ni imperios que escaparan de su fuego. Su grito quebró la razón y selló destinos, sólo por el placer de destruir.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_225.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11509,
+    "fields": {
+      "myl_id": "custom_kvm_226",
+      "edid": "226",
+      "slug": "gula-kvm",
+      "name": "Gula",
+      "edition": 73,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "2",
+      "damage": null,
+      "ability": "Roba siete cartas. Cada vez que muevas Oros a tu Oro Pagado este turno, Baraja hasta una carta de tu Cementerio y Roba una carta.\nAl comienzo de la Vigilia, si está en tu Cementerio y no tienes Oros en Reserva, Roba una carta.",
+      "flavour": "Devora cuerpos y almas, aún así, su hambre no termina. No come por necesidad, lo hace por llenar el vacío de su alma.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_226.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11510,
+    "fields": {
+      "myl_id": "custom_kvm_227",
+      "edid": "227",
+      "slug": "envidia-kvm",
+      "name": "Envidia",
+      "edition": 73,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "2",
+      "damage": null,
+      "ability": "Anula una carta de coste 3 o menos. Juega esa carta bajo tu control sin pagar su coste. Si es un Talismán, puedes elegir nuevos objetivos.\nSi está en tu Cementerio y si tienes menos cartas en tu mano que tu oponente, puedes Desterrarlo para Robar una carta.",
+      "flavour": "No quería su corona, sólo quería verla caer. Porque nada se anhela más, que lo que tienen los demás.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_227.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11511,
+    "fields": {
+      "myl_id": "custom_kvm_228",
+      "edid": "228",
+      "slug": "pereza-kvm",
+      "name": "Pereza",
+      "edition": 73,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "1",
+      "damage": null,
+      "ability": "Cuando lo juegues, Destiérralo.\nLos próximos dos turnos, no se puede atacar y no puedes jugar más de una carta por turno.\nSi está en tu Cementerio, no se puede poner más de una carta en juego desde una Zona que no sea la mano por turno.",
+      "flavour": "Si nadie lo ha hecho, ¿porque debo hacerlo yo? Los milenios pasan a su lado sin afectarle, pues vive fuera del tiempo.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_228.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11551,
+    "fields": {
+      "myl_id": "custom_tk26_23",
+      "edid": "23",
+      "slug": "rito-de-pontchartrain-tk26",
+      "name": "Rito de Pontchartrain",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "1",
+      "damage": null,
+      "ability": "Elige un efecto. Si tu oponente tiene menos de veinte cartas en su Castillo, elige ambos.\n- Convierte una carta oponente en una del mismo tipo sin habilidad y Roba una carta.\n- Si tu oponente no ha recibido daño este turno, Bota cinco cartas de su Castillo y cuando se resuelva, sube esta carta a tu mano.",
+      "flavour": "La bruma cubre el lago al amanecer; antiguos secretos despiertan mientras la ceremonia invoca fuerzas ocultas y murmullos olvidados.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_23.png"
     }
   },
   {
@@ -220548,6 +221089,386 @@
     }
   },
   {
+    "model": "cards.card",
+    "pk": 11524,
+    "fields": {
+      "myl_id": "custom_tk26i_25",
+      "edid": "25",
+      "slug": "muneco-vudu-tk26i",
+      "name": "Muñeco Vudú",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 5,
+      "cost": null,
+      "damage": null,
+      "ability": "En tu Vigilia, si controlas Aliados con Furia, puedes pagarlo para mirar la mano de tu oponente. Elige un Talismán o Tótem de ahí y Barájalo. Esta habilidad no puede ser cancelada ni prevenida.\nEn tu Vigilia, una vez por turno, un Aliado gana 2 de Fuerza permanentemente.",
+      "flavour": "Hilos y alfileres marcan su destino; el muñeco refleja deseos, penas y fuerzas ocultas del corazón.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_25.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11525,
+    "fields": {
+      "myl_id": "custom_tk26i_26",
+      "edid": "26",
+      "slug": "papa-legba-tk26i",
+      "name": "Papa Legba",
+      "edition": 75,
+      "rarity": 1,
+      "race": 5,
+      "card_type": 1,
+      "cost": "1",
+      "damage": "4",
+      "ability": "Cuando entra en juego o ataque, puedes mostrar cartas del tope de tu Castillo hasta mostrar un Aliado con Furia y un Arma, pon una en tu mano y la otra en tu Cementerio. Si mostraste ambos, busca en un Castillo dos cartas con distinto nombre y Destiérralas.",
+      "flavour": "En la encrucijada espera; abre caminos y susurra secretos antiguos, conectando el mundo terrenal con lo invisible.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_26.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11526,
+    "fields": {
+      "myl_id": "custom_tk26i_27",
+      "edid": "27",
+      "slug": "contactar-ancestros-tk26i",
+      "name": "Contactar Ancestros",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "1",
+      "damage": null,
+      "ability": "Prevén que un Aliado sea Anulado, Destruido, Desterrado o cambie de controlador.\nEn tu Vigilia, si no has puesto Oros en juego este turno, puedes convertir este Talismán de tu mano en un Oro sin habilidad, ponlo en tu Reserva y Roba una carta.",
+      "flavour": "Susurros cruzan el tiempo; rituales y ofrendas conectan vivos y muertos en un hilo místico eterno.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_27.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11527,
+    "fields": {
+      "myl_id": "custom_tk26i_28",
+      "edid": "28",
+      "slug": "maldicion-vudu-tk26i",
+      "name": "Maldición Vudú",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "0",
+      "damage": null,
+      "ability": "Sólo puedes jugarlo durante tu turno.\nCancela una habilidad o una carta en juego pierde su habilidad por el turno. En tu Fase Final mueve tus Oros a tu Oro Pagado.\nPuedes Desterrarlo de tu Cementerio para Barajar o Desterrar una carta de un Cementerio.",
+      "flavour": "Sombras y símbolos se entrelazan; la maldición se cierne, guiando el destino con fuerza oscura y siniestra.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_28.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11528,
+    "fields": {
+      "myl_id": "custom_tk26i_32",
+      "edid": "32",
+      "slug": "medalla-de-santa-muerte-tk26i",
+      "name": "Medalla de Santa Muerte",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 5,
+      "cost": null,
+      "damage": null,
+      "ability": "Al comienzo del turno, puedes Descartar una carta para nombrar una carta que no sea Oro. Las cartas con ese nombre no tienen habilidad por el turno.\nLos jugadores sólo pueden jugar y/o utilizar hasta tres habilidades de Oros, cartas de coste 0 y/o de cartas fuera del juego por turno.",
+      "flavour": "Superstición y oración se entrelazan; la medalla ofrece protección y guía bajo la mirada de la Santa Muerte.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_32.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11529,
+    "fields": {
+      "myl_id": "custom_tk26i_33",
+      "edid": "33",
+      "slug": "medalla-de-papa-legba-tk26i",
+      "name": "Medalla de Papa Legba",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 5,
+      "cost": null,
+      "damage": null,
+      "ability": "Cuando entra en juego, puedes Robar una carta.\nEn tu Vigilia, una vez por turno, si tu oponente jugó cartas y/o utilizó habilidades más de dos veces este turno y controlas Aliados con Furia, puedes poner la primera carta de su Castillo en tu Oro Pagado como un Oro sin habilidad.",
+      "flavour": "Magia y símbolos antiguos se unen; la medalla abre caminos y conecta con fuerzas invisibles que guían destinos.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_33.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11530,
+    "fields": {
+      "myl_id": "custom_tk26i_34",
+      "edid": "34",
+      "slug": "dragon-dorado-tk26i",
+      "name": "Dragón Dorado",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "0",
+      "damage": null,
+      "ability": "Única.\nCuando juegues este Talismán, Destiérralo.\nAnula una carta. Luego, Baraja tantas cartas de tu mano como coste tenga esa carta.",
+      "flavour": "Su brillo es luz sagrada, guardián de sabidurías antiguas. Sus escamas resplandecen como el sol naciente, y su aliento purifica o destruye. Majestuoso y eterno, es la esperanza y el juicio para quienes se atreven a buscarlo.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_34.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11531,
+    "fields": {
+      "myl_id": "custom_tk26i_36",
+      "edid": "36",
+      "slug": "levantar-zombi-tk26i",
+      "name": "Levantar Zombi",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "1",
+      "damage": null,
+      "ability": "Cuando lo juegues, Destiérralo.\nHasta tu próximo turno, cada vez que recibas daño oponente, tu oponente Bota esa misma cantidad y tú pones en juego un Aliado de un Cementerio como un Aliado sin habilidad.\nPuedes Desterrarlo de tu Cementerio para Barajar hasta tres cartas de los Cementerios.",
+      "flavour": "Manos se alzan entre tierra y sombras; antiguos rituales devuelven la vida a cuerpos olvidados.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_36.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11512,
+    "fields": {
+      "myl_id": "custom_co2_01",
+      "edid": "CHI-01",
+      "slug": "la-rubia-de-kennedy-co2",
+      "name": "La Rubia de Kennedy",
+      "edition": 74,
+      "rarity": 1,
+      "race": 39,
+      "card_type": 1,
+      "cost": "2",
+      "damage": "1",
+      "ability": "Exhumar.\nCuando entra en juego, puedes buscar una carta en tu Castillo y ponerla en tu mano o Barajar una carta de coste 2 o menos.\nCuando tu oponente juegue una carta o utilice una habilidad, puedes Barajarla para reducir en cuatro el próximo daño que reciba tu Castillo.",
+      "flavour": "Calles vacías y luces parpadeantes; su silueta atrae a los incautos conductores de las calles de Santiago.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_0-1.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11513,
+    "fields": {
+      "myl_id": "custom_co2_03",
+      "edid": "CHI-03",
+      "slug": "yeti-de-rengo-co2",
+      "name": "Yeti de Rengo",
+      "edition": 74,
+      "rarity": 1,
+      "race": 36,
+      "card_type": 1,
+      "cost": "2",
+      "damage": "1",
+      "ability": "Furia.\nCuando entra en juego, un Aliado gana 2 de Fuerza permanentemente o Destruye una carta oponente de coste 1 o menos.\nCuando este u otro Aliado salga del juego por efectos, una vez por turno, un Aliado gana su Fuerza permanentemente.",
+      "flavour": "Una abominable criatura sembró el pánico en la cordillera Rancagüina. Su terrible apariencia aterrorizó a los pobladores desamparados.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_03-1.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11514,
+    "fields": {
+      "myl_id": "custom_co2_06",
+      "edid": "CHI-06",
+      "slug": "la-hora-del-diablo-co2",
+      "name": "La Hora del Diablo",
+      "edition": 74,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "1",
+      "damage": null,
+      "ability": "Cuando juegues este Talismán, Destiérralo.\nBusca dos cartas en cada Castillo, ponlas en el Cementerio de su dueño y Roba una carta.\nPuedes pagar tres Oros y Barajar tres copias de La Hora del Diablo de tu Destierro en tu Castillo para Desterrar hasta tres cartas oponentes de distinto tipo.",
+      "flavour": "En la hora más lejana a la muerte del Cristo; las presencias demoníacas y fenómenos espectrales se concentran maléficamente.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_06-1.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11515,
+    "fields": {
+      "myl_id": "custom_co2_07",
+      "edid": "CHI-07",
+      "slug": "fantasmas-del-palacio-co2",
+      "name": "Fantasmas del Palacio",
+      "edition": 74,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "1",
+      "damage": null,
+      "ability": "Cuando lo juegues, puedes pagar un Oro adicional para elegir una carta de cualquier coste en vez de coste 3 o menos.\nBaraja una carta de coste 3 o menos.\nSi está en tu Cementerio, puedes pagar el coste de un Aliado en tu Cementerio para poner este Talismán en juego como una copia de ese Aliado.",
+      "flavour": "El Palacio Echeverría fue el centro del espiritismo nacional. Incontables espectros aún recorren los pasillos de \"La casa de los Espíritus\".",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_07-2.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11516,
+    "fields": {
+      "myl_id": "custom_co2_10",
+      "edid": "CHI-10",
+      "slug": "abduccion-del-cabo-co2",
+      "name": "Abducción del Cabo",
+      "edition": 74,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "1",
+      "damage": null,
+      "ability": "Sube a la mano de su dueño una carta oponente de coste 3 o menos. Si esa carta era un Aliado o Tótem, tu oponente no puede jugar cartas con ese nombre hasta tu próximo turno y tú generas un Oro para jugar Armas o Tótem.",
+      "flavour": "Desaparecido por 15 minutos, el cabo es encontrado con una crecida barba y su reloj adelantado cinco días del presente.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_010.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11517,
+    "fields": {
+      "myl_id": "custom_co2_11",
+      "edid": "CHI-11",
+      "slug": "avistamientos-co2",
+      "name": "Avistamientos",
+      "edition": 74,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "1",
+      "damage": null,
+      "ability": "Elige un efecto. Muestra la primera carta de tu Castillo y si es un Aliado, elige ambos:\n- Mira la mano de tu oponente, elige una carta de ahí que no sea Oro y Barájala en su Castillo.\n- En la próxima Fase Final oponente, puedes mover un Oro oponente a su Oro Pagado.",
+      "flavour": "Extrañas luces e imposibles objetos recorren las carreteras del norte Chileno. Camioneros y viajeros son silentes testigos de estos inexplicables fenómenos.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_011.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11518,
+    "fields": {
+      "myl_id": "custom_co2_13",
+      "edid": "CHI-13",
+      "slug": "contacto-con-friendship-co2",
+      "name": "Contacto con Friendship",
+      "edition": 74,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "1",
+      "damage": null,
+      "ability": "Gana el control de un Arma. Si eres el dueño de esa Arma, genera un Oro por el turno.\nSi atacaste o bloqueaste desde tu turno anterior, puedes Desterrarlo de tu mano o Cementerio para prevenir que tu oponente Baraje y/o Destierre cartas de los Cementerios.",
+      "flavour": "Un grupo de radioaficionados estableció contacto con seres de habilidades curativas únicas y tecnología avanzada. Habitantes de una isla imposible en el sur del mundo.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_013-1.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11519,
+    "fields": {
+      "myl_id": "custom_co2_17",
+      "edid": "CHI-17",
+      "slug": "cementerio-general-co2",
+      "name": "Cementerio General",
+      "edition": 74,
+      "rarity": 1,
+      "race": null,
+      "card_type": 4,
+      "cost": "2",
+      "damage": null,
+      "ability": "Exhumar.\nCuando entra en juego, Baraja hasta tantas cartas oponentes de coste 3 o menos como cartas Exhumar controles y Roba dos cartas.\nLas cartas en tu Cementerio no pueden perder su habilidad ni ser Desterradas por efectos.\nTus Aliados con Exhumar ganan Furia.",
+      "flavour": "Entre sus mausoleos y nichos, terribles apariciones e inexplicables sensaciones envuelven al epicentro del misterio nacional.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_017.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11520,
+    "fields": {
+      "myl_id": "custom_co2_18",
+      "edid": "CHI-18",
+      "slug": "la-ouija-co2",
+      "name": "La Ouija",
+      "edition": 74,
+      "rarity": 1,
+      "race": null,
+      "card_type": 5,
+      "cost": null,
+      "damage": null,
+      "ability": "Cuando entra en juego, pon la primera o la última carta de tu Castillo en tu mano.\nUna vez por turno, puedes jugar una carta de tu Cementerio o del tope de tu Castillo.\nJuega mostrando la primera carta de tu Castillo.",
+      "flavour": "Las Hermanas Morla y el palacio Echeverría fueron el centro del espiritismo nacional. En sus sesiones se utilizó para contactar con fuerzas desconocidas.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_018.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11521,
+    "fields": {
+      "myl_id": "custom_co2_19",
+      "edid": "CHI-19",
+      "slug": "romualdito-co2",
+      "name": "Romualdito",
+      "edition": 74,
+      "rarity": 1,
+      "race": null,
+      "card_type": 5,
+      "cost": null,
+      "damage": null,
+      "ability": "Al comienzo de la Vigilia, si no tienes Oros en Reserva, Destierra dos cartas del tope de un Castillo y hasta una carta de un Cementerio.\nPuedes convertirlo en un Oro sin habilidad para prevenir que un Aliado sea Destruido, cambie de controlador o sea convertido, por un efecto oponente.",
+      "flavour": "Perdido entre el humo y la cera de miles de velas, poco queda de la animita original. En su lugar, un muro inmenso reúne peticiones y agradecimientos.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_019-1.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11522,
+    "fields": {
+      "myl_id": "custom_co2_20",
+      "edid": "CHI-20",
+      "slug": "psicofonia-co2",
+      "name": "Psicofonía",
+      "edition": 74,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "1",
+      "damage": null,
+      "ability": "Elige un efecto. Si pagaste dos Oros por este Talismán, no se pueden jugar cartas ni utilizar habilidades en respuesta a esta carta.\n- Una carta de coste 2 o menos pierde su habilidad, es Desterrada y Roba una carta.\n- Paga un Oro para que un Aliado pierda su habilidad, sea Desterrado y Roba dos cartas.",
+      "flavour": "A veces de manera intencionada, a veces por azar. Voces espectrales son atrapadas en ondas de audio. ¿Interferencias casuales o mensajes del más allá?",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_020.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11523,
+    "fields": {
+      "myl_id": "custom_co2_21",
+      "edid": "CHI-21",
+      "slug": "sesion-espiritista-co2",
+      "name": "Sesión Espiritista",
+      "edition": 74,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "1",
+      "damage": null,
+      "ability": "Cuando lo juegues, Destiérralo.\nHasta tu próximo turno cada vez que tu oponente ponga cartas en su mano por un efecto, puedes poner esa misma cantidad de cartas del tope de tu Castillo en tu mano.\nPor el resto del juego el daño de combate a tu Castillo se reduce en dos.",
+      "flavour": "Velas y murmullos llenan la habitación. La sesión abre puertas entre vivos y espíritus, conectando dos mundos que no deberían coexistir.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_021-1.png"
+    }
+  },
+  {
     "model": "cards.banlistentry",
     "pk": 208,
     "fields": {
@@ -220557,7 +221478,7 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:55.887Z"
+      "last_synced": "2026-04-09T17:32:13.770Z"
     }
   },
   {
@@ -220570,7 +221491,7 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:56.012Z"
+      "last_synced": "2026-04-09T17:32:13.773Z"
     }
   },
   {
@@ -220583,7 +221504,7 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:56.000Z"
+      "last_synced": "2026-04-09T17:32:13.776Z"
     }
   },
   {
@@ -220596,7 +221517,7 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:55.945Z"
+      "last_synced": "2026-04-09T17:32:13.777Z"
     }
   },
   {
@@ -220609,7 +221530,7 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:56.108Z"
+      "last_synced": "2026-04-09T17:32:13.779Z"
     }
   },
   {
@@ -220622,7 +221543,7 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:56.058Z"
+      "last_synced": "2026-04-09T17:32:13.781Z"
     }
   },
   {
@@ -220635,7 +221556,7 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:55.958Z"
+      "last_synced": "2026-04-09T17:32:13.785Z"
     }
   },
   {
@@ -220648,7 +221569,7 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:56.091Z"
+      "last_synced": "2026-04-09T17:32:13.788Z"
     }
   },
   {
@@ -220661,7 +221582,7 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:56.023Z"
+      "last_synced": "2026-04-09T17:32:13.790Z"
     }
   },
   {
@@ -220674,7 +221595,7 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:55.923Z"
+      "last_synced": "2026-04-09T17:32:13.793Z"
     }
   },
   {
@@ -220687,7 +221608,7 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:56.039Z"
+      "last_synced": "2026-04-09T17:32:13.795Z"
     }
   },
   {
@@ -220700,7 +221621,7 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:55.912Z"
+      "last_synced": "2026-04-09T17:32:13.799Z"
     }
   },
   {
@@ -220713,7 +221634,7 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:55.934Z"
+      "last_synced": "2026-04-09T17:32:13.803Z"
     }
   },
   {
@@ -220726,7 +221647,7 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:56.078Z"
+      "last_synced": "2026-04-09T17:32:13.806Z"
     }
   },
   {
@@ -220739,7 +221660,7 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:55.987Z"
+      "last_synced": "2026-04-09T17:32:13.808Z"
     }
   },
   {
@@ -220752,7 +221673,7 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.258Z"
+      "last_synced": "2026-04-09T17:32:13.811Z"
     }
   },
   {
@@ -220765,7 +221686,7 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.374Z"
+      "last_synced": "2026-04-09T17:32:13.814Z"
     }
   },
   {
@@ -220778,7 +221699,7 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.347Z"
+      "last_synced": "2026-04-09T17:32:13.817Z"
     }
   },
   {
@@ -220791,7 +221712,7 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.126Z"
+      "last_synced": "2026-04-09T17:32:13.818Z"
     }
   },
   {
@@ -220804,7 +221725,7 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.270Z"
+      "last_synced": "2026-04-09T17:32:13.821Z"
     }
   },
   {
@@ -220817,7 +221738,7 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.335Z"
+      "last_synced": "2026-04-09T17:32:13.823Z"
     }
   },
   {
@@ -220830,7 +221751,7 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.194Z"
+      "last_synced": "2026-04-09T17:32:13.827Z"
     }
   },
   {
@@ -220843,7 +221764,7 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.358Z"
+      "last_synced": "2026-04-09T17:32:13.831Z"
     }
   },
   {
@@ -220856,7 +221777,7 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.209Z"
+      "last_synced": "2026-04-09T17:32:13.836Z"
     }
   },
   {
@@ -220869,7 +221790,7 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.156Z"
+      "last_synced": "2026-04-09T17:32:13.841Z"
     }
   },
   {
@@ -220882,7 +221803,7 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.300Z"
+      "last_synced": "2026-04-09T17:32:13.845Z"
     }
   },
   {
@@ -220895,7 +221816,7 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.178Z"
+      "last_synced": "2026-04-09T17:32:13.850Z"
     }
   },
   {
@@ -220908,7 +221829,7 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.140Z"
+      "last_synced": "2026-04-09T17:32:13.853Z"
     }
   },
   {
@@ -220921,7 +221842,7 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.242Z"
+      "last_synced": "2026-04-09T17:32:13.856Z"
     }
   },
   {
@@ -220934,7 +221855,7 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.284Z"
+      "last_synced": "2026-04-09T17:32:13.858Z"
     }
   },
   {
@@ -220947,7 +221868,7 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.322Z"
+      "last_synced": "2026-04-09T17:32:13.860Z"
     }
   },
   {
@@ -220960,7 +221881,7 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.224Z"
+      "last_synced": "2026-04-09T17:32:13.863Z"
     }
   },
   {
@@ -220973,7 +221894,7 @@
       "sub_format": "racial",
       "status": "limited_2",
       "max_copies": 2,
-      "last_synced": "2026-04-07T20:44:56.478Z"
+      "last_synced": "2026-04-09T17:32:13.865Z"
     }
   },
   {
@@ -220986,7 +221907,7 @@
       "sub_format": "racial",
       "status": "limited_2",
       "max_copies": 2,
-      "last_synced": "2026-04-07T20:44:56.449Z"
+      "last_synced": "2026-04-09T17:32:13.866Z"
     }
   },
   {
@@ -220999,7 +221920,7 @@
       "sub_format": "racial",
       "status": "limited_2",
       "max_copies": 2,
-      "last_synced": "2026-04-07T20:44:56.427Z"
+      "last_synced": "2026-04-09T17:32:13.868Z"
     }
   },
   {
@@ -221012,7 +221933,7 @@
       "sub_format": "racial",
       "status": "limited_2",
       "max_copies": 2,
-      "last_synced": "2026-04-07T20:44:56.493Z"
+      "last_synced": "2026-04-09T17:32:13.870Z"
     }
   },
   {
@@ -221025,7 +221946,7 @@
       "sub_format": "racial",
       "status": "limited_2",
       "max_copies": 2,
-      "last_synced": "2026-04-07T20:44:56.513Z"
+      "last_synced": "2026-04-09T17:32:13.872Z"
     }
   },
   {
@@ -221038,7 +221959,7 @@
       "sub_format": "racial",
       "status": "limited_2",
       "max_copies": 2,
-      "last_synced": "2026-04-07T20:44:56.410Z"
+      "last_synced": "2026-04-09T17:32:13.874Z"
     }
   },
   {
@@ -221051,7 +221972,7 @@
       "sub_format": "racial",
       "status": "limited_2",
       "max_copies": 2,
-      "last_synced": "2026-04-07T20:44:56.391Z"
+      "last_synced": "2026-04-09T17:32:13.876Z"
     }
   },
   {
@@ -221064,7 +221985,7 @@
       "sub_format": "racial",
       "status": "limited_2",
       "max_copies": 2,
-      "last_synced": "2026-04-07T20:44:56.465Z"
+      "last_synced": "2026-04-09T17:32:13.878Z"
     }
   },
   {
@@ -221077,7 +221998,7 @@
       "sub_format": "triadas",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:57.034Z"
+      "last_synced": "2026-04-09T17:32:13.880Z"
     }
   },
   {
@@ -221090,7 +222011,7 @@
       "sub_format": "triadas",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:57.075Z"
+      "last_synced": "2026-04-09T17:32:13.881Z"
     }
   },
   {
@@ -221103,7 +222024,7 @@
       "sub_format": "triadas",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:57.047Z"
+      "last_synced": "2026-04-09T17:32:13.884Z"
     }
   },
   {
@@ -221116,7 +222037,7 @@
       "sub_format": "triadas",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:57.061Z"
+      "last_synced": "2026-04-09T17:32:13.885Z"
     }
   },
   {
@@ -221129,7 +222050,7 @@
       "sub_format": "vcr",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:56.530Z"
+      "last_synced": "2026-04-09T17:32:13.887Z"
     }
   },
   {
@@ -221142,7 +222063,7 @@
       "sub_format": "vcr",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:56.604Z"
+      "last_synced": "2026-04-09T17:32:13.889Z"
     }
   },
   {
@@ -221155,7 +222076,7 @@
       "sub_format": "vcr",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:56.558Z"
+      "last_synced": "2026-04-09T17:32:13.891Z"
     }
   },
   {
@@ -221168,7 +222089,7 @@
       "sub_format": "vcr",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:56.545Z"
+      "last_synced": "2026-04-09T17:32:13.893Z"
     }
   },
   {
@@ -221181,7 +222102,7 @@
       "sub_format": "vcr",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-07T20:44:56.581Z"
+      "last_synced": "2026-04-09T17:32:13.895Z"
     }
   },
   {
@@ -221194,7 +222115,7 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.875Z"
+      "last_synced": "2026-04-09T17:32:13.897Z"
     }
   },
   {
@@ -221207,7 +222128,7 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.801Z"
+      "last_synced": "2026-04-09T17:32:13.899Z"
     }
   },
   {
@@ -221220,7 +222141,7 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.913Z"
+      "last_synced": "2026-04-09T17:32:13.901Z"
     }
   },
   {
@@ -221233,7 +222154,7 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.842Z"
+      "last_synced": "2026-04-09T17:32:13.902Z"
     }
   },
   {
@@ -221246,7 +222167,7 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.938Z"
+      "last_synced": "2026-04-09T17:32:13.906Z"
     }
   },
   {
@@ -221259,7 +222180,7 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.682Z"
+      "last_synced": "2026-04-09T17:32:13.908Z"
     }
   },
   {
@@ -221272,7 +222193,7 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.779Z"
+      "last_synced": "2026-04-09T17:32:13.910Z"
     }
   },
   {
@@ -221285,7 +222206,7 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.901Z"
+      "last_synced": "2026-04-09T17:32:13.912Z"
     }
   },
   {
@@ -221298,7 +222219,7 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.860Z"
+      "last_synced": "2026-04-09T17:32:13.913Z"
     }
   },
   {
@@ -221311,7 +222232,7 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.789Z"
+      "last_synced": "2026-04-09T17:32:13.915Z"
     }
   },
   {
@@ -221324,7 +222245,7 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.814Z"
+      "last_synced": "2026-04-09T17:32:13.918Z"
     }
   },
   {
@@ -221337,7 +222258,7 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.827Z"
+      "last_synced": "2026-04-09T17:32:13.921Z"
     }
   },
   {
@@ -221350,7 +222271,7 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.724Z"
+      "last_synced": "2026-04-09T17:32:13.923Z"
     }
   },
   {
@@ -221363,7 +222284,7 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.889Z"
+      "last_synced": "2026-04-09T17:32:13.924Z"
     }
   },
   {
@@ -221376,7 +222297,7 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.653Z"
+      "last_synced": "2026-04-09T17:32:13.927Z"
     }
   },
   {
@@ -221389,7 +222310,7 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.694Z"
+      "last_synced": "2026-04-09T17:32:13.930Z"
     }
   },
   {
@@ -221402,7 +222323,7 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.924Z"
+      "last_synced": "2026-04-09T17:32:13.933Z"
     }
   },
   {
@@ -221415,7 +222336,7 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-07T20:44:56.743Z"
+      "last_synced": "2026-04-09T17:32:13.934Z"
     }
   },
   {
@@ -221428,7 +222349,7 @@
       "sub_format": "vcr",
       "status": "limited_2",
       "max_copies": 2,
-      "last_synced": "2026-04-07T20:44:56.971Z"
+      "last_synced": "2026-04-09T17:32:13.937Z"
     }
   },
   {
@@ -221441,7 +222362,7 @@
       "sub_format": "vcr",
       "status": "limited_2",
       "max_copies": 2,
-      "last_synced": "2026-04-07T20:44:57.015Z"
+      "last_synced": "2026-04-09T17:32:13.941Z"
     }
   }
 ]

@@ -59,6 +59,7 @@ export class DeckViewComponent implements OnInit {
       this.sortEntries();
       this.buildGroups();
       this.loading = false;
+      this.preloadImages();
     };
     // Try owner endpoint first if authenticated, then team, then public
     if (this.auth.isAuthenticated()) {
@@ -207,13 +208,47 @@ export class DeckViewComponent implements OnInit {
     return new Date().toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
+  private thumbPipe = new ThumbnailPipe();
+
+  /** Preload card images in background so they're cached for viewing & export */
+  private preloadImages() {
+    if (!this.deck) return;
+    const urls = new Set<string>();
+    const allEntries = [...(this.deck.entries || []), ...(this.deck.sideboard_entries || [])];
+    for (const entry of allEntries) {
+      const url = entry.card_detail.image_url;
+      if (url) {
+        urls.add(this.thumbPipe.transform(url, 250)); // grid view
+        urls.add(this.thumbPipe.transform(url, 350)); // export
+      }
+    }
+    for (const url of urls) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = url;
+    }
+  }
+
   async exportImage() {
     if (!this.deckContent || this.exporting) return;
     this.exporting = true;
     this.cdr.detectChanges();
     try {
-      const html2canvas = (await import('html2canvas')).default;
+      // Preload all images in the export area before capturing
       const el = this.deckContent.nativeElement as HTMLElement;
+      const imgs = Array.from(el.querySelectorAll('img')) as HTMLImageElement[];
+      await Promise.all(imgs.map(img => {
+        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+        return new Promise<void>((resolve) => {
+          img.onload = () => resolve();
+          img.onerror = () => resolve(); // don't block on broken images
+          // Force load by reassigning src (handles lazy images)
+          img.loading = 'eager';
+          img.src = img.src;
+        });
+      }));
+
+      const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(el, {
         backgroundColor: '#0f0f23',
         useCORS: true,

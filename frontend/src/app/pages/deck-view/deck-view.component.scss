@@ -590,7 +590,7 @@
 }
 
 // ── Mobile: compact 6-column grid (like desktop) ──
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   :host .container {
     padding: 0.5rem;
   }
@@ -626,8 +626,8 @@
 
   .card-grid {
     grid-template-columns: repeat(6, 1fr);
-    gap: 12px 8px;
-    padding: 10px;
+    gap: 14px 10px;
+    padding: 12px;
     border-radius: 8px;
   }
 

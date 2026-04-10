@@ -64,6 +64,7 @@
       <div class="export-card-grid">
         @for (entry of deck.entries; track entry.id) {
           <div class="export-card-stack" [class.export-qty-2]="entry.quantity === 2" [class.export-qty-3]="entry.quantity >= 3">
+            <span class="export-card-name">{{ entry.card_detail.name }}</span>
             <div class="export-card-imgs">
               @if (entry.quantity >= 3) {
                 <img class="export-shadow es3" [src]="entry.card_detail.image_url | thumb:350" aria-hidden="true" crossorigin="anonymous">
@@ -76,7 +77,6 @@
                 <span class="export-qty-badge">x{{ entry.quantity }}</span>
               }
             </div>
-            <span class="export-card-name">{{ entry.card_detail.name }}</span>
           </div>
         }
       </div>
@@ -85,6 +85,7 @@
         <div class="export-card-grid">
           @for (entry of deck.sideboard_entries; track entry.id) {
             <div class="export-card-stack" [class.export-qty-2]="entry.quantity === 2" [class.export-qty-3]="entry.quantity >= 3">
+              <span class="export-card-name">{{ entry.card_detail.name }}</span>
               <div class="export-card-imgs">
                 @if (entry.quantity >= 3) {
                   <img class="export-shadow es3" [src]="entry.card_detail.image_url | thumb:350" aria-hidden="true" crossorigin="anonymous">
@@ -97,7 +98,6 @@
                   <span class="export-qty-badge">x{{ entry.quantity }}</span>
                 }
               </div>
-              <span class="export-card-name">{{ entry.card_detail.name }}</span>
             </div>
           }
         </div>

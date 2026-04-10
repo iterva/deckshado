@@ -479,8 +479,8 @@
 
   .export-card-grid {
     display: grid;
-    gap: 8px;
-    padding: 0.5rem;
+    gap: 14px 12px;
+    padding: 0.8rem;
     background: #0e1e36;
     border-radius: 8px;
     border: 1px solid #1a3050;
@@ -539,10 +539,11 @@
       display: block;
       width: 100%;
       text-align: center;
-      color: #b0c4de;
-      font-size: 0.55rem;
+      color: #c8d6e5;
+      font-size: 0.6rem;
+      font-weight: 600;
       line-height: 1.2;
-      margin-top: 2px;
+      margin-bottom: 3px;
       padding: 0 2px;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -570,19 +571,19 @@
 
   // Horizontal: wide layout, ~9 cards per row
   &.export-horizontal {
-    width: 1100px;
+    width: 1200px;
 
     .export-card-grid {
-      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
     }
   }
 
   // Vertical: narrow layout, ~5 cards per row
   &.export-vertical {
-    width: 600px;
+    width: 650px;
 
     .export-card-grid {
-      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
     }
   }
 }

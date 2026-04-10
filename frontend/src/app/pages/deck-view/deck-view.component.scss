@@ -444,6 +444,7 @@
   top: 0;
   background: #0a1628;
   padding: 1.5rem;
+  font-family: 'Segoe UI', Arial, sans-serif;
 
   &.export-visible {
     position: fixed;
@@ -478,20 +479,84 @@
 
   .export-card-grid {
     display: grid;
-    gap: 6px;
+    gap: 8px;
     padding: 0.5rem;
     background: #0e1e36;
     border-radius: 8px;
     border: 1px solid #1a3050;
   }
 
-  .export-card {
-    img {
+  .export-card-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    .export-card-imgs {
+      position: relative;
       width: 100%;
-      height: auto;
-      border-radius: 4px;
+
+      img {
+        width: 100%;
+        height: auto;
+        border-radius: 4px;
+        display: block;
+        border: 1px solid #1a3050;
+      }
+
+      .export-shadow {
+        position: absolute;
+        top: 0;
+        left: 0;
+        pointer-events: none;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+
+        &.es2 { transform: translate(5px, 5px); z-index: 1; }
+        &.es3 { transform: translate(10px, 10px); z-index: 0; }
+      }
+
+      .export-top {
+        position: relative;
+        z-index: 2;
+      }
+
+      .export-qty-badge {
+        position: absolute;
+        bottom: 6px;
+        right: 4px;
+        z-index: 3;
+        background: rgba(0, 0, 0, 0.8);
+        color: #ffbd39;
+        font-weight: 700;
+        font-size: 0.75rem;
+        padding: 2px 6px;
+        border-radius: 8px;
+        pointer-events: none;
+        border: 1px solid rgba(255, 189, 57, 0.4);
+      }
+    }
+
+    .export-card-name {
       display: block;
-      border: 1px solid #1a3050;
+      width: 100%;
+      text-align: center;
+      color: #b0c4de;
+      font-size: 0.55rem;
+      line-height: 1.2;
+      margin-top: 2px;
+      padding: 0 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    // Add padding for stacked cards so shadows aren't clipped
+    &.export-qty-2 .export-card-imgs {
+      padding-right: 5px;
+      padding-bottom: 5px;
+    }
+    &.export-qty-3 .export-card-imgs {
+      padding-right: 10px;
+      padding-bottom: 10px;
     }
   }
 
@@ -508,7 +573,7 @@
     width: 1100px;
 
     .export-card-grid {
-      grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     }
   }
 
@@ -517,7 +582,7 @@
     width: 600px;
 
     .export-card-grid {
-      grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     }
   }
 }

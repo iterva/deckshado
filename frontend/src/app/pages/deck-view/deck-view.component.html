@@ -62,18 +62,42 @@
         </div>
       </div>
       <div class="export-card-grid">
-        @for (card of expandedEntries; track $index) {
-          <div class="export-card">
-            <img [src]="card.image_url | thumb:350" [alt]="card.name" crossorigin="anonymous">
+        @for (entry of deck.entries; track entry.id) {
+          <div class="export-card-stack" [class.export-qty-2]="entry.quantity === 2" [class.export-qty-3]="entry.quantity >= 3">
+            <div class="export-card-imgs">
+              @if (entry.quantity >= 3) {
+                <img class="export-shadow es3" [src]="entry.card_detail.image_url | thumb:350" aria-hidden="true" crossorigin="anonymous">
+              }
+              @if (entry.quantity >= 2) {
+                <img class="export-shadow es2" [src]="entry.card_detail.image_url | thumb:350" aria-hidden="true" crossorigin="anonymous">
+              }
+              <img class="export-top" [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" crossorigin="anonymous">
+              @if (entry.quantity > 1) {
+                <span class="export-qty-badge">x{{ entry.quantity }}</span>
+              }
+            </div>
+            <span class="export-card-name">{{ entry.card_detail.name }}</span>
           </div>
         }
       </div>
-      @if (expandedSideEntries.length > 0) {
+      @if (deck.sideboard_entries && deck.sideboard_entries.length > 0) {
         <h3 class="export-side-title">Sidedeck</h3>
         <div class="export-card-grid">
-          @for (card of expandedSideEntries; track $index) {
-            <div class="export-card">
-              <img [src]="card.image_url | thumb:350" [alt]="card.name" crossorigin="anonymous">
+          @for (entry of deck.sideboard_entries; track entry.id) {
+            <div class="export-card-stack" [class.export-qty-2]="entry.quantity === 2" [class.export-qty-3]="entry.quantity >= 3">
+              <div class="export-card-imgs">
+                @if (entry.quantity >= 3) {
+                  <img class="export-shadow es3" [src]="entry.card_detail.image_url | thumb:350" aria-hidden="true" crossorigin="anonymous">
+                }
+                @if (entry.quantity >= 2) {
+                  <img class="export-shadow es2" [src]="entry.card_detail.image_url | thumb:350" aria-hidden="true" crossorigin="anonymous">
+                }
+                <img class="export-top" [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" crossorigin="anonymous">
+                @if (entry.quantity > 1) {
+                  <span class="export-qty-badge">x{{ entry.quantity }}</span>
+                }
+              </div>
+              <span class="export-card-name">{{ entry.card_detail.name }}</span>
             </div>
           }
         </div>

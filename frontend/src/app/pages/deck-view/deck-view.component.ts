@@ -269,11 +269,15 @@ export class DeckViewComponent implements OnInit {
       }));
 
       const html2canvas = (await import('html2canvas')).default;
+      // Fixed scale: always 2x regardless of device pixel ratio
+      // This ensures the same output on mobile, 1080p, and 4K screens
       const canvas = await html2canvas(el, {
         backgroundColor: '#0f0f23',
         useCORS: true,
         allowTaint: true,
         scale: 2,
+        windowWidth: el.scrollWidth,
+        windowHeight: el.scrollHeight,
       });
       const link = document.createElement('a');
       link.download = `${this.deck?.name || 'mazo'}.png`;

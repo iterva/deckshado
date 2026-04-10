@@ -5,14 +5,8 @@
     <a routerLink="/decks" class="back-link">← Volver a mazos</a>
     <div class="title-row">
       <h1 class="page-title">{{ deck.name }}</h1>
-    </div>
-    <div class="deck-meta">
-      <span>por {{ deck.owner_username }}</span>
-      <span>{{ deck.card_count }} cartas</span>
-    </div>
-
-    <!-- Botonera de acciones -->
-    <div class="action-bar">
+      <!-- Botonera de acciones -->
+      <div class="action-bar">
       <div class="action-group">
         <button class="action-btn" [class.active]="viewMode === 'grid'" (click)="viewMode = 'grid'" title="Vista cartas">
           <i class="bi bi-grid-3x3-gap-fill"></i>
@@ -45,6 +39,10 @@
           <i class="bi bi-camera"></i>
         </button>
       </div>
+    </div>
+    <div class="deck-meta">
+      <span>por {{ deck.owner_username }}</span>
+      <span>{{ deck.card_count }} cartas</span>
     </div>
     @if (deck.description) {
       <p class="deck-description">{{ deck.description }}</p>

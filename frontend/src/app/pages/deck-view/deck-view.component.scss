@@ -9,8 +9,10 @@
 .title-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1rem;
   margin-bottom: 0.3rem;
+  flex-wrap: wrap;
 
   .page-title {
     margin: 0;
@@ -30,12 +32,11 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 1.2rem;
   flex-wrap: wrap;
   background: #111827;
   border: 1px solid #1e3a4a;
   border-radius: 12px;
-  padding: 0.45rem 0.7rem;
+  padding: 0.35rem 0.6rem;
 
   .action-group {
     display: flex;

@@ -36,8 +36,28 @@ export class DeckViewComponent implements OnInit {
     private cdr: ChangeDetectorRef,
   ) {}
 
+  get isOwner(): boolean {
+    const user = this.auth.user();
+    return !!user && !!this.deck && user.username === this.deck.owner_username;
+  }
+
   get canCopy(): boolean {
     return this.auth.isAuthenticated();
+  }
+
+  editDeck() {
+    if (this.deck) {
+      this.router.navigate(['/builder', this.deck.id]);
+    }
+  }
+
+  deleteDeck() {
+    if (!this.deck) return;
+    if (!confirm('¿Estás seguro de que quieres eliminar este mazo?')) return;
+    this.deckService.deleteDeck(this.deck.id).subscribe({
+      next: () => this.router.navigate(['/decks']),
+      error: (err: any) => console.error('Error eliminando mazo:', err),
+    });
   }
 
   copyDeck() {

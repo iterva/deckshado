@@ -480,7 +480,7 @@
 
   .export-card-grid {
     display: grid;
-    gap: 14px 12px;
+    gap: 20px 16px;
     padding: 0.8rem;
     background: #0e1e36;
     border-radius: 8px;
@@ -511,8 +511,8 @@
         pointer-events: none;
         box-shadow: 0 2px 6px rgba(0,0,0,0.6);
 
-        &.es2 { transform: translate(5px, 5px); z-index: 1; }
-        &.es3 { transform: translate(10px, 10px); z-index: 0; }
+        &.es2 { transform: translate(3px, 3px); z-index: 1; }
+        &.es3 { transform: translate(6px, 6px); z-index: 0; }
       }
 
       .export-top {
@@ -553,12 +553,12 @@
 
     // Add padding for stacked cards so shadows aren't clipped
     &.export-qty-2 .export-card-imgs {
-      padding-right: 5px;
-      padding-bottom: 5px;
+      padding-right: 3px;
+      padding-bottom: 3px;
     }
     &.export-qty-3 .export-card-imgs {
-      padding-right: 10px;
-      padding-bottom: 10px;
+      padding-right: 6px;
+      padding-bottom: 6px;
     }
   }
 

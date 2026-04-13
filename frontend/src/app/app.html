@@ -10,6 +10,7 @@
     <a routerLink="/decks" routerLinkActive="active">Mazos</a>
     <a routerLink="/team" routerLinkActive="active">Equipo</a>
     @if (auth.isAuthenticated()) {
+      <a routerLink="/carpeta" routerLinkActive="active">Carpeta</a>
       <a routerLink="/builder" routerLinkActive="active">Constructor</a>
       <div class="avatar-wrapper">
         <button class="avatar-btn" (click)="toggleDropdown()">
@@ -62,6 +63,10 @@
     <span class="label">Equipo</span>
   </a>
   @if (auth.isAuthenticated()) {
+    <a routerLink="/carpeta" routerLinkActive="active">
+      <span class="icon">📁</span>
+      <span class="label">Carpeta</span>
+    </a>
     <a routerLink="/builder" routerLinkActive="active">
       <span class="icon">🔨</span>
       <span class="label">Constructor</span>

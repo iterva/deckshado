@@ -9,6 +9,7 @@ urlpatterns = [
     path("api/cards/", include("cards.urls")),
     path("api/decks/", include("decks.urls")),
     path("api/teams/", include("teams.urls")),
+    path("api/carpeta/", include("carpeta.urls")),
 ]
 
 if settings.DEBUG:

@@ -141,3 +141,30 @@ export interface JoinRequest {
   status_display: string;
   created_at: string;
 }
+
+export interface BinderProfile {
+  id: number;
+  username: string;
+  binder_avatar_url: string | null;
+}
+
+export interface CollectionEntry {
+  id: number;
+  card: number;
+  quantity: number;
+  price: number | null;
+  selling_quantity: number;
+  card_detail: Card;
+}
+
+export interface WishlistEntry {
+  id: number;
+  card: number;
+  desired_quantity: number;
+  card_detail: Card;
+}
+
+export interface CarpetaIds {
+  collection: { [cardId: number]: number };
+  wishlist: number[];
+}

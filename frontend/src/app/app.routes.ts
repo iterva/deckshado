@@ -5,6 +5,7 @@ export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent) },
   { path: 'register', loadComponent: () => import('./pages/register/register.component').then(m => m.RegisterComponent) },
   { path: 'cards', loadComponent: () => import('./pages/card-list/card-list.component').then(m => m.CardListComponent) },
+  { path: 'carpeta', loadComponent: () => import('./pages/carpeta/carpeta.component').then(m => m.CarpetaComponent) },
   { path: 'decks', loadComponent: () => import('./pages/deck-list/deck-list.component').then(m => m.DeckListComponent) },
   { path: 'decks/:id', loadComponent: () => import('./pages/deck-view/deck-view.component').then(m => m.DeckViewComponent) },
   { path: 'builder', loadComponent: () => import('./pages/format-select/format-select.component').then(m => m.FormatSelectComponent) },

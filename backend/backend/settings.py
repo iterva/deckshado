@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "decks",
     "users",
     "teams",
+    "carpeta",
 ]
 
 MIDDLEWARE = [

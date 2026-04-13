@@ -35,6 +35,7 @@
           },
           "configurations": {
             "production": {
+              "allowedCommonJsDependencies": ["html2canvas"],
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",
@@ -49,8 +50,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "10kB",
-                  "maximumError": "15kB"
+                  "maximumWarning": "15kB",
+                  "maximumError": "20kB"
                 }
               ],
               "outputHashing": "all"

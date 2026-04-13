@@ -1,0 +1,298 @@
+<div class="carpeta-container">
+  <!-- Header con avatar de carpeta -->
+  <div class="carpeta-header">
+    <div class="binder-avatar-wrapper">
+      @if (binderProfile?.binder_avatar_url) {
+        <img [src]="binderProfile!.binder_avatar_url" alt="Avatar Carpeta" class="binder-avatar" />
+      } @else {
+        <div class="binder-avatar-placeholder">📁</div>
+      }
+      <label class="avatar-upload-btn" title="Cambiar foto de carpeta">
+        📷
+        <input type="file" accept="image/*" (change)="onAvatarFileChange($event)" hidden />
+      </label>
+    </div>
+    <div class="binder-info">
+      <h1>Mi Carpeta</h1>
+      <p class="binder-user">{{ auth.user()?.username }}</p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab" [class.active]="activeTab === 'carpeta'" (click)="switchTab('carpeta')">
+      📁 CARPETA
+    </button>
+    <button class="tab" [class.active]="activeTab === 'codex'" (click)="switchTab('codex')">
+      📖 CODEX
+    </button>
+    <button class="tab" [class.active]="activeTab === 'wishlist'" (click)="switchTab('wishlist')">
+      ❤️ WISHLIST
+    </button>
+  </div>
+
+  <!-- ═══ TAB: CARPETA ═══ -->
+  @if (activeTab === 'carpeta') {
+    <div class="tab-content">
+      <div class="tab-toolbar">
+        <div class="search-bar">
+          <input type="text" placeholder="Buscar en tu colección..." [(ngModel)]="collectionSearch" (keyup.enter)="onCollectionSearch()" />
+          <button class="btn btn-sm" (click)="onCollectionSearch()">Buscar</button>
+        </div>
+        <button class="btn btn-sm btn-filter" [class.active]="showSellingOnly" (click)="toggleSellingFilter()">
+          🏷️ Solo en venta
+        </button>
+      </div>
+
+      <p class="results-count">{{ collectionTotal }} cartas en tu colección</p>
+
+      @if (collectionLoading) {
+        <div class="loading">Cargando...</div>
+      }
+
+      @if (!collectionLoading && collectionEntries.length === 0) {
+        <div class="empty-state">
+          <p>Tu carpeta está vacía. Ve al <strong>Codex</strong> para añadir cartas.</p>
+        </div>
+      }
+
+      <div class="collection-grid">
+        @for (entry of collectionEntries; track entry.id) {
+          <div class="collection-card">
+            <div class="card-image">
+              <img [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" loading="lazy" />
+              <div class="qty-badge">x{{ entry.quantity }}</div>
+              @if (entry.selling_quantity > 0) {
+                <div class="selling-badge">🏷️ {{ entry.selling_quantity }}</div>
+              }
+            </div>
+            <div class="card-info">
+              <h4>{{ entry.card_detail.name }}</h4>
+              <span class="card-meta">{{ entry.card_detail.type_name }} · {{ entry.card_detail.edition_title }}</span>
+              @if (entry.price !== null) {
+                <span class="card-price">💰 ${{ entry.price }}</span>
+              }
+            </div>
+            <div class="card-actions">
+              <button class="btn btn-xs btn-edit" (click)="startEdit(entry)">✏️</button>
+              <button class="btn btn-xs btn-danger" (click)="removeFromCollection(entry)">🗑️</button>
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (collectionTotalPages > 1) {
+        <div class="pagination">
+          <button class="btn btn-sm" (click)="collectionPrev()" [disabled]="collectionPage === 1">← Anterior</button>
+          <span>{{ collectionPage }} / {{ collectionTotalPages }}</span>
+          <button class="btn btn-sm" (click)="collectionNext()" [disabled]="collectionPage >= collectionTotalPages">Siguiente →</button>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ═══ TAB: CODEX ═══ -->
+  @if (activeTab === 'codex') {
+    <div class="tab-content">
+      <div class="tab-toolbar">
+        <div class="search-bar">
+          <input type="text" placeholder="Buscar cartas..." [(ngModel)]="codexSearch" (keyup.enter)="onCodexSearch()" />
+          <button class="btn btn-sm" (click)="onCodexSearch()">Buscar</button>
+        </div>
+      </div>
+      <div class="filter-row">
+        <select [(ngModel)]="selectedEdition" (change)="onCodexFilter()">
+          <option value="">Todas las ediciones</option>
+          @for (ed of editions; track ed.id) {
+            <option [value]="ed.slug">{{ ed.title }}</option>
+          }
+        </select>
+        <select [(ngModel)]="selectedType" (change)="onCodexFilter()">
+          <option value="">Todos los tipos</option>
+          @for (t of types; track t.id) {
+            <option [value]="t.slug">{{ t.name }}</option>
+          }
+        </select>
+        <select [(ngModel)]="selectedRace" (change)="onCodexFilter()">
+          <option value="">Todas las razas</option>
+          @for (r of races; track r.id) {
+            <option [value]="r.slug">{{ r.name }}</option>
+          }
+        </select>
+        <select [(ngModel)]="selectedRarity" (change)="onCodexFilter()">
+          <option value="">Todas las frecuencias</option>
+          @for (r of rarities; track r.id) {
+            <option [value]="r.slug">{{ r.name }}</option>
+          }
+        </select>
+      </div>
+
+      <p class="results-count">{{ codexCards.length }} de {{ codexTotal }} cartas</p>
+
+      @if (codexLoading) {
+        <div class="loading">Cargando...</div>
+      }
+
+      <div class="card-grid">
+        @for (card of codexCards; track card.id) {
+          <div class="card-item" (click)="selectCodexCard(card)">
+            <div class="card-image">
+              <img [src]="card.image_url | thumb:350" [alt]="card.name" loading="lazy" />
+              @if (isInCollection(card.id)) {
+                <div class="owned-badge">✓ x{{ collectionQty(card.id) }}</div>
+              }
+            </div>
+            <div class="card-info">
+              <h4>{{ card.name }}</h4>
+              <span class="card-type">{{ card.type_name }}</span>
+            </div>
+            <div class="card-overlay-actions">
+              <button class="btn-icon btn-add" (click)="quickAddToCollection(card, $event)" title="Añadir a colección">
+                ➕
+              </button>
+              <button class="btn-icon btn-heart" [class.active]="isInWishlist(card.id)" (click)="toggleWishlist(card, $event)" title="Wishlist">
+                {{ isInWishlist(card.id) ? '❤️' : '🤍' }}
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (codexTotalPages > 1) {
+        <div class="pagination">
+          <button class="btn btn-sm" (click)="codexPrev()" [disabled]="codexPage === 1">← Anterior</button>
+          <span>{{ codexPage }} / {{ codexTotalPages }}</span>
+          <button class="btn btn-sm" (click)="codexNext()" [disabled]="codexPage >= codexTotalPages">Siguiente →</button>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ═══ TAB: WISHLIST ═══ -->
+  @if (activeTab === 'wishlist') {
+    <div class="tab-content">
+      <div class="tab-toolbar">
+        <div class="search-bar">
+          <input type="text" placeholder="Buscar en wishlist..." [(ngModel)]="wishlistSearch" (keyup.enter)="onWishlistSearch()" />
+          <button class="btn btn-sm" (click)="onWishlistSearch()">Buscar</button>
+        </div>
+      </div>
+
+      <p class="results-count">{{ wishlistTotal }} cartas en tu wishlist</p>
+
+      @if (wishlistLoading) {
+        <div class="loading">Cargando...</div>
+      }
+
+      @if (!wishlistLoading && wishlistEntries.length === 0) {
+        <div class="empty-state">
+          <p>Tu wishlist está vacía. Usa el ❤️ en el <strong>Codex</strong> para añadir cartas.</p>
+        </div>
+      }
+
+      <div class="wishlist-grid">
+        @for (entry of wishlistEntries; track entry.id) {
+          <div class="wishlist-card">
+            <div class="card-image">
+              <img [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" loading="lazy" />
+            </div>
+            <div class="card-info">
+              <h4>{{ entry.card_detail.name }}</h4>
+              <span class="card-meta">{{ entry.card_detail.type_name }} · {{ entry.card_detail.edition_title }}</span>
+              <div class="wishlist-qty">
+                <label>Quiero:</label>
+                <input type="number" [value]="entry.desired_quantity" min="1"
+                  (change)="updateWishlistQty(entry, $any($event.target).valueAsNumber)" />
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="btn btn-xs btn-danger" (click)="removeFromWishlist(entry)" title="Quitar de wishlist">
+                💔
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (wishlistTotalPages > 1) {
+        <div class="pagination">
+          <button class="btn btn-sm" (click)="wishlistPrev()" [disabled]="wishlistPage === 1">← Anterior</button>
+          <span>{{ wishlistPage }} / {{ wishlistTotalPages }}</span>
+          <button class="btn btn-sm" (click)="wishlistNext()" [disabled]="wishlistPage >= wishlistTotalPages">Siguiente →</button>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ═══ MODAL: Editar entrada de colección ═══ -->
+  @if (editingEntry) {
+    <div class="modal-overlay" (click)="cancelEdit()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <button class="close-btn" (click)="cancelEdit()">✕</button>
+        <div class="modal-header">
+          <img [src]="editingEntry.card_detail.image_url | thumb:200" [alt]="editingEntry.card_detail.name" class="modal-card-img" />
+          <h3>{{ editingEntry.card_detail.name }}</h3>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Cantidad que tengo</label>
+            <input type="number" [(ngModel)]="editQty" min="1" />
+          </div>
+          <div class="form-group">
+            <label>Precio ($)</label>
+            <input type="number" [(ngModel)]="editPrice" min="0" placeholder="Sin precio" />
+          </div>
+          <div class="form-group">
+            <label>Copias en venta</label>
+            <input type="number" [(ngModel)]="editSelling" min="0" [max]="editQty" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="cancelEdit()">Cancelar</button>
+          <button class="btn btn-primary" (click)="saveEdit()">Guardar</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══ MODAL: Detalle de carta (Codex) ═══ -->
+  @if (selectedCard) {
+    <div class="modal-overlay" (click)="selectedCard = null">
+      <div class="modal modal-detail" (click)="$event.stopPropagation()">
+        <button class="close-btn" (click)="selectedCard = null">✕</button>
+        <img [src]="selectedCard.image_url" [alt]="selectedCard.name" class="detail-image" />
+        <div class="detail-info">
+          <h2>{{ selectedCard.name }}</h2>
+          <div class="detail-meta">
+            @if (selectedCard.type_name) { <span class="badge">{{ selectedCard.type_name }}</span> }
+            @if (selectedCard.race_name) { <span class="badge">{{ selectedCard.race_name }}</span> }
+            @if (selectedCard.rarity_name) { <span class="badge rarity">{{ selectedCard.rarity_name }}</span> }
+          </div>
+          <div class="detail-stats">
+            @if (selectedCard.cost !== null) { <span>💰 Coste: {{ selectedCard.cost }}</span> }
+            @if (selectedCard.damage !== null) { <span>⚔️ Fuerza: {{ selectedCard.damage }}</span> }
+          </div>
+          @if (selectedCard.ability) {
+            <div class="detail-ability">
+              <h4>Habilidad</h4>
+              <p>{{ selectedCard.ability }}</p>
+            </div>
+          }
+          <p class="detail-edition">{{ selectedCard.edition_title }}</p>
+          <div class="detail-actions">
+            <div class="add-qty-group">
+              <label>Cantidad:</label>
+              <input type="number" [(ngModel)]="addQty" min="1" />
+            </div>
+            <button class="btn btn-primary" (click)="addToCollection(selectedCard)">
+              ➕ Añadir a Carpeta
+            </button>
+            <button class="btn btn-heart-lg" [class.active]="isInWishlist(selectedCard.id)" (click)="toggleWishlist(selectedCard, $event)">
+              {{ isInWishlist(selectedCard.id) ? '❤️ En Wishlist' : '🤍 Wishlist' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

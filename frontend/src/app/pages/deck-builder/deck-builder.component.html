@@ -8,12 +8,6 @@
         <button class="search-btn" (click)="onSearch()">🔍</button>
       </div>
       <div class="filter-row">
-        <select [(ngModel)]="selectedSubFormat" (change)="onSubFormatChange()">
-          <option value="racial">Formato Racial</option>
-          @if (selectedFormat === 'imp') {
-            <option value="vcr">VCR</option>
-          }
-        </select>
         <select [(ngModel)]="selectedEdition" (change)="onSearch()">
           <option value="">Todas las ediciones</option>
           @for (ed of editions; track ed.id) {

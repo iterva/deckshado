@@ -111,7 +111,14 @@ class CardListView(generics.ListAPIView):
         if sub_fmt == "vcr" and fmt == "imp":
             vcr_slugs = ["vasallo", "cortesano", "real"]
             # Promos with updated wording but same functional card
-            vcr_promo_whitelist = ["laterna"]
+            vcr_promo_whitelist = [
+                "laterna",
+                "miguel grau",
+                "caon naval",
+                "abordaje",
+                "duelo a siete pasos - sp",
+                "plaza de armas - sp",
+            ]
             # Subquery: exists a VCR card with same name and same ability
             vcr_match = Card.objects.filter(
                 rarity__slug__in=vcr_slugs,

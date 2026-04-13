@@ -28,7 +28,21 @@ export class FormatSelectComponent {
 
   readonly enabledFormats = ['imp', 'imp_r', 'esc'];
 
-  readonly races: RaceOption[] = [
+  readonly impRaces: RaceOption[] = [
+    { slug: 'dream', name: 'Dream', description: 'Todas las razas, talismanes, armas y tótems' },
+    { slug: 'totem', name: 'Tótem', description: 'Aliados sin raza + tótems, talismanes y armas' },
+    { slug: 'eterno', name: 'Eterno', description: 'Aliados Eterno + neutrales' },
+    { slug: 'faerie', name: 'Faerie', description: 'Aliados Faerie + neutrales' },
+    { slug: 'dragon', name: 'Dragón', description: 'Aliados Dragón + neutrales' },
+    { slug: 'sombra', name: 'Sombra', description: 'Aliados Sombra + neutrales' },
+    { slug: 'heroe', name: 'Héroe', description: 'Aliados Héroe + neutrales' },
+    { slug: 'sacerdote', name: 'Sacerdote', description: 'Aliados Sacerdote + neutrales' },
+    { slug: 'guerrero', name: 'Guerrero', description: 'Aliados Guerrero + neutrales' },
+    { slug: 'bestia', name: 'Bestia', description: 'Aliados Bestia + neutrales' },
+    { slug: 'caballero', name: 'Caballero', description: 'Aliados Caballero + neutrales' },
+  ];
+
+  readonly escRaces: RaceOption[] = [
     { slug: 'dream', name: 'Dream', description: 'Todas las razas, talismanes, armas y tótems' },
     { slug: 'totem', name: 'Tótem', description: 'Aliados sin raza + tótems, talismanes y armas' },
     { slug: 'eterno', name: 'Eterno', description: 'Aliados Eterno + neutrales' },
@@ -45,6 +59,10 @@ export class FormatSelectComponent {
     { slug: 'samurai', name: 'Samurái', description: 'Aliados Samurái + neutrales' },
     { slug: 'oni', name: 'Oni', description: 'Aliados Oni + neutrales' },
   ];
+
+  get races(): RaceOption[] {
+    return this.selectedFormat === 'esc' ? this.escRaces : this.impRaces;
+  }
 
   constructor(
     private cardService: CardService,

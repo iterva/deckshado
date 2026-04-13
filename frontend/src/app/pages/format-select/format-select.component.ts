@@ -54,7 +54,14 @@ export class FormatSelectComponent {
         return;
       }
       this.cardService.getFormats().subscribe(d => {
-        this.formats = d;
+        const order = ['imp', 'esc', 'imp_r'];
+        this.formats = d.sort((a, b) => {
+          const ai = order.indexOf(a.code);
+          const bi = order.indexOf(b.code);
+          const aIdx = ai >= 0 ? ai : order.length;
+          const bIdx = bi >= 0 ? bi : order.length;
+          return aIdx - bIdx;
+        });
         this.loading = false;
         this.cdr.detectChanges();
       });

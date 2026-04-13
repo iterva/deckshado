@@ -182,6 +182,7 @@ ALL_FORMATS = list(EDITIONS_BY_FORMAT.keys())
 FORMAT_NAMES = {
     "imp": "Imperio",
     "imp_r": "Imperio (Rotado)",
+    "esc": "Escuelas Elementales",
     "lbf": "Leyendas Bloque Furia",
     "fx": "FX",
     "2b": "Segundo Bloque",

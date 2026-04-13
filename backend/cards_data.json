@@ -1,6 +1,14 @@
 [
   {
     "model": "cards.format",
+    "pk": 8,
+    "fields": {
+      "code": "esc",
+      "name": "Escuelas Elementales"
+    }
+  },
+  {
+    "model": "cards.format",
     "pk": 3,
     "fields": {
       "code": "fx",

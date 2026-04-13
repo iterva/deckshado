@@ -49,7 +49,8 @@ export class AuthService {
       error: (err) => {
         console.error('Error loading user:', err);
         if (err.status === 401) {
-          this.logout();
+          this.logout(true);
+          return;
         }
         this.currentUser.set(null);
         this.isLoadingUser.set(false);
@@ -57,11 +58,15 @@ export class AuthService {
     });
   }
 
-  logout() {
+  logout(hardReload = false) {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     this.loggedIn.set(false);
     this.currentUser.set(null);
-    this.router.navigate(['/']);
+    if (hardReload) {
+      window.location.href = '/';
+    } else {
+      this.router.navigate(['/']);
+    }
   }
 }

@@ -19,6 +19,19 @@ from .serializers import (
 
 MYL_CARDS_CDN = "https://api.myl.cl/static/cards/"
 
+# Ediciones que componen el formato virtual "Escuelas Elementales"
+ESC_EDITION_SLUGS = [
+    "dominio",
+    "contraataque",
+    "aguila-imperial",
+    "axis-mundi",
+    "hijos-del-sol",
+    "legado-gotico",
+    "escuelas_elementales",
+    "steampunk",
+    "dharma",
+]
+
 # Map base vowels/consonants to regex classes that match accented variants
 _ACCENT_MAP = {
     'a': '[aáàâãä]', 'e': '[eéèêë]', 'i': '[iíìîï]',
@@ -78,7 +91,10 @@ class CardListView(generics.ListAPIView):
         fmt = self.request.query_params.get("fmt")
 
         if fmt:
-            qs = qs.filter(edition__format__code=fmt)
+            if fmt == "esc":
+                qs = qs.filter(edition__slug__in=ESC_EDITION_SLUGS)
+            else:
+                qs = qs.filter(edition__format__code=fmt)
         if edition:
             qs = qs.filter(edition__slug=edition)
         if card_type:
@@ -126,7 +142,10 @@ class EditionListView(generics.ListAPIView):
         qs = Edition.objects.select_related("format").all()
         fmt = self.request.query_params.get("fmt")
         if fmt:
-            qs = qs.filter(format__code=fmt)
+            if fmt == "esc":
+                qs = qs.filter(slug__in=ESC_EDITION_SLUGS)
+            else:
+                qs = qs.filter(format__code=fmt)
         return qs
 
 

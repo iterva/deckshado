@@ -25,7 +25,7 @@ export class FormatSelectComponent {
   selectedFormat = '';
   selectedFormatName = '';
 
-  readonly enabledFormats = ['imp', 'imp_r'];
+  readonly enabledFormats = ['imp', 'imp_r', 'esc'];
 
   readonly races: RaceOption[] = [
     { slug: 'dream', name: 'Dream', description: 'Todas las razas, talismanes, armas y tótems' },

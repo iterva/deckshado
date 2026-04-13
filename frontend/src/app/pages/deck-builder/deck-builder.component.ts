@@ -46,6 +46,12 @@ export class DeckBuilderComponent implements OnInit {
   selectedType = '';
   selectedFormat = 'imp';
   formatName = 'Imperio';
+
+  private readonly escEditionSlugs = [
+    'dominio', 'contraataque', 'aguila-imperial', 'axis-mundi',
+    'hijos-del-sol', 'legado-gotico', 'escuelas_elementales',
+    'steampunk', 'dharma',
+  ];
   currentPage = 1;
   totalCards = 0;
   loading = false;
@@ -208,7 +214,11 @@ export class DeckBuilderComponent implements OnInit {
   }
 
   filterEditions() {
-    this.editions = this.allEditions.filter(e => e.format_code === this.selectedFormat);
+    if (this.selectedFormat === 'esc') {
+      this.editions = this.allEditions.filter(e => this.escEditionSlugs.includes(e.slug));
+    } else {
+      this.editions = this.allEditions.filter(e => e.format_code === this.selectedFormat);
+    }
   }
 
   nextPage() {

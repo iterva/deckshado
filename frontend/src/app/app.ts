@@ -10,5 +10,7 @@ import { AuthService } from './services/auth.service';
   styleUrl: './app.scss',
 })
 export class App {
-  constructor(public auth: AuthService) {}
+  constructor(public auth: AuthService) {
+    sessionStorage.removeItem('chunk_reload');
+  }
 }

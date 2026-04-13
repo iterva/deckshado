@@ -73,7 +73,7 @@ class TeamDeckListView(generics.ListAPIView):
             membership = TeamMember.objects.get(user=self.request.user)
         except TeamMember.DoesNotExist:
             return Deck.objects.none()
-        teammate_ids = TeamMember.objects.filter(team=membership.team).exclude(user=self.request.user).values_list("user_id", flat=True)
+        teammate_ids = TeamMember.objects.filter(team=membership.team).values_list("user_id", flat=True)
         return _annotate_card_count(
             Deck.objects.filter(owner_id__in=teammate_ids, shared_with_team=True).select_related("owner")
         )

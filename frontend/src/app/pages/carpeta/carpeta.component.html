@@ -61,21 +61,33 @@
           <div class="collection-card">
             <div class="card-image">
               <img [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" loading="lazy" />
-              <div class="qty-badge">x{{ entry.quantity }}</div>
-              @if (entry.selling_quantity > 0) {
-                <div class="selling-badge">🏷️ {{ entry.selling_quantity }}</div>
-              }
             </div>
-            <div class="card-info">
+            <div class="card-body">
               <h4>{{ entry.card_detail.name }}</h4>
               <span class="card-meta">{{ entry.card_detail.type_name }} · {{ entry.card_detail.edition_title }}</span>
-              @if (entry.price !== null) {
-                <span class="card-price">💰 ${{ entry.price }}</span>
-              }
-            </div>
-            <div class="card-actions">
-              <button class="btn btn-xs btn-edit" (click)="startEdit(entry)">✏️</button>
-              <button class="btn btn-xs btn-danger" (click)="removeFromCollection(entry)">🗑️</button>
+              <div class="inline-fields">
+                <div class="field">
+                  <label>Tengo</label>
+                  <input type="number" [value]="entry.quantity" min="1"
+                    (input)="onFieldChange(entry, 'quantity', $any($event.target).valueAsNumber)" />
+                </div>
+                <div class="field">
+                  <label>Precio $</label>
+                  <input type="number" [value]="entry.price" min="0" placeholder="—"
+                    (input)="onFieldChange(entry, 'price', $any($event.target).valueAsNumber)" />
+                </div>
+                <div class="field">
+                  <label>Vendo</label>
+                  <input type="number" [value]="entry.selling_quantity" min="0"
+                    (input)="onFieldChange(entry, 'selling_quantity', $any($event.target).valueAsNumber)" />
+                </div>
+              </div>
+              <div class="card-action-row">
+                @if (dirtyEntries.has(entry.id)) {
+                  <button class="btn btn-xs btn-primary" (click)="saveEntry(entry)">💾 Guardar</button>
+                }
+                <button class="btn btn-xs btn-danger" (click)="removeFromCollection(entry)">🗑️</button>
+              </div>
             </div>
           </div>
         }
@@ -221,37 +233,6 @@
           <button class="btn btn-sm" (click)="wishlistNext()" [disabled]="wishlistPage >= wishlistTotalPages">Siguiente →</button>
         </div>
       }
-    </div>
-  }
-
-  <!-- ═══ MODAL: Editar entrada de colección ═══ -->
-  @if (editingEntry) {
-    <div class="modal-overlay" (click)="cancelEdit()">
-      <div class="modal" (click)="$event.stopPropagation()">
-        <button class="close-btn" (click)="cancelEdit()">✕</button>
-        <div class="modal-header">
-          <img [src]="editingEntry.card_detail.image_url | thumb:200" [alt]="editingEntry.card_detail.name" class="modal-card-img" />
-          <h3>{{ editingEntry.card_detail.name }}</h3>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label>Cantidad que tengo</label>
-            <input type="number" [(ngModel)]="editQty" min="1" />
-          </div>
-          <div class="form-group">
-            <label>Precio ($)</label>
-            <input type="number" [(ngModel)]="editPrice" min="0" placeholder="Sin precio" />
-          </div>
-          <div class="form-group">
-            <label>Copias en venta</label>
-            <input type="number" [(ngModel)]="editSelling" min="0" [max]="editQty" />
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" (click)="cancelEdit()">Cancelar</button>
-          <button class="btn btn-primary" (click)="saveEdit()">Guardar</button>
-        </div>
-      </div>
     </div>
   }
 

@@ -278,30 +278,68 @@
       width: 100%;
       border-radius: 6px;
     }
+  }
 
-    .qty-badge {
-      position: absolute;
-      top: 4px;
-      left: 4px;
-      background: rgba(0, 212, 255, 0.9);
-      color: #000;
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 1px 5px;
-      border-radius: 4px;
+  .card-body {
+    flex: 1;
+    min-width: 0;
+
+    h4 {
+      margin: 0 0 0.15rem;
+      font-size: 0.9rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .selling-badge {
-      position: absolute;
-      bottom: 4px;
-      left: 4px;
-      background: rgba(233, 69, 96, 0.9);
-      color: #fff;
-      font-size: 0.65rem;
-      font-weight: 600;
-      padding: 1px 5px;
-      border-radius: 4px;
+    .card-meta {
+      display: block;
+      font-size: 0.75rem;
+      color: #888;
+      margin-bottom: 0.4rem;
     }
+  }
+
+  .inline-fields {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.4rem;
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+      flex: 1;
+      min-width: 60px;
+
+      label {
+        font-size: 0.65rem;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+
+      input {
+        width: 100%;
+        padding: 0.3rem 0.4rem;
+        border-radius: 5px;
+        border: 1px solid #333;
+        background: #0f0f23;
+        color: #e0e0e0;
+        font-size: 0.8rem;
+        text-align: center;
+
+        &:focus { outline: none; border-color: #00d4ff; }
+        &::placeholder { color: #555; }
+      }
+    }
+  }
+
+  .card-action-row {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
   }
 
   .card-info {
@@ -492,52 +530,6 @@
       border-radius: 8px;
     }
   }
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-
-  .modal-card-img {
-    width: 60px;
-    border-radius: 6px;
-  }
-
-  h3 { margin: 0; font-size: 1.1rem; }
-}
-
-.modal-body {
-  .form-group {
-    margin-bottom: 0.8rem;
-
-    label {
-      display: block;
-      font-size: 0.8rem;
-      color: #888;
-      margin-bottom: 0.3rem;
-    }
-
-    input {
-      width: 100%;
-      padding: 0.5rem;
-      border-radius: 6px;
-      border: 1px solid #333;
-      background: #0f0f23;
-      color: #e0e0e0;
-      font-size: 0.9rem;
-
-      &:focus { outline: none; border-color: #00d4ff; }
-    }
-  }
-}
-
-.modal-footer {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
-  margin-top: 1rem;
 }
 
 .detail-info {

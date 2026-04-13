@@ -30,10 +30,7 @@ export class CarpetaComponent implements OnInit {
   collectionSearch = '';
   collectionLoading = false;
   showSellingOnly = false;
-  editingEntry: CollectionEntry | null = null;
-  editQty = 1;
-  editPrice: number | null = null;
-  editSelling = 0;
+  dirtyEntries = new Map<number, { quantity?: number; price?: number | null; selling_quantity?: number }>();
 
   // ── Codex ──
   codexCards: Card[] = [];
@@ -151,27 +148,25 @@ export class CarpetaComponent implements OnInit {
   collectionNext() { if (this.collectionPage * 20 < this.collectionTotal) { this.collectionPage++; this.loadCollection(); } }
   get collectionTotalPages() { return Math.ceil(this.collectionTotal / 20); }
 
-  startEdit(entry: CollectionEntry) {
-    this.editingEntry = entry;
-    this.editQty = entry.quantity;
-    this.editPrice = entry.price;
-    this.editSelling = entry.selling_quantity;
+  onFieldChange(entry: CollectionEntry, field: string, value: number) {
+    let pending = this.dirtyEntries.get(entry.id) || {};
+    (pending as any)[field] = value;
+    this.dirtyEntries.set(entry.id, pending);
   }
 
-  cancelEdit() { this.editingEntry = null; }
-
-  saveEdit() {
-    if (!this.editingEntry) return;
+  saveEntry(entry: CollectionEntry) {
+    const pending = this.dirtyEntries.get(entry.id);
+    if (!pending) return;
     this.carpetaService.upsertCollection({
-      card: this.editingEntry.card_detail.id,
-      quantity: this.editQty,
-      price: this.editPrice,
-      selling_quantity: this.editSelling,
+      card: entry.card_detail.id,
+      quantity: pending.quantity ?? entry.quantity,
+      price: pending.price !== undefined ? pending.price : entry.price,
+      selling_quantity: pending.selling_quantity ?? entry.selling_quantity,
     }).subscribe(updated => {
-      const idx = this.collectionEntries.findIndex(e => e.id === this.editingEntry!.id);
+      const idx = this.collectionEntries.findIndex(e => e.id === entry.id);
       if (idx >= 0) this.collectionEntries[idx] = updated;
       this.collectionIds[updated.card_detail.id] = updated.quantity;
-      this.editingEntry = null;
+      this.dirtyEntries.delete(entry.id);
       this.cdr.detectChanges();
     });
   }

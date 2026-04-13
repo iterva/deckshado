@@ -220,6 +220,7 @@ export class DeckViewComponent implements OnInit {
       dream: 'Dream', totem: 'Tótem', eterno: 'Eterno', faerie: 'Faerie',
       dragon: 'Dragón', sombra: 'Sombra', heroe: 'Héroe', sacerdote: 'Sacerdote',
       guerrero: 'Guerrero', bestia: 'Bestia', caballero: 'Caballero',
+      ancestral: 'Ancestral', barbaro: 'Bárbaro', samurai: 'Samurái', oni: 'Oni',
     };
     return names[this.deck.race] || this.deck.race;
   }

@@ -39,6 +39,10 @@ export class FormatSelectComponent {
     { slug: 'guerrero', name: 'Guerrero', description: 'Aliados Guerrero + neutrales' },
     { slug: 'bestia', name: 'Bestia', description: 'Aliados Bestia + neutrales' },
     { slug: 'caballero', name: 'Caballero', description: 'Aliados Caballero + neutrales' },
+    { slug: 'ancestral', name: 'Ancestral', description: 'Aliados Ancestral + neutrales' },
+    { slug: 'barbaro', name: 'Bárbaro', description: 'Aliados Bárbaro + neutrales' },
+    { slug: 'samurai', name: 'Samurái', description: 'Aliados Samurái + neutrales' },
+    { slug: 'oni', name: 'Oni', description: 'Aliados Oni + neutrales' },
   ];
 
   constructor(

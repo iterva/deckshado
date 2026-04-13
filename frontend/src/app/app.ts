@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, HostListener, signal } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from './services/auth.service';
 
@@ -10,7 +10,21 @@ import { AuthService } from './services/auth.service';
   styleUrl: './app.scss',
 })
 export class App {
+  showDropdown = signal(false);
+
   constructor(public auth: AuthService) {
     sessionStorage.removeItem('chunk_reload');
+  }
+
+  toggleDropdown() {
+    this.showDropdown.update(v => !v);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.avatar-wrapper')) {
+      this.showDropdown.set(false);
+    }
   }
 }

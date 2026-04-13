@@ -1,6 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthTokens, User } from '../models';
 
@@ -68,5 +69,26 @@ export class AuthService {
     } else {
       this.router.navigate(['/']);
     }
+  }
+
+  updateProfile(data: { first_name?: string; last_name?: string; league_code?: string }): Observable<User> {
+    return this.http.patch<User>(`${this.apiUrl}/profile/`, data).pipe(
+      tap(user => this.currentUser.set(user)),
+    );
+  }
+
+  uploadAvatar(file: File): Observable<User> {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    return this.http.post<User>(`${this.apiUrl}/avatar/`, formData).pipe(
+      tap(user => this.currentUser.set(user)),
+    );
+  }
+
+  changePassword(oldPassword: string, newPassword: string): Observable<{ detail: string }> {
+    return this.http.post<{ detail: string }>(`${this.apiUrl}/change-password/`, {
+      old_password: oldPassword,
+      new_password: newPassword,
+    });
   }
 }

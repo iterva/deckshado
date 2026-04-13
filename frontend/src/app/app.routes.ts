@@ -11,5 +11,7 @@ export const routes: Routes = [
   { path: 'builder/new/:format', loadComponent: () => import('./pages/deck-builder/deck-builder.component').then(m => m.DeckBuilderComponent) },
   { path: 'builder/:id', loadComponent: () => import('./pages/deck-builder/deck-builder.component').then(m => m.DeckBuilderComponent) },
   { path: 'team', loadComponent: () => import('./pages/team/team.component').then(m => m.TeamComponent) },
+  { path: 'profile', loadComponent: () => import('./pages/profile/profile.component').then(m => m.ProfileComponent) },
+  { path: 'profile/edit', loadComponent: () => import('./pages/profile-edit/profile-edit.component').then(m => m.ProfileEditComponent) },
   { path: '**', redirectTo: '' },
 ];

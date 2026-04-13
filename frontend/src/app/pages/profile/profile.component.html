@@ -1,0 +1,41 @@
+<div class="profile-container">
+  <div class="profile-card">
+    <div class="profile-header">
+      <div class="avatar-circle">
+        @if (auth.user()?.avatar_url) {
+          <img [src]="auth.user()!.avatar_url!" alt="Avatar" class="avatar-img" />
+        } @else {
+          <svg class="avatar-placeholder" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M12 14c-6 0-8 3-8 4v1h16v-1c0-1-2-4-8-4z"/>
+          </svg>
+        }
+      </div>
+      <h1 class="username">{{ auth.user()?.username }}</h1>
+    </div>
+
+    <div class="profile-info">
+      <div class="info-row">
+        <span class="label">Nombre</span>
+        <span class="value">{{ auth.user()?.first_name || '—' }}</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Apellido</span>
+        <span class="value">{{ auth.user()?.last_name || '—' }}</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Email</span>
+        <span class="value">{{ auth.user()?.email || '—' }}</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Código Liga (CL)</span>
+        <span class="value">{{ auth.user()?.league_code || '—' }}</span>
+      </div>
+    </div>
+
+    <div class="profile-actions">
+      <a routerLink="/profile/edit" class="btn-edit">Editar Perfil</a>
+      <button class="btn-logout" (click)="auth.logout()">Cerrar Sesión</button>
+    </div>
+  </div>
+</div>

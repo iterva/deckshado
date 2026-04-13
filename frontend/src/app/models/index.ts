@@ -109,6 +109,10 @@ export interface User {
   id: number;
   username: string;
   email: string;
+  first_name: string;
+  last_name: string;
+  league_code: string;
+  avatar_url: string | null;
 }
 
 export interface TeamMember {

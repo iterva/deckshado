@@ -11,7 +11,31 @@
     <a routerLink="/team" routerLinkActive="active">Equipo</a>
     @if (auth.isAuthenticated()) {
       <a routerLink="/builder" routerLinkActive="active">Constructor</a>
-      <button class="btn-logout" (click)="auth.logout()">Salir</button>
+      <div class="avatar-wrapper">
+        <button class="avatar-btn" (click)="toggleDropdown()">
+          @if (auth.user()?.avatar_url) {
+            <img [src]="auth.user()!.avatar_url!" alt="Avatar" class="avatar-img" />
+          } @else {
+            <svg class="avatar-icon" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="8" r="4"/>
+              <path d="M12 14c-6 0-8 3-8 4v1h16v-1c0-1-2-4-8-4z"/>
+            </svg>
+          }
+        </button>
+        @if (showDropdown()) {
+          <div class="avatar-dropdown">
+            <a routerLink="/profile" class="dropdown-item" (click)="showDropdown.set(false)">
+              <span>👤</span> Mi Perfil
+            </a>
+            <a routerLink="/profile/edit" class="dropdown-item" (click)="showDropdown.set(false)">
+              <span>✏️</span> Editar
+            </a>
+            <button class="dropdown-item logout" (click)="auth.logout(); showDropdown.set(false)">
+              <span>🚪</span> Cerrar Sesión
+            </button>
+          </div>
+        }
+      </div>
     } @else {
       <a routerLink="/login" routerLinkActive="active" class="btn-login">Ingresar</a>
     }
@@ -49,10 +73,10 @@
       <span class="label">Ingresar</span>
     </a>
   } @else {
-    <button class="btn-logout-mobile" (click)="auth.logout()">
-      <span class="icon">🚪</span>
-      <span class="label">Salir</span>
-    </button>
+    <a routerLink="/profile" routerLinkActive="active">
+      <span class="icon">👤</span>
+      <span class="label">Perfil</span>
+    </a>
   }
 </nav>
 <footer class="footer">

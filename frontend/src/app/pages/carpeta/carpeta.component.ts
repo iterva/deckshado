@@ -31,6 +31,7 @@ export class CarpetaComponent implements OnInit {
   collectionLoading = false;
   showSellingOnly = false;
   dirtyEntries = new Map<number, { quantity?: number; price?: number | null; selling_quantity?: number }>();
+  previewCard: Card | null = null;
 
   // ── Codex ──
   codexCards: Card[] = [];

@@ -273,11 +273,27 @@
     width: 80px;
     flex-shrink: 0;
     position: relative;
+    cursor: pointer;
 
     img {
       width: 100%;
       border-radius: 6px;
     }
+
+    .eye-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 6px;
+      font-size: 1.4rem;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    &:hover .eye-overlay { opacity: 1; }
   }
 
   .card-body {
@@ -608,6 +624,29 @@
   }
 }
 
+.preview-modal {
+  position: relative;
+  max-width: 400px;
+  width: 90vw;
+
+  .close-btn {
+    position: absolute;
+    top: -2rem;
+    right: 0;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.4rem;
+    cursor: pointer;
+  }
+
+  .preview-image {
+    width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  }
+}
+
 // ── Responsive ──
 @media (max-width: 768px) {
   .carpeta-header {
@@ -650,5 +689,10 @@
 
   .card-item .card-overlay-actions {
     opacity: 1;
+  }
+
+  .collection-card .card-image .eye-overlay,
+  .wishlist-card .card-image .eye-overlay {
+    opacity: 0.7;
   }
 }

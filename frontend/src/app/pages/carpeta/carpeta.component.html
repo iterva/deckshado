@@ -37,7 +37,7 @@
       <div class="tab-toolbar">
         <div class="search-bar">
           <input type="text" placeholder="Buscar en tu colección..." [(ngModel)]="collectionSearch" (keyup.enter)="onCollectionSearch()" />
-          <button class="btn btn-sm" (click)="onCollectionSearch()">Buscar</button>
+          <button class="btn btn-primary btn-sm" (click)="onCollectionSearch()">Buscar</button>
         </div>
         <button class="btn btn-sm btn-filter" [class.active]="showSellingOnly" (click)="toggleSellingFilter()">
           🏷️ Solo en venta
@@ -59,8 +59,10 @@
       <div class="collection-grid">
         @for (entry of collectionEntries; track entry.id) {
           <div class="collection-card">
-            <div class="card-image">
-              <img [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" loading="lazy" />
+            <div class="card-image" (click)="previewCard = entry.card_detail">
+              <img [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" loading="lazy"
+                (error)="$any($event.target).src = entry.card_detail.image_url" />
+              <div class="eye-overlay">👁️</div>
             </div>
             <div class="card-body">
               <h4>{{ entry.card_detail.name }}</h4>
@@ -109,7 +111,7 @@
       <div class="tab-toolbar">
         <div class="search-bar">
           <input type="text" placeholder="Buscar cartas..." [(ngModel)]="codexSearch" (keyup.enter)="onCodexSearch()" />
-          <button class="btn btn-sm" (click)="onCodexSearch()">Buscar</button>
+          <button class="btn btn-primary btn-sm" (click)="onCodexSearch()">Buscar</button>
         </div>
       </div>
       <div class="filter-row">
@@ -186,7 +188,7 @@
       <div class="tab-toolbar">
         <div class="search-bar">
           <input type="text" placeholder="Buscar en wishlist..." [(ngModel)]="wishlistSearch" (keyup.enter)="onWishlistSearch()" />
-          <button class="btn btn-sm" (click)="onWishlistSearch()">Buscar</button>
+          <button class="btn btn-primary btn-sm" (click)="onWishlistSearch()">Buscar</button>
         </div>
       </div>
 
@@ -205,8 +207,10 @@
       <div class="wishlist-grid">
         @for (entry of wishlistEntries; track entry.id) {
           <div class="wishlist-card">
-            <div class="card-image">
-              <img [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" loading="lazy" />
+            <div class="card-image" (click)="previewCard = entry.card_detail">
+              <img [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" loading="lazy"
+                (error)="$any($event.target).src = entry.card_detail.image_url" />
+              <div class="eye-overlay">👁️</div>
             </div>
             <div class="card-info">
               <h4>{{ entry.card_detail.name }}</h4>
@@ -273,6 +277,16 @@
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══ MODAL: Preview carta grande ═══ -->
+  @if (previewCard) {
+    <div class="modal-overlay" (click)="previewCard = null">
+      <div class="preview-modal" (click)="$event.stopPropagation()">
+        <button class="close-btn" (click)="previewCard = null">✕</button>
+        <img [src]="previewCard.image_url" [alt]="previewCard.name" class="preview-image" />
       </div>
     </div>
   }

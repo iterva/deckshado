@@ -115,6 +115,12 @@ export class DeckBuilderComponent implements OnInit {
         this.raceName = raceNames[race] || race;
       }
 
+      // Read sub_fmt from query param (vcr for VCR sub-format)
+      const subFmt = this.route.snapshot.queryParamMap.get('sub_fmt');
+      if (subFmt) {
+        this.selectedSubFormat = subFmt;
+      }
+
       this.cardService.getFormats().subscribe(formats => {
         const found = formats.find(f => f.code === this.selectedFormat);
         if (found) this.formatName = found.name;
@@ -190,6 +196,7 @@ export class DeckBuilderComponent implements OnInit {
       format: this.selectedFormat,
       page: this.currentPage,
       deck_race: this.selectedRace || undefined,
+      sub_fmt: this.selectedSubFormat === 'vcr' ? 'vcr' : undefined,
     }).subscribe({
       next: (res) => {
         this.availableCards = res.results;
@@ -252,7 +259,9 @@ export class DeckBuilderComponent implements OnInit {
   }
 
   onSubFormatChange() {
+    this.currentPage = 1;
     this.loadBanlist();
+    this.loadCards();
   }
 
   getBanStatus(card: Card): BanlistEntry | null {

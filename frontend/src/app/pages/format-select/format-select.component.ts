@@ -21,9 +21,10 @@ interface RaceOption {
 export class FormatSelectComponent {
   formats: Format[] = [];
   loading = true;
-  step: 'format' | 'race' = 'format';
+  step: 'format' | 'sub_format' | 'race' = 'format';
   selectedFormat = '';
   selectedFormatName = '';
+  selectedSubFormat = '';
 
   readonly enabledFormats = ['imp', 'imp_r', 'esc'];
 
@@ -80,14 +81,33 @@ export class FormatSelectComponent {
     if (!this.isEnabled(code)) return;
     this.selectedFormat = code;
     this.selectedFormatName = this.formats.find(f => f.code === code)?.name || code;
+    if (code === 'imp') {
+      this.step = 'sub_format';
+    } else {
+      this.selectedSubFormat = 'racial';
+      this.step = 'race';
+    }
+  }
+
+  selectSubFormat(sub: string) {
+    this.selectedSubFormat = sub;
     this.step = 'race';
   }
 
   selectRace(slug: string) {
-    this.router.navigate(['/builder/new', this.selectedFormat], { queryParams: { race: slug } });
+    const qp: any = { race: slug };
+    if (this.selectedSubFormat === 'vcr') {
+      qp.sub_fmt = 'vcr';
+    }
+    this.router.navigate(['/builder/new', this.selectedFormat], { queryParams: qp });
   }
 
   backToFormats() {
     this.step = 'format';
+    this.selectedSubFormat = '';
+  }
+
+  backToSubFormat() {
+    this.step = 'sub_format';
   }
 }

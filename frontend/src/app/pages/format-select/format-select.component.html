@@ -18,8 +18,24 @@
         }
       </div>
     }
-  } @else {
+  } @else if (step === 'sub_format') {
     <h1>{{ selectedFormatName }}</h1>
+    <p class="subtitle">Elige el tipo de mazo</p>
+
+    <div class="format-grid">
+      <div class="format-card" (click)="selectSubFormat('racial')">
+        <span class="format-code">Racial</span>
+        <span class="format-name">Mazo racial clásico</span>
+      </div>
+      <div class="format-card" (click)="selectSubFormat('vcr')">
+        <span class="format-code">VCR</span>
+        <span class="format-name">Vasallo, Cortesano y Real</span>
+      </div>
+    </div>
+
+    <button class="btn btn-secondary" (click)="backToFormats()">← Volver a formatos</button>
+  } @else {
+    <h1>{{ selectedFormatName }}@if (selectedSubFormat === 'vcr') { · VCR }</h1>
     <p class="subtitle">Elige la raza de tu mazo</p>
 
     <div class="race-grid">
@@ -31,7 +47,7 @@
       }
     </div>
 
-    <button class="btn btn-secondary" (click)="backToFormats()">← Volver a formatos</button>
+    <button class="btn btn-secondary" (click)="selectedFormat === 'imp' ? backToSubFormat() : backToFormats()">← Volver</button>
   }
 
   <div class="back-link">

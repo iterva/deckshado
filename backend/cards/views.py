@@ -1,7 +1,7 @@
 from rest_framework import generics, permissions
 from rest_framework.pagination import PageNumberPagination
-from django.db.models import Q, Value, Case, When, BooleanField
-from django.db.models.functions import Concat, Lower
+from django.db.models import Q, Value, Case, When, BooleanField, TextField, Exists, OuterRef
+from django.db.models.functions import Concat, Lower, Coalesce
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 import unicodedata
@@ -105,6 +105,26 @@ class CardListView(generics.ListAPIView):
             qs = qs.filter(rarity__slug=rarity)
         if search:
             qs = qs.filter(name__iregex=_accent_insensitive(search))
+
+        # VCR sub-format filter: vasallo, cortesano, real + promos with same name AND ability
+        sub_fmt = self.request.query_params.get("sub_fmt")
+        if sub_fmt == "vcr" and fmt == "imp":
+            vcr_slugs = ["vasallo", "cortesano", "real"]
+            # Promos with updated wording but same functional card
+            vcr_promo_whitelist = ["laterna"]
+            # Subquery: exists a VCR card with same name and same ability
+            vcr_match = Card.objects.filter(
+                rarity__slug__in=vcr_slugs,
+                name=OuterRef("name"),
+            ).annotate(
+                _safe_ability=Coalesce("ability", Value(""), output_field=TextField()),
+            ).filter(
+                _safe_ability=Coalesce(OuterRef("ability"), Value(""), output_field=TextField())
+            )
+            qs = qs.filter(
+                Q(rarity__slug__in=vcr_slugs)
+                | Q(rarity__slug="promo") & (Exists(vcr_match) | Q(name__in=vcr_promo_whitelist))
+            )
 
         # deck_race: MYL racial deck filter
         deck_race = self.request.query_params.get("deck_race")

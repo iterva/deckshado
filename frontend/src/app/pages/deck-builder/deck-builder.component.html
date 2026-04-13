@@ -1,7 +1,7 @@
 <div class="builder-layout">
   <!-- Left panel: Card Browser -->
   <div class="card-browser">
-    <h2>Cartas Disponibles · {{ formatName }}@if (raceName) { · {{ raceName }} }</h2>
+    <h2>Cartas Disponibles · {{ formatName }}@if (selectedSubFormat === 'vcr') { · VCR }@if (raceName) { · {{ raceName }} }</h2>
     <div class="browser-filters">
       <div class="search-row">
         <input type="text" placeholder="Buscar carta..." [(ngModel)]="search" (keyup.enter)="onSearch()">
@@ -10,9 +10,9 @@
       <div class="filter-row">
         <select [(ngModel)]="selectedSubFormat" (change)="onSubFormatChange()">
           <option value="racial">Formato Racial</option>
-          <!-- VCR y Triadas ocultos hasta activación futura -->
-          <!-- <option value="vcr">VCR</option> -->
-          <!-- <option value="triadas">Triadas</option> -->
+          @if (selectedFormat === 'imp') {
+            <option value="vcr">VCR</option>
+          }
         </select>
         <select [(ngModel)]="selectedEdition" (change)="onSearch()">
           <option value="">Todas las ediciones</option>

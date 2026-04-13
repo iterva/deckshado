@@ -19,3 +19,12 @@ frontend/.angular/
 # Temporales
 banlist_raw.html
 .vercel
+
+# Carpetas de imágenes locales
+cartas por subir/
+cartas por subir 2/
+cartas por subir 2.5/
+cartas por subir 3/
+cartas por subir 4/
+cartas por subir 5/
+extra-cards/

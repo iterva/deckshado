@@ -31,6 +31,7 @@ ESC_EDITION_SLUGS = [
     "hijos-del-sol",
     "legado-gotico",
     "escuelas_elementales",
+    "dharma",
 ]
 
 # Map base vowels/consonants to regex classes that match accented variants

@@ -10,7 +10,7 @@ import {
   Edition, CardType, Race, Rarity, CarpetaIds,
 } from '../../models';
 
-type Tab = 'carpeta' | 'codex' | 'wishlist';
+type Tab = 'carpeta' | 'codex' | 'wishlist' | 'mercado';
 
 @Component({
   selector: 'app-carpeta',
@@ -61,6 +61,17 @@ export class CarpetaComponent implements OnInit {
   collectionIds: { [cardId: number]: number } = {};
   wishlistIds = new Set<number>();
 
+  // ── Mercado (store) ──
+  mercadoEntries: CollectionEntry[] = [];
+  mercadoTotal = 0;
+  mercadoPage = 1;
+  mercadoSearch = '';
+  mercadoLoading = false;
+  mercadoDirty = new Map<number, { price?: number | null; selling_quantity?: number }>();
+  shareToken = '';
+  shareLinkCopied = false;
+  batchSaving = false;
+
   constructor(
     public auth: AuthService,
     private carpetaService: CarpetaService,
@@ -85,12 +96,14 @@ export class CarpetaComponent implements OnInit {
     if (tab === 'carpeta' && !this.collectionEntries.length) this.loadCollection();
     if (tab === 'codex' && !this.codexCards.length) this.loadCodex();
     if (tab === 'wishlist' && !this.wishlistEntries.length) this.loadWishlist();
+    if (tab === 'mercado' && !this.mercadoEntries.length) this.loadMercado();
   }
 
   // ── Binder Profile ──
   loadBinderProfile() {
     this.carpetaService.getBinderProfile().subscribe(p => {
       this.binderProfile = p;
+      this.shareToken = p.share_token;
       this.cdr.detectChanges();
     });
   }
@@ -282,6 +295,105 @@ export class CarpetaComponent implements OnInit {
       this.wishlistEntries = this.wishlistEntries.filter(e => e.id !== entry.id);
       this.wishlistIds.delete(entry.card_detail.id);
       this.wishlistTotal--;
+      this.cdr.detectChanges();
+    });
+  }
+
+  // ── Batch Save (Carpeta tab) ──
+  saveAllChanges() {
+    if (this.dirtyEntries.size === 0) return;
+    this.batchSaving = true;
+    const items: { card: number; quantity?: number; price?: number | null; selling_quantity?: number }[] = [];
+    this.dirtyEntries.forEach((pending, entryId) => {
+      const entry = this.collectionEntries.find(e => e.id === entryId);
+      if (!entry) return;
+      items.push({
+        card: entry.card_detail.id,
+        quantity: pending.quantity ?? entry.quantity,
+        price: pending.price !== undefined ? pending.price : entry.price,
+        selling_quantity: pending.selling_quantity ?? entry.selling_quantity,
+      });
+    });
+    this.carpetaService.batchUpsertCollection(items).subscribe({
+      next: () => {
+        this.dirtyEntries.clear();
+        this.batchSaving = false;
+        this.loadCollection();
+      },
+      error: () => { this.batchSaving = false; this.cdr.detectChanges(); },
+    });
+  }
+
+  // ── Mercado ──
+  loadMercado() {
+    this.mercadoLoading = true;
+    this.carpetaService.getCollection(
+      this.mercadoPage,
+      this.mercadoSearch || undefined,
+      true, // selling only
+    ).subscribe({
+      next: res => {
+        this.mercadoEntries = res.results;
+        this.mercadoTotal = res.count;
+        this.mercadoLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => { this.mercadoLoading = false; this.cdr.detectChanges(); },
+    });
+  }
+
+  onMercadoSearch() { this.mercadoPage = 1; this.loadMercado(); }
+  mercadoPrev() { if (this.mercadoPage > 1) { this.mercadoPage--; this.loadMercado(); } }
+  mercadoNext() { if (this.mercadoPage * 20 < this.mercadoTotal) { this.mercadoPage++; this.loadMercado(); } }
+  get mercadoTotalPages() { return Math.ceil(this.mercadoTotal / 20); }
+
+  onMercadoFieldChange(entry: CollectionEntry, field: string, value: number) {
+    let pending = this.mercadoDirty.get(entry.id) || {};
+    (pending as any)[field] = value;
+    this.mercadoDirty.set(entry.id, pending);
+  }
+
+  saveMercadoChanges() {
+    if (this.mercadoDirty.size === 0) return;
+    this.batchSaving = true;
+    const items: { card: number; price?: number | null; selling_quantity?: number }[] = [];
+    this.mercadoDirty.forEach((pending, entryId) => {
+      const entry = this.mercadoEntries.find(e => e.id === entryId);
+      if (!entry) return;
+      items.push({
+        card: entry.card_detail.id,
+        price: pending.price !== undefined ? pending.price : entry.price,
+        selling_quantity: pending.selling_quantity ?? entry.selling_quantity,
+      });
+    });
+    this.carpetaService.batchUpsertCollection(items).subscribe({
+      next: () => {
+        this.mercadoDirty.clear();
+        this.batchSaving = false;
+        this.loadMercado();
+      },
+      error: () => { this.batchSaving = false; this.cdr.detectChanges(); },
+    });
+  }
+
+  copyShareLink() {
+    if (!this.shareToken) return;
+    const url = `${window.location.origin}/tienda/${this.shareToken}`;
+    navigator.clipboard.writeText(url).then(() => {
+      this.shareLinkCopied = true;
+      this.cdr.detectChanges();
+      setTimeout(() => { this.shareLinkCopied = false; this.cdr.detectChanges(); }, 2000);
+    });
+  }
+
+  removeMercadoEntry(entry: CollectionEntry) {
+    // Set selling_quantity to 0 (removes from mercado but keeps in collection)
+    this.carpetaService.upsertCollection({
+      card: entry.card_detail.id,
+      selling_quantity: 0,
+    }).subscribe(() => {
+      this.mercadoEntries = this.mercadoEntries.filter(e => e.id !== entry.id);
+      this.mercadoTotal--;
       this.cdr.detectChanges();
     });
   }

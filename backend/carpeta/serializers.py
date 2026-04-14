@@ -6,10 +6,11 @@ from cards.serializers import CardListSerializer
 class BinderProfileSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="user.username", read_only=True)
     binder_avatar_url = serializers.SerializerMethodField()
+    share_token = serializers.UUIDField(read_only=True)
 
     class Meta:
         model = BinderProfile
-        fields = ["id", "username", "binder_avatar_url"]
+        fields = ["id", "username", "binder_avatar_url", "share_token"]
 
     def get_binder_avatar_url(self, obj):
         if obj.binder_avatar:

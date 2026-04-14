@@ -1,3 +1,5 @@
+import uuid
+
 from django.conf import settings
 from django.db import models
 
@@ -7,6 +9,7 @@ class BinderProfile(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="binder_profile"
     )
     binder_avatar = models.ImageField(upload_to="binder_avatars/", blank=True, null=True)
+    share_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
 
     def __str__(self):
         return f"Carpeta de {self.user.username}"

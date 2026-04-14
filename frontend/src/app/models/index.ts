@@ -146,6 +146,7 @@ export interface BinderProfile {
   id: number;
   username: string;
   binder_avatar_url: string | null;
+  share_token: string;
 }
 
 export interface CollectionEntry {

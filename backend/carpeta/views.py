@@ -3,6 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from .models import BinderProfile, CollectionEntry, WishlistEntry
 from .serializers import (
     BinderProfileSerializer,
@@ -182,3 +183,90 @@ def my_ids(request):
         WishlistEntry.objects.filter(user=request.user).values_list("card_id", flat=True)
     )
     return Response({"collection": collection, "wishlist": wishlist})
+
+
+# ── Batch upsert ─────────────────────────────────────────
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def collection_batch_upsert(request):
+    """Actualizar múltiples entradas de la colección de una sola vez."""
+    items = request.data if isinstance(request.data, list) else []
+    if not items:
+        return Response({"detail": "Se esperaba una lista de cambios."}, status=status.HTTP_400_BAD_REQUEST)
+    if len(items) > 200:
+        return Response({"detail": "Máximo 200 cambios por lote."}, status=status.HTTP_400_BAD_REQUEST)
+
+    updated = 0
+    for item in items:
+        card_id = item.get("card")
+        if not card_id:
+            continue
+        entry, created = CollectionEntry.objects.get_or_create(
+            user=request.user, card_id=card_id,
+            defaults={
+                "quantity": item.get("quantity", 1),
+                "price": item.get("price"),
+                "selling_quantity": item.get("selling_quantity", 0),
+            },
+        )
+        if not created:
+            changed = False
+            if "quantity" in item:
+                entry.quantity = int(item["quantity"])
+                changed = True
+            if "price" in item:
+                entry.price = item["price"]
+                changed = True
+            if "selling_quantity" in item:
+                entry.selling_quantity = int(item["selling_quantity"])
+                changed = True
+            if changed:
+                entry.save()
+        updated += 1
+    return Response({"updated": updated})
+
+
+# ── Public Store (Tienda) ────────────────────────────────
+
+class PublicStoreListView(generics.ListAPIView):
+    """Cartas en venta de un usuario, accesible públicamente mediante share_token."""
+    serializer_class = CollectionEntrySerializer
+    pagination_class = CarpetaPagination
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        token = self.kwargs["token"]
+        profile = get_object_or_404(BinderProfile, share_token=token)
+        qs = CollectionEntry.objects.filter(
+            user=profile.user, selling_quantity__gt=0
+        ).select_related(
+            "card__edition", "card__rarity", "card__race", "card__card_type"
+        )
+        search = self.request.query_params.get("search")
+        if search:
+            qs = qs.filter(card__name__icontains=search)
+        return qs
+
+    def list(self, request, *args, **kwargs):
+        token = self.kwargs["token"]
+        profile = get_object_or_404(BinderProfile, share_token=token)
+        response = super().list(request, *args, **kwargs)
+        response.data["store_owner"] = profile.user.username
+        if hasattr(profile.user, "profile") and profile.user.profile.avatar:
+            response.data["store_avatar"] = request.build_absolute_uri(profile.user.profile.avatar.url)
+        else:
+            response.data["store_avatar"] = None
+        if profile.binder_avatar:
+            response.data["store_binder_avatar"] = request.build_absolute_uri(profile.binder_avatar.url)
+        else:
+            response.data["store_binder_avatar"] = None
+        return response
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def my_share_token(request):
+    """Retorna el share_token del usuario autenticado."""
+    profile, _ = BinderProfile.objects.get_or_create(user=request.user)
+    return Response({"share_token": str(profile.share_token)})

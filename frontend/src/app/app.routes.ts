@@ -14,5 +14,6 @@ export const routes: Routes = [
   { path: 'team', loadComponent: () => import('./pages/team/team.component').then(m => m.TeamComponent) },
   { path: 'profile', loadComponent: () => import('./pages/profile/profile.component').then(m => m.ProfileComponent) },
   { path: 'profile/edit', loadComponent: () => import('./pages/profile-edit/profile-edit.component').then(m => m.ProfileEditComponent) },
+  { path: 'tienda/:token', loadComponent: () => import('./pages/tienda/tienda.component').then(m => m.TiendaComponent) },
   { path: '**', redirectTo: '' },
 ];

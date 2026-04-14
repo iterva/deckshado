@@ -647,6 +647,22 @@
   }
 }
 
+// ── Share / Mercado ──
+.btn-share {
+  background: #2a6a8a;
+  &:hover { background: #3a8aaa; }
+}
+
+.dirty-badge {
+  font-size: 0.7rem;
+  color: #ffbd39;
+  font-style: italic;
+}
+
+.mercado-card {
+  border-left: 3px solid #ffbd39;
+}
+
 // ── Responsive ──
 @media (max-width: 768px) {
   .carpeta-header {

@@ -29,6 +29,9 @@
     <button class="tab" [class.active]="activeTab === 'wishlist'" (click)="switchTab('wishlist')">
       ❤️ WISHLIST
     </button>
+    <button class="tab" [class.active]="activeTab === 'mercado'" (click)="switchTab('mercado')">
+      🏪 MERCADO
+    </button>
   </div>
 
   <!-- ═══ TAB: CARPETA ═══ -->
@@ -42,6 +45,11 @@
         <button class="btn btn-sm btn-filter" [class.active]="showSellingOnly" (click)="toggleSellingFilter()">
           🏷️ Solo en venta
         </button>
+        @if (dirtyEntries.size > 0) {
+          <button class="btn btn-sm btn-primary" (click)="saveAllChanges()" [disabled]="batchSaving">
+            {{ batchSaving ? '⏳ Guardando...' : '💾 Guardar Cambios (' + dirtyEntries.size + ')' }}
+          </button>
+        }
       </div>
 
       <p class="results-count">{{ collectionTotal }} cartas en tu colección</p>
@@ -235,6 +243,80 @@
           <button class="btn btn-sm" (click)="wishlistPrev()" [disabled]="wishlistPage === 1">← Anterior</button>
           <span>{{ wishlistPage }} / {{ wishlistTotalPages }}</span>
           <button class="btn btn-sm" (click)="wishlistNext()" [disabled]="wishlistPage >= wishlistTotalPages">Siguiente →</button>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ═══ TAB: MERCADO ═══ -->
+  @if (activeTab === 'mercado') {
+    <div class="tab-content">
+      <div class="tab-toolbar">
+        <div class="search-bar">
+          <input type="text" placeholder="Buscar en tu mercado..." [(ngModel)]="mercadoSearch" (keyup.enter)="onMercadoSearch()" />
+          <button class="btn btn-primary btn-sm" (click)="onMercadoSearch()">Buscar</button>
+        </div>
+        <button class="btn btn-sm btn-share" (click)="copyShareLink()">
+          {{ shareLinkCopied ? '✅ Copiado!' : '🔗 Copiar Link Tienda' }}
+        </button>
+        @if (mercadoDirty.size > 0) {
+          <button class="btn btn-sm btn-primary" (click)="saveMercadoChanges()" [disabled]="batchSaving">
+            {{ batchSaving ? '⏳ Guardando...' : '💾 Guardar Cambios (' + mercadoDirty.size + ')' }}
+          </button>
+        }
+      </div>
+
+      <p class="results-count">{{ mercadoTotal }} cartas en venta</p>
+
+      @if (mercadoLoading) {
+        <div class="loading">Cargando...</div>
+      }
+
+      @if (!mercadoLoading && mercadoEntries.length === 0) {
+        <div class="empty-state">
+          <p>No tienes cartas en venta. Ve a <strong>Carpeta</strong> y configura la cantidad de venta y precio.</p>
+        </div>
+      }
+
+      <div class="collection-grid">
+        @for (entry of mercadoEntries; track entry.id) {
+          <div class="collection-card mercado-card">
+            <div class="card-image" (click)="previewCard = entry.card_detail">
+              <img [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" loading="lazy"
+                (error)="$any($event.target).src = entry.card_detail.image_url" />
+              <div class="eye-overlay">👁️</div>
+            </div>
+            <div class="card-body">
+              <h4>{{ entry.card_detail.name }}</h4>
+              <span class="card-meta">{{ entry.card_detail.type_name }} · {{ entry.card_detail.edition_title }}</span>
+              <div class="inline-fields">
+                <div class="field">
+                  <label>Precio $</label>
+                  <input type="number" [value]="entry.price" min="0" placeholder="—"
+                    (input)="onMercadoFieldChange(entry, 'price', $any($event.target).valueAsNumber)" />
+                </div>
+                <div class="field">
+                  <label>Vendo</label>
+                  <input type="number" [value]="entry.selling_quantity" min="0"
+                    (input)="onMercadoFieldChange(entry, 'selling_quantity', $any($event.target).valueAsNumber)" />
+                </div>
+              </div>
+              <div class="card-action-row">
+                @if (mercadoDirty.has(entry.id)) {
+                  <span class="dirty-badge">· sin guardar</span>
+                }
+                <button class="btn btn-xs btn-danger" (click)="removeMercadoEntry(entry)" title="Quitar de venta">🗑️</button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (mercadoTotalPages > 1) {
+        <div class="pagination">
+          <button class="btn btn-sm" (click)="mercadoPrev()" [disabled]="mercadoPage === 1">← Anterior</button>
+          <span>{{ mercadoPage }} / {{ mercadoTotalPages }}</span>
+          <button class="btn btn-sm" (click)="mercadoNext()" [disabled]="mercadoPage >= mercadoTotalPages">Siguiente →</button>
         </div>
       }
     </div>

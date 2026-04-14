@@ -1,0 +1,87 @@
+<div class="tienda-container">
+  @if (notFound) {
+    <div class="not-found">
+      <h2>Tienda no encontrada</h2>
+      <p>El enlace que seguiste no es válido o la tienda ya no existe.</p>
+    </div>
+  } @else {
+    <!-- Header -->
+    <div class="tienda-header">
+      <div class="store-avatar-wrapper">
+        @if (storeBinder) {
+          <img [src]="storeBinder" alt="Avatar" class="store-avatar" />
+        } @else if (storeAvatar) {
+          <img [src]="storeAvatar" alt="Avatar" class="store-avatar" />
+        } @else {
+          <div class="store-avatar-placeholder">🏪</div>
+        }
+      </div>
+      <div class="store-info">
+        <h1>Tienda de {{ storeOwner }}</h1>
+        <p class="store-count">{{ total }} cartas en venta</p>
+      </div>
+      <div class="store-actions">
+        <button class="btn btn-sm btn-share" (click)="copyLink()">🔗 Copiar Link</button>
+        <button class="btn btn-sm btn-pdf" (click)="exportPdf()">📄 Exportar PDF</button>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-bar">
+      <input type="text" placeholder="Buscar cartas en venta..." [(ngModel)]="search" (keyup.enter)="onSearch()" />
+      <button class="btn btn-primary btn-sm" (click)="onSearch()">Buscar</button>
+    </div>
+
+    @if (loading) {
+      <div class="loading">Cargando...</div>
+    }
+
+    @if (!loading && entries.length === 0 && !notFound) {
+      <div class="empty-state">
+        <p>Esta tienda no tiene cartas en venta por el momento.</p>
+      </div>
+    }
+
+    <!-- Cards Grid -->
+    <div class="store-grid">
+      @for (entry of entries; track entry.id) {
+        <div class="store-card">
+          <div class="card-image" (click)="previewCard = entry.card_detail">
+            <img [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" loading="lazy"
+              (error)="$any($event.target).src = entry.card_detail.image_url" />
+          </div>
+          <div class="card-body">
+            <h4>{{ entry.card_detail.name }}</h4>
+            <span class="card-meta">{{ entry.card_detail.type_name }} · {{ entry.card_detail.edition_title }}</span>
+            <div class="card-selling-info">
+              @if (entry.price) {
+                <span class="price-tag">${{ entry.price }}</span>
+              } @else {
+                <span class="price-tag no-price">Consultar</span>
+              }
+              <span class="qty-tag">x{{ entry.selling_quantity }} disponibles</span>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (totalPages > 1) {
+      <div class="pagination">
+        <button class="btn btn-sm" (click)="prevPage()" [disabled]="page === 1">← Anterior</button>
+        <span>{{ page }} / {{ totalPages }}</span>
+        <button class="btn btn-sm" (click)="nextPage()" [disabled]="page >= totalPages">Siguiente →</button>
+      </div>
+    }
+
+    <!-- Preview Modal -->
+    @if (previewCard) {
+      <div class="modal-overlay" (click)="previewCard = null">
+        <div class="preview-modal" (click)="$event.stopPropagation()">
+          <button class="close-btn" (click)="previewCard = null">✕</button>
+          <img [src]="previewCard.image_url" [alt]="previewCard.name" class="preview-image" />
+        </div>
+      </div>
+    }
+  }
+</div>

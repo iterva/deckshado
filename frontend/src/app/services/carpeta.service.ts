@@ -66,4 +66,22 @@ export class CarpetaService {
   getMyIds(): Observable<CarpetaIds> {
     return this.http.get<CarpetaIds>(`${this.apiUrl}/ids/`);
   }
+
+  // ── Batch upsert ──
+  batchUpsertCollection(items: { card: number; quantity?: number; price?: number | null; selling_quantity?: number }[]): Observable<{ updated: number }> {
+    return this.http.post<{ updated: number }>(`${this.apiUrl}/collection/batch-upsert/`, items);
+  }
+
+  // ── Share token ──
+  getShareToken(): Observable<{ share_token: string }> {
+    return this.http.get<{ share_token: string }>(`${this.apiUrl}/share-token/`);
+  }
+
+  // ── Public Store ──
+  getPublicStore(token: string, page?: number, search?: string): Observable<PaginatedResponse<CollectionEntry> & { store_owner: string; store_avatar: string | null; store_binder_avatar: string | null }> {
+    let params = new HttpParams();
+    if (page) params = params.set('page', page.toString());
+    if (search) params = params.set('search', search);
+    return this.http.get<any>(`${this.apiUrl}/store/${token}/`, { params });
+  }
 }

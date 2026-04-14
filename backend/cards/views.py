@@ -21,14 +21,16 @@ MYL_CARDS_CDN = "https://api.myl.cl/static/cards/"
 
 # Ediciones que componen el formato virtual "Escuelas Elementales"
 ESC_EDITION_SLUGS = [
+    "bushido",
+    "sol-naciente",
     "dominio",
     "contraataque",
     "aguila-imperial",
+    "steampunk",
     "axis-mundi",
     "hijos-del-sol",
     "legado-gotico",
     "escuelas_elementales",
-    "steampunk",
     "dharma",
 ]
 

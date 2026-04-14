@@ -51,7 +51,7 @@ export class DeckBuilderComponent implements OnInit {
     'bushido', 'sol-naciente',
     'dominio', 'contraataque', 'aguila-imperial', 'axis-mundi',
     'hijos-del-sol', 'legado-gotico', 'escuelas_elementales',
-    'steampunk', 'dharma',
+    'steampunk',
   ];
   currentPage = 1;
   totalCards = 0;

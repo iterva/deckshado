@@ -95,10 +95,10 @@ export class CarpetaComponent implements OnInit {
 
   switchTab(tab: Tab) {
     this.activeTab = tab;
-    if (tab === 'carpeta' && !this.collectionEntries.length) this.loadCollection();
+    if (tab === 'carpeta') this.loadCollection();
     if (tab === 'codex' && !this.codexCards.length) this.loadCodex();
-    if (tab === 'wishlist' && !this.wishlistEntries.length) this.loadWishlist();
-    if (tab === 'mercado' && !this.mercadoEntries.length) this.loadMercado();
+    if (tab === 'wishlist') this.loadWishlist();
+    if (tab === 'mercado') this.loadMercado();
   }
 
   // ── Binder Profile ──

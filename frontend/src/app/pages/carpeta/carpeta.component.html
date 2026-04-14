@@ -259,6 +259,9 @@
         <button class="btn btn-sm btn-share" (click)="copyShareLink()">
           {{ shareLinkCopied ? '✅ Copiado!' : '🔗 Copiar Link Tienda' }}
         </button>
+        <button class="btn btn-sm btn-pdf" (click)="exportMercadoPdf()" [disabled]="exportingPdf || mercadoEntries.length === 0">
+          {{ exportingPdf ? '⏳ Generando...' : '📄 Exportar PDF' }}
+        </button>
         @if (mercadoDirty.size > 0) {
           <button class="btn btn-sm btn-primary" (click)="saveMercadoChanges()" [disabled]="batchSaving">
             {{ batchSaving ? '⏳ Guardando...' : '💾 Guardar Cambios (' + mercadoDirty.size + ')' }}
@@ -321,6 +324,26 @@
       }
     </div>
   }
+
+  <!-- Hidden export area for PDF -->
+  <div id="mercado-export" class="mercado-export-area">
+    <div class="export-header">
+      <h2>🏪 Tienda de {{ auth.user()?.username }}</h2>
+      <p>{{ mercadoAllEntries.length }} cartas en venta</p>
+    </div>
+    <div class="export-grid">
+      @for (entry of mercadoAllEntries; track entry.id) {
+        <div class="export-card">
+          <img [src]="entry.card_detail.image_url" [alt]="entry.card_detail.name" crossorigin="anonymous" />
+          <div class="export-card-info">
+            <strong>{{ entry.card_detail.name }}</strong>
+            <span>{{ entry.card_detail.type_name }} · {{ entry.card_detail.edition_title }}</span>
+            <span class="export-price">{{ entry.price ? '$' + entry.price : 'Consultar' }} · x{{ entry.selling_quantity }}</span>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
 
   <!-- ═══ MODAL: Detalle de carta (Codex) ═══ -->
   @if (selectedCard) {

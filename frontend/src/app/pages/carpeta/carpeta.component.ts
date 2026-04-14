@@ -71,6 +71,8 @@ export class CarpetaComponent implements OnInit {
   shareToken = '';
   shareLinkCopied = false;
   batchSaving = false;
+  exportingPdf = false;
+  mercadoAllEntries: CollectionEntry[] = [];
 
   constructor(
     public auth: AuthService,
@@ -396,5 +398,74 @@ export class CarpetaComponent implements OnInit {
       this.mercadoTotal--;
       this.cdr.detectChanges();
     });
+  }
+
+  async exportMercadoPdf() {
+    this.exportingPdf = true;
+    this.cdr.detectChanges();
+
+    try {
+      // Load ALL selling entries (no pagination) for the export
+      const allPages: CollectionEntry[] = [];
+      let page = 1;
+      let hasMore = true;
+      while (hasMore) {
+        const res = await this.carpetaService.getCollection(page, undefined, true).toPromise();
+        if (res) {
+          allPages.push(...res.results);
+          hasMore = page * 40 < res.count;
+          page++;
+        } else {
+          hasMore = false;
+        }
+      }
+      this.mercadoAllEntries = allPages;
+      this.cdr.detectChanges();
+
+      // Wait for images to load
+      const el = document.getElementById('mercado-export')!;
+      el.style.position = 'absolute';
+      el.style.left = '0';
+      el.style.top = '0';
+      el.style.width = '1200px';
+      el.style.display = 'block';
+
+      const imgs = Array.from(el.querySelectorAll('img')) as HTMLImageElement[];
+      await Promise.all(imgs.map(img => {
+        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+        return new Promise<void>((resolve) => {
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+          img.loading = 'eager';
+          img.src = img.src;
+        });
+      }));
+
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(el, {
+        backgroundColor: '#0f0f23',
+        useCORS: true,
+        allowTaint: true,
+        scale: 2,
+        windowWidth: 1200,
+        windowHeight: el.scrollHeight,
+      });
+
+      el.style.position = '';
+      el.style.left = '';
+      el.style.top = '';
+      el.style.width = '';
+      el.style.display = '';
+
+      const link = document.createElement('a');
+      link.download = `tienda_${this.auth.user()?.username || 'mercado'}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (e) {
+      console.error('Error exporting mercado:', e);
+    }
+
+    this.exportingPdf = false;
+    this.cdr.detectChanges();
   }
 }

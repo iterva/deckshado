@@ -167,6 +167,12 @@ export class CarpetaComponent implements OnInit {
   onFieldChange(entry: CollectionEntry, field: string, value: number) {
     let pending = this.dirtyEntries.get(entry.id) || {};
     (pending as any)[field] = value;
+    // Cap selling_quantity to quantity
+    const qty = pending.quantity ?? entry.quantity;
+    const sell = pending.selling_quantity ?? entry.selling_quantity;
+    if (sell > qty) {
+      pending.selling_quantity = qty;
+    }
     this.dirtyEntries.set(entry.id, pending);
   }
 
@@ -352,6 +358,11 @@ export class CarpetaComponent implements OnInit {
   onMercadoFieldChange(entry: CollectionEntry, field: string, value: number) {
     let pending = this.mercadoDirty.get(entry.id) || {};
     (pending as any)[field] = value;
+    // Cap selling_quantity to quantity
+    const sell = pending.selling_quantity ?? entry.selling_quantity;
+    if (sell > entry.quantity) {
+      pending.selling_quantity = entry.quantity;
+    }
     this.mercadoDirty.set(entry.id, pending);
   }
 

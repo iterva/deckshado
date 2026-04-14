@@ -90,6 +90,11 @@ def collection_upsert(request):
             entry.selling_quantity = int(request.data["selling_quantity"])
         entry.save()
 
+    # Cap selling_quantity to quantity
+    if entry.selling_quantity > entry.quantity:
+        entry.selling_quantity = entry.quantity
+        entry.save()
+
     entry = CollectionEntry.objects.select_related(
         "card__edition", "card__rarity", "card__race", "card__card_type"
     ).get(pk=entry.pk)
@@ -222,6 +227,9 @@ def collection_batch_upsert(request):
                 entry.selling_quantity = int(item["selling_quantity"])
                 changed = True
             if changed:
+                # Cap selling_quantity to quantity
+                if entry.selling_quantity > entry.quantity:
+                    entry.selling_quantity = entry.quantity
                 entry.save()
         updated += 1
     return Response({"updated": updated})

@@ -88,7 +88,7 @@
                 </div>
                 <div class="field">
                   <label>Vendo</label>
-                  <input type="number" [value]="entry.selling_quantity" min="0"
+                  <input type="number" [value]="entry.selling_quantity" min="0" [max]="entry.quantity"
                     (input)="onFieldChange(entry, 'selling_quantity', $any($event.target).valueAsNumber)" />
                 </div>
               </div>
@@ -300,7 +300,7 @@
                 </div>
                 <div class="field">
                   <label>Vendo</label>
-                  <input type="number" [value]="entry.selling_quantity" min="0"
+                  <input type="number" [value]="entry.selling_quantity" min="0" [max]="entry.quantity"
                     (input)="onMercadoFieldChange(entry, 'selling_quantity', $any($event.target).valueAsNumber)" />
                 </div>
               </div>

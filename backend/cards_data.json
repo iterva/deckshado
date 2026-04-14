@@ -1114,6 +1114,20 @@
     }
   },
   {
+    "model": "cards.edition",
+    "pk": 76,
+    "fields": {
+      "myl_id": "custom_heroes_de_dharma",
+      "slug": "heroes_de_dharma",
+      "title": "ESC - Heroes de Dharma",
+      "image": null,
+      "date_release": null,
+      "date_empire_valid": null,
+      "format": 8,
+      "active": true
+    }
+  },
+  {
     "model": "cards.race",
     "pk": 1,
     "fields": {
@@ -220604,6 +220618,25 @@
   },
   {
     "model": "cards.card",
+    "pk": 11552,
+    "fields": {
+      "myl_id": "custom_heroes_dharma_001",
+      "edid": "1",
+      "slug": "arjumand-banu-begum-heroes_de_dharma",
+      "name": "Arjumand Banu Begum",
+      "edition": 76,
+      "rarity": 1,
+      "race": null,
+      "card_type": null,
+      "cost": null,
+      "damage": null,
+      "ability": null,
+      "flavour": null,
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_001.png"
+    }
+  },
+  {
+    "model": "cards.card",
     "pk": 11540,
     "fields": {
       "myl_id": "custom_tk26_10",
@@ -220619,6 +220652,25 @@
       "ability": "Sólo puedes jugarlo en respuesta a que tu oponente juegue su segunda carta del turno y no puede ser Anulado.\nTu oponente sólo puede jugar una carta más de ese mismo tipo este turno y tú no puedes jugar más cartas este turno.",
       "flavour": "Entre sombras, las velas marcan senderos dorados, guiando a los espíritus con ternura hacia el calor del recuerdo eterno.",
       "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_10.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11561,
+    "fields": {
+      "myl_id": "custom_heroes_dharma_010",
+      "edid": "10",
+      "slug": "krisna-heroes_de_dharma",
+      "name": "Krisna",
+      "edition": 76,
+      "rarity": 1,
+      "race": null,
+      "card_type": null,
+      "cost": null,
+      "damage": null,
+      "ability": null,
+      "flavour": null,
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_010.png"
     }
   },
   {
@@ -220642,6 +220694,44 @@
   },
   {
     "model": "cards.card",
+    "pk": 11562,
+    "fields": {
+      "myl_id": "custom_heroes_dharma_011",
+      "edid": "11",
+      "slug": "loto-sagrado-heroes_de_dharma",
+      "name": "Loto Sagrado",
+      "edition": 76,
+      "rarity": 1,
+      "race": null,
+      "card_type": null,
+      "cost": null,
+      "damage": null,
+      "ability": null,
+      "flavour": null,
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_011.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11563,
+    "fields": {
+      "myl_id": "custom_heroes_dharma_012",
+      "edid": "12",
+      "slug": "otakemaru-kijin-heroes_de_dharma",
+      "name": "Otakemaru Kijin",
+      "edition": 76,
+      "rarity": 1,
+      "race": null,
+      "card_type": null,
+      "cost": null,
+      "damage": null,
+      "ability": null,
+      "flavour": null,
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_012.png"
+    }
+  },
+  {
+    "model": "cards.card",
     "pk": 11543,
     "fields": {
       "myl_id": "custom_tk26_13",
@@ -220661,6 +220751,25 @@
   },
   {
     "model": "cards.card",
+    "pk": 11564,
+    "fields": {
+      "myl_id": "custom_heroes_dharma_013",
+      "edid": "13",
+      "slug": "pa-kua-heroes_de_dharma",
+      "name": "Pa kua",
+      "edition": 76,
+      "rarity": 1,
+      "race": null,
+      "card_type": null,
+      "cost": null,
+      "damage": null,
+      "ability": null,
+      "flavour": null,
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_013.png"
+    }
+  },
+  {
+    "model": "cards.card",
     "pk": 11544,
     "fields": {
       "myl_id": "custom_tk26_14",
@@ -220676,6 +220785,44 @@
       "ability": "En respuesta a que tu oponente fuera a buscar cartas en tu Castillo o por segunda vez en su Castillo este turno, juégalo sin pagar su coste.\nBusca hasta dos cartas con distinto nombre en un Castillo y Destiérralas o prevén que tu oponente busque cartas en tu Castillo.",
       "flavour": "Velas titilan, aromas de pan y recuerdos; los ancestros susurran, guiando pasos con cariño eterno.",
       "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_14.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11565,
+    "fields": {
+      "myl_id": "custom_heroes_dharma_014",
+      "edid": "14",
+      "slug": "siddhattha-gotama-heroes_de_dharma",
+      "name": "Siddhattha Gotama",
+      "edition": 76,
+      "rarity": 1,
+      "race": null,
+      "card_type": null,
+      "cost": null,
+      "damage": null,
+      "ability": null,
+      "flavour": null,
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_014.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11566,
+    "fields": {
+      "myl_id": "custom_heroes_dharma_015",
+      "edid": "15",
+      "slug": "vishnu-heroes_de_dharma",
+      "name": "Vishnu",
+      "edition": 76,
+      "rarity": 1,
+      "race": null,
+      "card_type": null,
+      "cost": null,
+      "damage": null,
+      "ability": null,
+      "flavour": null,
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_015.png"
     }
   },
   {
@@ -220733,6 +220880,25 @@
       "ability": "Cuando lo juegues, Destiérralo.\nAnula o cancela la habilidad de un Aliado. Si tenía coste 2 o menos, Destierra ese Aliado.\nPuedes Desterrarlo de tu Cementerio para que un Aliado pierda su habilidad por el turno.",
       "flavour": "La red de la diosa lunar atrapa los sueños y promesas de un futuro impredecible.",
       "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_19.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11553,
+    "fields": {
+      "myl_id": "custom_heroes_dharma_002",
+      "edid": "2",
+      "slug": "aryuna-heroes_de_dharma",
+      "name": "Aryuna",
+      "edition": 76,
+      "rarity": 1,
+      "race": null,
+      "card_type": null,
+      "cost": null,
+      "damage": null,
+      "ability": null,
+      "flavour": null,
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_002.png"
     }
   },
   {
@@ -221174,6 +221340,25 @@
   },
   {
     "model": "cards.card",
+    "pk": 11554,
+    "fields": {
+      "myl_id": "custom_heroes_dharma_003",
+      "edid": "3",
+      "slug": "aura-intensa-heroes_de_dharma",
+      "name": "Aura Intensa",
+      "edition": 76,
+      "rarity": 1,
+      "race": null,
+      "card_type": null,
+      "cost": null,
+      "damage": null,
+      "ability": null,
+      "flavour": null,
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_003.png"
+    }
+  },
+  {
+    "model": "cards.card",
     "pk": 11528,
     "fields": {
       "myl_id": "custom_tk26i_32",
@@ -221246,6 +221431,120 @@
       "ability": "Cuando lo juegues, Destiérralo.\nHasta tu próximo turno, cada vez que recibas daño oponente, tu oponente Bota esa misma cantidad y tú pones en juego un Aliado de un Cementerio como un Aliado sin habilidad.\nPuedes Desterrarlo de tu Cementerio para Barajar hasta tres cartas de los Cementerios.",
       "flavour": "Manos se alzan entre tierra y sombras; antiguos rituales devuelven la vida a cuerpos olvidados.",
       "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_36.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11555,
+    "fields": {
+      "myl_id": "custom_heroes_dharma_004",
+      "edid": "4",
+      "slug": "divina-parashu-heroes_de_dharma",
+      "name": "Divina Parashu",
+      "edition": 76,
+      "rarity": 1,
+      "race": null,
+      "card_type": null,
+      "cost": null,
+      "damage": null,
+      "ability": null,
+      "flavour": null,
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_004.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11556,
+    "fields": {
+      "myl_id": "custom_heroes_dharma_005",
+      "edid": "5",
+      "slug": "dominio-2c-la-novela-heroes_de_dharma",
+      "name": "Dominio 2C la Novela",
+      "edition": 76,
+      "rarity": 1,
+      "race": null,
+      "card_type": null,
+      "cost": null,
+      "damage": null,
+      "ability": null,
+      "flavour": null,
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_005.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11557,
+    "fields": {
+      "myl_id": "custom_heroes_dharma_006",
+      "edid": "6",
+      "slug": "dominio-2c-la-novela-heroes_de_dharma",
+      "name": "Dominio 2C la Novela",
+      "edition": 76,
+      "rarity": 1,
+      "race": null,
+      "card_type": null,
+      "cost": null,
+      "damage": null,
+      "ability": null,
+      "flavour": null,
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_006.jpg"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11558,
+    "fields": {
+      "myl_id": "custom_heroes_dharma_007",
+      "edid": "7",
+      "slug": "el-dharma-heroes_de_dharma",
+      "name": "El Dharma",
+      "edition": 76,
+      "rarity": 1,
+      "race": null,
+      "card_type": null,
+      "cost": null,
+      "damage": null,
+      "ability": null,
+      "flavour": null,
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_007.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11559,
+    "fields": {
+      "myl_id": "custom_heroes_dharma_008",
+      "edid": "8",
+      "slug": "harionna-heroes_de_dharma",
+      "name": "Harionna",
+      "edition": 76,
+      "rarity": 1,
+      "race": null,
+      "card_type": null,
+      "cost": null,
+      "damage": null,
+      "ability": null,
+      "flavour": null,
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_008.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11560,
+    "fields": {
+      "myl_id": "custom_heroes_dharma_009",
+      "edid": "9",
+      "slug": "karna-heroes_de_dharma",
+      "name": "Karna",
+      "edition": 76,
+      "rarity": 1,
+      "race": null,
+      "card_type": null,
+      "cost": null,
+      "damage": null,
+      "ability": null,
+      "flavour": null,
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_009.png"
     }
   },
   {

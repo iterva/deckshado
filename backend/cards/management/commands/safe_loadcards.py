@@ -31,7 +31,6 @@ FK_FIELDS = {
     },
     "cards.banlistentry": {
         "card": Card,
-        "format": Format,
     },
 }
 

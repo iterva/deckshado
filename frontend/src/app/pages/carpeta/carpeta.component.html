@@ -24,7 +24,7 @@
       📁 CARPETA
     </button>
     <button class="tab" [class.active]="activeTab === 'codex'" (click)="switchTab('codex')">
-      📖 CODEX
+      📖 COLECCIÓN
     </button>
     <button class="tab" [class.active]="activeTab === 'wishlist'" (click)="switchTab('wishlist')">
       ❤️ WISHLIST
@@ -52,7 +52,7 @@
 
       @if (!collectionLoading && collectionEntries.length === 0) {
         <div class="empty-state">
-          <p>Tu carpeta está vacía. Ve al <strong>Codex</strong> para añadir cartas.</p>
+          <p>Tu carpeta está vacía. Ve a <strong>Colección</strong> para añadir cartas.</p>
         </div>
       }
 

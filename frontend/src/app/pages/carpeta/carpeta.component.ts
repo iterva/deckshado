@@ -433,14 +433,15 @@ export class CarpetaComponent implements OnInit {
       this.mercadoAllEntries = allPages;
       this.cdr.detectChanges();
 
-      // Wait for images to load
       const el = document.getElementById('mercado-export')!;
-      el.style.position = 'absolute';
-      el.style.left = '0';
+      // Render off-screen so user doesn't see it
+      el.style.position = 'fixed';
+      el.style.left = '-9999px';
       el.style.top = '0';
       el.style.width = '1200px';
       el.style.display = 'block';
 
+      // Wait for images to load
       const imgs = Array.from(el.querySelectorAll('img')) as HTMLImageElement[];
       await Promise.all(imgs.map(img => {
         if (img.complete && img.naturalWidth > 0) return Promise.resolve();
@@ -453,6 +454,8 @@ export class CarpetaComponent implements OnInit {
       }));
 
       const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
       const canvas = await html2canvas(el, {
         backgroundColor: '#0f0f23',
         useCORS: true,
@@ -468,10 +471,23 @@ export class CarpetaComponent implements OnInit {
       el.style.width = '';
       el.style.display = '';
 
-      const link = document.createElement('a');
-      link.download = `tienda_${this.auth.user()?.username || 'mercado'}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+      // Generate multi-page PDF from the canvas
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      const pdfWidth = 210; // A4 width in mm
+      const pdfHeight = 297; // A4 height in mm
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      let position = 0;
+
+      while (position < imgHeight) {
+        if (position > 0) pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, -position, imgWidth, imgHeight);
+        position += pdfHeight;
+      }
+
+      pdf.save(`tienda_${this.auth.user()?.username || 'mercado'}.pdf`);
     } catch (e) {
       console.error('Error exporting mercado:', e);
     }

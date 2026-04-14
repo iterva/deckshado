@@ -109,13 +109,13 @@
         @for (entry of deck.entries; track entry.id) {
           <div class="card-stack" [class.qty-2]="entry.quantity === 2" [class.qty-3]="entry.quantity >= 3">
             @if (entry.quantity >= 3) {
-              <img class="stack-shadow s3" [src]="entry.card_detail.image_url | thumb:80" aria-hidden="true" loading="lazy" fetchpriority="low">
+              <img class="stack-shadow s3" [src]="entry.card_detail.image_url | thumb:80" aria-hidden="true" loading="lazy" fetchpriority="low" (error)="$any($event.target).src = entry.card_detail.image_url">
             }
             @if (entry.quantity >= 2) {
-              <img class="stack-shadow s2" [src]="entry.card_detail.image_url | thumb:80" aria-hidden="true" loading="lazy" fetchpriority="low">
+              <img class="stack-shadow s2" [src]="entry.card_detail.image_url | thumb:80" aria-hidden="true" loading="lazy" fetchpriority="low" (error)="$any($event.target).src = entry.card_detail.image_url">
             }
             <div class="img-wrapper">
-              <img class="stack-top" [src]="entry.card_detail.image_url | thumb:250" [alt]="entry.card_detail.name" loading="lazy" decoding="async">
+              <img class="stack-top" [src]="entry.card_detail.image_url | thumb:250" [alt]="entry.card_detail.name" loading="lazy" decoding="async" (error)="$any($event.target).src = entry.card_detail.image_url">
               <span class="eye-icon" (click)="showPreview(entry.card_detail, $event)">👁</span>
             </div>
             @if (entry.quantity > 1) {

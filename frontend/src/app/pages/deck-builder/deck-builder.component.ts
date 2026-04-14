@@ -48,6 +48,7 @@ export class DeckBuilderComponent implements OnInit {
   formatName = 'Imperio';
 
   private readonly escEditionSlugs = [
+    'bushido', 'sol-naciente',
     'dominio', 'contraataque', 'aguila-imperial', 'axis-mundi',
     'hijos-del-sol', 'legado-gotico', 'escuelas_elementales',
     'steampunk', 'dharma',

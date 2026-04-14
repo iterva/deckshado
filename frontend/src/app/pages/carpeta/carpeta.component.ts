@@ -159,8 +159,8 @@ export class CarpetaComponent implements OnInit {
   onCollectionSearch() { this.collectionPage = 1; this.loadCollection(); }
   toggleSellingFilter() { this.showSellingOnly = !this.showSellingOnly; this.collectionPage = 1; this.loadCollection(); }
   collectionPrev() { if (this.collectionPage > 1) { this.collectionPage--; this.loadCollection(); } }
-  collectionNext() { if (this.collectionPage * 20 < this.collectionTotal) { this.collectionPage++; this.loadCollection(); } }
-  get collectionTotalPages() { return Math.ceil(this.collectionTotal / 20); }
+  collectionNext() { if (this.collectionPage * 40 < this.collectionTotal) { this.collectionPage++; this.loadCollection(); } }
+  get collectionTotalPages() { return Math.ceil(this.collectionTotal / 40); }
 
   onFieldChange(entry: CollectionEntry, field: string, value: number) {
     let pending = this.dirtyEntries.get(entry.id) || {};
@@ -225,8 +225,8 @@ export class CarpetaComponent implements OnInit {
   onCodexSearch() { this.codexPage = 1; this.loadCodex(); }
   onCodexFilter() { this.codexPage = 1; this.loadCodex(); }
   codexPrev() { if (this.codexPage > 1) { this.codexPage--; this.loadCodex(); } }
-  codexNext() { if (this.codexPage * 20 < this.codexTotal) { this.codexPage++; this.loadCodex(); } }
-  get codexTotalPages() { return Math.ceil(this.codexTotal / 20); }
+  codexNext() { if (this.codexPage * 40 < this.codexTotal) { this.codexPage++; this.loadCodex(); } }
+  get codexTotalPages() { return Math.ceil(this.codexTotal / 40); }
 
   selectCodexCard(card: Card) {
     this.selectedCard = this.selectedCard?.id === card.id ? null : card;
@@ -278,8 +278,8 @@ export class CarpetaComponent implements OnInit {
 
   onWishlistSearch() { this.wishlistPage = 1; this.loadWishlist(); }
   wishlistPrev() { if (this.wishlistPage > 1) { this.wishlistPage--; this.loadWishlist(); } }
-  wishlistNext() { if (this.wishlistPage * 20 < this.wishlistTotal) { this.wishlistPage++; this.loadWishlist(); } }
-  get wishlistTotalPages() { return Math.ceil(this.wishlistTotal / 20); }
+  wishlistNext() { if (this.wishlistPage * 40 < this.wishlistTotal) { this.wishlistPage++; this.loadWishlist(); } }
+  get wishlistTotalPages() { return Math.ceil(this.wishlistTotal / 40); }
 
   updateWishlistQty(entry: WishlistEntry, qty: number) {
     if (qty < 1) return;
@@ -344,8 +344,8 @@ export class CarpetaComponent implements OnInit {
 
   onMercadoSearch() { this.mercadoPage = 1; this.loadMercado(); }
   mercadoPrev() { if (this.mercadoPage > 1) { this.mercadoPage--; this.loadMercado(); } }
-  mercadoNext() { if (this.mercadoPage * 20 < this.mercadoTotal) { this.mercadoPage++; this.loadMercado(); } }
-  get mercadoTotalPages() { return Math.ceil(this.mercadoTotal / 20); }
+  mercadoNext() { if (this.mercadoPage * 40 < this.mercadoTotal) { this.mercadoPage++; this.loadMercado(); } }
+  get mercadoTotalPages() { return Math.ceil(this.mercadoTotal / 40); }
 
   onMercadoFieldChange(entry: CollectionEntry, field: string, value: number) {
     let pending = this.mercadoDirty.get(entry.id) || {};

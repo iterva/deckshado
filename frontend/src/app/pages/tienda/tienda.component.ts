@@ -60,8 +60,8 @@ export class TiendaComponent implements OnInit {
 
   onSearch() { this.page = 1; this.loadStore(); }
   prevPage() { if (this.page > 1) { this.page--; this.loadStore(); } }
-  nextPage() { if (this.page * 20 < this.total) { this.page++; this.loadStore(); } }
-  get totalPages() { return Math.ceil(this.total / 20); }
+  nextPage() { if (this.page * 40 < this.total) { this.page++; this.loadStore(); } }
+  get totalPages() { return Math.ceil(this.total / 40); }
 
   exportPdf() {
     window.print();

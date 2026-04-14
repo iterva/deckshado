@@ -15,7 +15,7 @@ from .serializers import (
 
 
 class CarpetaPagination(PageNumberPagination):
-    page_size = 20
+    page_size = 40
 
 
 # ── Binder Profile ──────────────────────────────────────

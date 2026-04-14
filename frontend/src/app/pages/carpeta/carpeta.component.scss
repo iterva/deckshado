@@ -270,13 +270,16 @@
   &:hover { border-color: #00d4ff; }
 
   .card-image {
-    width: 110px;
+    width: 80px;
     flex-shrink: 0;
     position: relative;
     cursor: pointer;
+    background: none !important;
+    animation: none !important;
 
     img {
       width: 100%;
+      display: block;
       border-radius: 6px;
     }
 
@@ -499,6 +502,13 @@
   padding: 1.5rem 0;
   color: #888;
   font-size: 0.85rem;
+
+  .btn {
+    background: #2a2a4a;
+    color: #e0e0e0;
+
+    &:hover:not(:disabled) { background: #3a3a5a; }
+  }
 }
 
 // ── Modal ──

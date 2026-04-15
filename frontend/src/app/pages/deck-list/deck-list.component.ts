@@ -25,9 +25,27 @@ export class DeckListComponent implements OnInit {
     guerrero: 'Guerrero', bestia: 'Bestia', caballero: 'Caballero',
   };
 
+  private readonly formatLabels: Record<string, string> = {
+    imp: 'Imperial', fx: 'FX',
+  };
+
+  private readonly subFormatLabels: Record<string, string> = {
+    vcr: 'VCR',
+  };
+
   getRaceLabel(race?: string): string {
     if (!race) return 'Dream';
     return this.raceLabels[race] || race;
+  }
+
+  getFormatLabel(format?: string): string {
+    if (!format) return 'Imperial';
+    return this.formatLabels[format] || format;
+  }
+
+  getSubFormatLabel(subFormat?: string): string {
+    if (!subFormat) return subFormat || '';
+    return this.subFormatLabels[subFormat] || subFormat;
   }
 
   constructor(public deckService: DeckService, public auth: AuthService, private cdr: ChangeDetectorRef) {}

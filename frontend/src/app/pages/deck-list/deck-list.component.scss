@@ -106,13 +106,18 @@
       white-space: nowrap;
     }
 
-    .format-tag.vcr {
-      background: #2a1a3e;
+    .format-tag {
+      background: #1a2a3e;
       padding: 0.2rem 0.6rem;
       border-radius: 4px;
       font-size: 0.8rem;
-      color: #c084fc;
+      color: #60a5fa;
       white-space: nowrap;
+
+      &.vcr {
+        background: #2a1a3e;
+        color: #c084fc;
+      }
     }
   }
 

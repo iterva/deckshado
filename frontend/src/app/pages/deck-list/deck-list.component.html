@@ -21,7 +21,8 @@
           <div class="deck-header">
             <h3>{{ deck.name }}</h3>
             <div class="deck-tags">
-              @if (deck.sub_format === 'vcr') { <span class="format-tag vcr">VCR</span> }
+              <span class="format-tag">{{ getFormatLabel(deck.format) }}</span>
+              @if (deck.sub_format && deck.sub_format !== 'racial') { <span class="format-tag vcr">{{ getSubFormatLabel(deck.sub_format) }}</span> }
               <span class="race-tag">{{ getRaceLabel(deck.race) }}</span>
               <span class="card-count">{{ deck.card_count }} cartas</span>
             </div>
@@ -50,7 +51,8 @@
           <div class="deck-header">
             <a [routerLink]="['/decks', deck.id]"><h3>{{ deck.name }}</h3></a>
             <div class="deck-tags">
-              @if (deck.sub_format === 'vcr') { <span class="format-tag vcr">VCR</span> }
+              <span class="format-tag">{{ getFormatLabel(deck.format) }}</span>
+              @if (deck.sub_format && deck.sub_format !== 'racial') { <span class="format-tag vcr">{{ getSubFormatLabel(deck.sub_format) }}</span> }
               <span class="race-tag">{{ getRaceLabel(deck.race) }}</span>
               <span class="card-count">{{ deck.card_count }} cartas</span>
             </div>
@@ -81,7 +83,8 @@
           <div class="deck-header">
             <h3>{{ deck.name }}</h3>
             <div class="deck-tags">
-              @if (deck.sub_format === 'vcr') { <span class="format-tag vcr">VCR</span> }
+              <span class="format-tag">{{ getFormatLabel(deck.format) }}</span>
+              @if (deck.sub_format && deck.sub_format !== 'racial') { <span class="format-tag vcr">{{ getSubFormatLabel(deck.sub_format) }}</span> }
               <span class="race-tag">{{ getRaceLabel(deck.race) }}</span>
               <span class="card-count">{{ deck.card_count }} cartas</span>
             </div>

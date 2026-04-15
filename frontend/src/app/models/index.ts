@@ -66,6 +66,8 @@ export interface Deck {
   shared_with_team?: boolean;
   owner_username: string;
   card_count: number;
+  format?: string;
+  sub_format?: string;
   race?: string;
   entries?: DeckEntry[];
   sideboard_entries?: DeckEntry[];

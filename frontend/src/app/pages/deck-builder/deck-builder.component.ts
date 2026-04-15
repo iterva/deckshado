@@ -165,6 +165,9 @@ export class DeckBuilderComponent implements OnInit {
       card: e.card_detail,
       quantity: e.quantity,
     }));
+
+    if (deck.format) this.selectedFormat = deck.format;
+    if (deck.sub_format) this.selectedSubFormat = deck.sub_format;
   }
 
   loadDeck() {
@@ -183,6 +186,40 @@ export class DeckBuilderComponent implements OnInit {
           card: e.card_detail,
           quantity: e.quantity,
         }));
+
+        // Restore format, sub_format and race from saved deck
+        const needsReload =
+          (deck.format && deck.format !== this.selectedFormat) ||
+          (deck.sub_format && deck.sub_format !== this.selectedSubFormat) ||
+          (deck.race && deck.race !== this.selectedRace);
+
+        if (deck.format) {
+          this.selectedFormat = deck.format;
+        }
+        if (deck.sub_format) {
+          this.selectedSubFormat = deck.sub_format;
+        }
+        if (deck.race) {
+          this.selectedRace = deck.race;
+          const raceNames: Record<string, string> = {
+            dream: 'Dream', totem: 'Tótem', eterno: 'Eterno', faerie: 'Faerie',
+            dragon: 'Dragón', sombra: 'Sombra', heroe: 'Héroe', sacerdote: 'Sacerdote',
+            guerrero: 'Guerrero', bestia: 'Bestia', caballero: 'Caballero',
+            ancestral: 'Ancestral', barbaro: 'Bárbaro', samurai: 'Samurái', oni: 'Oni',
+          };
+          this.raceName = raceNames[deck.race] || deck.race;
+        }
+
+        if (needsReload) {
+          this.cardService.getFormats().subscribe(formats => {
+            const found = formats.find(f => f.code === this.selectedFormat);
+            if (found) this.formatName = found.name;
+            this.cdr.detectChanges();
+          });
+          this.filterEditions();
+          this.loadBanlist();
+          this.loadCards();
+        }
       },
       error: () => this.router.navigate(['/decks']),
     });
@@ -540,6 +577,8 @@ export class DeckBuilderComponent implements OnInit {
       description: this.deckDescription,
       is_public: this.deckIsPublic,
       shared_with_team: this.sharedWithTeam,
+      format: this.selectedFormat,
+      sub_format: this.selectedSubFormat,
       race: this.selectedRace || '',
       entries: [...entries, ...sideEntries],
     };

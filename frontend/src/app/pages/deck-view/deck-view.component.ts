@@ -62,8 +62,12 @@ export class DeckViewComponent implements OnInit {
 
   copyDeck() {
     if (!this.deck) return;
-    this.router.navigate(['/builder/new', 'imp'], {
-      queryParams: this.deck.race ? { race: this.deck.race } : {},
+    const fmt = this.deck.format || 'imp';
+    const qp: any = {};
+    if (this.deck.race) qp.race = this.deck.race;
+    if (this.deck.sub_format && this.deck.sub_format !== 'racial') qp.sub_fmt = this.deck.sub_format;
+    this.router.navigate(['/builder/new', fmt], {
+      queryParams: qp,
       state: { copyFrom: this.deck },
     });
   }
@@ -210,8 +214,14 @@ export class DeckViewComponent implements OnInit {
     return cards;
   }
 
+  private readonly formatNames: Record<string, string> = {
+    imp: 'Imperio', esc: 'Escuelas Elementales', imp_r: 'Imperio Retro',
+  };
+
   get formatLabel(): string {
-    return 'Imperio';
+    const base = this.formatNames[this.deck?.format || 'imp'] || 'Imperio';
+    if (this.deck?.sub_format === 'vcr') return base + ' · VCR';
+    return base;
   }
 
   get raceLabel(): string {

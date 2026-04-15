@@ -6,6 +6,8 @@ class Deck(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="decks")
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True, default="")
+    format = models.CharField(max_length=20, default="imp")
+    sub_format = models.CharField(max_length=20, blank=True, default="racial")
     race = models.CharField(max_length=50, blank=True, default="")
     is_public = models.BooleanField(default=True)
     shared_with_team = models.BooleanField(default=False)

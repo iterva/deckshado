@@ -17,7 +17,7 @@ class DeckListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Deck
-        fields = ["id", "name", "description", "is_public", "shared_with_team", "owner_username", "card_count", "race", "created_at", "updated_at"]
+        fields = ["id", "name", "description", "is_public", "shared_with_team", "owner_username", "card_count", "format", "sub_format", "race", "created_at", "updated_at"]
         read_only_fields = ["created_at", "updated_at"]
 
 
@@ -29,7 +29,7 @@ class DeckDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Deck
-        fields = ["id", "name", "description", "is_public", "shared_with_team", "owner_username", "card_count", "race", "entries", "sideboard_entries", "created_at", "updated_at"]
+        fields = ["id", "name", "description", "is_public", "shared_with_team", "owner_username", "card_count", "format", "sub_format", "race", "entries", "sideboard_entries", "created_at", "updated_at"]
         read_only_fields = ["created_at", "updated_at"]
 
     def get_entries(self, obj):
@@ -46,7 +46,7 @@ class DeckCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Deck
-        fields = ["id", "name", "description", "is_public", "shared_with_team", "race", "entries"]
+        fields = ["id", "name", "description", "is_public", "shared_with_team", "format", "sub_format", "race", "entries"]
 
     def create(self, validated_data):
         entries_data = validated_data.pop("entries", [])
@@ -59,6 +59,8 @@ class DeckCreateSerializer(serializers.ModelSerializer):
         entries_data = validated_data.pop("entries", None)
         instance.name = validated_data.get("name", instance.name)
         instance.description = validated_data.get("description", instance.description)
+        instance.format = validated_data.get("format", instance.format)
+        instance.sub_format = validated_data.get("sub_format", instance.sub_format)
         instance.is_public = validated_data.get("is_public", instance.is_public)
         instance.shared_with_team = validated_data.get("shared_with_team", instance.shared_with_team)
         instance.save()

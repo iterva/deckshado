@@ -44,6 +44,8 @@
     <div class="deck-meta">
       <span>por {{ deck.owner_username }}</span>
       <span>{{ deck.card_count }} cartas</span>
+      <span>{{ formatLabel }}</span>
+      @if (raceLabel) { <span>{{ raceLabel }}</span> }
     </div>
     @if (deck.description) {
       <p class="deck-description">{{ deck.description }}</p>

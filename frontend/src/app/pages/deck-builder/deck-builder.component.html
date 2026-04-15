@@ -20,6 +20,18 @@
             <option [value]="t.slug">{{ t.name }}</option>
           }
         </select>
+        <select [(ngModel)]="selectedRarity" (change)="onSearch()">
+          <option value="">Todas las rarezas</option>
+          @for (r of filteredRarities; track r.id) {
+            <option [value]="r.slug">{{ r.name }}</option>
+          }
+        </select>
+        <select [(ngModel)]="selectedCost" (change)="onSearch()">
+          <option value="">Todos los costes</option>
+          @for (c of costOptions; track c) {
+            <option [value]="c">{{ c }}</option>
+          }
+        </select>
       </div>
     </div>
 

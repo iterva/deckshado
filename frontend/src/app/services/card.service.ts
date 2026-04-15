@@ -28,6 +28,7 @@ export class CardService {
     page?: number;
     deck_race?: string;
     sub_fmt?: string;
+    cost?: string;
   } = {}): Observable<PaginatedResponse<Card>> {
     const key = JSON.stringify(filters);
     const cached = this.cardsCache.get(key);
@@ -44,6 +45,7 @@ export class CardService {
     if (filters.page) params = params.set('page', filters.page.toString());
     if (filters.deck_race) params = params.set('deck_race', filters.deck_race);
     if (filters.sub_fmt) params = params.set('sub_fmt', filters.sub_fmt);
+    if (filters.cost) params = params.set('cost', filters.cost);
     return this.http.get<PaginatedResponse<Card>>(this.apiUrl + '/', { params }).pipe(
       tap(data => this.cardsCache.set(key, { data, ts: Date.now() })),
       catchError(err => {

@@ -4,7 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CardService } from '../../services/card.service';
 import { DeckService } from '../../services/deck.service';
 import { AuthService } from '../../services/auth.service';
-import { Card, Edition, CardType, DeckEntry, BanlistEntry } from '../../models';
+import { Card, Edition, CardType, DeckEntry, BanlistEntry, Rarity } from '../../models';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
 
 interface DeckCard {
@@ -41,9 +41,12 @@ export class DeckBuilderComponent implements OnInit {
   editions: Edition[] = [];
   allEditions: Edition[] = [];
   types: CardType[] = [];
+  allRarities: Rarity[] = [];
   search = '';
   selectedEdition = '';
   selectedType = '';
+  selectedRarity = '';
+  selectedCost = '';
   selectedFormat = 'imp';
   formatName = 'Imperio';
 
@@ -135,6 +138,10 @@ export class DeckBuilderComponent implements OnInit {
       });
       this.cardService.getTypes().subscribe(d => {
         this.types = d;
+        this.cdr.detectChanges();
+      });
+      this.cardService.getRarities().subscribe(d => {
+        this.allRarities = d;
         this.cdr.detectChanges();
       });
       this.loadBanlist();
@@ -231,6 +238,8 @@ export class DeckBuilderComponent implements OnInit {
       search: this.search || undefined,
       edition: this.selectedEdition || undefined,
       type: this.selectedType || undefined,
+      rarity: this.selectedRarity || undefined,
+      cost: this.selectedCost || undefined,
       format: this.selectedFormat,
       page: this.currentPage,
       deck_race: this.selectedRace || undefined,
@@ -298,6 +307,7 @@ export class DeckBuilderComponent implements OnInit {
 
   onSubFormatChange() {
     this.currentPage = 1;
+    this.selectedRarity = '';  // reset rarity filter since options change per sub-format
     this.loadBanlist();
     this.loadCards();
   }
@@ -512,6 +522,17 @@ export class DeckBuilderComponent implements OnInit {
 
   get totalPages(): number {
     return Math.ceil(this.totalCards / 20);
+  }
+
+  /** VCR only shows promo, real, vasallo, cortesano */
+  private readonly vcrRaritySlugs = ['promo', 'real', 'vasallo', 'cortesano'];
+  readonly costOptions = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+
+  get filteredRarities(): Rarity[] {
+    if (this.selectedSubFormat === 'vcr') {
+      return this.allRarities.filter(r => this.vcrRaritySlugs.includes(r.slug));
+    }
+    return this.allRarities;
   }
 
   showPreview(card: Card, event: MouseEvent) {

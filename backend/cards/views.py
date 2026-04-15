@@ -1,6 +1,6 @@
 from rest_framework import generics, permissions
 from rest_framework.pagination import PageNumberPagination
-from django.db.models import Q, Value, Case, When, BooleanField, TextField, Exists, OuterRef
+from django.db.models import Q, Value, Case, When, BooleanField, TextField, IntegerField, Exists, OuterRef
 from django.db.models.functions import Concat, Lower, Coalesce
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -39,6 +39,23 @@ _ACCENT_MAP = {
     'a': '[aáàâãä]', 'e': '[eéèêë]', 'i': '[iíìîï]',
     'o': '[oóòôõö]', 'u': '[uúùûü]', 'n': '[nñ]',
 }
+
+# Default rarity display order (lower = shown first)
+RARITY_ORDER = {
+    "milenaria": 1,
+    "secreta": 2,
+    "promo": 3,
+    "ultra-real": 4,
+    "mega-real": 5,
+    "real": 6,
+    "vasallo": 7,
+    "cortesano": 8,
+    "legendaria": 9,
+    "oro": 10,
+    "ficha": 11,
+    "set_paralelo": 12,
+}
+
 
 def _accent_insensitive(text: str) -> str:
     """Convert search text to a regex pattern that matches with or without accents."""
@@ -105,6 +122,9 @@ class CardListView(generics.ListAPIView):
             qs = qs.filter(race__slug=race)
         if rarity:
             qs = qs.filter(rarity__slug=rarity)
+        cost = self.request.query_params.get("cost")
+        if cost is not None and cost != "":
+            qs = qs.filter(cost=cost)
         if search:
             qs = qs.filter(name__iregex=_accent_insensitive(search))
 
@@ -151,6 +171,16 @@ class CardListView(generics.ListAPIView):
                     | Q(race__isnull=True)
                     | Q(race__slug="noraza")
                 )
+
+        # Default ordering: rarity priority, then edition, then edid
+        rarity_whens = [When(rarity__slug=slug, then=Value(order)) for slug, order in RARITY_ORDER.items()]
+        qs = qs.annotate(
+            rarity_order=Case(
+                *rarity_whens,
+                default=Value(99),
+                output_field=IntegerField(),
+            ),
+        ).order_by("rarity_order", "edition", "edid")
 
         return qs
 

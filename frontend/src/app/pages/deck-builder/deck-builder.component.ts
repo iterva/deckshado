@@ -43,6 +43,7 @@ export class DeckBuilderComponent implements OnInit {
   types: CardType[] = [];
   allRarities: Rarity[] = [];
   search = '';
+  abilitySearch = '';
   selectedEdition = '';
   selectedType = '';
   selectedRarity = '';
@@ -236,6 +237,7 @@ export class DeckBuilderComponent implements OnInit {
     this.loading = true;
     this.cardService.getCards({
       search: this.search || undefined,
+      ability_search: this.abilitySearch || undefined,
       edition: this.selectedEdition || undefined,
       type: this.selectedType || undefined,
       rarity: this.selectedRarity || undefined,

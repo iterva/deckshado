@@ -5,6 +5,7 @@
     <div class="browser-filters">
       <div class="search-row">
         <input type="text" placeholder="Buscar carta..." [(ngModel)]="search" (keyup.enter)="onSearch()">
+        <input type="text" placeholder="Buscar por habilidad..." [(ngModel)]="abilitySearch" (keyup.enter)="onSearch()" class="ability-search">
         <button class="search-btn" (click)="onSearch()">🔍</button>
       </div>
       <div class="filter-row">
@@ -56,6 +57,9 @@
               @if (card.cost !== null) { · 💰{{ card.cost }} }
               @if (card.damage !== null) { · ⚔️{{ card.damage }} }
             </span>
+            @if (abilitySearch && card.ability) {
+              <span class="mini-ability">{{ card.ability.length > 80 ? card.ability.substring(0, 80) + '...' : card.ability }}</span>
+            }
           </div>
           <div class="actions-column">
             <div class="mini-actions main-actions">

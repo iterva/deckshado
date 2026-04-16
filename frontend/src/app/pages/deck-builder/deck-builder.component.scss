@@ -154,6 +154,18 @@
       font-size: 0.7rem;
       color: #888;
     }
+
+    .mini-ability {
+      display: block;
+      font-size: 0.65rem;
+      color: #aaa;
+      line-height: 1.3;
+      margin-top: 2px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
   }
 
   .actions-column {

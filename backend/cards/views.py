@@ -128,6 +128,10 @@ class CardListView(generics.ListAPIView):
         if search:
             qs = qs.filter(name__iregex=_accent_insensitive(search))
 
+        ability_search = self.request.query_params.get("ability_search")
+        if ability_search:
+            qs = qs.filter(ability__iregex=_accent_insensitive(ability_search))
+
         # VCR sub-format filter: vasallo, cortesano, real + promos with same name AND ability
         sub_fmt = self.request.query_params.get("sub_fmt")
         if sub_fmt == "vcr" and fmt == "imp":

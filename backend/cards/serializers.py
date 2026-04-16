@@ -51,7 +51,7 @@ class CardListSerializer(serializers.ModelSerializer):
             "id", "myl_id", "edid", "slug", "name",
             "edition_slug", "edition_title",
             "rarity_name", "race_name", "race_slug", "type_name",
-            "cost", "damage", "is_unique",
+            "cost", "damage", "ability", "is_unique",
             "image_url",
         ]
 

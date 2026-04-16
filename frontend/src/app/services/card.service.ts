@@ -24,6 +24,7 @@ export class CardService {
     race?: string;
     rarity?: string;
     search?: string;
+    ability_search?: string;
     format?: string;
     page?: number;
     deck_race?: string;
@@ -41,6 +42,7 @@ export class CardService {
     if (filters.race) params = params.set('race', filters.race);
     if (filters.rarity) params = params.set('rarity', filters.rarity);
     if (filters.search) params = params.set('search', filters.search);
+    if (filters.ability_search) params = params.set('ability_search', filters.ability_search);
     if (filters.format) params = params.set('fmt', filters.format);
     if (filters.page) params = params.set('page', filters.page.toString());
     if (filters.deck_race) params = params.set('deck_race', filters.deck_race);

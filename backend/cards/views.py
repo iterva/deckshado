@@ -155,6 +155,7 @@ class CardListView(generics.ListAPIView):
             qs = qs.filter(
                 Q(rarity__slug__in=vcr_slugs)
                 | Q(rarity__slug="promo") & (Exists(vcr_match) | Q(name__in=vcr_promo_whitelist))
+                | Q(card_type__slug="oro") & (Q(ability__isnull=True) | Q(ability=""))
             )
 
         # deck_race: MYL racial deck filter

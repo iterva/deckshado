@@ -95,9 +95,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:4200",
     "http://127.0.0.1:4200",
     "https://frontend-cyan-alpha-34.vercel.app",
+    "https://shadow-forge-deck.vercel.app",
 ] + [o.strip() for o in _cors_extra if o.strip()]
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://frontend-.*\.vercel\.app$",
+    r"^https://shadow-forge-deck.*\.vercel\.app$",
 ]
 
 # REST Framework
@@ -119,6 +121,7 @@ SIMPLE_JWT = {
 CSRF_TRUSTED_ORIGINS = [
     "https://iterva.pythonanywhere.com",
     "https://frontend-cyan-alpha-34.vercel.app",
+    "https://shadow-forge-deck.vercel.app",
 ]
 
 # MyL API

@@ -5,7 +5,7 @@ triggering CASCADE deletes on DeckEntry references.
 """
 import json
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import transaction, DatabaseError
 from cards.models import Card, Edition, Format, Race, CardType, Rarity, Keyword, BanlistEntry
 
 
@@ -107,24 +107,42 @@ class Command(BaseCommand):
                             fields[f"{field_name}_id"] = None
                         fields.pop(field_name, None)
 
-                    # Try update existing, or create new
+                    # Use savepoint per object so one error doesn't break the batch
                     try:
-                        existing = Model.objects.filter(pk=pk).first()
-                        if existing:
-                            for k, v in fields.items():
-                                setattr(existing, k, v)
-                            existing.save()
-                            stats["updated"] += 1
-                        else:
-                            instance = Model(pk=pk, **fields)
-                            instance.save()
-                            stats["created"] += 1
+                        with transaction.atomic():
+                            # BanlistEntry: match by unique constraint, not PK
+                            if model_label == "cards.banlistentry":
+                                lookup = {
+                                    "card_name": fields.get("card_name", ""),
+                                    "format_code": fields.get("format_code", ""),
+                                    "sub_format": fields.get("sub_format", ""),
+                                }
+                                defaults = {k: v for k, v in fields.items()
+                                            if k not in lookup}
+                                _, was_created = Model.objects.update_or_create(
+                                    **lookup, defaults=defaults,
+                                )
+                                if was_created:
+                                    stats["created"] += 1
+                                else:
+                                    stats["updated"] += 1
+                            else:
+                                existing = Model.objects.filter(pk=pk).first()
+                                if existing:
+                                    for k, v in fields.items():
+                                        setattr(existing, k, v)
+                                    existing.save()
+                                    stats["updated"] += 1
+                                else:
+                                    instance = Model(pk=pk, **fields)
+                                    instance.save()
+                                    stats["created"] += 1
 
-                        # Handle M2M
-                        if m2m_data:
-                            instance = Model.objects.get(pk=pk)
-                            for m2m_field, ids in m2m_data.items():
-                                getattr(instance, m2m_field).set(ids)
+                            # Handle M2M
+                            if m2m_data:
+                                instance = Model.objects.get(pk=pk)
+                                for m2m_field, ids in m2m_data.items():
+                                    getattr(instance, m2m_field).set(ids)
 
                     except Exception as e:
                         self.stderr.write(f"  Error on {model_label} pk={pk}: {e}")

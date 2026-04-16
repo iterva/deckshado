@@ -530,8 +530,8 @@ export class DeckBuilderComponent implements OnInit {
 
   private sortDeckCards(arr: DeckCard[]) {
     arr.sort((a, b) => {
-      const ai = this.typeOrder.indexOf(a.card.type_name);
-      const bi = this.typeOrder.indexOf(b.card.type_name);
+      const ai = this.typeOrder.indexOf(a.card.type_name ?? '');
+      const bi = this.typeOrder.indexOf(b.card.type_name ?? '');
       const oa = ai === -1 ? this.typeOrder.length : ai;
       const ob = bi === -1 ? this.typeOrder.length : bi;
       return oa - ob;

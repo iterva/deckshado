@@ -522,6 +522,16 @@ export class DeckBuilderComponent implements OnInit {
     return this.sideCards.reduce((sum, dc) => sum + dc.quantity, 0);
   }
 
+  get typeCounts(): { label: string; count: number }[] {
+    const order = ['Oro', 'Aliado', 'Talismán', 'Arma', 'Tótem'];
+    const map: Record<string, number> = {};
+    for (const dc of this.deckCards) {
+      const t = dc.card.type_name || 'Otro';
+      map[t] = (map[t] || 0) + dc.quantity;
+    }
+    return order.filter(t => map[t]).map(t => ({ label: t, count: map[t] }));
+  }
+
   get totalPages(): number {
     return Math.ceil(this.totalCards / 20);
   }

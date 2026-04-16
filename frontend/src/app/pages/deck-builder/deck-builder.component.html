@@ -134,6 +134,14 @@
       <span class="total-cards">{{ totalDeckCards }} / 50 cartas</span>
     </div>
 
+    @if (typeCounts.length) {
+      <div class="type-breakdown">
+        @for (tc of typeCounts; track tc.label) {
+          <span class="type-chip">{{ tc.label }} <strong>{{ tc.count }}</strong></span>
+        }
+      </div>
+    }
+
     <div class="deck-entries">
       @for (dc of deckCards; track dc.card.id) {
         <div class="deck-entry">

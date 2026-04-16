@@ -385,6 +385,27 @@
       }
     }
   }
+
+  .type-breakdown {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.8rem;
+
+    .type-chip {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 10px;
+      background: #1a1a3e;
+      border: 1px solid #2a2a4a;
+      color: #b0b0cc;
+
+      strong {
+        color: #ffbd39;
+        margin-left: 0.15rem;
+      }
+    }
+  }
 }
 
 .deck-entries {

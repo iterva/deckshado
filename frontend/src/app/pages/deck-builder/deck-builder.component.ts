@@ -190,10 +190,12 @@ export class DeckBuilderComponent implements OnInit {
           card: e.card_detail,
           quantity: e.quantity,
         }));
+        this.sortDeckCards(this.deckCards);
         this.sideCards = (deck.sideboard_entries || []).map(e => ({
           card: e.card_detail,
           quantity: e.quantity,
         }));
+        this.sortDeckCards(this.sideCards);
 
         // Restore format, sub_format and race from saved deck
         const needsReload =
@@ -466,6 +468,7 @@ export class DeckBuilderComponent implements OnInit {
       existing.quantity++;
     } else {
       this.deckCards.push({ card, quantity: 1 });
+      this.sortDeckCards(this.deckCards);
     }
   }
 
@@ -500,6 +503,7 @@ export class DeckBuilderComponent implements OnInit {
       existing.quantity++;
     } else {
       this.sideCards.push({ card, quantity: 1 });
+      this.sortDeckCards(this.sideCards);
     }
   }
 
@@ -522,8 +526,20 @@ export class DeckBuilderComponent implements OnInit {
     return this.sideCards.reduce((sum, dc) => sum + dc.quantity, 0);
   }
 
+  private readonly typeOrder = ['Oro', 'Aliado', 'Arma', 'Tótem', 'Talismán'];
+
+  private sortDeckCards(arr: DeckCard[]) {
+    arr.sort((a, b) => {
+      const ai = this.typeOrder.indexOf(a.card.type_name);
+      const bi = this.typeOrder.indexOf(b.card.type_name);
+      const oa = ai === -1 ? this.typeOrder.length : ai;
+      const ob = bi === -1 ? this.typeOrder.length : bi;
+      return oa - ob;
+    });
+  }
+
   get typeCounts(): { label: string; count: number }[] {
-    const order = ['Oro', 'Aliado', 'Talismán', 'Arma', 'Tótem'];
+    const order = this.typeOrder;
     const map: Record<string, number> = {};
     for (const dc of this.deckCards) {
       const t = dc.card.type_name || 'Otro';

@@ -1142,6 +1142,20 @@
     }
   },
   {
+    "model": "cards.edition",
+    "pk": 78,
+    "fields": {
+      "myl_id": "custom_esc_adicionales",
+      "slug": "esc_adicionales",
+      "title": "ESC - Cartas Adicionales",
+      "image": null,
+      "date_release": null,
+      "date_empire_valid": null,
+      "format": 8,
+      "active": true
+    }
+  },
+  {
     "model": "cards.race",
     "pk": 1,
     "fields": {
@@ -220704,6 +220718,25 @@
       "ability": null,
       "flavour": null,
       "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_001.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11579,
+    "fields": {
+      "myl_id": "custom_esc_adic_001",
+      "edid": "1",
+      "slug": "lahmu",
+      "name": "Lahmu",
+      "edition": 78,
+      "rarity": null,
+      "race": 3,
+      "card_type": 1,
+      "cost": "3",
+      "damage": "3",
+      "ability": "Furia (Este Aliado no necesita pasar por una Fase de Agrupacion para ser Recurso Atacante).\nEn tu Fase Final, Destruye este Aliado. Cuando juegues un Aliado de Raza Bestia, puedes jugar este Aliado desde tu Cementerio sin pagar su coste.",
+      "flavour": "Nuestras fauces resguardarán la tranquilidad de los dioses, no te atrevas a interponerte en nuestros dominios.",
+      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/esc_adicionales_001.webp"
     }
   },
   {

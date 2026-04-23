@@ -34,6 +34,14 @@ ESC_EDITION_SLUGS = [
     "heroes_de_dharma",
 ]
 
+# Multi-race deck archetypes (only for ESC format)
+ESC_MULTI_RACE = {
+    "culto-tenebris": ["sombra", "oni"],
+    "vigilantes-etereos": ["eterno", "faerie"],
+    "gremio-paladin": ["caballero", "sacerdote"],
+    "clan-desafiante": ["dragon", "guerrero"],
+}
+
 # Map base vowels/consonants to regex classes that match accented variants
 _ACCENT_MAP = {
     'a': '[aáàâãä]', 'e': '[eéèêë]', 'i': '[iíìîï]',
@@ -166,6 +174,23 @@ class CardListView(generics.ListAPIView):
             if deck_race == "totem":
                 # Only raceless allies
                 qs = qs.filter(non_ally | Q(race__isnull=True) | Q(race__slug="noraza"))
+            elif deck_race in ESC_MULTI_RACE:
+                # Multi-race ESC archetypes: allies matching ANY of the races + raceless
+                race_q = Q()
+                for r in ESC_MULTI_RACE[deck_race]:
+                    race_q |= Q(race__slug__icontains=r)
+                qs = qs.filter(
+                    non_ally | race_q | Q(race__isnull=True) | Q(race__slug="noraza")
+                )
+            elif deck_race in ("luz", "oscuridad"):
+                # Ability-based: first line of ability starts with Luz / Oscuridad
+                keyword = "Luz" if deck_race == "luz" else "Oscuridad"
+                qs = qs.filter(
+                    non_ally
+                    | Q(ability__istartswith=keyword)
+                    | Q(race__isnull=True)
+                    | Q(race__slug="noraza")
+                )
             else:
                 # Matching race (including sub-races) + raceless allies
                 qs = qs.filter(

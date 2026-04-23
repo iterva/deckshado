@@ -231,6 +231,9 @@ export class DeckViewComponent implements OnInit {
       dragon: 'Dragón', sombra: 'Sombra', heroe: 'Héroe', sacerdote: 'Sacerdote',
       guerrero: 'Guerrero', bestia: 'Bestia', caballero: 'Caballero',
       ancestral: 'Ancestral', barbaro: 'Bárbaro', samurai: 'Samurái', oni: 'Oni',
+      'culto-tenebris': 'Culto Tenebris', 'vigilantes-etereos': 'Vigilantes Etéreos',
+      'gremio-paladin': 'Gremio Paladín', 'clan-desafiante': 'Clan Desafiante',
+      oscuridad: 'Oscuridad', luz: 'Luz',
     };
     return names[this.deck.race] || this.deck.race;
   }

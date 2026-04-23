@@ -116,6 +116,9 @@ export class DeckBuilderComponent implements OnInit {
           dragon: 'Dragón', sombra: 'Sombra', heroe: 'Héroe', sacerdote: 'Sacerdote',
           guerrero: 'Guerrero', bestia: 'Bestia', caballero: 'Caballero',
           ancestral: 'Ancestral', barbaro: 'Bárbaro', samurai: 'Samurái', oni: 'Oni',
+          'culto-tenebris': 'Culto Tenebris', 'vigilantes-etereos': 'Vigilantes Etéreos',
+          'gremio-paladin': 'Gremio Paladín', 'clan-desafiante': 'Clan Desafiante',
+          oscuridad: 'Oscuridad', luz: 'Luz',
         };
         this.raceName = raceNames[race] || race;
       }
@@ -216,6 +219,9 @@ export class DeckBuilderComponent implements OnInit {
             dragon: 'Dragón', sombra: 'Sombra', heroe: 'Héroe', sacerdote: 'Sacerdote',
             guerrero: 'Guerrero', bestia: 'Bestia', caballero: 'Caballero',
             ancestral: 'Ancestral', barbaro: 'Bárbaro', samurai: 'Samurái', oni: 'Oni',
+            'culto-tenebris': 'Culto Tenebris', 'vigilantes-etereos': 'Vigilantes Etéreos',
+            'gremio-paladin': 'Gremio Paladín', 'clan-desafiante': 'Clan Desafiante',
+            oscuridad: 'Oscuridad', luz: 'Luz',
           };
           this.raceName = raceNames[deck.race] || deck.race;
         }
@@ -377,6 +383,13 @@ export class DeckBuilderComponent implements OnInit {
 
   // --- Race restriction logic ---
 
+  private readonly escMultiRace: Record<string, string[]> = {
+    'culto-tenebris': ['sombra', 'oni'],
+    'vigilantes-etereos': ['eterno', 'faerie'],
+    'gremio-paladin': ['caballero', 'sacerdote'],
+    'clan-desafiante': ['dragon', 'guerrero'],
+  };
+
   private isRaceless(card: Card): boolean {
     return !card.race_name || card.race_name === 'Sin Raza';
   }
@@ -386,6 +399,24 @@ export class DeckBuilderComponent implements OnInit {
   }
 
   private cardMatchesRace(card: Card, raceSlug: string): boolean {
+    // Multi-race archetypes
+    const multiRaces = this.escMultiRace[raceSlug];
+    if (multiRaces) {
+      return multiRaces.some(r => this.cardMatchesSingleRace(card, r));
+    }
+    // Ability-based: Luz / Oscuridad
+    if (raceSlug === 'luz' || raceSlug === 'oscuridad') {
+      const keyword = raceSlug === 'luz' ? 'Luz' : 'Oscuridad';
+      if (card.ability) {
+        const firstLine = card.ability.split('\n')[0];
+        return firstLine.toLowerCase().startsWith(keyword.toLowerCase());
+      }
+      return false;
+    }
+    return this.cardMatchesSingleRace(card, raceSlug);
+  }
+
+  private cardMatchesSingleRace(card: Card, raceSlug: string): boolean {
     // Primary: match by slug (accent-safe)
     if (card.race_slug) {
       const rs = card.race_slug.toLowerCase();

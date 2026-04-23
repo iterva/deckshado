@@ -45,6 +45,12 @@ export class FormatSelectComponent {
   readonly escRaces: RaceOption[] = [
     { slug: 'dream', name: 'Dream', description: 'Todas las razas, talismanes, armas y tótems' },
     { slug: 'totem', name: 'Tótem', description: 'Aliados sin raza + tótems, talismanes y armas' },
+    { slug: 'culto-tenebris', name: 'Culto Tenebris', description: 'Aliados Sombra + Oni + neutrales' },
+    { slug: 'vigilantes-etereos', name: 'Vigilantes Etéreos', description: 'Aliados Eterno + Faerie + neutrales' },
+    { slug: 'gremio-paladin', name: 'Gremio Paladín', description: 'Aliados Caballero + Sacerdote + neutrales' },
+    { slug: 'clan-desafiante', name: 'Clan Desafiante', description: 'Aliados Dragón + Guerrero + neutrales' },
+    { slug: 'oscuridad', name: 'Oscuridad', description: 'Aliados con habilidad Oscuridad + neutrales' },
+    { slug: 'luz', name: 'Luz', description: 'Aliados con habilidad Luz + neutrales' },
     { slug: 'eterno', name: 'Eterno', description: 'Aliados Eterno + neutrales' },
     { slug: 'faerie', name: 'Faerie', description: 'Aliados Faerie + neutrales' },
     { slug: 'dragon', name: 'Dragón', description: 'Aliados Dragón + neutrales' },

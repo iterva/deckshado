@@ -45,16 +45,22 @@ export class AuthService {
     this.http.get<User>(`${this.apiUrl}/me/`).subscribe({
       next: (user) => {
         this.currentUser.set(user);
+        this.loggedIn.set(true);
         this.isLoadingUser.set(false);
       },
       error: (err) => {
         console.error('Error loading user:', err);
-        if (err.status === 401) {
-          this.logout(true);
-          return;
-        }
-        this.currentUser.set(null);
         this.isLoadingUser.set(false);
+        // Si no se pudo verificar la sesión (token inválido/expirado, o el
+        // interceptor ya borró los tokens al fallar el refresh), limpiamos
+        // el estado de autenticación para evitar mostrar UI de usuario logueado
+        // sin datos. Solo conservamos la sesión si fue un error transitorio
+        // (servidor 5xx) y aún tenemos token guardado.
+        const stillHasToken = !!localStorage.getItem('access_token');
+        const isServerError = err.status >= 500 && err.status < 600;
+        if (!stillHasToken || !isServerError) {
+          this.logout(false);
+        }
       },
     });
   }

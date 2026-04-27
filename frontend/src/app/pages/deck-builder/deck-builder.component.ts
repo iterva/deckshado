@@ -227,6 +227,9 @@ export class DeckBuilderComponent implements OnInit {
         const copyFrom = history.state?.copyFrom;
         if (copyFrom) {
           this.loadFromCopy(copyFrom);
+        } else {
+          // Restaurar borrador local (silencioso) si existe para este formato/sub/raza.
+          this.loadDraft();
         }
       }
     }, 100);
@@ -1041,7 +1044,11 @@ export class DeckBuilderComponent implements OnInit {
   }
 
   private autosaveKey(): string {
-    return this.AUTOSAVE_KEY_PREFIX + (this.deckId ?? 'new') + '_' + this.selectedFormat;
+    // Por (mazo|nuevo) + formato + sub-formato + raza, para no mezclar borradores entre razas/sub-formatos.
+    const id = this.deckId ?? 'new';
+    const sub = this.selectedSubFormat || '-';
+    const race = this.selectedRace || '-';
+    return `${this.AUTOSAVE_KEY_PREFIX}${id}_${this.selectedFormat}_${sub}_${race}`;
   }
 
   private saveDraft() {
@@ -1071,11 +1078,6 @@ export class DeckBuilderComponent implements OnInit {
       const raw = localStorage.getItem(this.autosaveKey());
       if (!raw) return false;
       const data = JSON.parse(raw);
-      // Solo restaurar si el usuario confirma.
-      if (!confirm('Hay un borrador local sin guardar. ¿Quieres restaurarlo?')) {
-        localStorage.removeItem(this.autosaveKey());
-        return false;
-      }
       this.deckName = data.deckName ?? '';
       this.deckDescription = data.deckDescription ?? '';
       this.deckIsPublic = !!data.deckIsPublic;
@@ -1096,13 +1098,30 @@ export class DeckBuilderComponent implements OnInit {
             .filter((d: any) => d.card);
           this.sortDeckCards(this.deckCards);
           this.sortDeckCards(this.sideCards);
+          // Marcar como guardado (no "sucio") para no disparar el guard de salida nada más cargar.
+          this.hasUnsavedChanges = false;
+          this.lastAutosavedAt = data.savedAt ? new Date(data.savedAt) : new Date();
           this.cdr.detectChanges();
         });
+      } else {
+        this.hasUnsavedChanges = false;
+        this.lastAutosavedAt = data.savedAt ? new Date(data.savedAt) : new Date();
       }
       return true;
     } catch {
       return false;
     }
+  }
+
+  /** Botón visible para descartar el borrador local. */
+  discardDraft() {
+    if (!confirm('¿Descartar el borrador guardado y empezar de cero?')) return;
+    this.clearDraft();
+    this.deckName = '';
+    this.deckDescription = '';
+    this.deckCards = [];
+    this.sideCards = [];
+    this.cdr.detectChanges();
   }
 
   private clearDraft() {

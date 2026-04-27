@@ -344,6 +344,9 @@
         <span class="autosave-label" title="El borrador se guarda automáticamente en este navegador">
           <i class="bi bi-cloud-check"></i> {{ autosaveLabel }}
         </span>
+        <button type="button" class="btn-link-discard" (click)="discardDraft()" title="Descartar borrador local">
+          <i class="bi bi-trash"></i>
+        </button>
       }
       <button class="btn btn-gold" (click)="saveDeck()" [disabled]="saving">
         {{ saving ? 'Guardando...' : (deckId ? 'Actualizar Mazo' : 'Guardar Mazo') }}

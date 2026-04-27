@@ -805,6 +805,7 @@ export class DeckBuilderComponent implements OnInit {
       return { ofRace, raceless: 0, offRace: 0 };
     }
     for (const dc of this.deckCards) {
+      if (dc.card.type_name === 'Oro') continue; // Oros se contabilizan aparte
       if (this.cardMatchesRace(dc.card, this.selectedRace)) ofRace += dc.quantity;
       else if (this.isRaceless(dc.card)) raceless += dc.quantity;
       else offRace += dc.quantity;

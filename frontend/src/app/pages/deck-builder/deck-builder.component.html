@@ -210,6 +210,17 @@
       <h2>{{ deckId ? 'Editar Mazo' : 'Nuevo Mazo' }}</h2>
       <div class="deck-header-actions">
         <button class="icon-btn"
+                (click)="openImportModal()"
+                title="Importar mazo desde texto o código">
+          <i class="bi bi-box-arrow-in-down"></i>
+        </button>
+        <button class="icon-btn"
+                (click)="openExportModal()"
+                [disabled]="totalDeckCards === 0"
+                title="Exportar mazo">
+          <i class="bi bi-box-arrow-up"></i>
+        </button>
+        <button class="icon-btn"
                 [class.active]="compactView"
                 (click)="toggleCompactView()"
                 [title]="compactView ? 'Vista expandida' : 'Vista compacta'">
@@ -348,12 +359,6 @@
           <i class="bi bi-trash"></i>
         </button>
       }
-      <button type="button" class="btn btn-secondary btn-sm" (click)="openImportModal()" title="Importar mazo desde texto">
-        <i class="bi bi-box-arrow-in-down"></i> Importar
-      </button>
-      <button type="button" class="btn btn-secondary btn-sm" (click)="openExportModal()" title="Exportar mazo a texto" [disabled]="totalDeckCards === 0">
-        <i class="bi bi-box-arrow-up"></i> Exportar
-      </button>
       <button class="btn btn-gold" (click)="saveDeck()" [disabled]="saving">
         {{ saving ? 'Guardando...' : (deckId ? 'Actualizar Mazo' : 'Guardar Mazo') }}
       </button>

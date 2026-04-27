@@ -29,3 +29,6 @@ cartas por subir 4/
 cartas por subir 5/
 extra-cards/
 Escuelas Elementales/
+
+# Media subida (imágenes extra, logos) — no trackear en git
+backend/media/

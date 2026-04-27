@@ -103,6 +103,8 @@ class CardDetailSerializer(CardListSerializer):
         fields = [
             "id", "myl_id", "edid", "slug", "name",
             "edition", "rarity", "race", "card_type",
+            "edition_slug", "edition_title",
+            "rarity_name", "race_name", "race_slug", "type_name",
             "cost", "damage", "ability", "flavour",
-            "image_url",
+            "image_url", "is_unique",
         ]

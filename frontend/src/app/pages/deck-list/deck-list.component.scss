@@ -207,6 +207,13 @@
   &.compare-mode {
     cursor: pointer;
     user-select: none;
+
+    // Desactivar cualquier link/botón interno (título, Editar, Eliminar)
+    // para que el click siempre lo capture la tarjeta y marque el checkbox.
+    a, button {
+      pointer-events: none;
+      opacity: 0.55;
+    }
   }
 
   &.compare-selected {

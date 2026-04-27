@@ -2,6 +2,8 @@
   display: grid;
   grid-template-columns: 1fr 380px;
   min-height: calc(100vh - 64px - 80px);
+  max-width: 100%;
+  overflow-x: hidden;
 
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
@@ -13,7 +15,13 @@
   padding: 1.5rem;
   border-right: 1px solid #2a2a4a;
   overflow-y: auto;
+  overflow-x: hidden;
+  min-width: 0;
   max-height: calc(100vh - 64px);
+
+  @media (max-width: 600px) {
+    padding: 1rem 0.75rem;
+  }
 
   h2 {
     font-size: 1.2rem;
@@ -26,11 +34,13 @@
 
     .search-row {
       display: flex;
+      flex-wrap: wrap;
       gap: 0.5rem;
       margin-bottom: 0.5rem;
 
       input {
-        flex: 1;
+        flex: 1 1 160px;
+        min-width: 0;
         padding: 0.5rem 0.8rem;
         border: 1px solid #333;
         border-radius: 6px;
@@ -80,7 +90,7 @@
 
 .available-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: 0.5rem;
 }
 

@@ -238,6 +238,21 @@
                 [title]="compactView ? 'Vista expandida' : 'Vista compacta'">
           <i [class]="compactView ? 'bi bi-grid-3x3-gap-fill' : 'bi bi-list-ul'"></i>
         </button>
+        <span class="shortcut-help" (click)="toggleShortcutsHelp($event)">
+          <button class="icon-btn" type="button" title="Atajos de teclado">
+            <i class="bi bi-question-circle"></i>
+          </button>
+          <div class="shortcut-popover" [class.show]="showShortcutsHelp" (click)="$event.stopPropagation()">
+            <div class="sp-head">Atajos de teclado</div>
+            <div class="sp-row"><kbd>/</kbd><span>Enfocar el buscador</span></div>
+            <div class="sp-row"><kbd>Ctrl</kbd>+<kbd>Z</kbd><span>Deshacer</span></div>
+            <div class="sp-row"><kbd>Ctrl</kbd>+<kbd>Y</kbd><span>Rehacer</span></div>
+            <div class="sp-row"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd><span>Rehacer (alt)</span></div>
+            <div class="sp-row"><kbd>Esc</kbd><span>Cerrar modal / preview</span></div>
+            <div class="sp-row"><kbd>Enter</kbd><span>Buscar (en buscador)</span></div>
+            <div class="sp-foot">Mantén presionada una carta para previsualizarla.</div>
+          </div>
+        </span>
         <button class="mobile-close-btn" (click)="toggleDeckPanel()" [class.mobile-visible]="showDeckPanel">✕</button>
       </div>
     </div>

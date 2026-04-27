@@ -75,6 +75,9 @@ export class DeckBuilderComponent implements OnInit {
   private autosaveTimer: any = null;
   private readonly AUTOSAVE_KEY_PREFIX = 'deckshado_autosave_';
 
+  /** Popover de atajos de teclado (#4 helper). */
+  showShortcutsHelp = false;
+
   // Hold-to-preview (#17): mantener el botón / dedo presionado abre el preview.
   private holdPreviewTimer: any = null;
   private readonly HOLD_DELAY_MS = 450;
@@ -407,14 +410,21 @@ export class DeckBuilderComponent implements OnInit {
   @HostListener('document:click')
   onDocumentClick() {
     if (this.openFilter) this.openFilter = null;
+    if (this.showShortcutsHelp) this.showShortcutsHelp = false;
   }
 
   @HostListener('document:keydown.escape')
   onEscape() {
+    if (this.showShortcutsHelp) { this.showShortcutsHelp = false; return; }
     if (this.openFilter) { this.openFilter = null; return; }
     if (this.showExportModal) { this.closeExportModal(); return; }
     if (this.showImportModal) { this.closeImportModal(); return; }
     if (this.previewCard()) { this.hidePreview(); return; }
+  }
+
+  toggleShortcutsHelp(event: Event) {
+    event.stopPropagation();
+    this.showShortcutsHelp = !this.showShortcutsHelp;
   }
 
   /** #4 Atajos globales de teclado. */

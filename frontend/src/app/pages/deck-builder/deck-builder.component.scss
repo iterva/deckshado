@@ -1455,3 +1455,51 @@
 
 // Anula el deck-summary basico cuando aplica progress-summary
 .deck-summary.progress-summary .total-cards { display: none; }
+
+// ====== #4 helper: popover de atajos ======
+.shortcut-help {
+  position: relative;
+  display: inline-flex;
+  &:hover .shortcut-popover { display: block; }
+}
+.shortcut-popover {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 50;
+  min-width: 240px;
+  background: #14142b;
+  border: 1px solid #2a2a3e;
+  border-radius: 10px;
+  padding: 0.7rem 0.85rem;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.5);
+  font-size: 0.8rem;
+  color: #ddd;
+  &.show { display: block; }
+  .sp-head {
+    font-weight: 700; color: #fff; margin-bottom: 0.5rem;
+    border-bottom: 1px solid #2a2a3e; padding-bottom: 0.35rem;
+  }
+  .sp-row {
+    display: flex; align-items: center; gap: 0.4rem; padding: 0.18rem 0;
+    span { color: #aaa; margin-left: auto; font-size: 0.78rem; }
+  }
+  kbd {
+    display: inline-block;
+    padding: 0.05rem 0.4rem;
+    background: #2a2a3e;
+    border: 1px solid #3a3a4e;
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    font-family: 'Consolas','Menlo',monospace;
+    font-size: 0.72rem;
+    color: #f4d35e;
+    line-height: 1.4;
+  }
+  .sp-foot {
+    margin-top: 0.5rem; padding-top: 0.4rem;
+    border-top: 1px solid #2a2a3e;
+    font-size: 0.72rem; color: #888; font-style: italic;
+  }
+}

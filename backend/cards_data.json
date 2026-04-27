@@ -3158,7 +3158,7 @@
       "myl_id": "20641",
       "edid": "059",
       "slug": "cienpies-sp",
-      "name": "cienpies-sp",
+      "name": "cienpies sp",
       "edition": 1,
       "rarity": 3,
       "race": null,
@@ -7338,7 +7338,7 @@
       "myl_id": "20861",
       "edid": "279",
       "slug": "trempilcahue",
-      "name": "trempilcahue",
+      "name": "tempilcahue",
       "edition": 1,
       "rarity": 1,
       "race": null,
@@ -220518,7 +220518,7 @@
       "myl_id": "custom_tk26_01",
       "edid": "01",
       "slug": "dracula-tk26",
-      "name": "Drácula",
+      "name": "dracula",
       "edition": 75,
       "rarity": 1,
       "race": null,
@@ -220537,7 +220537,7 @@
       "myl_id": "custom_tk26_02",
       "edid": "02",
       "slug": "signo-amarillo-tk26",
-      "name": "Signo Amarillo",
+      "name": "signo amarillo",
       "edition": 75,
       "rarity": 1,
       "race": null,
@@ -220575,7 +220575,7 @@
       "myl_id": "custom_tk26_03",
       "edid": "03",
       "slug": "escarapela-nacional-tk26",
-      "name": "Escarapela Nacional",
+      "name": "escarapela nacional",
       "edition": 75,
       "rarity": 1,
       "race": null,
@@ -220594,7 +220594,7 @@
       "myl_id": "custom_tk26_04",
       "edid": "04",
       "slug": "el-caleuche-tk26",
-      "name": "El Caleuche",
+      "name": "el caleuche",
       "edition": 75,
       "rarity": 1,
       "race": null,
@@ -220613,7 +220613,7 @@
       "myl_id": "custom_tk26_05",
       "edid": "05",
       "slug": "tempilcahue-tk26",
-      "name": "Tempilcahue",
+      "name": "tempilcahue",
       "edition": 75,
       "rarity": 1,
       "race": null,
@@ -220632,7 +220632,7 @@
       "myl_id": "custom_tk26_06",
       "edid": "06",
       "slug": "cuervo-nocturno-tk26",
-      "name": "Cuervo Nocturno",
+      "name": "cuervo nocturno",
       "edition": 75,
       "rarity": 1,
       "race": null,
@@ -220670,7 +220670,7 @@
       "myl_id": "custom_tk26_08",
       "edid": "08",
       "slug": "templo-de-hatshepsut-tk26",
-      "name": "Templo de Hatshepsut",
+      "name": "templo de hatshepsut",
       "edition": 75,
       "rarity": 1,
       "race": null,
@@ -220931,6 +220931,25 @@
   },
   {
     "model": "cards.card",
+    "pk": 11584,
+    "fields": {
+      "myl_id": "custom_tk26_15",
+      "edid": "15",
+      "slug": "celebrar-la-muerte-tk26",
+      "name": "Celebrar la Muerte",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "1",
+      "damage": null,
+      "ability": "Destierra una carta de coste 3 o menos. No se pueden jugar cartas con el mismo nombre hasta tu próximo turno. Cuando se resuelva, Baraja este Talismán en tu Castillo.\nCuando Botes esta carta por daño oponente, puedes Desterrarlo para Barajar hasta cinco cartas de los Cementerios.",
+      "flavour": "Carrozas y flores atraviesan calles soleadas; risas y cantos acompañan la procesión que honra a los que partieron.",
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777308951/deckshado/extra_cards/tk26_15.webp"
+    }
+  },
+  {
+    "model": "cards.card",
     "pk": 11566,
     "fields": {
       "myl_id": "custom_heroes_dharma_015",
@@ -220988,12 +221007,31 @@
   },
   {
     "model": "cards.card",
+    "pk": 11585,
+    "fields": {
+      "myl_id": "custom_tk26_18",
+      "edid": "18",
+      "slug": "calaveras-de-azucar-tk26",
+      "name": "Calaveras de Azúcar",
+      "edition": 75,
+      "rarity": 1,
+      "race": null,
+      "card_type": 5,
+      "cost": null,
+      "damage": null,
+      "ability": "Cuando entra en juego, muestra cartas del tope de tu Castillo hasta mostrar dos Oros de distinto nombre, ponlos en tu mano y Baraja el resto.\nEn el turno oponente, puedes subirlo a tu mano para prevenir un efecto que Anule, cancele o prevenga.",
+      "flavour": "Sonrisas dulces y colores vivos; las calaveras guardan recuerdos y alegrías de los que ya partieron.",
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777308952/deckshado/extra_cards/tk26_18.webp"
+    }
+  },
+  {
+    "model": "cards.card",
     "pk": 11547,
     "fields": {
       "myl_id": "custom_tk26_19",
       "edid": "19",
       "slug": "red-de-plata-tk26",
-      "name": "Red de Plata",
+      "name": "red de plata",
       "edition": 75,
       "rarity": 1,
       "race": null,
@@ -221031,7 +221069,7 @@
       "myl_id": "custom_tk26_20",
       "edid": "20",
       "slug": "espada-vikinga-tk26",
-      "name": "Espada Vikinga",
+      "name": "espada vikinga",
       "edition": 75,
       "rarity": 1,
       "race": null,
@@ -221050,7 +221088,7 @@
       "myl_id": "custom_tk26_21",
       "edid": "21",
       "slug": "carcosa-tk26",
-      "name": "Carcosa",
+      "name": "carcosa",
       "edition": 75,
       "rarity": 1,
       "race": null,
@@ -221069,7 +221107,7 @@
       "myl_id": "custom_kvm_219",
       "edid": "219",
       "slug": "resistencia-de-acero-kvm",
-      "name": "Resistencia de Acero",
+      "name": "resistencia de acero",
       "edition": 73,
       "rarity": 1,
       "race": null,
@@ -221107,7 +221145,7 @@
       "myl_id": "custom_kvm_220",
       "edid": "220",
       "slug": "furia-de-titan-kvm",
-      "name": "Furia de Titán",
+      "name": "furia de titan",
       "edition": 73,
       "rarity": 1,
       "race": null,
@@ -221126,7 +221164,7 @@
       "myl_id": "custom_kvm_221",
       "edid": "221",
       "slug": "sin-tregua-kvm",
-      "name": "Sin Tregua",
+      "name": "sin tregua",
       "edition": 73,
       "rarity": 1,
       "race": null,
@@ -221297,7 +221335,7 @@
       "myl_id": "custom_kvm_230",
       "edid": "230",
       "slug": "dracula-kvm",
-      "name": "Drácula",
+      "name": "dracula",
       "edition": 73,
       "rarity": 1,
       "race": null,
@@ -221316,7 +221354,7 @@
       "myl_id": "custom_kvm_231",
       "edid": "231",
       "slug": "signo-amarillo-kvm",
-      "name": "Signo Amarillo",
+      "name": "signo amarillo",
       "edition": 73,
       "rarity": 1,
       "race": null,
@@ -221335,7 +221373,7 @@
       "myl_id": "custom_kvm_232",
       "edid": "232",
       "slug": "ciudad-de-los-cesares-kvm",
-      "name": "Ciudad de los Césares",
+      "name": "ciudad de los cesares",
       "edition": 73,
       "rarity": 1,
       "race": null,
@@ -221354,7 +221392,7 @@
       "myl_id": "custom_kvm_233",
       "edid": "233",
       "slug": "guerrillero-rodriguez-kvm",
-      "name": "Guerrillero Rodríguez",
+      "name": "guerrillero rodriguez",
       "edition": 73,
       "rarity": 1,
       "race": 1,
@@ -221373,7 +221411,7 @@
       "myl_id": "custom_kvm_234",
       "edid": "234",
       "slug": "patria-vieja-kvm",
-      "name": "Patria Vieja",
+      "name": "patria vieja",
       "edition": 73,
       "rarity": 1,
       "race": null,
@@ -221601,7 +221639,7 @@
       "myl_id": "custom_tk26i_34",
       "edid": "34",
       "slug": "dragon-dorado-tk26i",
-      "name": "Dragón Dorado",
+      "name": "dragon dorado",
       "edition": 75,
       "rarity": 1,
       "race": null,
@@ -221824,6 +221862,25 @@
   },
   {
     "model": "cards.card",
+    "pk": 11580,
+    "fields": {
+      "myl_id": "custom_co2_05",
+      "edid": "CHI-05",
+      "slug": "exorcismo-de-carmen-marin-co2",
+      "name": "Exorcismo de Carmen Marín",
+      "edition": 74,
+      "rarity": 1,
+      "race": null,
+      "card_type": 2,
+      "cost": "2",
+      "damage": null,
+      "ability": "Elige un efecto. Puedes Botar dos cartas o Descartar una carta para elegir ambos:\n- Destierra un Cementerio. Las cartas en los Destierros pierden su habilidad durante este y los siguientes tres turnos.\n- Una carta pierde su habilidad y no puede atacar ni bloquear por el resto del juego.",
+      "flavour": "\"La endemoniada\", fue el primer caso documentado de exorcismo en latinoamérica, enfrentando la visión de la iglesia y la ciencia.",
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777308944/deckshado/extra_cards/c-o-2_05.webp"
+    }
+  },
+  {
+    "model": "cards.card",
     "pk": 11514,
     "fields": {
       "myl_id": "custom_co2_06",
@@ -221858,6 +221915,25 @@
       "ability": "Cuando lo juegues, puedes pagar un Oro adicional para elegir una carta de cualquier coste en vez de coste 3 o menos.\nBaraja una carta de coste 3 o menos.\nSi está en tu Cementerio, puedes pagar el coste de un Aliado en tu Cementerio para poner este Talismán en juego como una copia de ese Aliado.",
       "flavour": "El Palacio Echeverría fue el centro del espiritismo nacional. Incontables espectros aún recorren los pasillos de \"La casa de los Espíritus\".",
       "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_07-2.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11581,
+    "fields": {
+      "myl_id": "custom_co2_08",
+      "edid": "CHI-08",
+      "slug": "estacion-fantasma-co2",
+      "name": "Estación Fantasma",
+      "edition": 74,
+      "rarity": 1,
+      "race": null,
+      "card_type": 4,
+      "cost": "2",
+      "damage": null,
+      "ability": "Una vez por turno, puedes nombrar una carta que no sea Oro. Tu oponente Baraja las cartas que controle con ese nombre.\nCuando ataques, elige hasta dos Aliados con Furia que controles para que no hagan daño este turno y tu oponente Destierre tantas cartas del fondo de su Castillo como su Fuerza.",
+      "flavour": "Construcciones interrumpidas, destinos inconclusos. Ocultan secretos y misterios imposibles, sólo los más incautos se atreven a descubrirlos.",
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777308946/deckshado/extra_cards/c-o-2_08.webp"
     }
   },
   {
@@ -221938,6 +222014,25 @@
   },
   {
     "model": "cards.card",
+    "pk": 11582,
+    "fields": {
+      "myl_id": "custom_co2_14",
+      "edid": "CHI-14",
+      "slug": "machete-del-abuelo-co2",
+      "name": "Machete del Abuelo",
+      "edition": 74,
+      "rarity": 1,
+      "race": null,
+      "card_type": 3,
+      "cost": "2",
+      "damage": null,
+      "ability": "Una vez en tu turno, un Aliado gana Furia, 2 de Fuerza permanentemente y puedes Robar hasta tantas cartas como coste tenga más una.\nUna vez por turno, una carta que no sea Oro pierde su habilidad y es Desterrada. Esta habilidad no puede ser prevenida ni cancelada.",
+      "flavour": "Símbolo de poder y conexión con la tierra. Protagonista de incontables relatos de una lucha contra el mal encarnado: El Diablo mismo.",
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777308947/deckshado/extra_cards/c-o-2_14.webp"
+    }
+  },
+  {
+    "model": "cards.card",
     "pk": 11569,
     "fields": {
       "myl_id": "custom_co2_15",
@@ -221952,7 +222047,26 @@
       "damage": null,
       "ability": "Cuando entra en juego, juega una carta de tu mano o Cementerio reduciendo su coste en un Oro, hasta un mínimo de 0.\nUna vez por turno, cuando uno de tus Aliados salga del juego, puedes subirlo a tu mano.\nEn tu Fase Final, Baraja y/o Destierra hasta cinco cartas de los Cementerios y Roba una carta.",
       "flavour": "Construidos por los jesuitas para esconder tesoros y huir de la expulsión. Una red que conecta puntos claves y secretos de la ciudad de Santiago.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_15.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268966/deckshado/extra_cards/c-o-2_15.png"
+    }
+  },
+  {
+    "model": "cards.card",
+    "pk": 11583,
+    "fields": {
+      "myl_id": "custom_co2_16",
+      "edid": "CHI-16",
+      "slug": "hospital-san-jose-co2",
+      "name": "Hospital San José",
+      "edition": 74,
+      "rarity": 1,
+      "race": null,
+      "card_type": 4,
+      "cost": "2",
+      "damage": null,
+      "ability": "Cuando entra en juego, puedes Desterrar el Cementerio de tu oponente.\nUna vez por turno, puedes Barajar hasta seis cartas de los Cementerios y Robar tantas cartas como Tótem de distinto coste controles.\nEn la Fase Final oponente o cuando salga del juego, tu oponente Bota cinco cartas.",
+      "flavour": "Utilizado para aislar a enfermos de epidemias, cientos de almas habitan aun entre sus derrumbadas habitaciones y fríos pasillos.",
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777308950/deckshado/extra_cards/c-o-2_16.webp"
     }
   },
   {
@@ -222052,7 +222166,20 @@
   },
   {
     "model": "cards.banlistentry",
-    "pk": 208,
+    "pk": 293,
+    "fields": {
+      "card_name": "Anillo del Vacío",
+      "card": 1013,
+      "format_code": "imp",
+      "sub_format": "racial",
+      "status": "banned",
+      "max_copies": 0,
+      "last_synced": "2026-04-27T02:40:05.706Z"
+    }
+  },
+  {
+    "model": "cards.banlistentry",
+    "pk": 278,
     "fields": {
       "card_name": "Cancha Rayada",
       "card": 321,
@@ -222060,12 +222187,12 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.498Z"
+      "last_synced": "2026-04-27T02:40:05.383Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 216,
+    "pk": 279,
     "fields": {
       "card_name": "Flechero",
       "card": 896,
@@ -222073,12 +222200,12 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.503Z"
+      "last_synced": "2026-04-27T02:40:05.403Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 215,
+    "pk": 280,
     "fields": {
       "card_name": "Fusil Patriota",
       "card": 324,
@@ -222086,12 +222213,12 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.507Z"
+      "last_synced": "2026-04-27T02:40:05.422Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 212,
+    "pk": 281,
     "fields": {
       "card_name": "Hitodama",
       "card": 1633,
@@ -222099,12 +222226,12 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.510Z"
+      "last_synced": "2026-04-27T02:40:05.443Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 222,
+    "pk": 282,
     "fields": {
       "card_name": "Hook",
       "card": 572,
@@ -222112,12 +222239,12 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.513Z"
+      "last_synced": "2026-04-27T02:40:05.465Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 219,
+    "pk": 283,
     "fields": {
       "card_name": "Horda Tenebris",
       "card": 276,
@@ -222125,12 +222252,12 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.516Z"
+      "last_synced": "2026-04-27T02:40:05.488Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 213,
+    "pk": 284,
     "fields": {
       "card_name": "Ishikawa Goemon",
       "card": 1541,
@@ -222138,12 +222265,25 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.520Z"
+      "last_synced": "2026-04-27T02:40:05.508Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 221,
+    "pk": 294,
+    "fields": {
+      "card_name": "Kokudaka",
+      "card": 1733,
+      "format_code": "imp",
+      "sub_format": "racial",
+      "status": "banned",
+      "max_copies": 0,
+      "last_synced": "2026-04-27T02:40:05.726Z"
+    }
+  },
+  {
+    "model": "cards.banlistentry",
+    "pk": 285,
     "fields": {
       "card_name": "Koromodako",
       "card": 1568,
@@ -222151,12 +222291,12 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.522Z"
+      "last_synced": "2026-04-27T02:40:05.530Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 217,
+    "pk": 286,
     "fields": {
       "card_name": "Maho no Meiso",
       "card": 1556,
@@ -222164,12 +222304,12 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.524Z"
+      "last_synced": "2026-04-27T02:40:05.554Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 210,
+    "pk": 287,
     "fields": {
       "card_name": "Niten Ichi Ryu",
       "card": 1012,
@@ -222177,12 +222317,12 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.526Z"
+      "last_synced": "2026-04-27T02:40:05.575Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 218,
+    "pk": 288,
     "fields": {
       "card_name": "Perseguir el Sol",
       "card": 946,
@@ -222190,12 +222330,12 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.527Z"
+      "last_synced": "2026-04-27T02:40:05.600Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 209,
+    "pk": 289,
     "fields": {
       "card_name": "San Bruno",
       "card": 396,
@@ -222203,12 +222343,12 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.529Z"
+      "last_synced": "2026-04-27T02:40:05.622Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 211,
+    "pk": 290,
     "fields": {
       "card_name": "Senso-ji",
       "card": 1642,
@@ -222216,12 +222356,12 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.531Z"
+      "last_synced": "2026-04-27T02:40:05.641Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 220,
+    "pk": 291,
     "fields": {
       "card_name": "Septimus",
       "card": 597,
@@ -222229,12 +222369,12 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.533Z"
+      "last_synced": "2026-04-27T02:40:05.665Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 214,
+    "pk": 292,
     "fields": {
       "card_name": "Tenshi X-2",
       "card": 1448,
@@ -222242,12 +222382,12 @@
       "sub_format": "racial",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.535Z"
+      "last_synced": "2026-04-27T02:40:05.685Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 231,
+    "pk": 295,
     "fields": {
       "card_name": "Anillo de Tierra",
       "card": 1521,
@@ -222255,25 +222395,12 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.537Z"
+      "last_synced": "2026-04-27T02:40:05.746Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 239,
-    "fields": {
-      "card_name": "Anillo del Vacío",
-      "card": 1013,
-      "format_code": "imp",
-      "sub_format": "racial",
-      "status": "limited_1",
-      "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.539Z"
-    }
-  },
-  {
-    "model": "cards.banlistentry",
-    "pk": 237,
+    "pk": 296,
     "fields": {
       "card_name": "Cueva de Xalpen",
       "card": 500,
@@ -222281,12 +222408,12 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.540Z"
+      "last_synced": "2026-04-27T02:40:05.767Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 223,
+    "pk": 297,
     "fields": {
       "card_name": "E.A. Poe",
       "card": 879,
@@ -222294,12 +222421,12 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.542Z"
+      "last_synced": "2026-04-27T02:40:05.787Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 232,
+    "pk": 298,
     "fields": {
       "card_name": "El Rey y el Verdugo",
       "card": 884,
@@ -222307,12 +222434,12 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.543Z"
+      "last_synced": "2026-04-27T02:40:05.807Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 236,
+    "pk": 299,
     "fields": {
       "card_name": "Fujibayashi Nagato",
       "card": 1690,
@@ -222320,12 +222447,12 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.545Z"
+      "last_synced": "2026-04-27T02:40:05.828Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 227,
+    "pk": 300,
     "fields": {
       "card_name": "Justo Estay",
       "card": 357,
@@ -222333,12 +222460,25 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.546Z"
+      "last_synced": "2026-04-27T02:40:05.849Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 238,
+    "pk": 311,
+    "fields": {
+      "card_name": "Legión Paladín",
+      "card": 275,
+      "format_code": "imp",
+      "sub_format": "racial",
+      "status": "limited_1",
+      "max_copies": 1,
+      "last_synced": "2026-04-27T02:40:06.102Z"
+    }
+  },
+  {
+    "model": "cards.banlistentry",
+    "pk": 301,
     "fields": {
       "card_name": "Levisterio",
       "card": 375,
@@ -222346,12 +222486,64 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.548Z"
+      "last_synced": "2026-04-27T02:40:05.869Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 228,
+    "pk": 313,
+    "fields": {
+      "card_name": "León Indiferente",
+      "card": 238,
+      "format_code": "imp",
+      "sub_format": "racial",
+      "status": "limited_1",
+      "max_copies": 1,
+      "last_synced": "2026-04-27T02:40:06.147Z"
+    }
+  },
+  {
+    "model": "cards.banlistentry",
+    "pk": 312,
+    "fields": {
+      "card_name": "Los Umbras",
+      "card": 1037,
+      "format_code": "imp",
+      "sub_format": "racial",
+      "status": "limited_1",
+      "max_copies": 1,
+      "last_synced": "2026-04-27T02:40:06.125Z"
+    }
+  },
+  {
+    "model": "cards.banlistentry",
+    "pk": 314,
+    "fields": {
+      "card_name": "Lucerna",
+      "card": 409,
+      "format_code": "imp",
+      "sub_format": "racial",
+      "status": "limited_1",
+      "max_copies": 1,
+      "last_synced": "2026-04-27T02:40:06.167Z"
+    }
+  },
+  {
+    "model": "cards.banlistentry",
+    "pk": 315,
+    "fields": {
+      "card_name": "Manuel Bulnes",
+      "card": 382,
+      "format_code": "imp",
+      "sub_format": "racial",
+      "status": "limited_1",
+      "max_copies": 1,
+      "last_synced": "2026-04-27T02:40:06.187Z"
+    }
+  },
+  {
+    "model": "cards.banlistentry",
+    "pk": 302,
     "fields": {
       "card_name": "Mariano Osorio",
       "card": 315,
@@ -222359,12 +222551,12 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.550Z"
+      "last_synced": "2026-04-27T02:40:05.892Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 225,
+    "pk": 303,
     "fields": {
       "card_name": "Padre de la Patria",
       "card": 309,
@@ -222372,12 +222564,12 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.553Z"
+      "last_synced": "2026-04-27T02:40:05.914Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 234,
+    "pk": 304,
     "fields": {
       "card_name": "Paladín (BES-017-161)",
       "card": 4833,
@@ -222385,12 +222577,12 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.555Z"
+      "last_synced": "2026-04-27T02:40:05.936Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 226,
+    "pk": 305,
     "fields": {
       "card_name": "Ramón Freire",
       "card": 340,
@@ -222398,12 +222590,12 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.556Z"
+      "last_synced": "2026-04-27T02:40:05.957Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 224,
+    "pk": 306,
     "fields": {
       "card_name": "Rey de Amarillo",
       "card": 535,
@@ -222411,12 +222603,12 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.558Z"
+      "last_synced": "2026-04-27T02:40:05.981Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 230,
+    "pk": 307,
     "fields": {
       "card_name": "Ryugu Jo",
       "card": 963,
@@ -222424,12 +222616,12 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.559Z"
+      "last_synced": "2026-04-27T02:40:06.008Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 233,
+    "pk": 308,
     "fields": {
       "card_name": "Shakar Raj",
       "card": 1192,
@@ -222437,12 +222629,12 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.560Z"
+      "last_synced": "2026-04-27T02:40:06.034Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 235,
+    "pk": 309,
     "fields": {
       "card_name": "Sherlock Holmes",
       "card": 551,
@@ -222450,12 +222642,12 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.562Z"
+      "last_synced": "2026-04-27T02:40:06.059Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 229,
+    "pk": 310,
     "fields": {
       "card_name": "Tesoro de los Césares",
       "card": 327,
@@ -222463,12 +222655,12 @@
       "sub_format": "racial",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.563Z"
+      "last_synced": "2026-04-27T02:40:06.080Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 245,
+    "pk": 316,
     "fields": {
       "card_name": "Alicia en Wonderland",
       "card": 882,
@@ -222476,12 +222668,25 @@
       "sub_format": "racial",
       "status": "limited_2",
       "max_copies": 2,
-      "last_synced": "2026-04-16T17:23:32.565Z"
+      "last_synced": "2026-04-27T02:40:06.208Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 243,
+    "pk": 323,
+    "fields": {
+      "card_name": "Azí Sruvara",
+      "card": 1102,
+      "format_code": "imp",
+      "sub_format": "racial",
+      "status": "limited_2",
+      "max_copies": 2,
+      "last_synced": "2026-04-27T02:40:06.355Z"
+    }
+  },
+  {
+    "model": "cards.banlistentry",
+    "pk": 317,
     "fields": {
       "card_name": "Ciudad de los Césares",
       "card": 305,
@@ -222489,25 +222694,25 @@
       "sub_format": "racial",
       "status": "limited_2",
       "max_copies": 2,
-      "last_synced": "2026-04-16T17:23:32.567Z"
+      "last_synced": "2026-04-27T02:40:06.229Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 242,
+    "pk": 318,
     "fields": {
-      "card_name": "Cthulu",
+      "card_name": "Cthulhu",
       "card": 558,
       "format_code": "imp",
       "sub_format": "racial",
       "status": "limited_2",
       "max_copies": 2,
-      "last_synced": "2026-04-16T17:23:32.569Z"
+      "last_synced": "2026-04-27T02:40:06.250Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 246,
+    "pk": 319,
     "fields": {
       "card_name": "El Mago",
       "card": 1044,
@@ -222515,25 +222720,25 @@
       "sub_format": "racial",
       "status": "limited_2",
       "max_copies": 2,
-      "last_synced": "2026-04-16T17:23:32.570Z"
+      "last_synced": "2026-04-27T02:40:06.272Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 247,
+    "pk": 324,
     "fields": {
-      "card_name": "Legión Paladín",
-      "card": 275,
+      "card_name": "Kuchiku el Cazador",
+      "card": 11,
       "format_code": "imp",
       "sub_format": "racial",
       "status": "limited_2",
       "max_copies": 2,
-      "last_synced": "2026-04-16T17:23:32.572Z"
+      "last_synced": "2026-04-27T02:40:06.376Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 241,
+    "pk": 320,
     "fields": {
       "card_name": "Manuel Rodríguez",
       "card": 299,
@@ -222541,12 +222746,12 @@
       "sub_format": "racial",
       "status": "limited_2",
       "max_copies": 2,
-      "last_synced": "2026-04-16T17:23:32.574Z"
+      "last_synced": "2026-04-27T02:40:06.292Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 240,
+    "pk": 321,
     "fields": {
       "card_name": "Nyssara Cautiva",
       "card": 259,
@@ -222554,12 +222759,12 @@
       "sub_format": "racial",
       "status": "limited_2",
       "max_copies": 2,
-      "last_synced": "2026-04-16T17:23:32.576Z"
+      "last_synced": "2026-04-27T02:40:06.313Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 244,
+    "pk": 322,
     "fields": {
       "card_name": "Sheut",
       "card": 253,
@@ -222567,7 +222772,7 @@
       "sub_format": "racial",
       "status": "limited_2",
       "max_copies": 2,
-      "last_synced": "2026-04-16T17:23:32.578Z"
+      "last_synced": "2026-04-27T02:40:06.334Z"
     }
   },
   {
@@ -222580,7 +222785,7 @@
       "sub_format": "triadas",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.579Z"
+      "last_synced": "2026-04-23T20:23:42.872Z"
     }
   },
   {
@@ -222593,7 +222798,7 @@
       "sub_format": "triadas",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.581Z"
+      "last_synced": "2026-04-23T20:23:42.873Z"
     }
   },
   {
@@ -222606,7 +222811,7 @@
       "sub_format": "triadas",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.583Z"
+      "last_synced": "2026-04-23T20:23:42.874Z"
     }
   },
   {
@@ -222619,12 +222824,38 @@
       "sub_format": "triadas",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.585Z"
+      "last_synced": "2026-04-23T20:23:42.875Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 277,
+    "pk": 333,
+    "fields": {
+      "card_name": "Alka",
+      "card": 1172,
+      "format_code": "imp",
+      "sub_format": "vcr",
+      "status": "banned",
+      "max_copies": 0,
+      "last_synced": "2026-04-27T02:40:06.577Z"
+    }
+  },
+  {
+    "model": "cards.banlistentry",
+    "pk": 334,
+    "fields": {
+      "card_name": "Anillo del Vacío",
+      "card": 1013,
+      "format_code": "imp",
+      "sub_format": "vcr",
+      "status": "banned",
+      "max_copies": 0,
+      "last_synced": "2026-04-27T02:40:06.599Z"
+    }
+  },
+  {
+    "model": "cards.banlistentry",
+    "pk": 325,
     "fields": {
       "card_name": "Estela Sagrada",
       "card": 128,
@@ -222632,12 +222863,12 @@
       "sub_format": "vcr",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.587Z"
+      "last_synced": "2026-04-27T02:40:06.398Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 281,
+    "pk": 326,
     "fields": {
       "card_name": "Forma de Niebla",
       "card": 620,
@@ -222645,12 +222876,25 @@
       "sub_format": "vcr",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.588Z"
+      "last_synced": "2026-04-27T02:40:06.419Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 279,
+    "pk": 332,
+    "fields": {
+      "card_name": "Furia Berserker",
+      "card": 1328,
+      "format_code": "imp",
+      "sub_format": "vcr",
+      "status": "banned",
+      "max_copies": 0,
+      "last_synced": "2026-04-27T02:40:06.556Z"
+    }
+  },
+  {
+    "model": "cards.banlistentry",
+    "pk": 327,
     "fields": {
       "card_name": "Kogarasumaru",
       "card": 1557,
@@ -222658,12 +222902,38 @@
       "sub_format": "vcr",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.590Z"
+      "last_synced": "2026-04-27T02:40:06.440Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 278,
+    "pk": 335,
+    "fields": {
+      "card_name": "Kokudaka",
+      "card": 1733,
+      "format_code": "imp",
+      "sub_format": "vcr",
+      "status": "banned",
+      "max_copies": 0,
+      "last_synced": "2026-04-27T02:40:06.619Z"
+    }
+  },
+  {
+    "model": "cards.banlistentry",
+    "pk": 331,
+    "fields": {
+      "card_name": "Libro de Thoth",
+      "card": 1135,
+      "format_code": "imp",
+      "sub_format": "vcr",
+      "status": "banned",
+      "max_copies": 0,
+      "last_synced": "2026-04-27T02:40:06.534Z"
+    }
+  },
+  {
+    "model": "cards.banlistentry",
+    "pk": 328,
     "fields": {
       "card_name": "Momificar",
       "card": 831,
@@ -222671,12 +222941,12 @@
       "sub_format": "vcr",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.591Z"
+      "last_synced": "2026-04-27T02:40:06.464Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 280,
+    "pk": 329,
     "fields": {
       "card_name": "París",
       "card": 623,
@@ -222684,12 +222954,38 @@
       "sub_format": "vcr",
       "status": "banned",
       "max_copies": 0,
-      "last_synced": "2026-04-16T17:23:32.593Z"
+      "last_synced": "2026-04-27T02:40:06.487Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 294,
+    "pk": 330,
+    "fields": {
+      "card_name": "Sable Corto",
+      "card": 452,
+      "format_code": "imp",
+      "sub_format": "vcr",
+      "status": "banned",
+      "max_copies": 0,
+      "last_synced": "2026-04-27T02:40:06.510Z"
+    }
+  },
+  {
+    "model": "cards.banlistentry",
+    "pk": 358,
+    "fields": {
+      "card_name": "Ahriman",
+      "card": 1111,
+      "format_code": "imp",
+      "sub_format": "vcr",
+      "status": "limited_1",
+      "max_copies": 1,
+      "last_synced": "2026-04-27T02:40:07.123Z"
+    }
+  },
+  {
+    "model": "cards.banlistentry",
+    "pk": 336,
     "fields": {
       "card_name": "Ayyappan",
       "card": 1098,
@@ -222697,12 +222993,12 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.596Z"
+      "last_synced": "2026-04-27T02:40:06.641Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 289,
+    "pk": 337,
     "fields": {
       "card_name": "Azí Sruvara",
       "card": 1102,
@@ -222710,12 +223006,25 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.599Z"
+      "last_synced": "2026-04-27T02:40:06.662Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 297,
+    "pk": 355,
+    "fields": {
+      "card_name": "Capitán O'Brien",
+      "card": 342,
+      "format_code": "imp",
+      "sub_format": "vcr",
+      "status": "limited_1",
+      "max_copies": 1,
+      "last_synced": "2026-04-27T02:40:07.060Z"
+    }
+  },
+  {
+    "model": "cards.banlistentry",
+    "pk": 338,
     "fields": {
       "card_name": "El Cuero",
       "card": 339,
@@ -222723,12 +223032,12 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.600Z"
+      "last_synced": "2026-04-27T02:40:06.684Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 292,
+    "pk": 339,
     "fields": {
       "card_name": "Escorpion de Seth",
       "card": 833,
@@ -222736,12 +223045,12 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.602Z"
+      "last_synced": "2026-04-27T02:40:06.709Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 299,
+    "pk": 340,
     "fields": {
       "card_name": "Gusano Blanco",
       "card": 595,
@@ -222749,12 +223058,12 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.603Z"
+      "last_synced": "2026-04-27T02:40:06.732Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 283,
+    "pk": 341,
     "fields": {
       "card_name": "Invasión",
       "card": 80,
@@ -222762,12 +223071,25 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.605Z"
+      "last_synced": "2026-04-27T02:40:06.758Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 287,
+    "pk": 357,
+    "fields": {
+      "card_name": "Javiera Carrera",
+      "card": 399,
+      "format_code": "imp",
+      "sub_format": "vcr",
+      "status": "limited_1",
+      "max_copies": 1,
+      "last_synced": "2026-04-27T02:40:07.102Z"
+    }
+  },
+  {
+    "model": "cards.banlistentry",
+    "pk": 342,
     "fields": {
       "card_name": "Laterna",
       "card": 936,
@@ -222775,12 +223097,38 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.607Z"
+      "last_synced": "2026-04-27T02:40:06.779Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 296,
+    "pk": 356,
+    "fields": {
+      "card_name": "Lola",
+      "card": 5335,
+      "format_code": "imp",
+      "sub_format": "vcr",
+      "status": "limited_1",
+      "max_copies": 1,
+      "last_synced": "2026-04-27T02:40:07.080Z"
+    }
+  },
+  {
+    "model": "cards.banlistentry",
+    "pk": 361,
+    "fields": {
+      "card_name": "Lupus B7",
+      "card": 106,
+      "format_code": "imp",
+      "sub_format": "vcr",
+      "status": "limited_1",
+      "max_copies": 1,
+      "last_synced": "2026-04-27T02:40:07.192Z"
+    }
+  },
+  {
+    "model": "cards.banlistentry",
+    "pk": 343,
     "fields": {
       "card_name": "Misil de Rastreo",
       "card": 82,
@@ -222788,12 +223136,12 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.609Z"
+      "last_synced": "2026-04-27T02:40:06.800Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 293,
+    "pk": 344,
     "fields": {
       "card_name": "Monitor Araucano",
       "card": 374,
@@ -222801,12 +223149,25 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.610Z"
+      "last_synced": "2026-04-27T02:40:06.821Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 288,
+    "pk": 359,
+    "fields": {
+      "card_name": "Muro de los Caídos",
+      "card": 97,
+      "format_code": "imp",
+      "sub_format": "vcr",
+      "status": "limited_1",
+      "max_copies": 1,
+      "last_synced": "2026-04-27T02:40:07.145Z"
+    }
+  },
+  {
+    "model": "cards.banlistentry",
+    "pk": 345,
     "fields": {
       "card_name": "Oda Nobunaga",
       "card": 1529,
@@ -222814,12 +223175,25 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.611Z"
+      "last_synced": "2026-04-27T02:40:06.842Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 290,
+    "pk": 354,
+    "fields": {
+      "card_name": "Peripillan",
+      "card": 363,
+      "format_code": "imp",
+      "sub_format": "vcr",
+      "status": "limited_1",
+      "max_copies": 1,
+      "last_synced": "2026-04-27T02:40:07.039Z"
+    }
+  },
+  {
+    "model": "cards.banlistentry",
+    "pk": 346,
     "fields": {
       "card_name": "Piramide Roja",
       "card": 1437,
@@ -222827,12 +223201,12 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.613Z"
+      "last_synced": "2026-04-27T02:40:06.865Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 291,
+    "pk": 347,
     "fields": {
       "card_name": "Pirata Wakou",
       "card": null,
@@ -222840,12 +223214,12 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.614Z"
+      "last_synced": "2026-04-27T02:40:06.889Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 285,
+    "pk": 348,
     "fields": {
       "card_name": "Plaza de Armas",
       "card": 372,
@@ -222853,12 +223227,12 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.616Z"
+      "last_synced": "2026-04-27T02:40:06.913Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 295,
+    "pk": 349,
     "fields": {
       "card_name": "Quantum Megumi",
       "card": 129,
@@ -222866,12 +223240,12 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.619Z"
+      "last_synced": "2026-04-27T02:40:06.933Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 282,
+    "pk": 350,
     "fields": {
       "card_name": "Shedo Titán",
       "card": 114,
@@ -222879,12 +223253,25 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.620Z"
+      "last_synced": "2026-04-27T02:40:06.954Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 284,
+    "pk": 360,
+    "fields": {
+      "card_name": "Tanuki",
+      "card": 1537,
+      "format_code": "imp",
+      "sub_format": "vcr",
+      "status": "limited_1",
+      "max_copies": 1,
+      "last_synced": "2026-04-27T02:40:07.169Z"
+    }
+  },
+  {
+    "model": "cards.banlistentry",
+    "pk": 351,
     "fields": {
       "card_name": "Tumulto Voraz",
       "card": 84,
@@ -222892,12 +223279,12 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.621Z"
+      "last_synced": "2026-04-27T02:40:06.976Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 298,
+    "pk": 352,
     "fields": {
       "card_name": "Watson",
       "card": 592,
@@ -222905,12 +223292,12 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.623Z"
+      "last_synced": "2026-04-27T02:40:06.997Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 286,
+    "pk": 353,
     "fields": {
       "card_name": "Zmaj Depredador",
       "card": 104,
@@ -222918,12 +223305,12 @@
       "sub_format": "vcr",
       "status": "limited_1",
       "max_copies": 1,
-      "last_synced": "2026-04-16T17:23:32.624Z"
+      "last_synced": "2026-04-27T02:40:07.018Z"
     }
   },
   {
     "model": "cards.banlistentry",
-    "pk": 300,
+    "pk": 362,
     "fields": {
       "card_name": "Miguel Grau",
       "card": 490,
@@ -222931,20 +223318,7 @@
       "sub_format": "vcr",
       "status": "limited_2",
       "max_copies": 2,
-      "last_synced": "2026-04-16T17:23:32.626Z"
-    }
-  },
-  {
-    "model": "cards.banlistentry",
-    "pk": 301,
-    "fields": {
-      "card_name": "Sable Corto",
-      "card": 452,
-      "format_code": "imp",
-      "sub_format": "vcr",
-      "status": "limited_2",
-      "max_copies": 2,
-      "last_synced": "2026-04-16T17:23:32.627Z"
+      "last_synced": "2026-04-27T02:40:07.213Z"
     }
   }
 ]

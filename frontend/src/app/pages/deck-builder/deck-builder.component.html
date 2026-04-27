@@ -210,6 +210,18 @@
       <h2>{{ deckId ? 'Editar Mazo' : 'Nuevo Mazo' }}</h2>
       <div class="deck-header-actions">
         <button class="icon-btn"
+                (click)="undo()"
+                [disabled]="!canUndo()"
+                title="Deshacer (Ctrl+Z)">
+          <i class="bi bi-arrow-counterclockwise"></i>
+        </button>
+        <button class="icon-btn"
+                (click)="redo()"
+                [disabled]="!canRedo()"
+                title="Rehacer (Ctrl+Y)">
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+        <button class="icon-btn"
                 (click)="openImportModal()"
                 title="Importar mazo desde texto o código">
           <i class="bi bi-box-arrow-in-down"></i>
@@ -250,9 +262,41 @@
       Compartir con equipo
     </label>
 
-    <div class="deck-summary" [class.has-error]="fieldErrors.cards">
-      <span class="total-cards">{{ totalDeckCards }} / 50 cartas</span>
+    <div class="deck-summary progress-summary" [class.has-error]="fieldErrors.cards" [attr.data-state]="progressState">
+      <div class="progress-ring" [attr.data-state]="progressState" [style.--p]="progressPct + '%'">
+        <span class="progress-num">{{ totalDeckCards }}<small>/50</small></span>
+      </div>
+      <div class="progress-info">
+        <div class="info-line">
+          <span class="oro-pill" [class.warn]="oroCount < 10 || oroCount > 18" title="Cantidad de Oros">
+            <i class="bi bi-coin"></i> {{ oroCount }}
+          </span>
+          @if (avgCostMain > 0) {
+            <span class="avg-pill" title="Coste promedio (sin Oros)">μ {{ avgCostMain }}</span>
+          }
+          @if (selectedRace && selectedRace !== 'dream') {
+            @if (raceCounts.offRace > 0) {
+              <span class="race-pill bad" title="Cartas que no son de tu raza ni neutras">
+                <i class="bi bi-exclamation-triangle-fill"></i> {{ raceCounts.offRace }} fuera de raza
+              </span>
+            } @else {
+              <span class="race-pill ok" title="De raza + sin raza">
+                <i class="bi bi-check-circle-fill"></i> {{ raceCounts.ofRace }} + {{ raceCounts.raceless }}
+              </span>
+            }
+          }
+        </div>
+      </div>
     </div>
+
+    @if (banlistViolations.length > 0) {
+      <div class="violations-panel">
+        <div class="vh"><i class="bi bi-shield-exclamation"></i> Problemas detectados</div>
+        @for (v of banlistViolations; track v.card.id) {
+          <div class="v-row"><strong>{{ v.card.name }}</strong> — {{ v.reason }}</div>
+        }
+      </div>
+    }
 
     @if (typeCounts.length) {
       <div class="type-breakdown">
@@ -292,6 +336,8 @@
           @for (dc of g.cards; track dc.card.id) {
             <div class="deck-entry"
                  [class.flash-added]="recentlyAdded.has(dc.card.id)"
+                 [class.has-violation]="hasViolation(dc.card)"
+                 [title]="violationText(dc.card)"
                  [style.transform]="swipeOffset[dc.card.id] !== undefined ? 'translateX(' + swipeOffset[dc.card.id] + 'px)' : ''"
                  (touchstart)="onSwipeStart($event, dc.card.id)"
                  (touchmove)="onSwipeMove($event, dc.card.id)"
@@ -330,6 +376,8 @@
           @for (dc of g.cards; track dc.card.id) {
             <div class="deck-entry side"
                  [class.flash-added]="recentlyAdded.has(dc.card.id)"
+                 [class.has-violation]="hasViolation(dc.card)"
+                 [title]="violationText(dc.card)"
                  [style.transform]="swipeOffset[dc.card.id] !== undefined ? 'translateX(' + swipeOffset[dc.card.id] + 'px)' : ''"
                  (touchstart)="onSwipeStart($event, dc.card.id)"
                  (touchmove)="onSwipeMove($event, dc.card.id)"

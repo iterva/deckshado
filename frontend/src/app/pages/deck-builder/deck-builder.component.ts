@@ -411,7 +411,48 @@ export class DeckBuilderComponent implements OnInit {
 
   @HostListener('document:keydown.escape')
   onEscape() {
-    if (this.openFilter) this.openFilter = null;
+    if (this.openFilter) { this.openFilter = null; return; }
+    if (this.showExportModal) { this.closeExportModal(); return; }
+    if (this.showImportModal) { this.closeImportModal(); return; }
+    if (this.previewCard()) { this.hidePreview(); return; }
+  }
+
+  /** #4 Atajos globales de teclado. */
+  @HostListener('document:keydown', ['$event'])
+  onGlobalKeydown(e: KeyboardEvent) {
+    const target = e.target as HTMLElement | null;
+    const inField = !!target && (
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.isContentEditable
+    );
+
+    // Ctrl/Cmd + Z = undo, Ctrl/Cmd + Shift + Z o Ctrl + Y = redo (siempre, incluso en inputs del mazo)
+    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+      const k = e.key.toLowerCase();
+      if (k === 'z' && !e.shiftKey) {
+        // Si está dentro de un input, dejamos que el navegador haga undo del input.
+        if (inField) return;
+        e.preventDefault();
+        this.undo();
+        return;
+      }
+      if ((k === 'z' && e.shiftKey) || k === 'y') {
+        if (inField) return;
+        e.preventDefault();
+        this.redo();
+        return;
+      }
+    }
+
+    // "/" para enfocar el buscador (si no estamos ya en un campo)
+    if (e.key === '/' && !inField && !this.showExportModal && !this.showImportModal) {
+      e.preventDefault();
+      try {
+        this.searchInput?.nativeElement?.focus();
+        this.searchInput?.nativeElement?.select?.();
+      } catch {}
+    }
   }
 
   filterLabel(which: 'edition' | 'rarity' | 'cost'): string {
@@ -744,6 +785,104 @@ export class DeckBuilderComponent implements OnInit {
     return order.filter(t => map[t]).map(t => ({ label: t, count: map[t] }));
   }
 
+  // ====== #6 Validación visual ======
+  /** Total de cartas que coinciden con la raza seleccionada (incluye sin raza). */
+  get raceCounts(): { ofRace: number; raceless: number; offRace: number } {
+    let ofRace = 0, raceless = 0, offRace = 0;
+    if (!this.selectedRace || this.selectedRace === 'dream') {
+      // Sin restricción real
+      for (const dc of this.deckCards) ofRace += dc.quantity;
+      return { ofRace, raceless: 0, offRace: 0 };
+    }
+    for (const dc of this.deckCards) {
+      if (this.cardMatchesRace(dc.card, this.selectedRace)) ofRace += dc.quantity;
+      else if (this.isRaceless(dc.card)) raceless += dc.quantity;
+      else offRace += dc.quantity;
+    }
+    return { ofRace, raceless, offRace };
+  }
+
+  /** Conteo de Oros (separado, ayuda a calibrar curva). */
+  get oroCount(): number {
+    let n = 0;
+    for (const dc of this.deckCards) if (dc.card.type_name === 'Oro') n += dc.quantity;
+    return n;
+  }
+
+  /** Coste promedio del mazo principal sin Oros (para sugerencia visual). */
+  get avgCostMain(): number {
+    let sum = 0, n = 0;
+    for (const dc of this.deckCards) {
+      if (dc.card.type_name === 'Oro') continue;
+      const v = Number(dc.card.cost);
+      if (!Number.isFinite(v)) continue;
+      sum += v * dc.quantity;
+      n += dc.quantity;
+    }
+    return n === 0 ? 0 : Math.round((sum / n) * 10) / 10;
+  }
+
+  /** Estado del anillo de progreso 50/50. */
+  get progressState(): 'low' | 'mid' | 'ok' | 'over' {
+    const t = this.totalDeckCards;
+    if (t > 50) return 'over';
+    if (t === 50) return 'ok';
+    if (t >= 40) return 'mid';
+    return 'low';
+  }
+
+  get progressPct(): number {
+    return Math.min(100, Math.round((this.totalDeckCards / 50) * 100));
+  }
+
+  get sideProgressState(): 'ok' | 'over' | 'mid' {
+    const t = this.totalSideCards;
+    if (t > 15) return 'over';
+    if (t === 15 || t === 0) return 'ok';
+    return 'mid';
+  }
+
+  /** Lista de cartas con problemas: baneadas, exceso de copias por banlist/única, fuera de raza. */
+  get banlistViolations(): { card: Card; reason: string }[] {
+    const out: { card: Card; reason: string }[] = [];
+    const seenNames = new Set<string>();
+    const checkOne = (card: Card) => {
+      const key = normalizeName(card.name);
+      if (seenNames.has(key)) return;
+      seenNames.add(key);
+      const ban = this.getBanStatus(card);
+      const total = this.getNameCount(card.name);
+      if (ban?.status === 'banned') {
+        out.push({ card, reason: 'Baneada en este formato' });
+        return;
+      }
+      const max = this.getEffectiveMaxCopies(card);
+      if (total > max) {
+        out.push({ card, reason: `${total}/${max} copias (excede el límite)` });
+      }
+    };
+    for (const dc of this.deckCards) checkOne(dc.card);
+    for (const dc of this.sideCards) checkOne(dc.card);
+    return out;
+  }
+
+  /** Indica si una carta concreta del mazo viola límite o está baneada (para resaltar fila). */
+  hasViolation(card: Card): boolean {
+    const ban = this.getBanStatus(card);
+    if (ban?.status === 'banned') return true;
+    return this.getNameCount(card.name) > this.getEffectiveMaxCopies(card);
+  }
+
+  /** Para mostrar texto rápido en hover. */
+  violationText(card: Card): string {
+    const ban = this.getBanStatus(card);
+    if (ban?.status === 'banned') return 'Baneada';
+    const max = this.getEffectiveMaxCopies(card);
+    const total = this.getNameCount(card.name);
+    if (total > max) return `${total}/${max} copias`;
+    return '';
+  }
+
   /**
    * Curva de coste: cantidad de cartas (no-Oro) por bucket de coste 0..6 y 7+.
    * Devuelve siempre los 8 buckets (con count 0 si no hay), para que el gráfico
@@ -1041,6 +1180,82 @@ export class DeckBuilderComponent implements OnInit {
     this.hasUnsavedChanges = true;
     if (this.autosaveTimer) clearTimeout(this.autosaveTimer);
     this.autosaveTimer = setTimeout(() => this.saveDraft(), 1500);
+    this.pushHistorySnapshot();
+  }
+
+  // ====== #11 Undo / Redo ======
+  /** Stack de snapshots (cada uno = JSON con deckCards y sideCards). */
+  private history: string[] = [];
+  /** Posición actual en el stack (último snapshot aplicado). */
+  private historyIndex = -1;
+  /** Tope para no consumir RAM. */
+  private readonly HISTORY_MAX = 60;
+  /** Bandera para no re-snapshot durante un undo/redo. */
+  private suppressHistory = false;
+  /** Debounce para no crear muchos snapshots por cambios rápidos. */
+  private historyTimer: any = null;
+
+  private serializeDeckState(): string {
+    return JSON.stringify({
+      m: this.deckCards.map(dc => ({ id: dc.card.id, q: dc.quantity })),
+      s: this.sideCards.map(dc => ({ id: dc.card.id, q: dc.quantity })),
+    });
+  }
+
+  private pushHistorySnapshot() {
+    if (this.suppressHistory) return;
+    if (this.historyTimer) clearTimeout(this.historyTimer);
+    this.historyTimer = setTimeout(() => {
+      const snap = this.serializeDeckState();
+      // Evitar duplicados consecutivos
+      if (this.history[this.historyIndex] === snap) return;
+      // Truncar redo branch si estábamos en medio del historial
+      this.history = this.history.slice(0, this.historyIndex + 1);
+      this.history.push(snap);
+      if (this.history.length > this.HISTORY_MAX) {
+        this.history.shift();
+      }
+      this.historyIndex = this.history.length - 1;
+      this.cdr.detectChanges();
+    }, 250);
+  }
+
+  canUndo(): boolean { return this.historyIndex > 0; }
+  canRedo(): boolean { return this.historyIndex < this.history.length - 1; }
+
+  undo() {
+    if (!this.canUndo()) return;
+    this.historyIndex--;
+    this.applyHistorySnapshot(this.history[this.historyIndex]);
+  }
+
+  redo() {
+    if (!this.canRedo()) return;
+    this.historyIndex++;
+    this.applyHistorySnapshot(this.history[this.historyIndex]);
+  }
+
+  private applyHistorySnapshot(snap: string) {
+    let data: any;
+    try { data = JSON.parse(snap); } catch { return; }
+    // Conservar referencias a Card a partir de las cartas que ya están en mazo o disponibles.
+    const allCards = new Map<number, Card>();
+    for (const dc of this.deckCards) allCards.set(dc.card.id, dc.card);
+    for (const dc of this.sideCards) allCards.set(dc.card.id, dc.card);
+    for (const c of this.availableCards) allCards.set(c.id, c);
+
+    this.suppressHistory = true;
+    this.deckCards = (data.m || [])
+      .map((e: any) => ({ card: allCards.get(e.id), quantity: e.q }))
+      .filter((e: any) => e.card);
+    this.sideCards = (data.s || [])
+      .map((e: any) => ({ card: allCards.get(e.id), quantity: e.q }))
+      .filter((e: any) => e.card);
+    this.sortDeckCards(this.deckCards);
+    this.sortDeckCards(this.sideCards);
+    this.hasUnsavedChanges = true;
+    this.suppressHistory = false;
+    this.cdr.detectChanges();
   }
 
   private autosaveKey(): string {

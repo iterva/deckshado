@@ -1,11 +1,14 @@
 import { Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Subject } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 import { CardService } from '../../services/card.service';
 import { DeckService } from '../../services/deck.service';
 import { AuthService } from '../../services/auth.service';
 import { Card, Edition, CardType, DeckEntry, BanlistEntry, Rarity } from '../../models';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
+import { CanComponentDeactivate } from '../../guards/unsaved-changes.guard';
 
 interface DeckCard {
   card: Card;
@@ -56,6 +59,25 @@ export class DeckBuilderComponent implements OnInit {
   toastVisible = false;
   private toastTimer: any = null;
   fieldErrors: { name?: boolean; cards?: boolean } = {};
+
+  // UI flags
+  /** Vista compacta del panel del mazo (lista densa sin imagen). */
+  compactView = false;
+  /** Set de IDs de cartas recién añadidas, para animar la entrada en el panel. */
+  recentlyAdded = new Set<number>();
+  /** Marca el panel del mazo cuando se añade una carta (pulse animation). */
+  deckPanelPulse = false;
+
+  // Autosave (#9)
+  /** Indica si hay cambios sin guardar respecto al último save oficial. */
+  hasUnsavedChanges = false;
+  lastAutosavedAt: Date | null = null;
+  private autosaveTimer: any = null;
+  private readonly AUTOSAVE_KEY_PREFIX = 'deckshado_autosave_';
+
+  // Hover preview (#17)
+  private hoverPreviewTimer: any = null;
+  private readonly HOVER_DELAY_MS = 600;
 
   // Card browser
   availableCards: Card[] = [];
@@ -115,6 +137,9 @@ export class DeckBuilderComponent implements OnInit {
   // Mobile deck panel toggle
   showDeckPanel = false;
 
+  /** Subject para debounce del input de búsqueda. */
+  private searchSubject = new Subject<void>();
+
   @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
 
   constructor(
@@ -127,6 +152,9 @@ export class DeckBuilderComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    // Debounce de búsqueda en vivo (#21).
+    this.searchSubject.pipe(debounceTime(300)).subscribe(() => this.onSearch());
+
     // Check authentication after a short delay to allow user loading
     setTimeout(() => {
       if (!this.auth.isAuthenticated()) {
@@ -622,6 +650,8 @@ export class DeckBuilderComponent implements OnInit {
       this.deckCards.push({ card, quantity: 1 });
       this.sortDeckCards(this.deckCards);
     }
+    this.flashRecentlyAdded(card.id);
+    this.markDirty();
   }
 
   removeCard(cardId: number) {
@@ -632,6 +662,7 @@ export class DeckBuilderComponent implements OnInit {
       } else {
         this.deckCards.splice(idx, 1);
       }
+      this.markDirty();
     }
   }
 
@@ -657,6 +688,8 @@ export class DeckBuilderComponent implements OnInit {
       this.sideCards.push({ card, quantity: 1 });
       this.sortDeckCards(this.sideCards);
     }
+    this.flashRecentlyAdded(card.id);
+    this.markDirty();
   }
 
   removeFromSide(cardId: number) {
@@ -667,6 +700,7 @@ export class DeckBuilderComponent implements OnInit {
       } else {
         this.sideCards.splice(idx, 1);
       }
+      this.markDirty();
     }
   }
 
@@ -819,6 +853,7 @@ export class DeckBuilderComponent implements OnInit {
     obs.subscribe({
       next: (deck) => {
         this.saving = false;
+        this.clearDraft();
         this.showToast('¡Mazo guardado exitosamente!', 'success');
         setTimeout(() => this.router.navigate(['/decks', deck.id]), 1200);
       },
@@ -861,5 +896,215 @@ export class DeckBuilderComponent implements OnInit {
     this.showDeckPanel = false;
     this.searchInput.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setTimeout(() => this.searchInput.nativeElement.focus(), 300);
+  }
+
+  // ====== #15 Vista compacta ======
+  toggleCompactView() {
+    this.compactView = !this.compactView;
+  }
+
+  // ====== #16 Agrupar entradas del mazo por tipo ======
+  get groupedDeckCards(): { type: string; total: number; cards: DeckCard[] }[] {
+    return this.buildGroups(this.deckCards);
+  }
+
+  get groupedSideCards(): { type: string; total: number; cards: DeckCard[] }[] {
+    return this.buildGroups(this.sideCards);
+  }
+
+  private buildGroups(arr: DeckCard[]): { type: string; total: number; cards: DeckCard[] }[] {
+    const map = new Map<string, { type: string; total: number; cards: DeckCard[] }>();
+    for (const dc of arr) {
+      const t = dc.card.type_name || 'Otro';
+      if (!map.has(t)) map.set(t, { type: t, total: 0, cards: [] });
+      const g = map.get(t)!;
+      g.cards.push(dc);
+      g.total += dc.quantity;
+    }
+    return [...map.values()].sort((a, b) => {
+      const ai = this.typeOrder.indexOf(a.type);
+      const bi = this.typeOrder.indexOf(b.type);
+      const oa = ai === -1 ? this.typeOrder.length : ai;
+      const ob = bi === -1 ? this.typeOrder.length : bi;
+      return oa - ob;
+    });
+  }
+
+  // ====== #21 Debounce de búsqueda en vivo ======
+  onSearchInput() {
+    this.searchSubject.next();
+  }
+
+  // ====== #17 Hover preview con delay ======
+  hoverEnter(card: Card) {
+    if (this.hoverPreviewTimer) clearTimeout(this.hoverPreviewTimer);
+    // Solo en pointer fino (desktop). Touch dispatcha mouseenter sin hover real.
+    if (typeof window !== 'undefined' && window.matchMedia?.('(hover: hover) and (pointer: fine)').matches) {
+      this.hoverPreviewTimer = setTimeout(() => {
+        if (!this.previewCard) {
+          this.previewCard = card;
+          if (this.abilityCache.has(card.id)) {
+            this.previewAbility = this.abilityCache.get(card.id) || null;
+          } else {
+            this.previewAbility = null;
+            this.cardService.getCard(card.id).subscribe(detail => {
+              const ability = detail.ability || null;
+              this.abilityCache.set(card.id, ability || '');
+              if (this.previewCard?.id === card.id) {
+                this.previewAbility = ability;
+                this.cdr.detectChanges();
+              }
+            });
+          }
+          this.cdr.detectChanges();
+        }
+      }, this.HOVER_DELAY_MS);
+    }
+  }
+
+  hoverLeave() {
+    if (this.hoverPreviewTimer) {
+      clearTimeout(this.hoverPreviewTimer);
+      this.hoverPreviewTimer = null;
+    }
+  }
+
+  // ====== #20 Swipe-to-remove en deck-entry ======
+  private swipeStartX: number | null = null;
+  swipeOffset: Record<number, number> = {};
+
+  onSwipeStart(event: TouchEvent, _cardId: number) {
+    this.swipeStartX = event.touches[0].clientX;
+  }
+
+  onSwipeMove(event: TouchEvent, cardId: number) {
+    if (this.swipeStartX === null) return;
+    const dx = event.touches[0].clientX - this.swipeStartX;
+    // Solo permitir swipe a la izquierda (dx negativo).
+    this.swipeOffset[cardId] = Math.max(-160, Math.min(0, dx));
+  }
+
+  onSwipeEnd(cardId: number, side: 'main' | 'side') {
+    const offset = this.swipeOffset[cardId] || 0;
+    if (offset < -80) {
+      if (side === 'main') this.removeCard(cardId);
+      else this.removeFromSide(cardId);
+    }
+    delete this.swipeOffset[cardId];
+    this.swipeStartX = null;
+  }
+
+  // ====== #12 Animaciones add/remove ======
+  private flashRecentlyAdded(cardId: number) {
+    this.recentlyAdded.add(cardId);
+    this.deckPanelPulse = true;
+    setTimeout(() => {
+      this.recentlyAdded.delete(cardId);
+      this.deckPanelPulse = false;
+      this.cdr.detectChanges();
+    }, 600);
+  }
+
+  // ====== #9 Auto-save en localStorage ======
+  /** Marca el mazo como "sucio" y dispara autosave debounced. */
+  markDirty() {
+    this.hasUnsavedChanges = true;
+    if (this.autosaveTimer) clearTimeout(this.autosaveTimer);
+    this.autosaveTimer = setTimeout(() => this.saveDraft(), 1500);
+  }
+
+  private autosaveKey(): string {
+    return this.AUTOSAVE_KEY_PREFIX + (this.deckId ?? 'new') + '_' + this.selectedFormat;
+  }
+
+  private saveDraft() {
+    try {
+      const payload = {
+        deckName: this.deckName,
+        deckDescription: this.deckDescription,
+        deckIsPublic: this.deckIsPublic,
+        sharedWithTeam: this.sharedWithTeam,
+        selectedFormat: this.selectedFormat,
+        selectedSubFormat: this.selectedSubFormat,
+        selectedRace: this.selectedRace,
+        deckCards: this.deckCards.map(dc => ({ cardId: dc.card.id, quantity: dc.quantity })),
+        sideCards: this.sideCards.map(dc => ({ cardId: dc.card.id, quantity: dc.quantity })),
+        savedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(this.autosaveKey(), JSON.stringify(payload));
+      this.lastAutosavedAt = new Date();
+      this.cdr.detectChanges();
+    } catch {
+      // localStorage puede fallar en modo privado; no rompemos la UX.
+    }
+  }
+
+  loadDraft(): boolean {
+    try {
+      const raw = localStorage.getItem(this.autosaveKey());
+      if (!raw) return false;
+      const data = JSON.parse(raw);
+      // Solo restaurar si el usuario confirma.
+      if (!confirm('Hay un borrador local sin guardar. ¿Quieres restaurarlo?')) {
+        localStorage.removeItem(this.autosaveKey());
+        return false;
+      }
+      this.deckName = data.deckName ?? '';
+      this.deckDescription = data.deckDescription ?? '';
+      this.deckIsPublic = !!data.deckIsPublic;
+      this.sharedWithTeam = !!data.sharedWithTeam;
+      // Las cartas se rehidratan tras cargar el listado de cartas (no podemos cargar Card completos desde el storage)
+      // Para simplificar, solo restauramos los IDs y los re-pedimos:
+      const ids = [...data.deckCards.map((d: any) => d.cardId), ...data.sideCards.map((d: any) => d.cardId)];
+      if (ids.length > 0) {
+        // Cargar cartas individuales y armar los arrays.
+        Promise.all(ids.map(id => this.cardService.getCard(id).toPromise())).then(cards => {
+          const byId = new Map<number, any>();
+          for (const c of cards) if (c) byId.set(c.id, c);
+          this.deckCards = data.deckCards
+            .map((d: any) => ({ card: byId.get(d.cardId), quantity: d.quantity }))
+            .filter((d: any) => d.card);
+          this.sideCards = data.sideCards
+            .map((d: any) => ({ card: byId.get(d.cardId), quantity: d.quantity }))
+            .filter((d: any) => d.card);
+          this.sortDeckCards(this.deckCards);
+          this.sortDeckCards(this.sideCards);
+          this.cdr.detectChanges();
+        });
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private clearDraft() {
+    try { localStorage.removeItem(this.autosaveKey()); } catch {}
+    this.lastAutosavedAt = null;
+    this.hasUnsavedChanges = false;
+  }
+
+  /** Texto humano "Guardado hace 5s" para mostrar en la UI. */
+  get autosaveLabel(): string {
+    if (!this.lastAutosavedAt) return '';
+    const diff = Math.round((Date.now() - this.lastAutosavedAt.getTime()) / 1000);
+    if (diff < 5) return 'Borrador guardado';
+    if (diff < 60) return `Borrador guardado hace ${diff}s`;
+    const m = Math.round(diff / 60);
+    return `Borrador guardado hace ${m}m`;
+  }
+
+  // ====== #10 CanDeactivate ======
+  canDeactivate(): boolean {
+    if (!this.hasUnsavedChanges) return true;
+    return confirm('Hay cambios sin guardar en tu mazo. ¿Salir de todas formas?');
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  beforeUnload(e: BeforeUnloadEvent) {
+    if (this.hasUnsavedChanges) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
   }
 }

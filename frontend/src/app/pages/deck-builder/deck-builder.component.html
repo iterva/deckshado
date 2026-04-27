@@ -25,8 +25,10 @@
                   title="Buscar en nombre y habilidad">Todo</button>
         </div>
         <input type="text"
+               #searchInput
                [placeholder]="searchMode === 'ability' ? 'Buscar habilidad...' : (searchMode === 'all' ? 'Buscar nombre o habilidad...' : 'Buscar carta...')"
                [(ngModel)]="searchQuery"
+               (ngModelChange)="onSearchInput()"
                (keyup.enter)="onSearch()">
         <button class="search-btn" (click)="onSearch()" title="Buscar">🔍</button>
       </div>
@@ -119,16 +121,29 @@
     </div>
 
     @if (loading) {
-      <p class="info-text">Cargando...</p>
+      <div class="available-cards skeleton-grid" aria-label="Cargando cartas">
+        @for (_ of [1,2,3,4,5,6,7,8]; track $index) {
+          <div class="mini-card skeleton">
+            <div class="img-wrapper sk"></div>
+            <div class="mini-info">
+              <span class="sk sk-line w70"></span>
+              <span class="sk sk-line w40"></span>
+            </div>
+          </div>
+        }
+      </div>
     }
 
-    <div class="available-cards">
+    <div class="available-cards" [class.is-loading]="loading">
       @for (card of availableCards; track card.id) {
         <div class="mini-card"
+             (mouseenter)="hoverEnter(card)"
+             (mouseleave)="hoverLeave()"
              [class.in-deck]="getQuantityInDeck(card.id) > 0"
              [class.banned]="getBanStatus(card)?.status === 'banned'"
              [class.name-taken]="hasDifferentVersion(card)"
-             [class.name-maxed]="getNameCount(card.name) >= getEffectiveMaxCopies(card)">
+             [class.name-maxed]="getNameCount(card.name) >= getEffectiveMaxCopies(card)"
+             [class.flash-added]="recentlyAdded.has(card.id)">
           <div class="img-wrapper">
             <img [src]="card.image_url | thumb:150" [alt]="card.name" loading="lazy" decoding="async">
             <span class="eye-icon" (click)="showPreview(card, $event)">👁</span>
@@ -186,29 +201,37 @@
   </div>
 
   <!-- Right panel: Deck -->
-  <div class="deck-panel" [class.mobile-visible]="showDeckPanel">
+  <div class="deck-panel" [class.mobile-visible]="showDeckPanel" [class.pulse]="deckPanelPulse">
     <div class="deck-header">
       <h2>{{ deckId ? 'Editar Mazo' : 'Nuevo Mazo' }}</h2>
-      <button class="mobile-close-btn" (click)="toggleDeckPanel()" [class.mobile-visible]="showDeckPanel">✕</button>
+      <div class="deck-header-actions">
+        <button class="icon-btn"
+                [class.active]="compactView"
+                (click)="toggleCompactView()"
+                [title]="compactView ? 'Vista expandida' : 'Vista compacta'">
+          <i [class]="compactView ? 'bi bi-grid-3x3-gap-fill' : 'bi bi-list-ul'"></i>
+        </button>
+        <button class="mobile-close-btn" (click)="toggleDeckPanel()" [class.mobile-visible]="showDeckPanel">✕</button>
+      </div>
     </div>
 
     <div class="form-group" [class.has-error]="fieldErrors.name">
       <label>Nombre del mazo</label>
-      <input type="text" [(ngModel)]="deckName" placeholder="Mi mazo increíble" (input)="fieldErrors.name = false">
+      <input type="text" [(ngModel)]="deckName" placeholder="Mi mazo increíble" (input)="fieldErrors.name = false" (ngModelChange)="markDirty()">
     </div>
 
     <div class="form-group">
       <label>Descripción (opcional)</label>
-      <input type="text" [(ngModel)]="deckDescription" placeholder="Descripción del mazo...">
+      <input type="text" [(ngModel)]="deckDescription" placeholder="Descripción del mazo..." (ngModelChange)="markDirty()">
     </div>
 
     <label class="checkbox-label">
-      <input type="checkbox" [(ngModel)]="deckIsPublic">
+      <input type="checkbox" [(ngModel)]="deckIsPublic" (ngModelChange)="markDirty()">
       Mazo público
     </label>
 
     <label class="checkbox-label">
-      <input type="checkbox" [(ngModel)]="sharedWithTeam">
+      <input type="checkbox" [(ngModel)]="sharedWithTeam" (ngModelChange)="markDirty()">
       Compartir con equipo
     </label>
 
@@ -241,22 +264,36 @@
       </div>
     }
 
-    <div class="deck-entries">
-      @for (dc of deckCards; track dc.card.id) {
-        <div class="deck-entry">
-          <img [src]="dc.card.image_url | thumb:100" [alt]="dc.card.name" loading="lazy" decoding="async">
-          <div class="entry-info">
-            <span class="entry-name">{{ dc.card.name }}@if (dc.card.is_unique) { <span class="unique-badge">Única</span> }@if (getBanStatus(dc.card); as ban) { @if (ban.status === 'limited_1') { <span class="ban-badge-sm limited">☢️1</span> } @else if (ban.status === 'limited_2') { <span class="ban-badge-sm limited">☢️2</span> } }</span>
-            <span class="entry-type">{{ dc.card.type_name }}</span>
-          </div>
-          <div class="entry-controls">
-            <button class="ctrl-btn" (click)="removeCard(dc.card.id)">−</button>
-            <span class="entry-qty">{{ dc.quantity }}</span>
-            <button class="ctrl-btn" (click)="addCard(dc.card)" [disabled]="getNameCount(dc.card.name) >= getEffectiveMaxCopies(dc.card) || totalDeckCards >= 50">+</button>
-          </div>
-        </div>
-      } @empty {
+    <div class="deck-entries" [class.compact]="compactView">
+      @if (deckCards.length === 0) {
         <p class="info-text">Haz click en las cartas para agregarlas al mazo</p>
+      }
+      @for (g of groupedDeckCards; track g.type) {
+        <div class="deck-group">
+          <div class="deck-group-header">
+            <span>{{ g.type }}</span>
+            <span class="deck-group-count">{{ g.total }}</span>
+          </div>
+          @for (dc of g.cards; track dc.card.id) {
+            <div class="deck-entry"
+                 [class.flash-added]="recentlyAdded.has(dc.card.id)"
+                 [style.transform]="swipeOffset[dc.card.id] !== undefined ? 'translateX(' + swipeOffset[dc.card.id] + 'px)' : ''"
+                 (touchstart)="onSwipeStart($event, dc.card.id)"
+                 (touchmove)="onSwipeMove($event, dc.card.id)"
+                 (touchend)="onSwipeEnd(dc.card.id, 'main')">
+              <img [src]="dc.card.image_url | thumb:100" [alt]="dc.card.name" loading="lazy" decoding="async">
+              <div class="entry-info">
+                <span class="entry-name">{{ dc.card.name }}@if (dc.card.is_unique) { <span class="unique-badge">Única</span> }@if (getBanStatus(dc.card); as ban) { @if (ban.status === 'limited_1') { <span class="ban-badge-sm limited">☢️1</span> } @else if (ban.status === 'limited_2') { <span class="ban-badge-sm limited">☢️2</span> } }</span>
+                <span class="entry-type">{{ dc.card.type_name }}@if (dc.card.cost) { · 💰{{ dc.card.cost }} }</span>
+              </div>
+              <div class="entry-controls">
+                <button class="ctrl-btn" (click)="removeCard(dc.card.id)">−</button>
+                <span class="entry-qty">{{ dc.quantity }}</span>
+                <button class="ctrl-btn" (click)="addCard(dc.card)" [disabled]="getNameCount(dc.card.name) >= getEffectiveMaxCopies(dc.card) || totalDeckCards >= 50">+</button>
+              </div>
+            </div>
+          }
+        </div>
       }
     </div>
 
@@ -265,26 +302,45 @@
       <span class="total-cards">Sidedeck: {{ totalSideCards }} / 15 cartas</span>
     </div>
 
-    <div class="deck-entries side-entries">
-      @for (dc of sideCards; track dc.card.id) {
-        <div class="deck-entry side">
-          <img [src]="dc.card.image_url | thumb:100" [alt]="dc.card.name" loading="lazy" decoding="async">
-          <div class="entry-info">
-            <span class="entry-name">{{ dc.card.name }}@if (dc.card.is_unique) { <span class="unique-badge">Única</span> }</span>
-            <span class="entry-type">{{ dc.card.type_name }}</span>
-          </div>
-          <div class="entry-controls">
-            <button class="ctrl-btn" (click)="removeFromSide(dc.card.id)">−</button>
-            <span class="entry-qty">{{ dc.quantity }}</span>
-            <button class="ctrl-btn" (click)="addToSide(dc.card)" [disabled]="getNameCount(dc.card.name) >= getEffectiveMaxCopies(dc.card) || totalSideCards >= 15">+</button>
-          </div>
-        </div>
-      } @empty {
+    <div class="deck-entries side-entries" [class.compact]="compactView">
+      @if (sideCards.length === 0) {
         <p class="info-text side-empty">Sin cartas en el sidedeck</p>
+      }
+      @for (g of groupedSideCards; track g.type) {
+        <div class="deck-group">
+          <div class="deck-group-header">
+            <span>{{ g.type }}</span>
+            <span class="deck-group-count">{{ g.total }}</span>
+          </div>
+          @for (dc of g.cards; track dc.card.id) {
+            <div class="deck-entry side"
+                 [class.flash-added]="recentlyAdded.has(dc.card.id)"
+                 [style.transform]="swipeOffset[dc.card.id] !== undefined ? 'translateX(' + swipeOffset[dc.card.id] + 'px)' : ''"
+                 (touchstart)="onSwipeStart($event, dc.card.id)"
+                 (touchmove)="onSwipeMove($event, dc.card.id)"
+                 (touchend)="onSwipeEnd(dc.card.id, 'side')">
+              <img [src]="dc.card.image_url | thumb:100" [alt]="dc.card.name" loading="lazy" decoding="async">
+              <div class="entry-info">
+                <span class="entry-name">{{ dc.card.name }}@if (dc.card.is_unique) { <span class="unique-badge">Única</span> }</span>
+                <span class="entry-type">{{ dc.card.type_name }}</span>
+              </div>
+              <div class="entry-controls">
+                <button class="ctrl-btn" (click)="removeFromSide(dc.card.id)">−</button>
+                <span class="entry-qty">{{ dc.quantity }}</span>
+                <button class="ctrl-btn" (click)="addToSide(dc.card)" [disabled]="getNameCount(dc.card.name) >= getEffectiveMaxCopies(dc.card) || totalSideCards >= 15">+</button>
+              </div>
+            </div>
+          }
+        </div>
       }
     </div>
 
     <div class="deck-actions">
+      @if (autosaveLabel) {
+        <span class="autosave-label" title="El borrador se guarda automáticamente en este navegador">
+          <i class="bi bi-cloud-check"></i> {{ autosaveLabel }}
+        </span>
+      }
       <button class="btn btn-gold" (click)="saveDeck()" [disabled]="saving">
         {{ saving ? 'Guardando...' : (deckId ? 'Actualizar Mazo' : 'Guardar Mazo') }}
       </button>
@@ -293,9 +349,9 @@
   </div>
 </div>
 
-<!-- Mobile Deck Toggle Button -->
+<!-- Mobile Deck Toggle Button (#19) -->
 <button class="mobile-deck-toggle" (click)="toggleDeckPanel()" [class.active]="showDeckPanel">
-  📋
+  📋 <span class="fab-count">{{ totalDeckCards }}/50</span>
 </button>
 
 <!-- Card Preview Overlay -->

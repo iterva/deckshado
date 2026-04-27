@@ -1077,3 +1077,225 @@
     padding-bottom: 100px; // Space for mobile button
   }
 }
+
+// =====================================================
+// Mejoras Abril 2026: skeletons, agrupacion, compact,
+// animaciones, swipe, autosave indicator, FAB count.
+// =====================================================
+
+// #13 Skeleton loaders
+.skeleton-grid {
+  margin-bottom: 0.5rem;
+  pointer-events: none;
+}
+.mini-card.skeleton {
+  background: #1a1a2e;
+  border-color: #2a2a4a;
+  cursor: default;
+
+  .img-wrapper.sk {
+    width: 68px;
+    height: 95px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #1a1a2e 0%, #232347 50%, #1a1a2e 100%);
+    background-size: 200% 100%;
+    animation: sk-shimmer 1.4s ease-in-out infinite;
+  }
+
+  .mini-info { flex: 1; display: flex; flex-direction: column; gap: 0.4rem; }
+
+  .sk.sk-line {
+    display: block;
+    height: 10px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #1a1a2e 0%, #232347 50%, #1a1a2e 100%);
+    background-size: 200% 100%;
+    animation: sk-shimmer 1.4s ease-in-out infinite;
+    &.w70 { width: 70%; }
+    &.w40 { width: 40%; }
+  }
+}
+.available-cards.is-loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
+@keyframes sk-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+// #16 Agrupacion: encabezados por tipo
+.deck-group {
+  margin-bottom: 0.5rem;
+
+  .deck-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25rem 0.4rem;
+    margin-top: 0.4rem;
+    margin-bottom: 0.15rem;
+    background: rgba(255, 189, 57, 0.08);
+    border-left: 3px solid #ffbd39;
+    border-radius: 3px;
+    font-size: 0.72rem;
+    color: #ffbd39;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+
+    .deck-group-count {
+      color: #b0b0cc;
+      font-weight: 700;
+    }
+  }
+}
+
+// #15 Vista compacta del panel del mazo
+.deck-entries.compact {
+  .deck-entry {
+    padding: 0.25rem 0;
+
+    img { display: none; }
+    .entry-info .entry-name { font-size: 0.8rem; }
+    .entry-info .entry-type { display: none; }
+    .entry-controls .ctrl-btn { width: 22px; height: 22px; font-size: 0.85rem; }
+    .entry-qty { font-size: 0.85rem; }
+  }
+}
+
+// #12 Animaciones add/remove
+.deck-entry {
+  transition: transform 0.18s ease, opacity 0.18s ease, background 0.2s;
+
+  &.flash-added {
+    animation: entry-flash 0.6s ease-out;
+  }
+}
+.mini-card.flash-added {
+  animation: card-flash 0.5s ease-out;
+}
+@keyframes entry-flash {
+  0%   { background: rgba(255, 189, 57, 0.4); transform: translateX(-12px); opacity: 0.6; }
+  60%  { background: rgba(255, 189, 57, 0.15); transform: translateX(0); opacity: 1; }
+  100% { background: transparent; }
+}
+@keyframes card-flash {
+  0%   { box-shadow: 0 0 0 0 rgba(255, 189, 57, 0.7); }
+  100% { box-shadow: 0 0 0 12px rgba(255, 189, 57, 0); }
+}
+.deck-panel.pulse {
+  animation: panel-pulse 0.5s ease-out;
+}
+@keyframes panel-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(255, 189, 57, 0.5); }
+  100% { box-shadow: 0 0 0 24px rgba(255, 189, 57, 0); }
+}
+
+// #20 Swipe-to-remove visual hint (background revelado al deslizar)
+.deck-entry {
+  position: relative;
+  background-color: transparent;
+}
+
+// Header del panel con boton de vista compacta
+.deck-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .deck-header-actions {
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+  }
+  .icon-btn {
+    background: transparent;
+    border: 1px solid #2a2a4a;
+    color: #b0b0cc;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    &:hover { color: #fff; border-color: #e94560; }
+    &.active { color: #ffbd39; border-color: #ffbd39; background: rgba(255, 189, 57, 0.08); }
+    i { font-size: 0.95rem; }
+  }
+}
+
+// #9 Autosave indicator
+.deck-actions {
+  position: relative;
+
+  .autosave-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    color: #6e8a6e;
+    margin-bottom: 0.4rem;
+    width: 100%;
+    i { color: #4caf50; }
+  }
+}
+
+// #19 FAB con contador
+.mobile-deck-toggle {
+  width: auto;
+  min-width: 60px;
+  padding: 0 0.9rem;
+  border-radius: 30px;
+  font-size: 1.2rem;
+  display: none;
+  align-items: center;
+  gap: 0.4rem;
+
+  .fab-count {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+}
+@media (max-width: 900px) {
+  .mobile-deck-toggle {
+    display: inline-flex;
+    height: 52px;
+  }
+}
+
+// #18 Bottom sheet en mobile (panel sube desde abajo)
+@media (max-width: 900px) {
+  .deck-panel {
+    transform: translateY(100%) !important;
+    top: auto !important;
+    bottom: 0;
+    height: 88vh !important;
+    max-height: 88vh !important;
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.6);
+    transition: transform 0.3s ease !important;
+    overflow-y: auto;
+
+    &.mobile-visible {
+      transform: translateY(0) !important;
+    }
+
+    // pequeno handle decorativo
+    &::before {
+      content: '';
+      position: sticky;
+      top: 6px;
+      display: block;
+      width: 40px;
+      height: 4px;
+      background: #444;
+      border-radius: 2px;
+      margin: 6px auto 8px;
+    }
+  }
+}

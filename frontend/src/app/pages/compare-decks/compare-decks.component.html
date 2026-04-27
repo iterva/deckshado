@@ -1,0 +1,139 @@
+<div class="container compare-page">
+  <div class="page-head">
+    <button type="button" class="btn-back" (click)="goBack()">
+      <i class="bi bi-arrow-left"></i> Volver
+    </button>
+    <h1>Comparar mazos</h1>
+  </div>
+
+  @if (loading) {
+    <p class="loading">Cargando mazos…</p>
+  } @else if (error) {
+    <p class="error">{{ error }}</p>
+  } @else {
+    @if (hasFormatMismatch) {
+      <div class="warning">
+        <i class="bi bi-exclamation-triangle"></i>
+        Los mazos tienen formatos distintos. La comparación aún se muestra, pero algunas cartas pueden no ser intercambiables.
+      </div>
+    }
+
+    <!-- Cabecera por mazo -->
+    <div class="decks-header" [style.grid-template-columns]="'repeat(' + decks.length + ', minmax(0, 1fr))'">
+      @for (deck of decks; track deck.id; let i = $index) {
+        <div class="deck-col-head">
+          <h2>
+            <a [routerLink]="['/decks', deck.id]">{{ deck.name }}</a>
+          </h2>
+          <div class="deck-meta">
+            <span class="format-tag">{{ getFormatLabel(deck.format) }}</span>
+            @if (deck.sub_format && deck.sub_format !== 'racial') { <span class="format-tag vcr">VCR</span> }
+            <span class="race-tag">{{ getRaceLabel(deck.race) }}</span>
+          </div>
+          <div class="deck-totals">
+            <span><strong>{{ cardCounts[i] }}</strong> main</span>
+            <span><strong>{{ sideCounts[i] }}</strong> side</span>
+            <span class="avg" title="Coste promedio">μ {{ avgCosts[i] }}</span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Curvas de coste superpuestas -->
+    <section class="cost-section">
+      <h3>Curvas de coste</h3>
+      <div class="cost-grid">
+        @for (b of costCurves[0]; track b.label; let bi = $index) {
+          <div class="cost-bucket">
+            <div class="cost-bars">
+              @for (deck of decks; track deck.id; let di = $index) {
+                <div class="cost-bar deck-{{ di }}"
+                     [style.height.%]="costPctForDeck(di, bi)"
+                     [title]="deck.name + ': ' + costCurves[di][bi].count + ' cartas con coste ' + b.label">
+                  <span class="cost-bar-count">{{ costCurves[di][bi].count }}</span>
+                </div>
+              }
+            </div>
+            <span class="cost-label">{{ b.label }}</span>
+          </div>
+        }
+      </div>
+      <div class="cost-legend">
+        @for (deck of decks; track deck.id; let di = $index) {
+          <span class="legend-item deck-{{ di }}">
+            <span class="legend-swatch"></span>
+            {{ deck.name }}
+          </span>
+        }
+      </div>
+    </section>
+
+    <!-- Resumen de diferencias -->
+    <section class="summary-section">
+      <h3>Resumen</h3>
+      <div class="summary-grid">
+        <div class="summary-card common">
+          <div class="value">{{ summary.common }}</div>
+          <div class="label">Cartas en común</div>
+        </div>
+        @for (n of summary.uniquePerDeck; track $index; let i = $index) {
+          <div class="summary-card unique deck-{{ i }}">
+            <div class="value">{{ n }}</div>
+            <div class="label">Únicas en {{ decks[i].name }}</div>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- Tabla comparativa -->
+    <section class="table-section">
+      <div class="table-head">
+        <h3>Cartas</h3>
+        <button type="button"
+                class="btn-toggle-diff"
+                [class.active]="showDiffOnly"
+                (click)="toggleDiffOnly()">
+          <i class="bi" [class.bi-funnel-fill]="showDiffOnly" [class.bi-funnel]="!showDiffOnly"></i>
+          {{ showDiffOnly ? 'Ver todas' : 'Solo diferencias' }}
+        </button>
+      </div>
+
+      @for (group of groupedRows; track group.type) {
+        <div class="type-block">
+          <h4 class="type-title">{{ group.type }}</h4>
+          @if (visibleRows(group.rows).length === 0) {
+            <p class="type-empty">Sin diferencias en este tipo.</p>
+          } @else {
+            <table class="compare-table">
+              <thead>
+                <tr>
+                  <th class="col-name">Carta</th>
+                  <th class="col-cost">Coste</th>
+                  @for (deck of decks; track deck.id; let i = $index) {
+                    <th class="col-qty deck-{{ i }}">{{ deck.name }}</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of visibleRows(group.rows); track row.cardId) {
+                  <tr [class.row-common]="row.presentIn === decks.length"
+                      [class.row-unique]="row.presentIn === 1">
+                    <td class="col-name">
+                      <span class="card-name" [title]="row.name">{{ row.name }}</span>
+                    </td>
+                    <td class="col-cost">{{ row.cost ?? '-' }}</td>
+                    @for (q of row.quantities; track $index; let i = $index) {
+                      <td class="col-qty deck-{{ i }}" [class.absent]="q === 0">
+                        {{ q > 0 ? q : '—' }}
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      }
+    </section>
+  }
+</div>

@@ -3,9 +3,23 @@
 
   @if (auth.isAuthenticated()) {
     <div class="tabs">
-      <button [class.active]="activeTab === 'public'" (click)="activeTab = 'public'">Mazos Públicos</button>
-      <button [class.active]="activeTab === 'mine'" (click)="activeTab = 'mine'">Mis Mazos</button>
-      <button [class.active]="activeTab === 'team'" (click)="activeTab = 'team'">Mazos del Equipo</button>
+      <button [class.active]="activeTab === 'public'" (click)="setTab('public')">Mazos Públicos</button>
+      <button [class.active]="activeTab === 'mine'" (click)="setTab('mine')">Mis Mazos</button>
+      <button [class.active]="activeTab === 'team'" (click)="setTab('team')">Mazos del Equipo</button>
+    </div>
+    <div class="compare-bar">
+      <button type="button"
+              class="btn-compare-toggle"
+              [class.active]="compareMode"
+              (click)="toggleCompareMode()">
+        <i class="bi" [class.bi-bar-chart-line]="!compareMode" [class.bi-x-lg]="compareMode"></i>
+        {{ compareMode ? 'Cancelar comparación' : 'Comparar mazos' }}
+      </button>
+      @if (compareMode) {
+        <span class="compare-hint">
+          Selecciona 2 o 3 mazos ({{ selectedForCompare.size }}/{{ MAX_COMPARE }})
+        </span>
+      }
     </div>
   }
 
@@ -17,7 +31,16 @@
 
     <div class="deck-grid">
       @for (deck of publicDecks; track deck.id) {
-        <a [routerLink]="['/decks', deck.id]" class="deck-card">
+        <a [routerLink]="compareMode ? null : ['/decks', deck.id]"
+           class="deck-card"
+           [class.compare-selected]="isSelectedForCompare(deck.id)"
+           [class.compare-mode]="compareMode"
+           (click)="compareMode && toggleDeckCompare($event, deck.id)">
+          @if (compareMode) {
+            <span class="compare-check" [class.checked]="isSelectedForCompare(deck.id)">
+              <i class="bi" [class.bi-check-square-fill]="isSelectedForCompare(deck.id)" [class.bi-square]="!isSelectedForCompare(deck.id)"></i>
+            </span>
+          }
           <div class="deck-header">
             <h3>{{ deck.name }}</h3>
           </div>
@@ -47,7 +70,15 @@
 
     <div class="deck-grid">
       @for (deck of myDecks; track deck.id) {
-        <div class="deck-card">
+        <div class="deck-card"
+             [class.compare-selected]="isSelectedForCompare(deck.id)"
+             [class.compare-mode]="compareMode"
+             (click)="compareMode && toggleDeckCompare($event, deck.id)">
+          @if (compareMode) {
+            <span class="compare-check" [class.checked]="isSelectedForCompare(deck.id)">
+              <i class="bi" [class.bi-check-square-fill]="isSelectedForCompare(deck.id)" [class.bi-square]="!isSelectedForCompare(deck.id)"></i>
+            </span>
+          }
           <div class="deck-header">
             <a [routerLink]="['/decks', deck.id]"><h3>{{ deck.name }}</h3></a>
           </div>
@@ -79,7 +110,16 @@
   @if (activeTab === 'team') {
     <div class="deck-grid">
       @for (deck of teamDecks; track deck.id) {
-        <a [routerLink]="['/decks', deck.id]" class="deck-card">
+        <a [routerLink]="compareMode ? null : ['/decks', deck.id]"
+           class="deck-card"
+           [class.compare-selected]="isSelectedForCompare(deck.id)"
+           [class.compare-mode]="compareMode"
+           (click)="compareMode && toggleDeckCompare($event, deck.id)">
+          @if (compareMode) {
+            <span class="compare-check" [class.checked]="isSelectedForCompare(deck.id)">
+              <i class="bi" [class.bi-check-square-fill]="isSelectedForCompare(deck.id)" [class.bi-square]="!isSelectedForCompare(deck.id)"></i>
+            </span>
+          }
           <div class="deck-header">
             <h3>{{ deck.name }}</h3>
           </div>
@@ -99,6 +139,15 @@
       } @empty {
         <p class="empty">No hay mazos compartidos por tu equipo.</p>
       }
+    </div>
+  }
+
+  @if (compareMode && selectedForCompare.size >= 2) {
+    <div class="compare-fab">
+      <button type="button" class="btn btn-gold" (click)="startCompare()">
+        <i class="bi bi-bar-chart-line"></i>
+        Comparar {{ selectedForCompare.size }} mazos
+      </button>
     </div>
   }
 </div>

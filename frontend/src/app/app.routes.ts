@@ -8,6 +8,7 @@ export const routes: Routes = [
   { path: 'cards', loadComponent: () => import('./pages/card-list/card-list.component').then(m => m.CardListComponent) },
   { path: 'carpeta', loadComponent: () => import('./pages/carpeta/carpeta.component').then(m => m.CarpetaComponent) },
   { path: 'decks', loadComponent: () => import('./pages/deck-list/deck-list.component').then(m => m.DeckListComponent) },
+  { path: 'decks/compare', loadComponent: () => import('./pages/compare-decks/compare-decks.component').then(m => m.CompareDecksComponent) },
   { path: 'decks/:id', loadComponent: () => import('./pages/deck-view/deck-view.component').then(m => m.DeckViewComponent) },
   { path: 'builder', loadComponent: () => import('./pages/format-select/format-select.component').then(m => m.FormatSelectComponent) },
   { path: 'builder/new/:format', loadComponent: () => import('./pages/deck-builder/deck-builder.component').then(m => m.DeckBuilderComponent), canDeactivate: [unsavedChangesGuard] },

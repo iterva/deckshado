@@ -164,3 +164,86 @@
     &:hover { text-decoration: underline; }
   }
 }
+
+// ===== #5 Comparar mazos =====
+.compare-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+
+  .btn-compare-toggle {
+    background: transparent;
+    border: 1px solid #555;
+    color: #aaa;
+    padding: 0.45rem 0.95rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.2s;
+
+    &:hover { border-color: #e94560; color: #e94560; }
+    &.active {
+      background: #e94560;
+      border-color: #e94560;
+      color: #fff;
+    }
+  }
+
+  .compare-hint {
+    color: #888;
+    font-size: 0.85rem;
+  }
+}
+
+.deck-card {
+  position: relative;
+
+  &.compare-mode {
+    cursor: pointer;
+    user-select: none;
+  }
+
+  &.compare-selected {
+    outline: 2px solid #e94560;
+    box-shadow: 0 0 18px rgba(233, 69, 96, 0.35);
+  }
+
+  .compare-check {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    font-size: 1.4rem;
+    color: #888;
+    background: rgba(15, 15, 30, 0.85);
+    border-radius: 6px;
+    padding: 0.1rem 0.35rem;
+    line-height: 1;
+    z-index: 5;
+    pointer-events: none;
+
+    &.checked { color: #e94560; }
+  }
+}
+
+.compare-fab {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+
+  .btn {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1.4rem;
+    font-size: 1rem;
+  }
+}

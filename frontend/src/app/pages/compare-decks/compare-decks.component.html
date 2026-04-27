@@ -74,12 +74,12 @@
       <div class="summary-grid">
         <div class="summary-card common">
           <div class="value">{{ summary.common }}</div>
-          <div class="label">Cartas en común</div>
+          <div class="label">Copias en común</div>
         </div>
-        @for (n of summary.uniquePerDeck; track $index; let i = $index) {
+        @for (n of summary.diffPerDeck; track $index; let i = $index) {
           <div class="summary-card unique deck-{{ i }}">
             <div class="value">{{ n }}</div>
-            <div class="label">Únicas en {{ decks[i].name }}</div>
+            <div class="label">Diferencias en {{ decks[i].name }}</div>
           </div>
         }
       </div>

@@ -41,8 +41,8 @@ export class CompareDecksComponent implements OnInit {
   sideCounts: number[] = [];
   /** Filas comparativas, agrupadas por tipo. */
   groupedRows: { type: string; rows: CompareCardRow[] }[] = [];
-  /** Resumen: cuantas cartas en común vs únicas por mazo. */
-  summary: { common: number; uniquePerDeck: number[] } = { common: 0, uniquePerDeck: [] };
+  /** Resumen: copias en común (intersección) y diferencias por mazo. */
+  summary: { common: number; diffPerDeck: number[] } = { common: 0, diffPerDeck: [] };
 
   /** Mostrar solo diferencias en la tabla (oculta filas comunes con misma cantidad). */
   showDiffOnly = false;
@@ -198,18 +198,17 @@ export class CompareDecksComponent implements OnInit {
 
   private buildSummary() {
     const N = this.decks.length;
+    // Copias en común = sum por fila de min(quantities) entre todos los mazos.
     let common = 0;
-    const unique = Array(N).fill(0);
     for (const group of this.groupedRows) {
       for (const row of group.rows) {
-        if (row.presentIn === N) common++;
-        else if (row.presentIn === 1) {
-          const idx = row.quantities.findIndex(q => q > 0);
-          if (idx >= 0) unique[idx]++;
-        }
+        const min = Math.min(...row.quantities);
+        if (min > 0) common += min;
       }
     }
-    this.summary = { common, uniquePerDeck: unique };
+    // Diferencias por mazo = total[i] - common (lo que sobra en cada mazo).
+    const diffPerDeck = this.cardCounts.map(total => Math.max(0, total - common));
+    this.summary = { common, diffPerDeck };
   }
 
   /** Filas visibles según el toggle "solo diferencias". */

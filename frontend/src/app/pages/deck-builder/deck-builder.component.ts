@@ -9,8 +9,6 @@ import { AuthService } from '../../services/auth.service';
 import { Card, Edition, CardType, DeckEntry, BanlistEntry, Rarity } from '../../models';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
 import { CanComponentDeactivate } from '../../guards/unsaved-changes.guard';
-import { MiniCardComponent } from '../../components/mini-card/mini-card.component';
-import { DeckEntryComponent } from '../../components/deck-entry/deck-entry.component';
 
 interface DeckCard {
   card: Card;
@@ -41,7 +39,7 @@ function normalizeName(name: string): string {
 @Component({
   selector: 'app-deck-builder',
   standalone: true,
-  imports: [FormsModule, RouterLink, ThumbnailPipe, MiniCardComponent, DeckEntryComponent],
+  imports: [FormsModule, RouterLink, ThumbnailPipe],
   templateUrl: './deck-builder.component.html',
   styleUrl: './deck-builder.component.scss',
 })
@@ -996,7 +994,29 @@ export class DeckBuilderComponent implements OnInit {
   }
 
   // ====== #20 Swipe-to-remove en deck-entry ======
-  // (La lógica de swipe vive ahora dentro de DeckEntryComponent.)
+  private swipeStartX: number | null = null;
+  swipeOffset: Record<number, number> = {};
+
+  onSwipeStart(event: TouchEvent, _cardId: number) {
+    this.swipeStartX = event.touches[0].clientX;
+  }
+
+  onSwipeMove(event: TouchEvent, cardId: number) {
+    if (this.swipeStartX === null) return;
+    const dx = event.touches[0].clientX - this.swipeStartX;
+    // Solo permitir swipe a la izquierda (dx negativo).
+    this.swipeOffset[cardId] = Math.max(-160, Math.min(0, dx));
+  }
+
+  onSwipeEnd(cardId: number, side: 'main' | 'side') {
+    const offset = this.swipeOffset[cardId] || 0;
+    if (offset < -80) {
+      if (side === 'main') this.removeCard(cardId);
+      else this.removeFromSide(cardId);
+    }
+    delete this.swipeOffset[cardId];
+    this.swipeStartX = null;
+  }
 
   // ====== #12 Animaciones add/remove ======
   private flashRecentlyAdded(cardId: number) {

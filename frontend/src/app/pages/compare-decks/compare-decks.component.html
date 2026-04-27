@@ -115,7 +115,7 @@
                 </tr>
               </thead>
               <tbody>
-                @for (row of visibleRows(group.rows); track row.cardId) {
+                @for (row of visibleRows(group.rows); track row.name) {
                   <tr [class.row-common]="row.presentIn === decks.length"
                       [class.row-unique]="row.presentIn === 1">
                     <td class="col-name">

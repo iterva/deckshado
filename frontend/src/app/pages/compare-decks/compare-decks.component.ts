@@ -153,12 +153,14 @@ export class CompareDecksComponent implements OnInit {
 
   private buildGroupedRows() {
     const N = this.decks.length;
-    const byCard = new Map<number, CompareCardRow>();
+    const byKey = new Map<string, CompareCardRow>();
     this.decks.forEach((deck, i) => {
       for (const entry of deck.entries ?? []) {
         const card = entry.card_detail;
-        if (!byCard.has(card.id)) {
-          byCard.set(card.id, {
+        // Agrupar por nombre normalizado para fusionar duplicados de distintas ediciones.
+        const key = (card.name ?? '').trim().toLowerCase();
+        if (!byKey.has(key)) {
+          byKey.set(key, {
             cardId: card.id,
             name: card.name,
             type: card.type_name ?? 'Otro',
@@ -168,17 +170,17 @@ export class CompareDecksComponent implements OnInit {
             presentIn: 0,
           });
         }
-        const row = byCard.get(card.id)!;
+        const row = byKey.get(key)!;
         row.quantities[i] += entry.quantity;
       }
     });
-    for (const row of byCard.values()) {
+    for (const row of byKey.values()) {
       row.presentIn = row.quantities.filter(q => q > 0).length;
     }
 
     // Group by type
     const byType = new Map<string, CompareCardRow[]>();
-    for (const row of byCard.values()) {
+    for (const row of byKey.values()) {
       if (!byType.has(row.type)) byType.set(row.type, []);
       byType.get(row.type)!.push(row);
     }

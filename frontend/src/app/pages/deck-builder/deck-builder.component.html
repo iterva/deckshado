@@ -4,21 +4,49 @@
     <h2>Cartas Disponibles · {{ formatName }}@if (selectedSubFormat === 'vcr') { · VCR }@if (raceName) { · {{ raceName }} }</h2>
     <div class="browser-filters">
       <div class="search-row">
-        <input type="text" placeholder="Buscar carta..." [(ngModel)]="search" (keyup.enter)="onSearch()">
-        <input type="text" placeholder="Buscar por habilidad..." [(ngModel)]="abilitySearch" (keyup.enter)="onSearch()" class="ability-search">
-        <button class="search-btn" (click)="onSearch()">🔍</button>
+        <div class="search-modes" role="tablist" aria-label="Modo de búsqueda">
+          <button type="button"
+                  role="tab"
+                  [class.active]="searchMode === 'name'"
+                  [attr.aria-selected]="searchMode === 'name'"
+                  (click)="setSearchMode('name')"
+                  title="Buscar por nombre">Nombre</button>
+          <button type="button"
+                  role="tab"
+                  [class.active]="searchMode === 'ability'"
+                  [attr.aria-selected]="searchMode === 'ability'"
+                  (click)="setSearchMode('ability')"
+                  title="Buscar dentro del texto de la habilidad">Habilidad</button>
+          <button type="button"
+                  role="tab"
+                  [class.active]="searchMode === 'all'"
+                  [attr.aria-selected]="searchMode === 'all'"
+                  (click)="setSearchMode('all')"
+                  title="Buscar en nombre y habilidad">Todo</button>
+        </div>
+        <input type="text"
+               [placeholder]="searchMode === 'ability' ? 'Buscar habilidad...' : (searchMode === 'all' ? 'Buscar nombre o habilidad...' : 'Buscar carta...')"
+               [(ngModel)]="searchQuery"
+               (keyup.enter)="onSearch()">
+        <button class="search-btn" (click)="onSearch()" title="Buscar">🔍</button>
+      </div>
+      <div class="type-chips" role="group" aria-label="Filtrar por tipo">
+        <button type="button"
+                class="type-chip-btn"
+                [class.active]="!selectedType"
+                (click)="toggleType('')">Todos</button>
+        @for (t of types; track t.id) {
+          <button type="button"
+                  class="type-chip-btn"
+                  [class.active]="selectedType === t.slug"
+                  (click)="toggleType(t.slug)">{{ t.name }}</button>
+        }
       </div>
       <div class="filter-row">
         <select [(ngModel)]="selectedEdition" (change)="onSearch()">
           <option value="">Todas las ediciones</option>
           @for (ed of editions; track ed.id) {
             <option [value]="ed.slug">{{ ed.title }}</option>
-          }
-        </select>
-        <select [(ngModel)]="selectedType" (change)="onSearch()">
-          <option value="">Todos los tipos</option>
-          @for (t of types; track t.id) {
-            <option [value]="t.slug">{{ t.name }}</option>
           }
         </select>
         <select [(ngModel)]="selectedRarity" (change)="onSearch()">

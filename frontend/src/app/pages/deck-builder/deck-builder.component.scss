@@ -37,6 +37,7 @@
       flex-wrap: wrap;
       gap: 0.5rem;
       margin-bottom: 0.5rem;
+      align-items: stretch;
 
       input {
         flex: 1 1 160px;
@@ -48,6 +49,64 @@
         color: #e0e0e0;
         outline: none;
         &:focus { border-color: #e94560; }
+      }
+    }
+
+    .search-modes {
+      display: inline-flex;
+      background: #16213e;
+      border: 1px solid #2a2a4a;
+      border-radius: 6px;
+      padding: 2px;
+      gap: 2px;
+
+      button {
+        padding: 0.35rem 0.7rem;
+        border: none;
+        background: transparent;
+        color: #b0b0c8;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+        white-space: nowrap;
+
+        &:hover { color: #fff; }
+        &.active {
+          background: #e94560;
+          color: #fff;
+          font-weight: 600;
+        }
+      }
+    }
+
+    .type-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.5rem;
+
+      .type-chip-btn {
+        padding: 0.3rem 0.75rem;
+        border: 1px solid #2a2a4a;
+        border-radius: 999px;
+        background: #1a1a2e;
+        color: #c8c8da;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.15s;
+        white-space: nowrap;
+
+        &:hover {
+          border-color: #e94560;
+          color: #fff;
+        }
+        &.active {
+          background: #ffbd39;
+          border-color: #ffbd39;
+          color: #1a1a2e;
+          font-weight: 600;
+        }
       }
     }
 
@@ -78,7 +137,7 @@
 
     .filter-row {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 0.5rem;
 
       @media (max-width: 900px) {

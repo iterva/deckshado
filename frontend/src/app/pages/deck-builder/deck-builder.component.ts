@@ -65,6 +65,10 @@ export class DeckBuilderComponent implements OnInit {
   allRarities: Rarity[] = [];
   search = '';
   abilitySearch = '';
+  /** Texto único introducido por el usuario; se distribuye según `searchMode`. */
+  searchQuery = '';
+  /** Modo de búsqueda: por nombre, por habilidad, o ambos. */
+  searchMode: 'name' | 'ability' | 'all' = 'name';
   selectedEdition = '';
   selectedType = '';
   selectedRarity = '';
@@ -290,8 +294,34 @@ export class DeckBuilderComponent implements OnInit {
   }
 
   onSearch() {
+    // Distribuir `searchQuery` en los campos según el modo seleccionado.
+    const q = (this.searchQuery || '').trim();
+    if (this.searchMode === 'name') {
+      this.search = q;
+      this.abilitySearch = '';
+    } else if (this.searchMode === 'ability') {
+      this.search = '';
+      this.abilitySearch = q;
+    } else {
+      this.search = q;
+      this.abilitySearch = q;
+    }
     this.currentPage = 1;
     this.loadCards();
+  }
+
+  setSearchMode(mode: 'name' | 'ability' | 'all') {
+    if (this.searchMode === mode) return;
+    this.searchMode = mode;
+    if ((this.searchQuery || '').trim()) {
+      this.onSearch();
+    }
+  }
+
+  /** Toggle de chip de tipo: si ya está activo lo limpia. */
+  toggleType(slug: string) {
+    this.selectedType = this.selectedType === slug ? '' : slug;
+    this.onFilterChange();
   }
 
   onFilterChange() {

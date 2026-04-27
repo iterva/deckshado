@@ -14,6 +14,9 @@
         <button class="action-btn" [class.active]="viewMode === 'list'" (click)="viewMode = 'list'" title="Vista listado">
           <i class="bi bi-list-ul"></i>
         </button>
+        <button class="action-btn" [class.active]="viewMode === 'stats'" (click)="viewMode = 'stats'" title="Estadísticas">
+          <i class="bi bi-bar-chart-fill"></i>
+        </button>
       </div>
       <div class="action-group">
         @if (isOwner) {
@@ -128,7 +131,7 @@
           <p class="empty">Este mazo no tiene cartas.</p>
         }
       </div>
-    } @else {
+    } @else if (viewMode === 'list') {
       <div class="list-view">
         @for (group of groupedEntries; track group.type) {
           <div class="type-group">
@@ -158,9 +161,50 @@
           </div>
         }
       </div>
+    } @else {
+      <!-- Estadísticas -->
+      <div class="stats-view">
+        <div class="stats-summary">
+          <div class="stat-card">
+            <span class="stat-number">{{ deck.card_count }}</span>
+            <span class="stat-caption">Cartas totales</span>
+          </div>
+          @if (hasAnyCost) {
+            <div class="stat-card">
+              <span class="stat-number">{{ avgCost }}</span>
+              <span class="stat-caption">Coste promedio</span>
+            </div>
+          }
+          @for (g of groupedEntries; track g.type) {
+            <div class="stat-card type">
+              <span class="stat-number">{{ g.total }}</span>
+              <span class="stat-caption">{{ g.type }}</span>
+            </div>
+          }
+        </div>
+
+        @if (hasAnyCost) {
+          <div class="cost-curve" aria-label="Curva de coste">
+            <span class="cost-curve-title">Curva de coste</span>
+            <div class="cost-curve-bars">
+              @for (b of costCurve; track b.label) {
+                <div class="cost-bar" [class.empty]="b.count === 0" [title]="b.count + ' cartas con coste ' + b.label">
+                  <span class="cost-bar-count">{{ b.count }}</span>
+                  <div class="cost-bar-fill-wrap">
+                    <div class="cost-bar-fill" [style.height.%]="b.pct"></div>
+                  </div>
+                  <span class="cost-bar-label">{{ b.label }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        } @else {
+          <p class="empty">Este mazo no tiene cartas con coste para graficar.</p>
+        }
+      </div>
     }
 
-    @if (deck.sideboard_entries && deck.sideboard_entries.length > 0) {
+    @if (deck.sideboard_entries && deck.sideboard_entries.length > 0 && viewMode !== 'stats') {
       <h2 class="side-title">Sidedeck</h2>
       @if (viewMode === 'grid') {
         <div class="card-grid side-grid">

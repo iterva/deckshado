@@ -475,6 +475,73 @@
       }
     }
   }
+
+  .cost-curve {
+    background: #16213e;
+    border: 1px solid #2a2a4a;
+    border-radius: 8px;
+    padding: 0.6rem 0.7rem 0.5rem;
+    margin-bottom: 0.9rem;
+
+    .cost-curve-title {
+      display: block;
+      font-size: 0.75rem;
+      color: #b0b0cc;
+      margin-bottom: 0.4rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .cost-curve-bars {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 0.25rem;
+      align-items: end;
+      height: 90px;
+    }
+
+    .cost-bar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      height: 100%;
+      gap: 2px;
+
+      .cost-bar-count {
+        font-size: 0.7rem;
+        color: #ffbd39;
+        font-weight: 600;
+        line-height: 1;
+        min-height: 0.7rem;
+      }
+      .cost-bar-fill-wrap {
+        width: 100%;
+        flex: 1;
+        display: flex;
+        align-items: flex-end;
+        background: rgba(42, 42, 74, 0.4);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .cost-bar-fill {
+        width: 100%;
+        background: linear-gradient(180deg, #ffbd39 0%, #e94560 100%);
+        border-radius: 3px 3px 0 0;
+        transition: height 0.3s ease;
+        min-height: 2px;
+      }
+      .cost-bar-label {
+        font-size: 0.7rem;
+        color: #8a8aa8;
+        line-height: 1;
+      }
+      &.empty {
+        .cost-bar-count { color: transparent; }
+        .cost-bar-fill { background: #2a2a4a; opacity: 0.5; }
+      }
+    }
+  }
 }
 
 .deck-entries {

@@ -630,6 +630,34 @@ export class DeckBuilderComponent implements OnInit {
     return order.filter(t => map[t]).map(t => ({ label: t, count: map[t] }));
   }
 
+  /**
+   * Curva de coste: cantidad de cartas (no-Oro) por bucket de coste 0..6 y 7+.
+   * Devuelve siempre los 8 buckets (con count 0 si no hay), para que el gráfico
+   * mantenga su forma incluso en mazos pequeños.
+   */
+  get costCurve(): { label: string; count: number; pct: number }[] {
+    const buckets = [0, 0, 0, 0, 0, 0, 0, 0]; // 0..6, 7+
+    for (const dc of this.deckCards) {
+      if (dc.card.type_name === 'Oro') continue;
+      const raw = dc.card.cost;
+      if (raw === null || raw === undefined || raw === '') continue;
+      const n = Number(raw);
+      if (!Number.isFinite(n)) continue;
+      const idx = n >= 7 ? 7 : Math.max(0, Math.min(7, Math.floor(n)));
+      buckets[idx] += dc.quantity;
+    }
+    const max = Math.max(1, ...buckets);
+    return buckets.map((count, i) => ({
+      label: i === 7 ? '7+' : String(i),
+      count,
+      pct: Math.round((count / max) * 100),
+    }));
+  }
+
+  get hasAnyCost(): boolean {
+    return this.costCurve.some(b => b.count > 0);
+  }
+
   get totalPages(): number {
     return Math.ceil(this.totalCards / 20);
   }

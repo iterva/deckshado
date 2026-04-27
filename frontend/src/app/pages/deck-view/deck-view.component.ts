@@ -17,7 +17,7 @@ import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
 export class DeckViewComponent implements OnInit {
   deck: Deck | null = null;
   loading = true;
-  viewMode: 'grid' | 'list' = 'grid';
+  viewMode: 'grid' | 'list' | 'stats' = 'grid';
   groupedEntries: { type: string; total: number; entries: any[] }[] = [];
   groupedSideEntries: { type: string; total: number; entries: any[] }[] = [];
   previewCard: Card | null = null;
@@ -164,6 +164,55 @@ export class DeckViewComponent implements OnInit {
 
   getRange(n: number): number[] {
     return Array.from({ length: n }, (_, i) => i);
+  }
+
+  /**
+   * Curva de coste del mazo principal (excluye Oros y cartas sin coste).
+   * Buckets 0..6 + 7+; siempre devuelve los 8 buckets para mantener forma.
+   */
+  get costCurve(): { label: string; count: number; pct: number }[] {
+    const buckets = [0, 0, 0, 0, 0, 0, 0, 0];
+    if (this.deck?.entries) {
+      for (const entry of this.deck.entries) {
+        const card = entry.card_detail;
+        if (card.type_name === 'Oro') continue;
+        const raw = card.cost;
+        if (raw === null || raw === undefined || raw === '') continue;
+        const n = Number(raw);
+        if (!Number.isFinite(n)) continue;
+        const idx = n >= 7 ? 7 : Math.max(0, Math.min(7, Math.floor(n)));
+        buckets[idx] += entry.quantity;
+      }
+    }
+    const max = Math.max(1, ...buckets);
+    return buckets.map((count, i) => ({
+      label: i === 7 ? '7+' : String(i),
+      count,
+      pct: Math.round((count / max) * 100),
+    }));
+  }
+
+  get hasAnyCost(): boolean {
+    return this.costCurve.some(b => b.count > 0);
+  }
+
+  /** Promedio de coste de cartas no-Oro con coste definido. */
+  get avgCost(): number {
+    let sum = 0;
+    let n = 0;
+    if (this.deck?.entries) {
+      for (const entry of this.deck.entries) {
+        const card = entry.card_detail;
+        if (card.type_name === 'Oro') continue;
+        const raw = card.cost;
+        if (raw === null || raw === undefined || raw === '') continue;
+        const v = Number(raw);
+        if (!Number.isFinite(v)) continue;
+        sum += v * entry.quantity;
+        n += entry.quantity;
+      }
+    }
+    return n === 0 ? 0 : Math.round((sum / n) * 10) / 10;
   }
 
   showPreview(card: Card, event: MouseEvent) {

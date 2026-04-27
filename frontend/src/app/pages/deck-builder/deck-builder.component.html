@@ -170,6 +170,23 @@
       </div>
     }
 
+    @if (hasAnyCost) {
+      <div class="cost-curve" aria-label="Curva de coste">
+        <span class="cost-curve-title">Curva de coste</span>
+        <div class="cost-curve-bars">
+          @for (b of costCurve; track b.label) {
+            <div class="cost-bar" [class.empty]="b.count === 0" [title]="b.count + ' cartas con coste ' + b.label">
+              <span class="cost-bar-count">{{ b.count }}</span>
+              <div class="cost-bar-fill-wrap">
+                <div class="cost-bar-fill" [style.height.%]="b.pct"></div>
+              </div>
+              <span class="cost-bar-label">{{ b.label }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
     <div class="deck-entries">
       @for (dc of deckCards; track dc.card.id) {
         <div class="deck-entry">

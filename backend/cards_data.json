@@ -220561,11 +220561,11 @@
       "rarity": null,
       "race": 56,
       "card_type": 1,
-      "cost": "3",
-      "damage": "2",
+      "cost": "2",
+      "damage": "3",
       "ability": "Exhumar.\nCuando entra en juego, convierte hasta una carta que no sea Oro en Aliado sin habilidad de Fuerza 3, gana su control y Roba una carta.\nEn tu Vigilia, una vez por turno, puedes jugar un Aliado o Arma de un Cementerio reduciendo su coste en un Oro, hasta un mínimo de 0.",
       "flavour": "Tito Lastarria vendió su alma por una fortuna maldita, condenado a una sed de sangre eterna.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/chi_02.jpg"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268967/deckshado/extra_cards/chi_02.jpg"
     }
   },
   {

@@ -123,16 +123,32 @@ class CardListView(generics.ListAPIView):
             else:
                 qs = qs.filter(edition__format__code=fmt)
         if edition:
-            qs = qs.filter(edition__slug=edition)
+            ed_slugs = [s for s in edition.split(",") if s]
+            if len(ed_slugs) == 1:
+                qs = qs.filter(edition__slug=ed_slugs[0])
+            elif ed_slugs:
+                qs = qs.filter(edition__slug__in=ed_slugs)
         if card_type:
-            qs = qs.filter(card_type__slug=card_type)
+            type_slugs = [s for s in card_type.split(",") if s]
+            if len(type_slugs) == 1:
+                qs = qs.filter(card_type__slug=type_slugs[0])
+            elif type_slugs:
+                qs = qs.filter(card_type__slug__in=type_slugs)
         if race:
             qs = qs.filter(race__slug=race)
         if rarity:
-            qs = qs.filter(rarity__slug=rarity)
+            rar_slugs = [s for s in rarity.split(",") if s]
+            if len(rar_slugs) == 1:
+                qs = qs.filter(rarity__slug=rar_slugs[0])
+            elif rar_slugs:
+                qs = qs.filter(rarity__slug__in=rar_slugs)
         cost = self.request.query_params.get("cost")
         if cost is not None and cost != "":
-            qs = qs.filter(cost=cost)
+            cost_vals = [c for c in cost.split(",") if c != ""]
+            if len(cost_vals) == 1:
+                qs = qs.filter(cost=cost_vals[0])
+            elif cost_vals:
+                qs = qs.filter(cost__in=cost_vals)
         if search:
             qs = qs.filter(name__iregex=_accent_insensitive(search))
 

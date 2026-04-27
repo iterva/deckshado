@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CardService } from '../../services/card.service';
@@ -69,10 +69,18 @@ export class DeckBuilderComponent implements OnInit {
   searchQuery = '';
   /** Modo de búsqueda: por nombre, por habilidad, o ambos. */
   searchMode: 'name' | 'ability' | 'all' = 'name';
+  /** Sets de filtros multi-selección. Vacío = sin filtro (= todos). */
+  selectedTypes = new Set<string>();
+  selectedEditions = new Set<string>();
+  selectedRarities = new Set<string>();
+  selectedCosts = new Set<string>();
+  /** Compatibilidad: se siguen usando para serializar al backend (CSV). */
   selectedEdition = '';
   selectedType = '';
   selectedRarity = '';
   selectedCost = '';
+  /** Estado de popovers de filtros. */
+  openFilter: 'edition' | 'rarity' | 'cost' | null = null;
   selectedFormat = 'imp';
   formatName = 'Imperio';
 
@@ -318,10 +326,72 @@ export class DeckBuilderComponent implements OnInit {
     }
   }
 
-  /** Toggle de chip de tipo: si ya está activo lo limpia. */
+  /** Toggle de chip de tipo: si ya está activo lo quita. Vacío = todos. */
   toggleType(slug: string) {
-    this.selectedType = this.selectedType === slug ? '' : slug;
+    if (!slug) {
+      // Click en "Todos": limpia la selección.
+      this.selectedTypes.clear();
+    } else if (this.selectedTypes.has(slug)) {
+      this.selectedTypes.delete(slug);
+    } else {
+      this.selectedTypes.add(slug);
+    }
+    this.selectedType = [...this.selectedTypes].join(',');
     this.onFilterChange();
+  }
+
+  /** Toggle genérico para sets de multi-select (edición, rareza, coste). */
+  toggleMulti(set: Set<string>, value: string) {
+    if (set.has(value)) set.delete(value);
+    else set.add(value);
+    this.selectedEdition = [...this.selectedEditions].join(',');
+    this.selectedRarity = [...this.selectedRarities].join(',');
+    this.selectedCost = [...this.selectedCosts].join(',');
+    this.onFilterChange();
+  }
+
+  clearMulti(which: 'edition' | 'rarity' | 'cost') {
+    if (which === 'edition') { this.selectedEditions.clear(); this.selectedEdition = ''; }
+    if (which === 'rarity') { this.selectedRarities.clear(); this.selectedRarity = ''; }
+    if (which === 'cost') { this.selectedCosts.clear(); this.selectedCost = ''; }
+    this.onFilterChange();
+  }
+
+  toggleFilterPopover(which: 'edition' | 'rarity' | 'cost', event?: MouseEvent) {
+    event?.stopPropagation();
+    this.openFilter = this.openFilter === which ? null : which;
+  }
+
+  closeFilterPopover() {
+    this.openFilter = null;
+  }
+
+  @HostListener('document:click')
+  onDocumentClick() {
+    if (this.openFilter) this.openFilter = null;
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape() {
+    if (this.openFilter) this.openFilter = null;
+  }
+
+  filterLabel(which: 'edition' | 'rarity' | 'cost'): string {
+    const set = which === 'edition' ? this.selectedEditions
+      : which === 'rarity' ? this.selectedRarities
+      : this.selectedCosts;
+    if (set.size === 0) {
+      return which === 'edition' ? 'Todas las ediciones'
+        : which === 'rarity' ? 'Todas las rarezas'
+        : 'Todos los costes';
+    }
+    if (set.size === 1) {
+      const v = [...set][0];
+      if (which === 'edition') return this.editions.find(e => e.slug === v)?.title || v;
+      if (which === 'rarity') return this.filteredRarities.find(r => r.slug === v)?.name || v;
+      return `Coste ${v}`;
+    }
+    return `${set.size} seleccionad${which === 'edition' ? 'as' : which === 'rarity' ? 'as' : 'os'}`;
   }
 
   onFilterChange() {

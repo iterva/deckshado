@@ -33,34 +33,88 @@
       <div class="type-chips" role="group" aria-label="Filtrar por tipo">
         <button type="button"
                 class="type-chip-btn"
-                [class.active]="!selectedType"
+                [class.active]="selectedTypes.size === 0"
                 (click)="toggleType('')">Todos</button>
         @for (t of types; track t.id) {
           <button type="button"
                   class="type-chip-btn"
-                  [class.active]="selectedType === t.slug"
+                  [class.active]="selectedTypes.has(t.slug)"
                   (click)="toggleType(t.slug)">{{ t.name }}</button>
         }
       </div>
       <div class="filter-row">
-        <select [(ngModel)]="selectedEdition" (change)="onSearch()">
-          <option value="">Todas las ediciones</option>
-          @for (ed of editions; track ed.id) {
-            <option [value]="ed.slug">{{ ed.title }}</option>
+        <div class="multi-filter" [class.open]="openFilter === 'edition'">
+          <button type="button" class="multi-trigger" [class.has-value]="selectedEditions.size > 0" (click)="toggleFilterPopover('edition', $event)">
+            <span>{{ filterLabel('edition') }}</span>
+            <i class="bi bi-chevron-down"></i>
+          </button>
+          @if (openFilter === 'edition') {
+            <div class="multi-popover" (click)="$event.stopPropagation()">
+              <div class="multi-head">
+                <span>Ediciones</span>
+                @if (selectedEditions.size > 0) {
+                  <button type="button" class="link-btn" (click)="clearMulti('edition')">Limpiar</button>
+                }
+              </div>
+              <div class="multi-list">
+                @for (ed of editions; track ed.id) {
+                  <label class="multi-item">
+                    <input type="checkbox" [checked]="selectedEditions.has(ed.slug)" (change)="toggleMulti(selectedEditions, ed.slug)">
+                    <span>{{ ed.title }}</span>
+                  </label>
+                }
+              </div>
+            </div>
           }
-        </select>
-        <select [(ngModel)]="selectedRarity" (change)="onSearch()">
-          <option value="">Todas las rarezas</option>
-          @for (r of filteredRarities; track r.id) {
-            <option [value]="r.slug">{{ r.name }}</option>
+        </div>
+        <div class="multi-filter" [class.open]="openFilter === 'rarity'">
+          <button type="button" class="multi-trigger" [class.has-value]="selectedRarities.size > 0" (click)="toggleFilterPopover('rarity', $event)">
+            <span>{{ filterLabel('rarity') }}</span>
+            <i class="bi bi-chevron-down"></i>
+          </button>
+          @if (openFilter === 'rarity') {
+            <div class="multi-popover" (click)="$event.stopPropagation()">
+              <div class="multi-head">
+                <span>Rarezas</span>
+                @if (selectedRarities.size > 0) {
+                  <button type="button" class="link-btn" (click)="clearMulti('rarity')">Limpiar</button>
+                }
+              </div>
+              <div class="multi-list">
+                @for (r of filteredRarities; track r.id) {
+                  <label class="multi-item">
+                    <input type="checkbox" [checked]="selectedRarities.has(r.slug)" (change)="toggleMulti(selectedRarities, r.slug)">
+                    <span>{{ r.name }}</span>
+                  </label>
+                }
+              </div>
+            </div>
           }
-        </select>
-        <select [(ngModel)]="selectedCost" (change)="onSearch()">
-          <option value="">Todos los costes</option>
-          @for (c of costOptions; track c) {
-            <option [value]="c">{{ c }}</option>
+        </div>
+        <div class="multi-filter" [class.open]="openFilter === 'cost'">
+          <button type="button" class="multi-trigger" [class.has-value]="selectedCosts.size > 0" (click)="toggleFilterPopover('cost', $event)">
+            <span>{{ filterLabel('cost') }}</span>
+            <i class="bi bi-chevron-down"></i>
+          </button>
+          @if (openFilter === 'cost') {
+            <div class="multi-popover" (click)="$event.stopPropagation()">
+              <div class="multi-head">
+                <span>Costes</span>
+                @if (selectedCosts.size > 0) {
+                  <button type="button" class="link-btn" (click)="clearMulti('cost')">Limpiar</button>
+                }
+              </div>
+              <div class="multi-list cost-grid">
+                @for (c of costOptions; track c) {
+                  <label class="multi-item cost-item" [class.checked]="selectedCosts.has(c)">
+                    <input type="checkbox" [checked]="selectedCosts.has(c)" (change)="toggleMulti(selectedCosts, c)">
+                    <span>{{ c }}</span>
+                  </label>
+                }
+              </div>
+            </div>
           }
-        </select>
+        </div>
       </div>
     </div>
 

@@ -137,8 +137,12 @@
     <div class="available-cards" [class.is-loading]="loading">
       @for (card of availableCards; track card.id) {
         <div class="mini-card"
-             (mouseenter)="hoverEnter(card)"
-             (mouseleave)="hoverLeave()"
+             (mousedown)="holdStart(card, $event)"
+             (mouseup)="holdEnd()"
+             (mouseleave)="holdCancel()"
+             (touchstart)="holdStart(card, $event)"
+             (touchend)="holdEnd()"
+             (touchcancel)="holdCancel()"
              [class.in-deck]="getQuantityInDeck(card.id) > 0"
              [class.banned]="getBanStatus(card)?.status === 'banned'"
              [class.name-taken]="hasDifferentVersion(card)"
@@ -146,7 +150,7 @@
              [class.flash-added]="recentlyAdded.has(card.id)">
           <div class="img-wrapper">
             <img [src]="card.image_url | thumb:150" [alt]="card.name" loading="lazy" decoding="async">
-            <span class="eye-icon" (click)="showPreview(card, $event)">👁</span>
+            <span class="eye-icon" (click)="showPreview(card, $event)" title="Ver detalle">👁</span>
           </div>
           <div class="mini-info">
             <span class="mini-name">{{ card.name }}</span>
@@ -355,61 +359,61 @@
 </button>
 
 <!-- Card Preview Overlay -->
-@if (previewCard) {
+@if (previewCard(); as pc) {
   <div class="preview-overlay" (click)="hidePreview()">
     <div class="preview-panel" (click)="$event.stopPropagation()">
       <button class="preview-close" (click)="hidePreview()">✕</button>
-      <h3 class="preview-title">{{ previewCard.name }}</h3>
+      <h3 class="preview-title">{{ pc.name }}</h3>
       <hr>
       <div class="preview-body">
-        <img [src]="previewCard.image_url" [alt]="previewCard.name">
+        <img [src]="pc.image_url" [alt]="pc.name">
         <div class="preview-stats">
           <div class="stat-row">
             <span class="stat-label">Tipo</span>
-            <span class="stat-badge">{{ previewCard.type_name }}</span>
+            <span class="stat-badge">{{ pc.type_name }}</span>
           </div>
-          @if (previewCard.cost !== null) {
+          @if (pc.cost !== null) {
             <div class="stat-row">
               <span class="stat-label">Coste</span>
-              <span class="stat-value">{{ previewCard.cost }}</span>
+              <span class="stat-value">{{ pc.cost }}</span>
             </div>
           }
-          @if (previewCard.damage !== null) {
+          @if (pc.damage !== null) {
             <div class="stat-row">
               <span class="stat-label">Daño</span>
-              <span class="stat-value">{{ previewCard.damage }}</span>
+              <span class="stat-value">{{ pc.damage }}</span>
             </div>
           }
           <div class="stat-row">
             <span class="stat-label">Expansión</span>
-            <span class="stat-value">{{ previewCard.edition_title }}</span>
+            <span class="stat-value">{{ pc.edition_title }}</span>
           </div>
-          @if (previewCard.rarity_name) {
+          @if (pc.rarity_name) {
             <div class="stat-row">
               <span class="stat-label">Rareza</span>
-              <span class="stat-badge rarity">{{ previewCard.rarity_name }}</span>
+              <span class="stat-badge rarity">{{ pc.rarity_name }}</span>
             </div>
           }
-          @if (previewCard.race_name) {
+          @if (pc.race_name) {
             <div class="stat-row">
               <span class="stat-label">Raza</span>
-              <span class="stat-value">{{ previewCard.race_name }}</span>
+              <span class="stat-value">{{ pc.race_name }}</span>
             </div>
           }
-          @if (previewAbility) {
+          @if (previewAbility(); as ab) {
             <div class="stat-section">
               <span class="stat-label">Habilidad</span>
-              <p class="stat-ability">{{ previewAbility }}</p>
+              <p class="stat-ability">{{ ab }}</p>
             </div>
-          } @else if (previewAbility === null && previewCard) {
+          } @else if (previewAbilityLoading()) {
             <div class="stat-section">
               <span class="stat-label">Habilidad</span>
               <p class="stat-ability loading">Cargando...</p>
             </div>
           }
           <hr>
-          <button class="btn btn-gold btn-block" (click)="addCard(previewCard); hidePreview()"
-                  [disabled]="getBanStatus(previewCard)?.status === 'banned' || getNameCount(previewCard.name) >= getEffectiveMaxCopies(previewCard)">
+          <button class="btn btn-gold btn-block" (click)="addCard(pc); hidePreview()"
+                  [disabled]="getBanStatus(pc)?.status === 'banned' || getNameCount(pc.name) >= getEffectiveMaxCopies(pc)">
             + Agregar al mazo
           </button>
         </div>

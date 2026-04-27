@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef, HostListener } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef, HostListener, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject } from 'rxjs';
@@ -75,9 +75,11 @@ export class DeckBuilderComponent implements OnInit {
   private autosaveTimer: any = null;
   private readonly AUTOSAVE_KEY_PREFIX = 'deckshado_autosave_';
 
-  // Hover preview (#17)
-  private hoverPreviewTimer: any = null;
-  private readonly HOVER_DELAY_MS = 600;
+  // Hold-to-preview (#17): mantener el botón / dedo presionado abre el preview.
+  private holdPreviewTimer: any = null;
+  private readonly HOLD_DELAY_MS = 450;
+  /** True cuando el preview se abrió por hold (para suprimir el "click" siguiente). */
+  private holdTriggered = false;
 
   // Card browser
   availableCards: Card[] = [];
@@ -130,8 +132,10 @@ export class DeckBuilderComponent implements OnInit {
   raceName = '';
 
   // Card preview popover
-  previewCard: Card | null = null;
-  previewAbility: string | null = null;
+  previewCard = signal<Card | null>(null);
+  previewAbility = signal<string | null>(null);
+  /** Estado: cargando habilidad. */
+  previewAbilityLoading = signal<boolean>(false);
   private abilityCache = new Map<number, string>();
 
   // Mobile deck panel toggle
@@ -779,28 +783,29 @@ export class DeckBuilderComponent implements OnInit {
 
   showPreview(card: Card, event: MouseEvent) {
     event.stopPropagation();
-    this.previewCard = card;
+    this.previewCard.set(card);
     // Fetch ability if not cached
     if (this.abilityCache.has(card.id)) {
-      this.previewAbility = this.abilityCache.get(card.id) || null;
-      this.cdr.detectChanges();
+      this.previewAbility.set(this.abilityCache.get(card.id) || null);
+      this.previewAbilityLoading.set(false);
     } else {
-      this.previewAbility = null;
-      this.cdr.detectChanges();
+      this.previewAbility.set(null);
+      this.previewAbilityLoading.set(true);
       this.cardService.getCard(card.id).subscribe(detail => {
         const ability = detail.ability || null;
         this.abilityCache.set(card.id, ability || '');
-        if (this.previewCard?.id === card.id) {
-          this.previewAbility = ability;
-          this.cdr.detectChanges();
+        if (this.previewCard()?.id === card.id) {
+          this.previewAbility.set(ability);
+          this.previewAbilityLoading.set(false);
         }
       });
     }
   }
 
   hidePreview() {
-    this.previewCard = null;
-    this.previewAbility = null;
+    this.previewCard.set(null);
+    this.previewAbility.set(null);
+    this.previewAbilityLoading.set(false);
   }
 
   saveDeck() {
@@ -935,38 +940,57 @@ export class DeckBuilderComponent implements OnInit {
     this.searchSubject.next();
   }
 
-  // ====== #17 Hover preview con delay ======
-  hoverEnter(card: Card) {
-    if (this.hoverPreviewTimer) clearTimeout(this.hoverPreviewTimer);
-    // Solo en pointer fino (desktop). Touch dispatcha mouseenter sin hover real.
-    if (typeof window !== 'undefined' && window.matchMedia?.('(hover: hover) and (pointer: fine)').matches) {
-      this.hoverPreviewTimer = setTimeout(() => {
-        if (!this.previewCard) {
-          this.previewCard = card;
-          if (this.abilityCache.has(card.id)) {
-            this.previewAbility = this.abilityCache.get(card.id) || null;
-          } else {
-            this.previewAbility = null;
-            this.cardService.getCard(card.id).subscribe(detail => {
-              const ability = detail.ability || null;
-              this.abilityCache.set(card.id, ability || '');
-              if (this.previewCard?.id === card.id) {
-                this.previewAbility = ability;
-                this.cdr.detectChanges();
-              }
-            });
+  // ====== #17 Hold-to-preview (mantener click/touch) ======
+  /** Inicia el timer al apretar el botón / dedo sobre la mini-card. */
+  holdStart(card: Card, event: MouseEvent | TouchEvent) {
+    // Solo botón izquierdo en mouse.
+    if (event instanceof MouseEvent && event.button !== 0) return;
+    this.cancelHold();
+    this.holdTriggered = false;
+    this.holdPreviewTimer = setTimeout(() => {
+      this.holdTriggered = true;
+      // Reusamos el mismo flujo que showPreview pero sin requerir el click.
+      this.previewCard.set(card);
+      if (this.abilityCache.has(card.id)) {
+        this.previewAbility.set(this.abilityCache.get(card.id) || null);
+        this.previewAbilityLoading.set(false);
+      } else {
+        this.previewAbility.set(null);
+        this.previewAbilityLoading.set(true);
+        this.cardService.getCard(card.id).subscribe(detail => {
+          const ability = detail.ability || null;
+          this.abilityCache.set(card.id, ability || '');
+          if (this.previewCard()?.id === card.id) {
+            this.previewAbility.set(ability);
+            this.previewAbilityLoading.set(false);
           }
-          this.cdr.detectChanges();
-        }
-      }, this.HOVER_DELAY_MS);
+        });
+      }
+    }, this.HOLD_DELAY_MS);
+  }
+
+  /** Cancela el timer si se suelta antes del umbral. */
+  holdEnd() {
+    this.cancelHold();
+  }
+
+  /** Si el mouse sale de la carta, cancelamos también. */
+  holdCancel() {
+    this.cancelHold();
+  }
+
+  private cancelHold() {
+    if (this.holdPreviewTimer) {
+      clearTimeout(this.holdPreviewTimer);
+      this.holdPreviewTimer = null;
     }
   }
 
-  hoverLeave() {
-    if (this.hoverPreviewTimer) {
-      clearTimeout(this.hoverPreviewTimer);
-      this.hoverPreviewTimer = null;
-    }
+  /** True si el último gesto fue un hold (usado para evitar que el ojito haga showPreview duplicado). */
+  consumeHoldFlag(): boolean {
+    const flag = this.holdTriggered;
+    this.holdTriggered = false;
+    return flag;
   }
 
   // ====== #20 Swipe-to-remove en deck-entry ======

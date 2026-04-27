@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Viejo del Saco – CHI-04</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh}
+
+.card{
+  position:relative;
+  width:500px;height:700px;
+  border-radius:12px;
+  overflow:hidden;
+  box-shadow:0 8px 40px rgba(0,0,0,.9);
+  background:#0a0a0a;
+}
+
+/* ══════ ART AREA ══════ */
+.art{
+  position:absolute;top:0;left:0;right:0;
+  height:455px;
+  overflow:hidden;background:#080606;
+}
+.art img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block}
+
+/* ══════ NAME VERTICAL BAR ══════ */
+.name-bar{
+  position:absolute;top:0;left:0;
+  width:40px;height:455px;
+  background:linear-gradient(to right,#000 70%,rgba(0,0,0,.2));
+  z-index:10;
+  display:flex;align-items:center;justify-content:center;
+  writing-mode:vertical-rl;
+  transform:rotate(180deg);
+}
+.name-bar span{
+  font:bold 26px/1 'Palatino Linotype','Book Antiqua',serif;
+  color:#e4d8c0;
+  letter-spacing:3px;
+  text-shadow:1px 1px 4px #000;
+  white-space:nowrap;
+}
+
+/* ══════ FORCE (top-left) ══════ */
+.force{
+  position:absolute;top:8px;left:46px;z-index:20;
+  width:50px;height:50px;
+}
+.force-circle{
+  width:100%;height:100%;border-radius:50%;
+  background:radial-gradient(circle at 36% 30%,#e83030,#b81818 50%,#801010);
+  border:2.5px solid #300808;
+  box-shadow:0 2px 8px rgba(0,0,0,.7),inset 0 1px 4px rgba(255,255,255,.1);
+  display:flex;align-items:center;justify-content:center;
+}
+.force-num{font:bold 30px 'Palatino Linotype',serif;color:#fff;text-shadow:1px 1px 4px #000}
+
+/* Scratch marks */
+.scratches{
+  position:absolute;top:-6px;left:42px;z-index:19;
+  width:56px;height:60px;pointer-events:none;
+}
+.scratches div{
+  position:absolute;width:2.5px;background:rgba(30,0,0,.65);border-radius:2px;
+  height:52px;top:0;
+}
+.scratches div:nth-child(1){left:6px;transform:rotate(-10deg)}
+.scratches div:nth-child(2){left:16px;transform:rotate(-5deg)}
+.scratches div:nth-child(3){left:26px;transform:rotate(0)}
+.scratches div:nth-child(4){left:36px;transform:rotate(5deg)}
+
+.school{
+  position:absolute;top:62px;left:48px;z-index:20;
+  font:italic 12px 'Palatino Linotype',serif;
+  color:#ddd0b4;text-shadow:1px 1px 4px #000,0 0 8px #000;
+}
+
+/* ══════ COST (top-right gold badge) ══════ */
+.cost{position:absolute;top:6px;right:8px;z-index:20;width:50px;height:54px}
+.cost svg{display:block;width:100%;height:100%}
+.cost-num{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font:bold 26px 'Palatino Linotype',serif;
+  color:#1e1600;z-index:1;
+  text-shadow:0 1px 0 rgba(255,230,150,.4);
+}
+
+/* ══════ FLAVOR TEXT (overlaid on bottom of art) ══════ */
+.flavor{
+  position:absolute;bottom:248px;left:40px;right:0;
+  z-index:12;
+  background:rgba(0,0,0,.68);
+  padding:10px 18px;
+}
+.flavor p{
+  font:italic 13px/1.45 'Palatino Linotype','Book Antiqua',serif;
+  color:#d4c8a8;text-align:center;
+  text-shadow:1px 1px 2px #000;
+}
+
+/* ══════ BONE CHAIN BORDER (top) ══════ */
+.bones-top{
+  position:absolute;top:453px;left:0;right:0;
+  height:24px;z-index:16;
+}
+.bones-top canvas{display:block;width:100%;height:100%}
+
+/* ══════ ABILITY PARCHMENT ══════ */
+.parchment{
+  position:absolute;top:477px;left:0;right:0;bottom:24px;
+  overflow:hidden;
+}
+/* Parchment texture via layered gradients */
+.parchment-bg{
+  position:absolute;inset:0;
+  background:
+    repeating-linear-gradient(0deg,
+      rgba(160,140,100,.04) 0px, transparent 1px, transparent 3px),
+    repeating-linear-gradient(90deg,
+      rgba(160,140,100,.03) 0px, transparent 1px, transparent 4px),
+    radial-gradient(ellipse at 20% 20%, #e0d6be, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, #c8bca0, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, #d8ccb0, #c4b898);
+  /* subtle noise effect */
+  filter:contrast(1.02);
+}
+.parchment-content{
+  position:relative;z-index:1;
+  padding:10px 16px;padding-right:64px;
+  height:100%;
+}
+.ability-kw{
+  font:bold 14px 'Palatino Linotype',serif;
+  color:#1a0e04;margin-bottom:5px;
+}
+.ability-txt{
+  font:13.5px/1.5 'Palatino Linotype','Book Antiqua',serif;
+  color:#1a0e04;
+}
+.ability-txt b{font-weight:bold}
+.ability-txt i{font-style:italic}
+
+/* ══════ BONE CHAIN BORDER (bottom) ══════ */
+.bones-bot{
+  position:absolute;bottom:22px;left:0;right:0;
+  height:24px;z-index:16;
+}
+.bones-bot canvas{display:block;width:100%;height:100%}
+
+/* ══════ TOTEM (green, bottom-right) ══════ */
+.totem{
+  position:absolute;bottom:30px;right:12px;z-index:20;
+  width:50px;height:50px;
+}
+.totem svg{display:block;width:100%;height:100%;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
+
+/* ══════ CREDITS BAR ══════ */
+.credits{
+  position:absolute;bottom:0;left:0;right:0;height:24px;
+  background:linear-gradient(#1a1610,#0e0c08);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 10px;
+}
+.credits span{font:8px 'Palatino Linotype',serif;color:#6a6048;letter-spacing:.3px}
+.credits .code{font-weight:bold;font-size:9px;color:#908468}
+
+/* ══════ BUTTON ══════ */
+.btn{
+  margin-top:18px;padding:10px 28px;
+  background:#2a2a2a;color:#ddd;border:1px solid #444;border-radius:6px;
+  cursor:pointer;font:14px sans-serif;
+}
+.btn:hover{background:#444}
+.no-art{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  color:#444;font:italic 13px sans-serif;text-align:center;padding:20px;
+  background:#080606;
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+
+  <!-- ART -->
+  <div class="art" id="artBox">
+    <img src="viejo_del_saco_art.png"
+         onerror="this.outerHTML='<div class=no-art>Carga el arte<br>con el botón de abajo</div>'">
+  </div>
+
+  <!-- NAME -->
+  <div class="name-bar"><span>Viejo del Saco</span></div>
+
+  <!-- FORCE -->
+  <div class="scratches"><div></div><div></div><div></div><div></div></div>
+  <div class="force"><div class="force-circle"><span class="force-num">3</span></div></div>
+  <span class="school">Sombra</span>
+
+  <!-- COST -->
+  <div class="cost">
+    <svg viewBox="0 0 50 54">
+      <defs>
+        <radialGradient id="go" cx="35%" cy="28%">
+          <stop offset="0%" stop-color="#d8b050"/>
+          <stop offset="100%" stop-color="#705018"/>
+        </radialGradient>
+        <radialGradient id="gi" cx="35%" cy="28%">
+          <stop offset="0%" stop-color="#e8c868"/>
+          <stop offset="60%" stop-color="#b89030"/>
+          <stop offset="100%" stop-color="#907020"/>
+        </radialGradient>
+      </defs>
+      <!-- Outer gear shape -->
+      <path d="M25 1 L29 1 L30 6 L34 4 L37 7 L34 11 L38 12 L39 8 L43 10 L42 15
+               L46 17 L48 14 L50 18 L47 21 L49 25 L49 29 L47 33 L50 36 L48 40
+               L46 37 L42 39 L43 44 L39 46 L38 42 L34 43 L37 47 L34 50 L30 48
+               L29 53 L25 53 L24 48 L20 50 L17 47 L20 43 L16 42 L15 46 L11 44
+               L12 39 L8 37 L6 40 L4 36 L7 33 L5 29 L5 25 L7 21 L4 18 L6 14
+               L8 17 L12 15 L11 10 L15 8 L16 12 L20 11 L17 7 L20 4 L24 6 Z"
+            fill="url(#go)" stroke="#50380a" stroke-width=".8"/>
+      <!-- Inner face -->
+      <circle cx="25" cy="27" r="16" fill="url(#gi)" stroke="#6a5018" stroke-width="1"/>
+      <circle cx="25" cy="27" r="13" fill="none" stroke="rgba(255,220,120,.25)" stroke-width=".5"/>
+    </svg>
+    <span class="cost-num">1</span>
+  </div>
+
+  <!-- FLAVOR -->
+  <div class="flavor">
+    <p>A lo largo de todo el país, sombras se arrastran
+       por la noche. Su saco esconde los terrores que
+       acechan a los desobedientes.</p>
+  </div>
+
+  <!-- BONE BORDERS -->
+  <div class="bones-top"><canvas id="bt"></canvas></div>
+  <div class="bones-bot"><canvas id="bb"></canvas></div>
+
+  <!-- PARCHMENT / ABILITY -->
+  <div class="parchment">
+    <div class="parchment-bg"></div>
+    <div class="parchment-content">
+      <p class="ability-kw">Exhumar.</p>
+      <p class="ability-txt">
+        Cuando entra en juego o ataca, convierte una
+        carta del tope de un Castillo o una carta de
+        coste 2 o menos en un Aliado de Fuerza 2 con la
+        habilidad "<b>Furia</b>, <b>Imbloqueable</b>.
+        Hace daño de combate al <i>Destierro</i>", y ponlo
+        en juego bajo tu control o gana su control.
+      </p>
+    </div>
+  </div>
+
+  <!-- TOTEM -->
+  <div class="totem">
+    <svg viewBox="0 0 50 50">
+      <defs>
+        <radialGradient id="tg" cx="35%" cy="30%">
+          <stop offset="0%" stop-color="#3cc050"/>
+          <stop offset="70%" stop-color="#1a7a28"/>
+          <stop offset="100%" stop-color="#0c5016"/>
+        </radialGradient>
+      </defs>
+      <circle cx="25" cy="25" r="23" fill="url(#tg)" stroke="#083010" stroke-width="2.5"/>
+      <!-- Horned helmet / mask -->
+      <g fill="#a8e0ac" stroke="#083010" stroke-width=".7" stroke-linejoin="round">
+        <!-- Face plate -->
+        <path d="M15 22 L15 36 Q15 40 20 40 L30 40 Q35 40 35 36 L35 22 Q25 18 15 22Z"/>
+        <!-- Left horn -->
+        <path d="M15 24 L8 10 L12 12 L18 22Z"/>
+        <!-- Right horn -->
+        <path d="M35 24 L42 10 L38 12 L32 22Z"/>
+        <!-- Eye slits -->
+        <rect x="18" y="27" width="5" height="3" rx="1" fill="#083010" opacity=".5"/>
+        <rect x="27" y="27" width="5" height="3" rx="1" fill="#083010" opacity=".5"/>
+        <!-- Nose guard -->
+        <line x1="25" y1="24" x2="25" y2="35" stroke="#083010" stroke-width="1" opacity=".35"/>
+      </g>
+    </svg>
+  </div>
+
+  <!-- CREDITS -->
+  <div class="credits">
+    <span>ARTE: JP AGUIRRE</span>
+    <span>© 2025 FENIX ENTERTAINMENT S.P.A.</span>
+    <span class="code">CHI-04</span>
+  </div>
+</div>
+
+<button class="btn" onclick="document.getElementById('fi').click()">📂 Cargar Arte</button>
+<input type="file" id="fi" accept="image/*" style="display:none" onchange="loadArt(this)">
+
+<script>
+/* ── Realistic bone chain border ─────────────── */
+function drawBoneChain(canvas, W, H) {
+  canvas.width = W * 2; canvas.height = H * 2;
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+
+  // Background strip
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#6a5c3c');
+  bg.addColorStop(0.2, '#8a7c5c');
+  bg.addColorStop(0.5, '#9a8c68');
+  bg.addColorStop(0.8, '#8a7c5c');
+  bg.addColorStop(1, '#6a5c3c');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Top/bottom edge lines
+  ctx.strokeStyle = 'rgba(0,0,0,.3)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, 0.5); ctx.lineTo(W, 0.5); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, H - 0.5); ctx.lineTo(W, H - 0.5); ctx.stroke();
+
+  const cy = H / 2;
+  const boneW = 16, jointW = 8, spacing = boneW + jointW;
+
+  for (let x = 4; x < W + spacing; x += spacing) {
+    // ── Joint (round connector) ──
+    const jx = x - jointW / 2;
+    ctx.beginPath();
+    ctx.arc(x, cy, 4.5, 0, Math.PI * 2);
+    const jg = ctx.createRadialGradient(x - 1, cy - 1, 0, x, cy, 5);
+    jg.addColorStop(0, '#d8ccb0');
+    jg.addColorStop(0.6, '#b0a480');
+    jg.addColorStop(1, '#8a7e60');
+    ctx.fillStyle = jg;
+    ctx.fill();
+    ctx.strokeStyle = '#70643e';
+    ctx.lineWidth = 0.6;
+    ctx.stroke();
+
+    // ── Bone segment (elongated with knobs) ──
+    const bx = x + jointW / 2;
+    const by = cy;
+
+    // Shaft
+    ctx.beginPath();
+    ctx.moveTo(bx + 2, by - 3);
+    ctx.lineTo(bx + boneW - 2, by - 3);
+    ctx.quadraticCurveTo(bx + boneW + 1, by, bx + boneW - 2, by + 3);
+    ctx.lineTo(bx + 2, by + 3);
+    ctx.quadraticCurveTo(bx - 1, by, bx + 2, by - 3);
+    ctx.closePath();
+
+    const boneFill = ctx.createLinearGradient(bx, by - 4, bx, by + 4);
+    boneFill.addColorStop(0, '#e0d4b8');
+    boneFill.addColorStop(0.3, '#d4c8a8');
+    boneFill.addColorStop(0.5, '#c8bca0');
+    boneFill.addColorStop(0.7, '#d0c4a4');
+    boneFill.addColorStop(1, '#bab090');
+    ctx.fillStyle = boneFill;
+    ctx.fill();
+    ctx.strokeStyle = '#8a7e5c';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+
+    // Left knob
+    ctx.beginPath();
+    ctx.arc(bx + 2, by - 3.5, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#d8ccb0';
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(bx + 2, by + 3.5, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Right knob
+    ctx.beginPath();
+    ctx.arc(bx + boneW - 2, by - 3.5, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#d4c8a8';
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(bx + boneW - 2, by + 3.5, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Highlight on shaft
+    ctx.beginPath();
+    ctx.moveTo(bx + 4, by - 1.5);
+    ctx.lineTo(bx + boneW - 4, by - 1.5);
+    ctx.strokeStyle = 'rgba(255,250,230,.25)';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  }
+
+  // Subtle shadow edges
+  ctx.fillStyle = 'rgba(0,0,0,.12)'; ctx.fillRect(0, 0, W, 1.5);
+  ctx.fillStyle = 'rgba(0,0,0,.08)'; ctx.fillRect(0, H - 1.5, W, 1.5);
+}
+
+drawBoneChain(document.getElementById('bt'), 500, 24);
+drawBoneChain(document.getElementById('bb'), 500, 24);
+
+/* ── Load art ─────────────────────────────────── */
+function loadArt(input) {
+  if (!input.files || !input.files[0]) return;
+  const r = new FileReader();
+  r.onload = function(e) {
+    document.getElementById('artBox').innerHTML =
+      '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover;object-position:top center;display:block">';
+  };
+  r.readAsDataURL(input.files[0]);
+}
+</script>
+</body>
+</html>

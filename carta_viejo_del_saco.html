@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Viejo del Saco - CHI-04</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IM+Fell+English:ital@0;1&family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #111;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'IM Fell English', serif;
+  }
+
+  /* ==========================================
+     CARD CONTAINER - ratio ~63:88 like real card
+     ========================================== */
+  .card {
+    width: 504px;
+    height: 704px;
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    background: #1c1810;
+  }
+
+  /* === ART fills most of the card === */
+  .art-area {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 470px;
+    overflow: hidden;
+    background: #0a0808;
+  }
+  .art-area img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+  }
+
+  /* === VERTICAL NAME STRIP (left edge over art) === */
+  .name-strip {
+    position: absolute;
+    top: 0; left: 0;
+    width: 38px;
+    height: 470px;
+    background: linear-gradient(to right, rgba(10,8,5,0.95) 60%, rgba(10,8,5,0.3));
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+  }
+  .name-strip span {
+    font-family: 'Cinzel Decorative', 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 24px;
+    color: #ece0c8;
+    text-shadow: 2px 2px 6px #000, 0 0 12px rgba(0,0,0,0.8);
+    letter-spacing: 3px;
+    white-space: nowrap;
+  }
+
+  /* === FORCE BADGE (top-left, red circle + claw scratches) === */
+  .force-badge {
+    position: absolute;
+    top: 12px; left: 44px;
+    z-index: 20;
+    width: 56px; height: 66px;
+  }
+  /* Claw scratch marks */
+  .claw-scratches {
+    position: absolute;
+    top: -2px; left: 4px;
+    z-index: 21;
+  }
+  .claw-scratches .scratch {
+    position: absolute;
+    width: 3px;
+    height: 50px;
+    background: linear-gradient(to bottom, rgba(30,0,0,0.9), rgba(80,10,10,0.6));
+    border-radius: 2px;
+    transform-origin: top center;
+  }
+  .claw-scratches .scratch:nth-child(1) { left: 0; transform: rotate(-12deg); }
+  .claw-scratches .scratch:nth-child(2) { left: 8px; transform: rotate(-6deg); }
+  .claw-scratches .scratch:nth-child(3) { left: 16px; transform: rotate(0deg); }
+  .claw-scratches .scratch:nth-child(4) { left: 24px; transform: rotate(6deg); }
+
+  .force-circle {
+    position: relative;
+    width: 48px; height: 48px;
+    background: radial-gradient(circle at 40% 35%, #dd3333, #aa1818 55%, #771010);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2.5px solid #440a0a;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.7), inset 0 -2px 4px rgba(0,0,0,0.3);
+    z-index: 22;
+    margin-top: 8px;
+    margin-left: 2px;
+  }
+  .force-number {
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: 28px;
+    color: #fff;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.9);
+  }
+
+  /* School label below force */
+  .school-label {
+    position: absolute;
+    top: 68px; left: 48px;
+    z-index: 20;
+    font-family: 'IM Fell English', serif;
+    font-size: 13px;
+    color: #e8dcc0;
+    text-shadow: 1px 1px 4px #000, 0 0 8px #000;
+  }
+
+  /* === COST BADGE (top-right, gold shield) === */
+  .cost-badge {
+    position: absolute;
+    top: 10px; right: 10px;
+    z-index: 20;
+    width: 52px; height: 56px;
+  }
+  .cost-shield {
+    width: 100%; height: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cost-shield svg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+  }
+  .cost-number {
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: 26px;
+    color: #3a2808;
+    text-shadow: 0 1px 1px rgba(255,255,255,0.2);
+    position: relative;
+    z-index: 1;
+  }
+
+  /* === FLAVOR TEXT (overlapping bottom of art) === */
+  .flavor-area {
+    position: absolute;
+    top: 362px; left: 38px; right: 0;
+    z-index: 12;
+    background: rgba(8,5,2,0.78);
+    padding: 12px 18px;
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .flavor-text {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: 13.5px;
+    color: #d8ccaa;
+    text-align: center;
+    line-height: 1.45;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
+  }
+
+  /* === BONE CHAIN BORDER (separator between art and ability) === */
+  .bone-border {
+    position: absolute;
+    top: 436px; left: 0; right: 0;
+    height: 28px;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(to bottom,
+      rgba(90,72,48,0.0),
+      rgba(90,72,48,0.95) 20%,
+      #7a6848 50%,
+      rgba(90,72,48,0.95) 80%,
+      rgba(90,72,48,0.0)
+    );
+    overflow: hidden;
+  }
+  /* Bone chain segments */
+  .bone-chain {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+    justify-content: center;
+  }
+  .bone-segment {
+    width: 20px; height: 14px;
+    background: radial-gradient(ellipse, #c8b890, #a89870);
+    border-radius: 50%;
+    border: 1px solid #8a7a58;
+    margin: 0 1px;
+    box-shadow: inset 0 1px 2px rgba(255,255,255,0.3), 0 1px 2px rgba(0,0,0,0.3);
+  }
+  .bone-joint {
+    width: 6px; height: 10px;
+    background: #9a8a68;
+    border-radius: 2px;
+    margin: 0 -1px;
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.2);
+  }
+
+  /* === ABILITY BOX (parchment style) === */
+  .ability-box {
+    position: absolute;
+    top: 460px; left: 6px; right: 6px;
+    bottom: 34px;
+    background: linear-gradient(170deg, #ddd2b8, #cfc3a4 30%, #d5c9ae 60%, #c8bca0);
+    border-radius: 4px;
+    padding: 14px 16px;
+    padding-right: 60px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.15), inset 0 -2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+  }
+  .ability-keyword {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 13.5px;
+    color: #1a1008;
+    margin-bottom: 5px;
+  }
+  .ability-text {
+    font-family: 'IM Fell English', serif;
+    font-size: 12.5px;
+    color: #1a1008;
+    line-height: 1.5;
+  }
+  .ability-text b {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 11.5px;
+  }
+
+  /* === BONE BORDER BOTTOM of ability === */
+  .bone-border-bottom {
+    position: absolute;
+    bottom: 30px; left: 0; right: 0;
+    height: 24px;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(to bottom,
+      rgba(90,72,48,0.0),
+      rgba(90,72,48,0.95) 20%,
+      #7a6848 50%,
+      rgba(90,72,48,0.95) 80%,
+      rgba(90,72,48,0.0)
+    );
+    overflow: hidden;
+  }
+
+  /* === TOTEM SYMBOL (green circle, bottom-right of ability box) === */
+  .totem-symbol {
+    position: absolute;
+    bottom: 44px; right: 16px;
+    width: 48px; height: 48px;
+    z-index: 20;
+  }
+  .totem-circle {
+    width: 100%; height: 100%;
+    background: radial-gradient(circle at 40% 35%, #3aaa4a, #1d7a2d 55%, #0e5a1a);
+    border-radius: 50%;
+    border: 2.5px solid #0a3a10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5), inset 0 -2px 4px rgba(0,0,0,0.2);
+  }
+  /* Simplified horned helmet icon via CSS */
+  .totem-icon {
+    width: 28px; height: 28px;
+    position: relative;
+  }
+  .totem-icon::before {
+    content: '';
+    position: absolute;
+    bottom: 2px; left: 4px;
+    width: 20px; height: 16px;
+    background: #b0e8b0;
+    border-radius: 2px 2px 4px 4px;
+    box-shadow: 0 0 3px rgba(0,0,0,0.3);
+  }
+  /* Horns */
+  .totem-icon::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 2px;
+    width: 24px; height: 12px;
+    border-left: 4px solid #b0e8b0;
+    border-right: 4px solid #b0e8b0;
+    border-top: 4px solid transparent;
+    border-radius: 0;
+  }
+
+  /* === BOTTOM BAR === */
+  .bottom-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 34px;
+    background: linear-gradient(to bottom, #2a2418, #1c1810);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    border-top: 1px solid #3a3228;
+  }
+  .artist-credit {
+    font-family: 'IM Fell English', serif;
+    font-size: 8.5px;
+    color: #8a7a5e;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .copyright {
+    font-family: 'IM Fell English', serif;
+    font-size: 7.5px;
+    color: #6a5e44;
+  }
+  .card-code {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 10px;
+    color: #a09070;
+  }
+
+  /* === CONTROLS (outside card) === */
+  .controls {
+    position: fixed;
+    bottom: 20px; left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    z-index: 100;
+  }
+  .controls button {
+    padding: 10px 24px;
+    background: #333;
+    color: #eee;
+    border: 1px solid #555;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: sans-serif;
+    transition: background 0.2s;
+  }
+  .controls button:hover { background: #555; }
+
+  .no-art-placeholder {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #0a0505, #1a0a0a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+    font-size: 14px;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+  }
+</style>
+</head>
+<body>
+
+<div class="card" id="cardWrapper">
+
+  <!-- ===== ART AREA ===== -->
+  <div class="art-area">
+    <img id="artImage" src="viejo_del_saco_art.png" alt="Viejo del Saco"
+         onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'no-art-placeholder\'>Coloca viejo_del_saco_art.png<br>en la misma carpeta<br><br>o usa el botón Cargar Arte</div>';">
+  </div>
+
+  <!-- ===== VERTICAL NAME (left edge) ===== -->
+  <div class="name-strip">
+    <span>Viejo del Saco</span>
+  </div>
+
+  <!-- ===== FORCE (top-left red circle with claw marks) ===== -->
+  <div class="force-badge">
+    <div class="claw-scratches">
+      <div class="scratch"></div>
+      <div class="scratch"></div>
+      <div class="scratch"></div>
+      <div class="scratch"></div>
+    </div>
+    <div class="force-circle">
+      <span class="force-number">3</span>
+    </div>
+  </div>
+  <span class="school-label">Sombra</span>
+
+  <!-- ===== COST (top-right gold shield) ===== -->
+  <div class="cost-badge">
+    <div class="cost-shield">
+      <svg viewBox="0 0 52 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M26 2 L48 12 L50 32 L40 48 L26 54 L12 48 L2 32 L4 12 Z"
+              fill="url(#goldGrad)" stroke="#5a4210" stroke-width="1.5"/>
+        <path d="M26 6 L44 14 L46 32 L38 46 L26 50 L14 46 L6 32 L8 14 Z"
+              fill="url(#goldInner)" stroke="#7a5a18" stroke-width="0.5"/>
+        <defs>
+          <radialGradient id="goldGrad" cx="40%" cy="30%">
+            <stop offset="0%" stop-color="#e8c45a"/>
+            <stop offset="100%" stop-color="#8a6818"/>
+          </radialGradient>
+          <radialGradient id="goldInner" cx="40%" cy="30%">
+            <stop offset="0%" stop-color="#f0d468"/>
+            <stop offset="100%" stop-color="#b08828"/>
+          </radialGradient>
+        </defs>
+      </svg>
+      <span class="cost-number">1</span>
+    </div>
+  </div>
+
+  <!-- ===== FLAVOR TEXT (over bottom of art) ===== -->
+  <div class="flavor-area">
+    <p class="flavor-text">
+      A lo largo de todo el país, sombras se arrastran<br>
+      por la noche. Su saco esconde los terrores que<br>
+      acechan a los desobedientes.
+    </p>
+  </div>
+
+  <!-- ===== BONE CHAIN BORDER ===== -->
+  <div class="bone-border">
+    <div class="bone-chain">
+      <div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+    </div>
+  </div>
+
+  <!-- ===== ABILITY BOX (parchment) ===== -->
+  <div class="ability-box">
+    <p class="ability-keyword">Exhumar.</p>
+    <p class="ability-text">
+      Cuando entra en juego o ataca, convierte una
+      carta del tope de un Castillo o una carta de
+        coste 2 o menos en un Aliado de Fuerza 2 con la
+        habilidad "<b>Furia</b>, <b>Imbloqueable</b>.
+        Hace daño de combate al <i>Destierro</i>", y ponlo
+        en juego bajo tu control o gana su control.
+    </p>
+  </div>
+
+  <!-- ===== TOTEM (green circle bottom-right) ===== -->
+  <div class="totem-symbol">
+    <div class="totem-circle">
+      <div class="totem-icon"></div>
+    </div>
+  </div>
+
+  <!-- ===== BONE BORDER BOTTOM ===== -->
+  <div class="bone-border-bottom">
+    <div class="bone-chain">
+      <div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+      <div class="bone-segment"></div><div class="bone-joint"></div>
+    </div>
+  </div>
+
+  <!-- ===== BOTTOM BAR ===== -->
+  <div class="bottom-bar">
+    <span class="artist-credit">ARTE: JP AGUIRRE</span>
+    <span class="copyright">© 2025 FENIX ENTERTAINMENT S.P.A.</span>
+    <span class="card-code">CHI-04</span>
+  </div>
+
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <button onclick="document.getElementById('fileInput').click()">📂 Cargar Arte</button>
+  <input type="file" id="fileInput" accept="image/*" style="display:none"
+         onchange="loadArt(this)">
+</div>
+
+<script>
+function loadArt(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const artArea = document.querySelector('.art-area');
+      artArea.innerHTML = '<img src="' + e.target.result + '" alt="Viejo del Saco" style="width:100%;height:100%;object-fit:cover;object-position:top center;">';
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+</script>
+
+</body>
+</html>

@@ -206,7 +206,10 @@ export class DeckBuilderComponent implements OnInit {
         this.cdr.detectChanges();
       });
       this.cardService.getTypes().subscribe(d => {
-        this.types = d;
+        // Imperio (y su sub-formato VCR) no usa el tipo "Monumento".
+        this.types = this.selectedFormat === 'imp'
+          ? d.filter(t => t.slug !== 'monumento')
+          : d;
         this.cdr.detectChanges();
       });
       this.cardService.getRarities().subscribe(d => {

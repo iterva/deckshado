@@ -234,6 +234,136 @@
   flex-direction: column;
   gap: 1.5rem;
 
+  // ── Hand Simulator ──
+  .hand-simulator {
+    background: #0f1923;
+    border: 1px solid #1a3a4a;
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+
+    .hand-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+    }
+
+    .hand-title {
+      font-size: 0.85rem;
+      color: #b0b0cc;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+
+      i { margin-right: 0.4rem; }
+    }
+
+    .hand-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .hand-size-label {
+      font-size: 0.85rem;
+      color: #ffbd39;
+      font-weight: 700;
+    }
+
+    .hand-btn {
+      padding: 0.35rem 0.85rem;
+      border: 1px solid #2a3a4a;
+      border-radius: 8px;
+      background: #111827;
+      color: #8899aa;
+      font-size: 0.82rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        background: #1e2d3d;
+        color: #e0e0e0;
+        border-color: #3a5a6a;
+      }
+
+      &.primary {
+        background: #2a8a8a;
+        color: #fff;
+        border-color: #2a8a8a;
+
+        &:hover {
+          background: #35a0a0;
+          border-color: #35a0a0;
+        }
+      }
+    }
+
+    .hand-hint {
+      color: #555;
+      font-size: 0.85rem;
+      margin: 0.8rem 0 0;
+    }
+
+    .hand-cards {
+      display: flex;
+      gap: 10px;
+      margin-top: 0.8rem;
+      overflow-x: auto;
+      padding-bottom: 4px;
+
+      // subtle scrollbar
+      &::-webkit-scrollbar {
+        height: 5px;
+      }
+      &::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      &::-webkit-scrollbar-thumb {
+        background: #2a3a4a;
+        border-radius: 4px;
+      }
+    }
+
+    .hand-card {
+      flex-shrink: 0;
+      width: 110px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.15s;
+
+      &:hover {
+        transform: translateY(-6px);
+      }
+
+      img {
+        width: 100%;
+        height: auto;
+        border-radius: 6px;
+        border: 2px solid #1a3a4a;
+        display: block;
+        transition: border-color 0.15s;
+      }
+
+      &:hover img {
+        border-color: #ffbd39;
+      }
+
+      .hand-card-name {
+        display: block;
+        font-size: 0.65rem;
+        color: #b0b0cc;
+        margin-top: 4px;
+        line-height: 1.2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+  }
+
   .stats-summary {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -707,6 +837,17 @@
 @media (max-width: 768px) {
   :host .container {
     padding: 0.5rem;
+  }
+
+  .hand-simulator {
+    .hand-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .hand-card {
+      width: 85px;
+    }
   }
 
   .title-row {

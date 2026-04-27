@@ -27,6 +27,11 @@ export class DeckViewComponent implements OnInit {
   @ViewChild('deckContent') deckContent!: ElementRef;
   private abilityCache = new Map<number, string>();
 
+  // Hand simulator
+  handCards: Card[] = [];
+  handSize = 0;
+  handActive = false;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -292,6 +297,47 @@ export class DeckViewComponent implements OnInit {
   }
 
   private thumbPipe = new ThumbnailPipe();
+
+  // ── Hand Simulator ──
+
+  /** Build a flat pool of cards expanded by quantity (main deck only) */
+  private get cardPool(): Card[] {
+    if (!this.deck?.entries) return [];
+    const pool: Card[] = [];
+    for (const entry of this.deck.entries) {
+      for (let i = 0; i < entry.quantity; i++) {
+        pool.push(entry.card_detail);
+      }
+    }
+    return pool;
+  }
+
+  /** Fisher-Yates shuffle and take n */
+  private drawRandom(pool: Card[], n: number): Card[] {
+    const arr = [...pool];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr.slice(0, Math.min(n, arr.length));
+  }
+
+  drawHand() {
+    this.handSize = 8;
+    this.handCards = this.drawRandom(this.cardPool, 8);
+    this.handActive = true;
+  }
+
+  mulligan() {
+    if (this.handSize <= 1) return;
+    this.handSize--;
+    this.handCards = this.drawRandom(this.cardPool, this.handSize);
+  }
+
+  resetHand() {
+    this.handSize = 8;
+    this.handCards = this.drawRandom(this.cardPool, 8);
+  }
 
   /** Preload card images in background so they're cached for viewing & export */
   private preloadImages() {

@@ -12,6 +12,27 @@ interface DeckCard {
   quantity: number;
 }
 
+/**
+ * Normaliza un nombre de carta para hacer comparaciones tolerantes:
+ * - minúsculas
+ * - sin acentos / diacríticos
+ * - sin guiones, puntos ni signos de puntuación (los reemplaza por espacio)
+ * - colapsa espacios múltiples
+ * Esto permite que "Dragón Dorado" == "dragon dorado",
+ * "Cienpies-SP" == "cienpies sp", etc., y que la banlist aplique
+ * a todas las versiones de la carta.
+ */
+function normalizeName(name: string): string {
+  if (!name) return '';
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // strip accents
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
 @Component({
   selector: 'app-deck-builder',
   standalone: true,
@@ -306,7 +327,7 @@ export class DeckBuilderComponent implements OnInit {
       this.banlistMap.clear();
       this.banlistByCardId.clear();
       for (const e of entries) {
-        this.banlistMap.set(e.card_name.toLowerCase(), e);
+        this.banlistMap.set(normalizeName(e.card_name), e);
         if (e.card_id) {
           this.banlistByCardId.set(e.card_id, e);
         }
@@ -324,7 +345,7 @@ export class DeckBuilderComponent implements OnInit {
 
   getBanStatus(card: Card): BanlistEntry | null {
     return this.banlistByCardId.get(card.id)
-      || this.banlistMap.get(card.name.toLowerCase())
+      || this.banlistMap.get(normalizeName(card.name))
       || null;
   }
 
@@ -341,14 +362,14 @@ export class DeckBuilderComponent implements OnInit {
    */
   getEffectiveMaxCopies(card: Card): number {
     let max = this.getMaxCopies(card);
-    const lower = card.name.toLowerCase();
+    const key = normalizeName(card.name);
     for (const dc of this.deckCards) {
-      if (dc.card.name.toLowerCase() === lower && dc.card.id !== card.id) {
+      if (normalizeName(dc.card.name) === key && dc.card.id !== card.id) {
         max = Math.min(max, this.getMaxCopies(dc.card));
       }
     }
     for (const dc of this.sideCards) {
-      if (dc.card.name.toLowerCase() === lower && dc.card.id !== card.id) {
+      if (normalizeName(dc.card.name) === key && dc.card.id !== card.id) {
         max = Math.min(max, this.getMaxCopies(dc.card));
       }
     }
@@ -357,21 +378,21 @@ export class DeckBuilderComponent implements OnInit {
 
   /** Total copies across main + side for all cards sharing the same name. */
   getNameCount(name: string): number {
-    const lower = name.toLowerCase();
+    const key = normalizeName(name);
     const mainCount = this.deckCards
-      .filter(dc => dc.card.name.toLowerCase() === lower)
+      .filter(dc => normalizeName(dc.card.name) === key)
       .reduce((sum, dc) => sum + dc.quantity, 0);
     const sideCount = this.sideCards
-      .filter(dc => dc.card.name.toLowerCase() === lower)
+      .filter(dc => normalizeName(dc.card.name) === key)
       .reduce((sum, dc) => sum + dc.quantity, 0);
     return mainCount + sideCount;
   }
 
   /** Check if a different version of this card name is already in main or side. */
   hasDifferentVersion(card: Card): boolean {
-    const lower = card.name.toLowerCase();
-    return this.deckCards.some(dc => dc.card.name.toLowerCase() === lower && dc.card.id !== card.id)
-      || this.sideCards.some(dc => dc.card.name.toLowerCase() === lower && dc.card.id !== card.id);
+    const key = normalizeName(card.name);
+    return this.deckCards.some(dc => normalizeName(dc.card.name) === key && dc.card.id !== card.id)
+      || this.sideCards.some(dc => normalizeName(dc.card.name) === key && dc.card.id !== card.id);
   }
 
   /** Total copies of a specific card across main + side. */

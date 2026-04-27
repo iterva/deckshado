@@ -1153,4 +1153,350 @@ export class DeckBuilderComponent implements OnInit {
       e.returnValue = '';
     }
   }
+
+  // ====== #14 Exportar / Importar ======
+  showExportModal = false;
+  showImportModal = false;
+  exportFormat: 'text' | 'code' = 'text';
+  exportText = '';
+  exportCopied = false;
+  exportImageBusy = false;
+  importText = '';
+  importBusy = false;
+  importTarget: 'main' | 'side' = 'main';
+  importReport: { added: number; notFound: string[]; partial: string[] } | null = null;
+  @ViewChild('exportCard') exportCardRef?: ElementRef<HTMLElement>;
+
+  /** Construye el texto exportable agrupado por tipo. */
+  private buildExportText(): string {
+    const lines: string[] = [];
+    const formatLabel = this.formatName + (this.selectedSubFormat === 'vcr' ? ' · VCR' : '');
+    const raceLabel = this.raceName ? ' · ' + this.raceName : '';
+    lines.push('# ' + (this.deckName || 'Mazo sin nombre'));
+    lines.push('# ' + formatLabel + raceLabel + ' · ' + this.totalDeckCards + ' cartas');
+    if (this.deckDescription) {
+      lines.push('# ' + this.deckDescription.replace(/\n+/g, ' '));
+    }
+    lines.push('');
+
+    const groupByType = (cards: DeckCard[]): Map<string, DeckCard[]> => {
+      const m = new Map<string, DeckCard[]>();
+      for (const dc of cards) {
+        const t = dc.card.type_name ?? 'Otro';
+        if (!m.has(t)) m.set(t, []);
+        m.get(t)!.push(dc);
+      }
+      return m;
+    };
+
+    const writeGroup = (title: string, cards: DeckCard[]) => {
+      const total = cards.reduce((s, dc) => s + dc.quantity, 0);
+      if (total === 0) return;
+      lines.push(`## ${title} (${total})`);
+      const grouped = groupByType(cards);
+      const order = [...this.typeOrder, 'Otro'];
+      const sortedTypes = [...grouped.keys()].sort((a, b) => {
+        const ai = order.indexOf(a); const bi = order.indexOf(b);
+        const oa = ai === -1 ? 99 : ai; const ob = bi === -1 ? 99 : bi;
+        return oa - ob;
+      });
+      for (const type of sortedTypes) {
+        const entries = grouped.get(type)!.sort((a, b) => b.quantity - a.quantity || a.card.name.localeCompare(b.card.name));
+        for (const dc of entries) {
+          lines.push(`${dc.quantity} ${dc.card.name}`);
+        }
+      }
+      lines.push('');
+    };
+
+    writeGroup('Mazo principal', this.deckCards);
+    if (this.sideCards.length > 0) writeGroup('Sideboard', this.sideCards);
+    return lines.join('\n').trim() + '\n';
+  }
+
+  openExportModal() {
+    this.exportFormat = 'text';
+    this.exportText = this.buildExportText();
+    this.exportCopied = false;
+    this.showExportModal = true;
+    this.cdr.detectChanges();
+  }
+
+  setExportFormat(fmt: 'text' | 'code') {
+    this.exportFormat = fmt;
+    this.exportText = fmt === 'text' ? this.buildExportText() : this.buildShareCode();
+    this.exportCopied = false;
+    this.cdr.detectChanges();
+  }
+
+  /** Código compartible: base64(JSON con metadatos + IDs y cantidades). */
+  private buildShareCode(): string {
+    const payload = {
+      v: 1,
+      n: this.deckName,
+      f: this.selectedFormat,
+      sf: this.selectedSubFormat || null,
+      r: this.selectedRace || null,
+      m: this.deckCards.map(dc => [dc.card.id, dc.quantity]),
+      s: this.sideCards.map(dc => [dc.card.id, dc.quantity]),
+    };
+    try {
+      const json = JSON.stringify(payload);
+      const b64 = btoa(unescape(encodeURIComponent(json)));
+      return 'DSHADO1:' + b64;
+    } catch {
+      return '';
+    }
+  }
+
+  /** Decodifica un código compartible. Devuelve null si es inválido. */
+  private parseShareCode(text: string): { ids: { id: number; qty: number; section: 'main' | 'side' }[] } | null {
+    const m = text.trim().match(/^DSHADO1:([A-Za-z0-9+/=\s]+)$/);
+    if (!m) return null;
+    try {
+      const json = decodeURIComponent(escape(atob(m[1].replace(/\s+/g, ''))));
+      const data = JSON.parse(json);
+      const out: { id: number; qty: number; section: 'main' | 'side' }[] = [];
+      for (const [id, qty] of (data.m || [])) out.push({ id: Number(id), qty: Number(qty), section: 'main' });
+      for (const [id, qty] of (data.s || [])) out.push({ id: Number(id), qty: Number(qty), section: 'side' });
+      return { ids: out };
+    } catch {
+      return null;
+    }
+  }
+
+  closeExportModal() {
+    this.showExportModal = false;
+    this.cdr.detectChanges();
+  }
+
+  copyExportToClipboard() {
+    try {
+      navigator.clipboard.writeText(this.exportText).then(() => {
+        this.exportCopied = true;
+        this.cdr.detectChanges();
+        setTimeout(() => { this.exportCopied = false; this.cdr.detectChanges(); }, 1800);
+      });
+    } catch {
+      // Fallback: seleccionar el textarea (lo hace el usuario manualmente)
+    }
+  }
+
+  downloadExport() {
+    const safeName = (this.deckName || 'mazo').replace(/[^a-z0-9_-]+/gi, '_');
+    const blob = new Blob([this.exportText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${safeName}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
+  /** Genera una imagen PNG del modal de exportación usando html2canvas (lazy import). */
+  async downloadExportImage() {
+    if (this.exportImageBusy) return;
+    this.exportImageBusy = true;
+    this.cdr.detectChanges();
+    try {
+      const target = this.exportCardRef?.nativeElement;
+      if (!target) return;
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(target, {
+        backgroundColor: '#1a1a2e',
+        scale: 2,
+        logging: false,
+        useCORS: true,
+      });
+      const safeName = (this.deckName || 'mazo').replace(/[^a-z0-9_-]+/gi, '_');
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${safeName}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+      }, 'image/png');
+    } catch (err) {
+      console.error('Error generando imagen', err);
+    } finally {
+      this.exportImageBusy = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  openImportModal() {
+    this.importText = '';
+    this.importTarget = 'main';
+    this.importReport = null;
+    this.importBusy = false;
+    this.showImportModal = true;
+    this.cdr.detectChanges();
+  }
+
+  closeImportModal() {
+    if (this.importBusy) return;
+    this.showImportModal = false;
+    this.cdr.detectChanges();
+  }
+
+  /** Parsea las líneas del textarea: detecta secciones "## Sideboard". */
+  private parseImportText(text: string): { name: string; qty: number; section: 'main' | 'side' }[] {
+    const out: { name: string; qty: number; section: 'main' | 'side' }[] = [];
+    let section: 'main' | 'side' = this.importTarget;
+    const lines = text.split(/\r?\n/);
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line) continue;
+      // Cambio de sección por encabezado
+      if (line.startsWith('##') || line.startsWith('//')) {
+        const lower = line.toLowerCase();
+        if (lower.includes('side')) section = 'side';
+        else if (lower.includes('main') || lower.includes('principal') || lower.includes('mazo')) section = 'main';
+        continue;
+      }
+      if (line.startsWith('#')) continue; // comentario
+      // Formatos aceptados: "3 nombre", "3x nombre", "3 x nombre"
+      const m = line.match(/^(\d+)\s*x?\s+(.+)$/i);
+      if (!m) continue;
+      const qty = Math.max(1, Math.min(99, parseInt(m[1], 10)));
+      const name = m[2].trim();
+      if (!name) continue;
+      out.push({ name, qty, section });
+    }
+    return out;
+  }
+
+  runImport() {
+    // Intentar primero código compartible (más fiable que búsqueda por nombre).
+    const code = this.parseShareCode(this.importText);
+    if (code) {
+      this.runImportByIds(code.ids);
+      return;
+    }
+
+    const items = this.parseImportText(this.importText);
+    if (items.length === 0) {
+      this.importReport = { added: 0, notFound: [], partial: [] };
+      this.cdr.detectChanges();
+      return;
+    }
+    this.importBusy = true;
+    this.cdr.detectChanges();
+
+    const report = { added: 0, notFound: [] as string[], partial: [] as string[] };
+    const queue = [...items];
+
+    const processNext = () => {
+      const item = queue.shift();
+      if (!item) {
+        this.importBusy = false;
+        this.importReport = report;
+        this.markDirty();
+        this.cdr.detectChanges();
+        return;
+      }
+      this.cardService.getCards({
+        search: item.name,
+        format: this.selectedFormat,
+        deck_race: this.selectedRace || undefined,
+        sub_fmt: this.selectedSubFormat === 'vcr' ? 'vcr' : undefined,
+      }).subscribe({
+        next: (res) => {
+          const wanted = normalizeName(item.name);
+          // Preferir match exacto por nombre normalizado
+          let card = res.results.find(c => normalizeName(c.name) === wanted);
+          if (!card && res.results.length > 0) card = res.results[0];
+          if (!card) {
+            report.notFound.push(item.name);
+          } else {
+            let actuallyAdded = 0;
+            for (let i = 0; i < item.qty; i++) {
+              if (item.section === 'side') {
+                const before = this.totalSideCards;
+                this.addToSide(card);
+                if (this.totalSideCards > before) actuallyAdded++;
+              } else {
+                const before = this.totalDeckCards;
+                this.addCard(card);
+                if (this.totalDeckCards > before) actuallyAdded++;
+              }
+            }
+            report.added += actuallyAdded;
+            if (actuallyAdded < item.qty) {
+              report.partial.push(`${item.name} (añadidas ${actuallyAdded}/${item.qty})`);
+            }
+          }
+          processNext();
+        },
+        error: () => {
+          report.notFound.push(item.name);
+          processNext();
+        },
+      });
+    };
+
+    processNext();
+  }
+
+  /** Importa por IDs (vía código compartible). Trae cada carta por id. */
+  private runImportByIds(items: { id: number; qty: number; section: 'main' | 'side' }[]) {
+    if (items.length === 0) {
+      this.importReport = { added: 0, notFound: [], partial: [] };
+      this.cdr.detectChanges();
+      return;
+    }
+    this.importBusy = true;
+    this.cdr.detectChanges();
+
+    const report = { added: 0, notFound: [] as string[], partial: [] as string[] };
+    const queue = [...items];
+
+    const processNext = () => {
+      const item = queue.shift();
+      if (!item) {
+        this.importBusy = false;
+        this.importReport = report;
+        this.markDirty();
+        this.cdr.detectChanges();
+        return;
+      }
+      this.cardService.getCard(item.id).subscribe({
+        next: (card) => {
+          if (!card) {
+            report.notFound.push(`#${item.id}`);
+          } else {
+            let actuallyAdded = 0;
+            for (let i = 0; i < item.qty; i++) {
+              if (item.section === 'side') {
+                const before = this.totalSideCards;
+                this.addToSide(card);
+                if (this.totalSideCards > before) actuallyAdded++;
+              } else {
+                const before = this.totalDeckCards;
+                this.addCard(card);
+                if (this.totalDeckCards > before) actuallyAdded++;
+              }
+            }
+            report.added += actuallyAdded;
+            if (actuallyAdded < item.qty) {
+              report.partial.push(`${card.name} (añadidas ${actuallyAdded}/${item.qty})`);
+            }
+          }
+          processNext();
+        },
+        error: () => {
+          report.notFound.push(`#${item.id}`);
+          processNext();
+        },
+      });
+    };
+
+    processNext();
+  }
 }

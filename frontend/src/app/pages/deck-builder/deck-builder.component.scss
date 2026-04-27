@@ -1311,3 +1311,83 @@
     }
   }
 }
+
+// ====== #14 Modal Exportar / Importar ======
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+  backdrop-filter: blur(2px);
+}
+
+.modal {
+  background: #1a1a2e;
+  border: 1px solid #2a2a3e;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+
+  .modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 1.2rem;
+    border-bottom: 1px solid #2a2a3e;
+    h3 { margin: 0; font-size: 1.05rem; color: #fff; }
+    .modal-close {
+      background: transparent; border: none; color: #888;
+      font-size: 1.1rem; cursor: pointer; padding: 0.2rem 0.5rem;
+      &:hover { color: #e94560; }
+    }
+  }
+
+  .modal-body { padding: 1rem 1.2rem; overflow-y: auto; }
+  .modal-hint { color: #888; font-size: 0.85rem; margin: 0 0 0.6rem; code { background: #14142b; padding: 0.05rem 0.35rem; border-radius: 4px; color: #f4a261; font-size: 0.8rem; } }
+  .modal-actions {
+    display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.9rem;
+    .btn-link { background: transparent; border: none; color: #888; cursor: pointer; padding: 0.5rem 0.6rem; &:hover { color: #ccc; } }
+  }
+
+  .export-tabs {
+    display: flex; gap: 0.4rem; margin-bottom: 0.7rem;
+    .tab-btn {
+      background: transparent; border: 1px solid #333; color: #888;
+      padding: 0.35rem 0.9rem; border-radius: 6px; font-family: inherit; font-size: 0.8rem; cursor: pointer;
+      transition: all 0.15s;
+      &:hover { border-color: #e94560; color: #e94560; }
+      &.active { background: #e94560; border-color: #e94560; color: #fff; }
+    }
+  }
+
+  .export-textarea, .import-textarea {
+    width: 100%;
+    background: #14142b;
+    border: 1px solid #2a2a3e;
+    border-radius: 6px;
+    color: #ddd;
+    padding: 0.7rem;
+    font-family: 'Consolas', 'Menlo', monospace;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    resize: vertical;
+    min-height: 220px;
+    box-sizing: border-box;
+  }
+
+  .import-target {
+    display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    margin-bottom: 0.6rem; color: #aaa; font-size: 0.85rem;
+    label { display: inline-flex; align-items: center; gap: 0.3rem; cursor: pointer; }
+  }
+
+  .import-report {
+    .report-line { margin: 0.4rem 0; display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; }
+    .ok { color: #4ade80; }
+    .warn { color: #f4a261; }
+    .err { color: #f87171; }
+    ul { margin: 0.2rem 0 0.6rem 1.2rem; padding: 0; color: #aaa; font-size: 0.82rem; max-height: 180px; overflow-y: auto; }
+  }
+}

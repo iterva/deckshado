@@ -348,6 +348,12 @@
           <i class="bi bi-trash"></i>
         </button>
       }
+      <button type="button" class="btn btn-secondary btn-sm" (click)="openImportModal()" title="Importar mazo desde texto">
+        <i class="bi bi-box-arrow-in-down"></i> Importar
+      </button>
+      <button type="button" class="btn btn-secondary btn-sm" (click)="openExportModal()" title="Exportar mazo a texto" [disabled]="totalDeckCards === 0">
+        <i class="bi bi-box-arrow-up"></i> Exportar
+      </button>
       <button class="btn btn-gold" (click)="saveDeck()" [disabled]="saving">
         {{ saving ? 'Guardando...' : (deckId ? 'Actualizar Mazo' : 'Guardar Mazo') }}
       </button>
@@ -430,5 +436,98 @@
   <div class="toast-container" [class.error]="toastType === 'error'" [class.success]="toastType === 'success'">
     <span class="toast-msg">{{ toastMessage }}</span>
     <button class="toast-close" (click)="toastVisible = false">✕</button>
+  </div>
+}
+
+<!-- #14 Modal Exportar -->
+@if (showExportModal) {
+  <div class="modal-overlay" (click)="closeExportModal()">
+    <div class="modal export-modal" (click)="$event.stopPropagation()" #exportCard>
+      <div class="modal-head">
+        <h3><i class="bi bi-box-arrow-up"></i> Exportar mazo</h3>
+        <button type="button" class="modal-close" (click)="closeExportModal()" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="export-tabs">
+          <button type="button" class="tab-btn" [class.active]="exportFormat === 'text'" (click)="setExportFormat('text')">Texto</button>
+          <button type="button" class="tab-btn" [class.active]="exportFormat === 'code'" (click)="setExportFormat('code')">Código compartible</button>
+        </div>
+        @if (exportFormat === 'text') {
+          <p class="modal-hint">Lista lista para copiar/pegar. Cada línea = <code>cantidad nombre</code>.</p>
+        } @else {
+          <p class="modal-hint">Código corto (base64) para reconstruir el mazo. Pégalo en otro navegador en "Importar".</p>
+        }
+        <textarea class="export-textarea"
+                  [readonly]="true"
+                  [value]="exportText"
+                  rows="14"></textarea>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-gold" (click)="copyExportToClipboard()">
+            <i class="bi" [class.bi-check-lg]="exportCopied" [class.bi-clipboard]="!exportCopied"></i>
+            {{ exportCopied ? 'Copiado' : 'Copiar' }}
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="downloadExport()">
+            <i class="bi bi-download"></i> Descargar .txt
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="downloadExportImage()" [disabled]="exportImageBusy">
+            <i class="bi bi-image"></i> {{ exportImageBusy ? 'Generando...' : 'Imagen PNG' }}
+          </button>
+          <button type="button" class="btn btn-link" (click)="closeExportModal()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- #14 Modal Importar -->
+@if (showImportModal) {
+  <div class="modal-overlay" (click)="closeImportModal()">
+    <div class="modal import-modal" (click)="$event.stopPropagation()">
+      <div class="modal-head">
+        <h3><i class="bi bi-box-arrow-in-down"></i> Importar mazo</h3>
+        <button type="button" class="modal-close" (click)="closeImportModal()" [disabled]="importBusy" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+        @if (!importReport) {
+          <p class="modal-hint">
+            Pega líneas con formato <code>3 nombre carta</code>. Usa <code>## Sideboard</code> para separar el sideboard. También acepta el código compartible.
+          </p>
+          <div class="import-target">
+            <span>Añadir a:</span>
+            <label><input type="radio" name="imptarget" value="main" [(ngModel)]="importTarget"> Mazo principal</label>
+            <label><input type="radio" name="imptarget" value="side" [(ngModel)]="importTarget"> Sideboard</label>
+          </div>
+          <textarea class="import-textarea"
+                    [(ngModel)]="importText"
+                    rows="14"
+                    placeholder="3 Drácula&#10;2 Don de Amma&#10;## Sideboard&#10;2 Tamales"></textarea>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-gold" (click)="runImport()" [disabled]="importBusy || !importText.trim()">
+              {{ importBusy ? 'Importando...' : 'Importar' }}
+            </button>
+            <button type="button" class="btn btn-secondary" (click)="closeImportModal()" [disabled]="importBusy">Cancelar</button>
+          </div>
+        } @else {
+          <div class="import-report">
+            <p class="report-line ok"><i class="bi bi-check-circle-fill"></i> Añadidas: <strong>{{ importReport.added }}</strong> copias.</p>
+            @if (importReport.partial.length > 0) {
+              <p class="report-line warn"><i class="bi bi-exclamation-triangle-fill"></i> Parciales (límite alcanzado):</p>
+              <ul>
+                @for (n of importReport.partial; track n) { <li>{{ n }}</li> }
+              </ul>
+            }
+            @if (importReport.notFound.length > 0) {
+              <p class="report-line err"><i class="bi bi-x-circle-fill"></i> No encontradas:</p>
+              <ul>
+                @for (n of importReport.notFound; track n) { <li>{{ n }}</li> }
+              </ul>
+            }
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-gold" (click)="closeImportModal()">Cerrar</button>
+          </div>
+        }
+      </div>
+    </div>
   </div>
 }

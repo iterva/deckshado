@@ -1,0 +1,18 @@
+<div class="deck-entry"
+     [class.side]="side"
+     [class.flash-added]="recentlyAdded"
+     [style.transform]="swipeOffset !== 0 ? 'translateX(' + swipeOffset + 'px)' : ''"
+     (touchstart)="onTouchStart($event)"
+     (touchmove)="onTouchMove($event)"
+     (touchend)="onTouchEnd()">
+  <img [src]="card.image_url | thumb:100" [alt]="card.name" loading="lazy" decoding="async">
+  <div class="entry-info">
+    <span class="entry-name">{{ card.name }}@if (card.is_unique) { <span class="unique-badge">Única</span> }@if (banStatus) { @if (banStatus.status === 'limited_1') { <span class="ban-badge-sm limited">☢️1</span> } @else if (banStatus.status === 'limited_2') { <span class="ban-badge-sm limited">☢️2</span> } }</span>
+    <span class="entry-type">{{ card.type_name }}@if (!side && card.cost) { · 💰{{ card.cost }} }</span>
+  </div>
+  <div class="entry-controls">
+    <button class="ctrl-btn" (click)="remove.emit()">−</button>
+    <span class="entry-qty">{{ quantity }}</span>
+    <button class="ctrl-btn" (click)="add.emit()" [disabled]="addDisabled">+</button>
+  </div>
+</div>

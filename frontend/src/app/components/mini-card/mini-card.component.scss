@@ -1,0 +1,5 @@
+// Render como elemento "transparente" para que los estilos de .mini-card
+// definidos en el padre (deck-builder.component.scss) sigan aplicando.
+:host {
+  display: contents;
+}

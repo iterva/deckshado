@@ -136,62 +136,27 @@
 
     <div class="available-cards" [class.is-loading]="loading">
       @for (card of availableCards; track card.id) {
-        <div class="mini-card"
-             (mousedown)="holdStart(card, $event)"
-             (mouseup)="holdEnd()"
-             (mouseleave)="holdCancel()"
-             (touchstart)="holdStart(card, $event)"
-             (touchend)="holdEnd()"
-             (touchcancel)="holdCancel()"
-             [class.in-deck]="getQuantityInDeck(card.id) > 0"
-             [class.banned]="getBanStatus(card)?.status === 'banned'"
-             [class.name-taken]="hasDifferentVersion(card)"
-             [class.name-maxed]="getNameCount(card.name) >= getEffectiveMaxCopies(card)"
-             [class.flash-added]="recentlyAdded.has(card.id)">
-          <div class="img-wrapper">
-            <img [src]="card.image_url | thumb:150" [alt]="card.name" loading="lazy" decoding="async">
-            <span class="eye-icon" (click)="showPreview(card, $event)" title="Ver detalle">👁</span>
-          </div>
-          <div class="mini-info">
-            <span class="mini-name">{{ card.name }}</span>
-            <span class="mini-type">{{ card.type_name }}
-              @if (card.cost !== null) { · 💰{{ card.cost }} }
-              @if (card.damage !== null) { · ⚔️{{ card.damage }} }
-            </span>
-            @if (abilitySearch && card.ability) {
-              <span class="mini-ability">{{ card.ability.length > 80 ? card.ability.substring(0, 80) + '...' : card.ability }}</span>
-            }
-          </div>
-          <div class="actions-column">
-            <div class="mini-actions main-actions">
-              <span class="main-label">M</span>
-              @if (getQuantityInDeck(card.id) > 0) {
-                <button class="circle-btn remove" (click)="removeCard(card.id); $event.stopPropagation()">−</button>
-                <span class="mini-qty">{{ getQuantityInDeck(card.id) }}</span>
-              }
-              <button class="circle-btn add" (click)="addCard(card); $event.stopPropagation()"
-                      [disabled]="getBanStatus(card)?.status === 'banned' || getNameCount(card.name) >= getEffectiveMaxCopies(card) || totalDeckCards >= 50 || !isCardAllowedByRace(card)">+</button>
-            </div>
-            <div class="mini-actions side-actions">
-              <span class="side-label">S</span>
-              @if (getQuantityInSide(card.id) > 0) {
-                <button class="circle-btn remove" (click)="removeFromSide(card.id); $event.stopPropagation()">−</button>
-                <span class="mini-qty">{{ getQuantityInSide(card.id) }}</span>
-              }
-              <button class="circle-btn add side" (click)="addToSide(card); $event.stopPropagation()"
-                      [disabled]="getBanStatus(card)?.status === 'banned' || getNameCount(card.name) >= getEffectiveMaxCopies(card) || totalSideCards >= 15 || !isCardAllowedByRace(card)">+</button>
-            </div>
-          </div>
-          @if (getBanStatus(card); as ban) {
-            @if (ban.status === 'banned') {
-              <span class="ban-badge banned">⛔ Prohibida</span>
-            } @else if (ban.status === 'limited_1') {
-              <span class="ban-badge limited">☢️ Límite 1</span>
-            } @else if (ban.status === 'limited_2') {
-              <span class="ban-badge limited">☢️ Límite 2</span>
-            }
-          }
-        </div>
+        <app-mini-card
+          [card]="card"
+          [qtyInDeck]="getQuantityInDeck(card.id)"
+          [qtyInSide]="getQuantityInSide(card.id)"
+          [banStatus]="getBanStatus(card)"
+          [nameMaxed]="getNameCount(card.name) >= getEffectiveMaxCopies(card)"
+          [nameTaken]="hasDifferentVersion(card)"
+          [raceBlocked]="!isCardAllowedByRace(card)"
+          [mainFull]="totalDeckCards >= 50"
+          [sideFull]="totalSideCards >= 15"
+          [abilitySearch]="abilitySearch"
+          [recentlyAdded]="recentlyAdded.has(card.id)"
+          (add)="addCard(card)"
+          (remove)="removeCard(card.id)"
+          (addSide)="addToSide(card)"
+          (removeSide)="removeFromSide(card.id)"
+          (preview)="showPreview(card, $event)"
+          (holdStart)="holdStart(card, $event)"
+          (holdEnd)="holdEnd()"
+          (holdCancel)="holdCancel()">
+        </app-mini-card>
       }
     </div>
 
@@ -279,23 +244,15 @@
             <span class="deck-group-count">{{ g.total }}</span>
           </div>
           @for (dc of g.cards; track dc.card.id) {
-            <div class="deck-entry"
-                 [class.flash-added]="recentlyAdded.has(dc.card.id)"
-                 [style.transform]="swipeOffset[dc.card.id] !== undefined ? 'translateX(' + swipeOffset[dc.card.id] + 'px)' : ''"
-                 (touchstart)="onSwipeStart($event, dc.card.id)"
-                 (touchmove)="onSwipeMove($event, dc.card.id)"
-                 (touchend)="onSwipeEnd(dc.card.id, 'main')">
-              <img [src]="dc.card.image_url | thumb:100" [alt]="dc.card.name" loading="lazy" decoding="async">
-              <div class="entry-info">
-                <span class="entry-name">{{ dc.card.name }}@if (dc.card.is_unique) { <span class="unique-badge">Única</span> }@if (getBanStatus(dc.card); as ban) { @if (ban.status === 'limited_1') { <span class="ban-badge-sm limited">☢️1</span> } @else if (ban.status === 'limited_2') { <span class="ban-badge-sm limited">☢️2</span> } }</span>
-                <span class="entry-type">{{ dc.card.type_name }}@if (dc.card.cost) { · 💰{{ dc.card.cost }} }</span>
-              </div>
-              <div class="entry-controls">
-                <button class="ctrl-btn" (click)="removeCard(dc.card.id)">−</button>
-                <span class="entry-qty">{{ dc.quantity }}</span>
-                <button class="ctrl-btn" (click)="addCard(dc.card)" [disabled]="getNameCount(dc.card.name) >= getEffectiveMaxCopies(dc.card) || totalDeckCards >= 50">+</button>
-              </div>
-            </div>
+            <app-deck-entry
+              [card]="dc.card"
+              [quantity]="dc.quantity"
+              [banStatus]="getBanStatus(dc.card)"
+              [addDisabled]="getNameCount(dc.card.name) >= getEffectiveMaxCopies(dc.card) || totalDeckCards >= 50"
+              [recentlyAdded]="recentlyAdded.has(dc.card.id)"
+              (add)="addCard(dc.card)"
+              (remove)="removeCard(dc.card.id)">
+            </app-deck-entry>
           }
         </div>
       }
@@ -317,23 +274,16 @@
             <span class="deck-group-count">{{ g.total }}</span>
           </div>
           @for (dc of g.cards; track dc.card.id) {
-            <div class="deck-entry side"
-                 [class.flash-added]="recentlyAdded.has(dc.card.id)"
-                 [style.transform]="swipeOffset[dc.card.id] !== undefined ? 'translateX(' + swipeOffset[dc.card.id] + 'px)' : ''"
-                 (touchstart)="onSwipeStart($event, dc.card.id)"
-                 (touchmove)="onSwipeMove($event, dc.card.id)"
-                 (touchend)="onSwipeEnd(dc.card.id, 'side')">
-              <img [src]="dc.card.image_url | thumb:100" [alt]="dc.card.name" loading="lazy" decoding="async">
-              <div class="entry-info">
-                <span class="entry-name">{{ dc.card.name }}@if (dc.card.is_unique) { <span class="unique-badge">Única</span> }</span>
-                <span class="entry-type">{{ dc.card.type_name }}</span>
-              </div>
-              <div class="entry-controls">
-                <button class="ctrl-btn" (click)="removeFromSide(dc.card.id)">−</button>
-                <span class="entry-qty">{{ dc.quantity }}</span>
-                <button class="ctrl-btn" (click)="addToSide(dc.card)" [disabled]="getNameCount(dc.card.name) >= getEffectiveMaxCopies(dc.card) || totalSideCards >= 15">+</button>
-              </div>
-            </div>
+            <app-deck-entry
+              [card]="dc.card"
+              [quantity]="dc.quantity"
+              [side]="true"
+              [banStatus]="getBanStatus(dc.card)"
+              [addDisabled]="getNameCount(dc.card.name) >= getEffectiveMaxCopies(dc.card) || totalSideCards >= 15"
+              [recentlyAdded]="recentlyAdded.has(dc.card.id)"
+              (add)="addToSide(dc.card)"
+              (remove)="removeFromSide(dc.card.id)">
+            </app-deck-entry>
           }
         </div>
       }

@@ -19,12 +19,16 @@ body.light-theme {
   background: #f0f2f5;
   color: #1a1a2e;
 
+  // Force all text inside to be dark by default
+  h1, h2, h3, h4, h5, h6 { color: #1a1a2e !important; -webkit-text-fill-color: initial !important; }
+
   // ── Layout shell (app.scss) ──
   .navbar {
     background: linear-gradient(135deg, #e8e8f0 0%, #d8dce8 100%) !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+    color: #333 !important;
   }
-  .navbar .logo-text { background: linear-gradient(90deg, #e94560, #c73652); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .navbar .logo-text { background: linear-gradient(90deg, #e94560, #c73652) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; }
   .navbar-links a { color: #555 !important; &:hover, &.active { color: #e94560 !important; } }
   .avatar-btn { border-color: #ccc !important; }
   .avatar-icon { color: #777 !important; }
@@ -41,39 +45,53 @@ body.light-theme {
   // ── Globals ──
   .container { color: #1a1a2e; }
   .page-title { color: #1a1a2e !important; -webkit-text-fill-color: initial !important; background: none !important; }
-  input, select, textarea { background: #fff !important; border-color: #ccc !important; color: #333 !important; }
-  .btn-secondary { background: #e8e8f0; color: #333; border-color: #ccc; &:hover { border-color: #e94560; color: #e94560; } }
-  .btn-login { background: #e94560; color: #fff; }
+  input, select, textarea { background: #fff !important; border-color: #ccc !important; color: #333 !important;
+    &::placeholder { color: #999 !important; }
+  }
+  .btn-secondary { background: #e8e8f0 !important; color: #333 !important; border-color: #ccc !important; &:hover { border-color: #e94560 !important; color: #e94560 !important; } }
+  .btn-login { background: #e94560 !important; color: #fff !important; }
   .form-group label { color: #555 !important; }
   .error-msg { color: #d32f2f !important; }
+  label { color: #555 !important; }
 
   // ── Home ──
   .hero { background: linear-gradient(135deg, #d8dce8 0%, #c8ccd8 100%) !important; }
-  .hero-title { color: #1a1a2e !important; }
+  .hero-title { -webkit-text-fill-color: transparent !important; } // keep gradient
   .hero-subtitle { color: #666 !important; }
-  .hero .stat-value { color: #e94560 !important; }
+  .hero .stat-value { color: #e94560 !important; -webkit-text-fill-color: initial !important; }
   .hero .stat-label { color: #777 !important; }
   .feature-card { background: #fff !important; border-color: #ddd !important;
     h3 { color: #1a1a2e !important; }
     p { color: #666 !important; }
   }
 
-  // ── Cards (shared dark bg panels) ──
+  // ── Shared dark panels → white ──
   .deck-card, .card-item, .auth-card, .profile-card, .edit-card,
-  .format-card, .race-card, .store-card, .summary-card {
+  .format-card, .race-card, .store-card, .summary-card,
+  .collection-card, .wishlist-card, .mercado-card {
     background: #fff !important;
     border-color: #ddd !important;
     color: #333 !important;
+    h4 { color: #333 !important; }
   }
 
   // ── Deck list ──
-  .tabs button { border-color: #ccc !important; color: #666 !important; &.active { background: #e94560 !important; border-color: #e94560 !important; color: #fff !important; } &:hover:not(.active) { border-color: #e94560 !important; color: #e94560 !important; } }
+  .tabs { border-color: #ddd !important; }
+  .tabs button, .tabs .tab {
+    border-color: #ccc !important; color: #666 !important;
+    &.active { background: #e94560 !important; border-color: #e94560 !important; color: #fff !important; border-bottom-color: #e94560 !important; }
+    &:hover:not(.active) { border-color: #e94560 !important; color: #e94560 !important; }
+  }
   .deck-desc { color: #777 !important; }
   .deck-author, .deck-visibility { color: #888 !important; }
-  .pagination { color: #666 !important; }
+  .pagination { color: #666 !important;
+    .btn { background: #e0e0e0 !important; color: #333 !important; &:hover:not(:disabled) { background: #ccc !important; } }
+  }
   .card-count { background: #eee !important; color: #555 !important; }
   .filter-row select { background: #fff !important; }
-  .empty { color: #999 !important; }
+  .empty, .empty-state, .empty-text { color: #999 !important; }
+  .loading, .loading-text { color: #888 !important; }
+  .results-count { color: #666 !important; }
 
   // ── Deck view ──
   .action-bar { background: #e8ecf0 !important; border-color: #ddd !important; }
@@ -83,8 +101,8 @@ body.light-theme {
   .back-link { color: #777 !important; }
   .deck-meta { color: #777 !important; }
   .stat-card, .cost-curve, .type-dist, .draw-prob, .type-group,
-  .hand-simulator, .stats-summary { background: #fff !important; border-color: #ddd !important; }
-  .type-header { background: #f0f0f5 !important; }
+  .hand-simulator, .stats-summary { background: #fff !important; border-color: #ddd !important; color: #333 !important; }
+  .type-header { background: #f0f0f5 !important; color: #333 !important; }
   .preview-panel { background: #fff !important; border-color: #ddd !important; }
   .preview-close { background: #eee !important; border-color: #ccc !important; color: #555 !important; }
   .deck-export-area { background: #f8f8fc !important; }
@@ -93,23 +111,51 @@ body.light-theme {
   .changelog-section { color: #444 !important; }
 
   // ── Deck builder ──
-  .deck-panel { background: #fff !important; border-color: #ddd !important; }
-  .card-browser { input, select { background: #fff !important; } }
-  .mini-card { background: #fff !important; border-color: #ddd !important; &:hover { background: #f5f5f8 !important; } }
-  .search-modes, .multi-popover { background: #fff !important; border-color: #ddd !important; }
+  .card-browser {
+    border-color: #ddd !important;
+    h2 { color: #333 !important; }
+  }
+  .deck-panel { background: #fff !important; border-color: #ddd !important; color: #333 !important; }
+  .mini-card {
+    background: #fff !important; border-color: #ddd !important;
+    &:hover { background: #f5f5f8 !important; border-color: #e94560 !important; }
+    &.in-deck { background: rgba(255, 189, 57, 0.08) !important; border-color: #ffbd39 !important; }
+    .mini-name { color: #333 !important; }
+    .mini-type { color: #777 !important; }
+    .mini-ability { color: #666 !important; }
+  }
+  .circle-btn { background: #f5f5f5 !important; border-color: #ccc !important; color: #555 !important; }
+  .search-modes { background: #f0f0f5 !important; border-color: #ddd !important;
+    button { color: #666 !important; &.active { background: #e94560 !important; color: #fff !important; } }
+  }
+  .multi-popover { background: #fff !important; border-color: #ddd !important; box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
+    .multi-head { color: #777 !important; border-color: #eee !important; }
+    .multi-item { color: #333 !important; &:hover { background: rgba(233, 69, 96, 0.08) !important; } }
+    .cost-item { background: #f5f5f8 !important; border-color: #ddd !important; span { color: #555 !important; } &.checked { background: #ffbd39 !important; span { color: #1a1a2e !important; } } }
+  }
+  .multi-trigger { background: #fff !important; border-color: #ccc !important; color: #333 !important;
+    i { color: #999 !important; }
+    &.has-value { background: rgba(255, 189, 57, 0.08) !important; color: #b88a00 !important; }
+  }
+  .type-chip-btn { background: #f0f0f5 !important; border-color: #ccc !important; color: #555 !important;
+    &:hover { border-color: #e94560 !important; color: #e94560 !important; }
+    &.active { background: #ffbd39 !important; border-color: #ffbd39 !important; color: #1a1a2e !important; }
+  }
   .deck .type-chip { background: #eee !important; color: #555 !important; }
-  .deck-entry img { background: #eee !important; }
+  .deck-entry { color: #333 !important; img { background: #eee !important; } }
   .move-btn { color: #555 !important; &:hover { color: #e94560 !important; } }
-  .import-export-modal, .modal-content { background: #fff !important; border-color: #ddd !important; }
+  .import-export-modal, .modal-content, .modal { background: #fff !important; border-color: #ddd !important; color: #333 !important; }
   .modal-content textarea { background: #f8f8fc !important; }
   .progress-summary { background: #f8f8fc !important; }
+  .skeleton-block { background: #e0e0e0 !important; }
 
   // ── Card list ──
-  .view-toggle { background: #eee !important; }
-  .view-toggle button { color: #666 !important; &.active { background: #e94560 !important; color: #fff !important; } }
+  .view-toggle { background: #eee !important;
+    button { color: #666 !important; &.active { background: #e94560 !important; color: #fff !important; } }
+  }
   .card-image { background: #eee !important; }
-  .card-detail { background: #fff !important; border-color: #ddd !important; }
-  .close-btn { background: rgba(0,0,0,0.05) !important; color: #555 !important; }
+  .card-detail { background: #fff !important; border-color: #ddd !important; color: #333 !important; }
+  .close-btn { background: rgba(0,0,0,0.05) !important; color: #555 !important; &:hover { color: #333 !important; } }
   .badge { background: #eee !important; color: #555 !important; }
   .table-wrap { border-color: #ddd !important;
     th { background: #f0f0f5 !important; color: #333 !important; }
@@ -118,7 +164,31 @@ body.light-theme {
 
   // ── Carpeta ──
   .carpeta-header { background: linear-gradient(135deg, #d8dce8 0%, #c8ccd8 100%) !important; }
-  .btn-filter { background: #eee !important; border-color: #ccc !important; color: #555 !important; }
+  .binder-avatar-placeholder { background: #ddd !important; border-color: #ccc !important; }
+  .binder-user { color: #777 !important; }
+  .card-meta { color: #777 !important; }
+  .card-price { color: #b88a00 !important; }
+  .btn-filter { background: #eee !important; border-color: #ccc !important; color: #555 !important;
+    &.active { background: #e94560 !important; color: #fff !important; }
+    &:hover { background: #ddd !important; }
+  }
+  .btn-heart-lg { background: #f0f0f5 !important; border-color: #ccc !important; color: #555 !important;
+    &.active { background: #fde8ec !important; border-color: #e94560 !important; color: #e94560 !important; }
+  }
+  .inline-fields {
+    label { color: #888 !important; }
+    input { background: #f8f8fc !important; border-color: #ccc !important; color: #333 !important; }
+  }
+  .detail-info {
+    .detail-meta .badge { background: #f0f0f5 !important; color: #555 !important; &.rarity { color: #b88a00 !important; border-color: #b88a00 !important; } }
+    .detail-stats { color: #666 !important; }
+    .detail-ability { h4 { color: #0097b2 !important; } p { color: #555 !important; } }
+    .detail-edition { color: #888 !important; }
+    .detail-actions { border-color: #eee !important; }
+  }
+  .mercado-export-area { background: #f0f2f5 !important; color: #333 !important;
+    .export-card { background: #fff !important; border-color: #ddd !important; .export-card-info span { color: #777 !important; } }
+  }
 
   // ── Compare decks ──
   .deck-col-head { background: #fff !important; }
@@ -145,25 +215,40 @@ body.light-theme {
   .race-desc { color: #777 !important; }
 
   // ── Team ──
-  .team-card, .team-form { background: #fff !important; border-color: #ddd !important; }
-  .member-row, .request-row { background: #f8f8fc !important; }
-  .member-badge { background: #eee !important; }
+  .team-card, .create-form { background: #fff !important; border-color: #ddd !important; color: #333 !important; }
+  .team-desc { color: #777 !important; }
+  .team-header h2, .team-header h3 { color: #333 !important; }
+  .my-role { color: #666 !important; }
+  .section-title { color: #555 !important; border-color: #ddd !important; }
+  .member-row { background: #f8f8fc !important;
+    .member-name { color: #333 !important; }
+    .member-role { color: #777 !important; }
+  }
+  .request-row { background: #f8f8fc !important;
+    .request-user { color: #333 !important; }
+  }
+  .member-badge { background: #e8f4fd !important; color: #0277bd !important; }
+  .team-logo-placeholder { background: #f0f0f5 !important; border-color: #ddd !important; }
   .logo-placeholder { background: #f0f0f5 !important; border-color: #ddd !important; }
-  .section-title { border-color: #ddd !important; }
 
   // ── Tienda ──
   .tienda-header { background: linear-gradient(135deg, #d8dce8 0%, #c8ccd8 100%) !important; }
   .qty-tag { background: #eee !important; color: #666 !important; }
 
-  // ── Stats labels (deck-view) ──
+  // ── Misc text colors ──
   .stat-label, .stat-title { color: #666 !important; }
   .stat-value { color: #333 !important; }
+  .deck-name { color: #333 !important; }
 
-  // ── Shimmer loading (override dark animation) ──
+  // ── Shimmer loading ──
   .card-image, .img-wrapper, .export-card {
     background: linear-gradient(90deg, #e8e8f0 25%, #f0f0f5 50%, #e8e8f0 75%) !important;
     background-size: 200% 100%;
   }
+
+  // ── Modal overlays → lighter backdrop ──
+  .modal-overlay { background: rgba(0, 0, 0, 0.4) !important; }
+  .preview-modal .close-btn { color: #333 !important; }
 }
 
 a {

@@ -16,16 +16,154 @@ html, body {
 
 // Light theme overrides
 body.light-theme {
-  background: #f5f5f5;
+  background: #f0f2f5;
   color: #1a1a2e;
 
-  .navbar { background: linear-gradient(135deg, #e8e8f0 0%, #d8dce8 100%); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  // ── Layout shell (app.scss) ──
+  .navbar {
+    background: linear-gradient(135deg, #e8e8f0 0%, #d8dce8 100%) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
   .navbar .logo-text { background: linear-gradient(90deg, #e94560, #c73652); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  .navbar-links a { color: #555; &:hover, &.active { color: #e94560; } }
+  .navbar-links a { color: #555 !important; &:hover, &.active { color: #e94560 !important; } }
+  .avatar-btn { border-color: #ccc !important; }
+  .avatar-icon { color: #777 !important; }
+  .avatar-dropdown { background: #fff !important; border-color: #ddd !important; box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important; }
+  .dropdown-item { color: #444 !important; &:hover { background: rgba(0,0,0,0.05) !important; color: #111 !important; } }
+  .theme-toggle { border-color: #ccc !important; color: #555 !important; &:hover { border-color: #e94560 !important; } }
+  .btn-logout, .btn-logout-mobile { color: #555 !important; border-color: #ccc !important; &:hover { border-color: #e94560 !important; color: #e94560 !important; } }
+  .content { background: #f0f2f5 !important; color: #1a1a2e !important; }
+  .footer { background: #e4e6eb !important; color: #888 !important; .disclaimer { color: #aaa !important; } }
+  .bottom-nav { background: linear-gradient(135deg, #e8e8f0 0%, #d8dce8 100%) !important; box-shadow: 0 -2px 8px rgba(0,0,0,0.08) !important;
+    a, button { color: #555 !important; &:hover, &.active { color: #e94560 !important; } }
+  }
+
+  // ── Globals ──
   .container { color: #1a1a2e; }
-  .page-title { color: #1a1a2e; }
-  input, select, textarea { background: #fff; border-color: #ccc; color: #333; }
-  .btn-secondary { background: #e8e8f0; color: #333; border-color: #ccc; }
+  .page-title { color: #1a1a2e !important; -webkit-text-fill-color: initial !important; background: none !important; }
+  input, select, textarea { background: #fff !important; border-color: #ccc !important; color: #333 !important; }
+  .btn-secondary { background: #e8e8f0; color: #333; border-color: #ccc; &:hover { border-color: #e94560; color: #e94560; } }
+  .btn-login { background: #e94560; color: #fff; }
+  .form-group label { color: #555 !important; }
+  .error-msg { color: #d32f2f !important; }
+
+  // ── Home ──
+  .hero { background: linear-gradient(135deg, #d8dce8 0%, #c8ccd8 100%) !important; }
+  .hero-title { color: #1a1a2e !important; }
+  .hero-subtitle { color: #666 !important; }
+  .hero .stat-value { color: #e94560 !important; }
+  .hero .stat-label { color: #777 !important; }
+  .feature-card { background: #fff !important; border-color: #ddd !important;
+    h3 { color: #1a1a2e !important; }
+    p { color: #666 !important; }
+  }
+
+  // ── Cards (shared dark bg panels) ──
+  .deck-card, .card-item, .auth-card, .profile-card, .edit-card,
+  .format-card, .race-card, .store-card, .summary-card {
+    background: #fff !important;
+    border-color: #ddd !important;
+    color: #333 !important;
+  }
+
+  // ── Deck list ──
+  .tabs button { border-color: #ccc !important; color: #666 !important; &.active { background: #e94560 !important; border-color: #e94560 !important; color: #fff !important; } &:hover:not(.active) { border-color: #e94560 !important; color: #e94560 !important; } }
+  .deck-desc { color: #777 !important; }
+  .deck-author, .deck-visibility { color: #888 !important; }
+  .pagination { color: #666 !important; }
+  .card-count { background: #eee !important; color: #555 !important; }
+  .filter-row select { background: #fff !important; }
+  .empty { color: #999 !important; }
+
+  // ── Deck view ──
+  .action-bar { background: #e8ecf0 !important; border-color: #ddd !important; }
+  .action-btn { color: #555 !important; &:hover { background: #ddd !important; color: #333 !important; } }
+  .orientation-select { background: #fff !important; border-color: #ccc !important; color: #333 !important; }
+  .deck-description-box { background: #fff !important; border-color: #ddd !important; color: #444 !important; }
+  .back-link { color: #777 !important; }
+  .deck-meta { color: #777 !important; }
+  .stat-card, .cost-curve, .type-dist, .draw-prob, .type-group,
+  .hand-simulator, .stats-summary { background: #fff !important; border-color: #ddd !important; }
+  .type-header { background: #f0f0f5 !important; }
+  .preview-panel { background: #fff !important; border-color: #ddd !important; }
+  .preview-close { background: #eee !important; border-color: #ccc !important; color: #555 !important; }
+  .deck-export-area { background: #f8f8fc !important; }
+  .export-card-grid { background: #f0f2f5 !important; }
+  .changelog-toggle { border-color: #ccc !important; color: #555 !important; }
+  .changelog-section { color: #444 !important; }
+
+  // ── Deck builder ──
+  .deck-panel { background: #fff !important; border-color: #ddd !important; }
+  .card-browser { input, select { background: #fff !important; } }
+  .mini-card { background: #fff !important; border-color: #ddd !important; &:hover { background: #f5f5f8 !important; } }
+  .search-modes, .multi-popover { background: #fff !important; border-color: #ddd !important; }
+  .deck .type-chip { background: #eee !important; color: #555 !important; }
+  .deck-entry img { background: #eee !important; }
+  .move-btn { color: #555 !important; &:hover { color: #e94560 !important; } }
+  .import-export-modal, .modal-content { background: #fff !important; border-color: #ddd !important; }
+  .modal-content textarea { background: #f8f8fc !important; }
+  .progress-summary { background: #f8f8fc !important; }
+
+  // ── Card list ──
+  .view-toggle { background: #eee !important; }
+  .view-toggle button { color: #666 !important; &.active { background: #e94560 !important; color: #fff !important; } }
+  .card-image { background: #eee !important; }
+  .card-detail { background: #fff !important; border-color: #ddd !important; }
+  .close-btn { background: rgba(0,0,0,0.05) !important; color: #555 !important; }
+  .badge { background: #eee !important; color: #555 !important; }
+  .table-wrap { border-color: #ddd !important;
+    th { background: #f0f0f5 !important; color: #333 !important; }
+    td { color: #333 !important; border-color: #eee !important; }
+  }
+
+  // ── Carpeta ──
+  .carpeta-header { background: linear-gradient(135deg, #d8dce8 0%, #c8ccd8 100%) !important; }
+  .btn-filter { background: #eee !important; border-color: #ccc !important; color: #555 !important; }
+
+  // ── Compare decks ──
+  .deck-col-head { background: #fff !important; }
+  .format-tag, .race-tag { background: #eee !important; color: #555 !important; }
+  .cost-grid { background: #fff !important; }
+  .compare-table { background: #fff !important;
+    th { background: #f0f0f5 !important; color: #333 !important; }
+    td { color: #333 !important; }
+  }
+
+  // ── Profile ──
+  .avatar-circle { background: #eee !important; border-color: #ccc !important; }
+  .info-row { border-color: #eee !important; }
+  .info-row .label { color: #777 !important; }
+  .info-row .value { color: #333 !important; }
+
+  // ── Login / Register ──
+  .auth-card h2 { color: #1a1a2e !important; }
+  .auth-card .subtitle, .auth-card a { color: #777 !important; }
+
+  // ── Format select ──
+  .format-card, .race-card { &:hover { background: #f5f5f8 !important; } }
+  .format-name { color: #444 !important; }
+  .race-desc { color: #777 !important; }
+
+  // ── Team ──
+  .team-card, .team-form { background: #fff !important; border-color: #ddd !important; }
+  .member-row, .request-row { background: #f8f8fc !important; }
+  .member-badge { background: #eee !important; }
+  .logo-placeholder { background: #f0f0f5 !important; border-color: #ddd !important; }
+  .section-title { border-color: #ddd !important; }
+
+  // ── Tienda ──
+  .tienda-header { background: linear-gradient(135deg, #d8dce8 0%, #c8ccd8 100%) !important; }
+  .qty-tag { background: #eee !important; color: #666 !important; }
+
+  // ── Stats labels (deck-view) ──
+  .stat-label, .stat-title { color: #666 !important; }
+  .stat-value { color: #333 !important; }
+
+  // ── Shimmer loading (override dark animation) ──
+  .card-image, .img-wrapper, .export-card {
+    background: linear-gradient(90deg, #e8e8f0 25%, #f0f0f5 50%, #e8e8f0 75%) !important;
+    background-size: 200% 100%;
+  }
 }
 
 a {

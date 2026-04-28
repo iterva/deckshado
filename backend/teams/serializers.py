@@ -23,12 +23,7 @@ class TeamListSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "description", "member_count", "logo_url", "created_at"]
 
     def get_logo_url(self, obj):
-        if obj.logo:
-            request = self.context.get("request")
-            if request:
-                return request.build_absolute_uri(obj.logo.url)
-            return obj.logo.url
-        return None
+        return obj.logo or None
 
 
 class TeamDetailSerializer(serializers.ModelSerializer):
@@ -41,12 +36,7 @@ class TeamDetailSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "description", "members", "member_count", "logo_url", "created_at"]
 
     def get_logo_url(self, obj):
-        if obj.logo:
-            request = self.context.get("request")
-            if request:
-                return request.build_absolute_uri(obj.logo.url)
-            return obj.logo.url
-        return None
+        return obj.logo or None
 
 
 class TeamCreateSerializer(serializers.ModelSerializer):

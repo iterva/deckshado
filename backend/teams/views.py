@@ -189,18 +189,11 @@ def upload_logo(request):
         membership = TeamMember.objects.select_related("team").get(user=request.user, role="captain")
     except TeamMember.DoesNotExist:
         return Response({"error": "No eres capitán de ningún equipo"}, status=status.HTTP_403_FORBIDDEN)
-    logo = request.FILES.get("logo")
-    if not logo:
-        return Response({"error": "No se envió archivo"}, status=status.HTTP_400_BAD_REQUEST)
-    if logo.size > 2 * 1024 * 1024:
-        return Response({"error": "El archivo no puede pesar más de 2MB"}, status=status.HTTP_400_BAD_REQUEST)
-    if not logo.content_type.startswith("image/"):
-        return Response({"error": "El archivo debe ser una imagen"}, status=status.HTTP_400_BAD_REQUEST)
+    logo_url = request.data.get("logo_url", "").strip()
+    if not logo_url:
+        return Response({"error": "No se envió URL de imagen"}, status=status.HTTP_400_BAD_REQUEST)
     team = membership.team
-    if team.logo:
-        team.logo.delete(save=False)
-    team.logo = logo
+    team.logo = logo_url
     team.save()
-    url = request.build_absolute_uri(team.logo.url)
-    return Response({"logo_url": url})
+    return Response({"logo_url": team.logo})
 

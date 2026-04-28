@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import {
   BinderProfile,
@@ -23,8 +24,14 @@ export class CarpetaService {
 
   uploadBinderAvatar(file: File): Observable<BinderProfile> {
     const fd = new FormData();
-    fd.append('binder_avatar', file);
-    return this.http.post<BinderProfile>(`${this.apiUrl}/profile/avatar/`, fd);
+    fd.append('file', file);
+    fd.append('upload_preset', environment.cloudinaryUploadPreset);
+    fd.append('folder', 'deckshado/binder_avatars');
+    return this.http.post<any>(
+      `https://api.cloudinary.com/v1_1/${environment.cloudinaryCloudName}/image/upload`, fd
+    ).pipe(
+      switchMap(res => this.http.post<BinderProfile>(`${this.apiUrl}/profile/avatar/`, { avatar_url: res.secure_url }))
+    );
   }
 
   // ── Collection ──

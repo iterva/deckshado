@@ -5,7 +5,7 @@ from django.db import models
 class Team(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, default="")
-    logo = models.ImageField(upload_to="team_logos/", blank=True, null=True)
+    logo = models.URLField(max_length=500, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

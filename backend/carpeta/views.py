@@ -30,17 +30,11 @@ def binder_profile_view(request):
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
 def upload_binder_avatar(request):
-    avatar = request.FILES.get("binder_avatar")
-    if not avatar:
-        return Response({"detail": "No se envió ninguna imagen."}, status=status.HTTP_400_BAD_REQUEST)
-    if avatar.size > 2 * 1024 * 1024:
-        return Response({"detail": "La imagen no puede pesar más de 2MB."}, status=status.HTTP_400_BAD_REQUEST)
-    if not avatar.content_type.startswith("image/"):
-        return Response({"detail": "El archivo debe ser una imagen."}, status=status.HTTP_400_BAD_REQUEST)
+    avatar_url = request.data.get("avatar_url", "").strip()
+    if not avatar_url:
+        return Response({"detail": "No se envió URL de imagen."}, status=status.HTTP_400_BAD_REQUEST)
     profile, _ = BinderProfile.objects.get_or_create(user=request.user)
-    if profile.binder_avatar:
-        profile.binder_avatar.delete(save=False)
-    profile.binder_avatar = avatar
+    profile.binder_avatar = avatar_url
     profile.save()
     return Response(BinderProfileSerializer(profile, context={"request": request}).data)
 

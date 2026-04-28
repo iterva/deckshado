@@ -13,12 +13,7 @@ class BinderProfileSerializer(serializers.ModelSerializer):
         fields = ["id", "username", "binder_avatar_url", "share_token"]
 
     def get_binder_avatar_url(self, obj):
-        if obj.binder_avatar:
-            request = self.context.get("request")
-            if request:
-                return request.build_absolute_uri(obj.binder_avatar.url)
-            return obj.binder_avatar.url
-        return None
+        return obj.binder_avatar or None
 
 
 class CollectionEntrySerializer(serializers.ModelSerializer):

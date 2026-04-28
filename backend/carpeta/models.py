@@ -8,7 +8,7 @@ class BinderProfile(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="binder_profile"
     )
-    binder_avatar = models.ImageField(upload_to="binder_avatars/", blank=True, null=True)
+    binder_avatar = models.URLField(max_length=500, blank=True, default="")
     share_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
 
     def __str__(self):

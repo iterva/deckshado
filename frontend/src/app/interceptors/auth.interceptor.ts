@@ -7,6 +7,11 @@ import { environment } from '../../environments/environment';
 let isRefreshing = false;
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
+  // Skip auth header for external APIs (Cloudinary, etc.)
+  if (!req.url.startsWith(environment.apiUrl)) {
+    return next(req);
+  }
+
   const token = localStorage.getItem('access_token');
 
   const authReq = token

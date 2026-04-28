@@ -33,11 +33,11 @@ def update_profile(request):
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
 def upload_avatar(request):
-    avatar = request.FILES.get("avatar")
-    if not avatar:
-        return Response({"detail": "No se envió ninguna imagen."}, status=status.HTTP_400_BAD_REQUEST)
+    avatar_url = request.data.get("avatar_url", "").strip()
+    if not avatar_url:
+        return Response({"detail": "No se envió ninguna URL."}, status=status.HTTP_400_BAD_REQUEST)
     profile = request.user.profile
-    profile.avatar = avatar
+    profile.avatar = avatar_url
     profile.save()
     return Response(UserSerializer(request.user, context={"request": request}).data)
 

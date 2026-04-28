@@ -13,7 +13,7 @@ class Profile(models.Model):
     league_code = models.CharField(
         max_length=30, blank=True, default="", verbose_name="Código Liga"
     )
-    avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
+    avatar = models.URLField(max_length=500, blank=True, default="")
 
     def __str__(self):
         return f"Perfil de {self.user.username}"

@@ -43,10 +43,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_avatar_url(self, obj):
         if hasattr(obj, "profile") and obj.profile.avatar:
-            request = self.context.get("request")
-            if request:
-                return request.build_absolute_uri(obj.profile.avatar.url)
-            return obj.profile.avatar.url
+            return obj.profile.avatar
         return None
 
 
@@ -54,7 +51,7 @@ class ProfileUpdateSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=50, required=False, allow_blank=True)
     last_name = serializers.CharField(max_length=50, required=False, allow_blank=True)
     league_code = serializers.CharField(max_length=30, required=False, allow_blank=True)
-    avatar = serializers.ImageField(required=False, allow_null=True)
+    avatar = serializers.URLField(max_length=500, required=False, allow_blank=True)
 
     def update(self, instance, validated_data):
         profile = instance.profile

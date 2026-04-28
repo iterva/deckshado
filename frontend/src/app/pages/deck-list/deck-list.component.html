@@ -2,24 +2,26 @@
   <h1 class="page-title">Mazos</h1>
 
   @if (auth.isAuthenticated()) {
-    <div class="tabs">
-      <button [class.active]="activeTab === 'public'" (click)="setTab('public')">Mazos Públicos</button>
-      <button [class.active]="activeTab === 'mine'" (click)="setTab('mine')">Mis Mazos</button>
-      <button [class.active]="activeTab === 'team'" (click)="setTab('team')">Mazos del Equipo</button>
-    </div>
-    <div class="compare-bar">
-      <button type="button"
-              class="btn-compare-toggle"
-              [class.active]="compareMode"
-              (click)="toggleCompareMode()">
-        <i class="bi" [class.bi-bar-chart-line]="!compareMode" [class.bi-x-lg]="compareMode"></i>
-        {{ compareMode ? 'Cancelar comparación' : 'Comparar mazos' }}
-      </button>
-      @if (compareMode) {
-        <span class="compare-hint">
-          Selecciona 2 o 3 mazos ({{ selectedForCompare.size }}/{{ MAX_COMPARE }})
-        </span>
-      }
+    <div class="toolbar-row">
+      <div class="tabs">
+        <button [class.active]="activeTab === 'public'" (click)="setTab('public')">Mazos Públicos</button>
+        <button [class.active]="activeTab === 'mine'" (click)="setTab('mine')">Mis Mazos</button>
+        <button [class.active]="activeTab === 'team'" (click)="setTab('team')">Mazos del Equipo</button>
+      </div>
+      <div class="compare-bar">
+        <button type="button"
+                class="btn-compare-toggle"
+                [class.active]="compareMode"
+                (click)="toggleCompareMode()">
+          <i class="bi" [class.bi-bar-chart-line]="!compareMode" [class.bi-x-lg]="compareMode"></i>
+          {{ compareMode ? 'Cancelar' : 'Comparar' }}
+        </button>
+        @if (compareMode) {
+          <span class="compare-hint">
+            {{ selectedForCompare.size }}/{{ MAX_COMPARE }}
+          </span>
+        }
+      </div>
     </div>
   }
 

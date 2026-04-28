@@ -135,9 +135,22 @@
             <div class="img-wrapper">
               <img class="stack-top" [src]="entry.card_detail.image_url | thumb:250" [alt]="entry.card_detail.name" loading="lazy" decoding="async" (error)="$any($event.target).src = entry.card_detail.image_url">
               <span class="eye-icon" (click)="showPreview(entry.card_detail, $event)">👁</span>
+              @if (isOwner) {
+                <button type="button"
+                        class="cover-star"
+                        [class.is-cover]="deck.cover_card === entry.card_detail.id"
+                        (click)="toggleCover(entry.card_detail, $event)"
+                        [attr.aria-label]="deck.cover_card === entry.card_detail.id ? 'Quitar portada' : 'Fijar como portada'"
+                        [title]="deck.cover_card === entry.card_detail.id ? 'Portada actual (clic para quitar)' : 'Fijar como portada del mazo'">
+                  <i class="bi" [class.bi-star-fill]="deck.cover_card === entry.card_detail.id" [class.bi-star]="deck.cover_card !== entry.card_detail.id"></i>
+                </button>
+              }
             </div>
             @if (entry.quantity > 1) {
               <span class="qty-badge">x{{ entry.quantity }}</span>
+            }
+            @if (deck.cover_card === entry.card_detail.id) {
+              <span class="cover-badge" title="Portada del mazo"><i class="bi bi-star-fill"></i></span>
             }
           </div>
         } @empty {

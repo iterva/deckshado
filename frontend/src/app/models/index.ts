@@ -71,6 +71,9 @@ export interface Deck {
   race?: string;
   starting_gold?: number | null;
   starting_gold_detail?: Card | null;
+  cover_card?: number | null;
+  cover_card_detail?: Card | null;
+  cover_preview?: Card[];
   entries?: DeckEntry[];
   sideboard_entries?: DeckEntry[];
   created_at: string;

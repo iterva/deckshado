@@ -35,7 +35,27 @@ def _annotate_card_count(qs):
     return qs.annotate(
         card_count=Coalesce(Sum("entries__quantity"), Value(0)),
         like_count=Count("likes", distinct=True),
-    ).order_by("-updated_at")
+    )
+
+
+ALLOWED_ORDERING = {
+    "recent": "-updated_at",
+    "oldest": "updated_at",
+    "created": "-created_at",
+    "popular": "-like_count",
+    "cards": "-card_count",
+    "name": "name",
+    "name_desc": "-name",
+}
+
+
+def _apply_ordering(qs, request):
+    key = request.query_params.get("ordering")
+    field = ALLOWED_ORDERING.get(key, "-updated_at")
+    secondary = "-updated_at" if field != "-updated_at" and field != "updated_at" else None
+    if secondary:
+        return qs.order_by(field, secondary)
+    return qs.order_by(field)
 
 
 class PublicDeckListView(generics.ListAPIView):
@@ -44,7 +64,7 @@ class PublicDeckListView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        qs = _annotate_card_count(Deck.objects.filter(is_public=True).select_related("owner"))
+        qs = _annotate_card_count(Deck.objects.filter(is_public=True).select_related("owner", "cover_card"))
         search = self.request.query_params.get("search")
         if search:
             qs = qs.filter(Q(name__icontains=search) | Q(owner__username__icontains=search))
@@ -54,7 +74,7 @@ class PublicDeckListView(generics.ListAPIView):
         race = self.request.query_params.get("race")
         if race:
             qs = qs.filter(race=race)
-        return qs
+        return _apply_ordering(qs, self.request)
 
 
 class MyDeckListView(generics.ListCreateAPIView):
@@ -67,7 +87,17 @@ class MyDeckListView(generics.ListCreateAPIView):
         return DeckListSerializer
 
     def get_queryset(self):
-        return _annotate_card_count(Deck.objects.filter(owner=self.request.user).select_related("owner"))
+        qs = _annotate_card_count(Deck.objects.filter(owner=self.request.user).select_related("owner", "cover_card"))
+        search = self.request.query_params.get("search")
+        if search:
+            qs = qs.filter(name__icontains=search)
+        fmt = self.request.query_params.get("format")
+        if fmt:
+            qs = qs.filter(format=fmt)
+        race = self.request.query_params.get("race")
+        if race:
+            qs = qs.filter(race=race)
+        return _apply_ordering(qs, self.request)
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
@@ -106,9 +136,19 @@ class TeamDeckListView(generics.ListAPIView):
         except TeamMember.DoesNotExist:
             return Deck.objects.none()
         teammate_ids = TeamMember.objects.filter(team=membership.team).values_list("user_id", flat=True)
-        return _annotate_card_count(
-            Deck.objects.filter(owner_id__in=teammate_ids, shared_with_team=True).select_related("owner")
+        qs = _annotate_card_count(
+            Deck.objects.filter(owner_id__in=teammate_ids, shared_with_team=True).select_related("owner", "cover_card")
         )
+        search = self.request.query_params.get("search")
+        if search:
+            qs = qs.filter(Q(name__icontains=search) | Q(owner__username__icontains=search))
+        fmt = self.request.query_params.get("format")
+        if fmt:
+            qs = qs.filter(format=fmt)
+        race = self.request.query_params.get("race")
+        if race:
+            qs = qs.filter(race=race)
+        return _apply_ordering(qs, self.request)
 
 
 class TeamDeckDetailView(generics.RetrieveAPIView):
@@ -170,6 +210,31 @@ def deck_changelog_view(request, deck_id):
         return Response({"error": "Mazo no encontrado"}, status=status.HTTP_404_NOT_FOUND)
     entries = DeckChangeLog.objects.filter(deck=deck)[:20]
     return Response(DeckChangeLogSerializer(entries, many=True).data)
+
+
+@api_view(["POST", "DELETE"])
+@permission_classes([permissions.IsAuthenticated])
+def deck_cover_view(request, deck_id):
+    """Set or clear the cover card for a deck. POST {card_id}; DELETE clears."""
+    try:
+        deck = Deck.objects.get(id=deck_id, owner=request.user)
+    except Deck.DoesNotExist:
+        return Response({"error": "Mazo no encontrado"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == "POST":
+        card_id = request.data.get("card_id")
+        if not card_id:
+            return Response({"error": "card_id requerido"}, status=status.HTTP_400_BAD_REQUEST)
+        # The card must be present in the deck
+        if not deck.entries.filter(card_id=card_id).exists():
+            return Response({"error": "La carta no está en el mazo"}, status=status.HTTP_400_BAD_REQUEST)
+        deck.cover_card_id = card_id
+        deck.save(update_fields=["cover_card", "updated_at"])
+        return Response({"cover_card": deck.cover_card_id})
+
+    deck.cover_card = None
+    deck.save(update_fields=["cover_card", "updated_at"])
+    return Response({"cover_card": None})
 
 
 # ── Likes ────────────────────────────────────────────────

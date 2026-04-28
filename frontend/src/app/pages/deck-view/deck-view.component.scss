@@ -226,6 +226,50 @@
       transition: opacity 0.15s;
       z-index: 3;
     }
+
+    .cover-star {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      z-index: 4;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 0;
+      background: rgba(0, 0, 0, 0.65);
+      color: #aaa;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.15s, color 0.15s, transform 0.15s;
+      backdrop-filter: blur(4px);
+
+      &:hover { color: #ffbd39; transform: scale(1.1); }
+      &.is-cover { color: #ffbd39; opacity: 1; }
+    }
+
+    &:hover .cover-star { opacity: 1; }
+  }
+
+  .cover-badge {
+    position: absolute;
+    top: -6px;
+    left: -6px;
+    z-index: 4;
+    background: #ffbd39;
+    color: #1a1a2e;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
   }
 
   .qty-badge {

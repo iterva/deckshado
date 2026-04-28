@@ -13,6 +13,7 @@ urlpatterns = [
     path("my/<int:pk>/", views.DeckDetailView.as_view(), name="deck-detail"),
     path("my/<int:deck_id>/entries/", views.deck_entry_view, name="deck-entries"),
     path("my/<int:deck_id>/changelog/", views.deck_changelog_view, name="deck-changelog"),
+    path("my/<int:deck_id>/cover/", views.deck_cover_view, name="deck-cover"),
     path("my/<int:deck_id>/snapshots/", views.deck_snapshots_view, name="deck-snapshots"),
     path("my/<int:deck_id>/suggestions/", views.card_suggestions, name="deck-suggestions"),
     path("snapshots/<int:snapshot_id>/restore/", views.restore_snapshot, name="restore-snapshot"),

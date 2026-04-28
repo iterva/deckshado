@@ -1,20 +1,27 @@
-<div class="container">
+﻿<div class="container">
   <h1 class="page-title">Mazos</h1>
 
   @if (auth.isAuthenticated()) {
-    <div class="toolbar-row">
+    <div class="toolbar-row" role="tablist">
       <div class="tabs">
-        <button [class.active]="activeTab === 'public'" (click)="setTab('public')">Mazos Públicos</button>
-        <button [class.active]="activeTab === 'mine'" (click)="setTab('mine')">Mis Mazos</button>
-        <button [class.active]="activeTab === 'team'" (click)="setTab('team')">Mazos del Equipo</button>
+        <button role="tab" [attr.aria-selected]="activeTab === 'public'" [class.active]="activeTab === 'public'" (click)="setTab('public')">
+          <i class="bi bi-globe2"></i><span>PÃºblicos</span>
+        </button>
+        <button role="tab" [attr.aria-selected]="activeTab === 'mine'" [class.active]="activeTab === 'mine'" (click)="setTab('mine')">
+          <i class="bi bi-person-fill"></i><span>MÃ­os</span>
+        </button>
+        <button role="tab" [attr.aria-selected]="activeTab === 'team'" [class.active]="activeTab === 'team'" (click)="setTab('team')">
+          <i class="bi bi-people-fill"></i><span>Equipo</span>
+        </button>
       </div>
       <div class="compare-bar">
         <button type="button"
                 class="btn-compare-toggle"
                 [class.active]="compareMode"
+                [attr.aria-pressed]="compareMode"
                 (click)="toggleCompareMode()">
           <i class="bi" [class.bi-bar-chart-line]="!compareMode" [class.bi-x-lg]="compareMode"></i>
-          {{ compareMode ? 'Cancelar' : 'Comparar' }}
+          <span>{{ compareMode ? 'Cancelar' : 'Comparar' }}</span>
         </button>
         @if (compareMode) {
           <span class="compare-hint">
@@ -25,157 +32,273 @@
     </div>
   }
 
-  @if (activeTab === 'public') {
+  <!-- Filtros + bÃºsqueda + orden (comÃºn a todas las pestaÃ±as) -->
+  <div class="filter-toolbar">
     <div class="search-bar">
-      <input type="text" placeholder="Buscar mazos..." [(ngModel)]="search" (keyup.enter)="onSearch()">
-      <button class="btn btn-primary btn-sm" (click)="onSearch()">Buscar</button>
+      <i class="bi bi-search search-icon"></i>
+      <input type="text" placeholder="Buscar mazos..." [(ngModel)]="search" (keyup.enter)="onSearch()" aria-label="Buscar mazos">
+      @if (search) {
+        <button class="search-clear" (click)="search=''; onSearch()" aria-label="Limpiar bÃºsqueda"><i class="bi bi-x"></i></button>
+      }
+      <button class="btn btn-primary btn-sm search-go" (click)="onSearch()">Buscar</button>
     </div>
     <div class="filter-row">
-      <select [(ngModel)]="filterFormat" (change)="onSearch()">
+      <select [(ngModel)]="filterFormat" (change)="onFilterChange()" aria-label="Filtrar por formato">
         <option value="">Todos los formatos</option>
         <option value="imp">Imperial</option>
         <option value="esc">Escuelas Elementales</option>
         <option value="imp_r">Imperio Retro</option>
         <option value="fx">FX</option>
       </select>
-      <select [(ngModel)]="filterRace" (change)="onSearch()">
+      <select [(ngModel)]="filterRace" (change)="onFilterChange()" aria-label="Filtrar por raza">
         <option value="">Todas las razas</option>
         <option value="dream">Dream</option>
-        <option value="totem">Tótem</option>
+        <option value="totem">TÃ³tem</option>
         <option value="eterno">Eterno</option>
         <option value="faerie">Faerie</option>
-        <option value="dragon">Dragón</option>
+        <option value="dragon">DragÃ³n</option>
         <option value="sombra">Sombra</option>
-        <option value="heroe">Héroe</option>
+        <option value="heroe">HÃ©roe</option>
         <option value="sacerdote">Sacerdote</option>
         <option value="guerrero">Guerrero</option>
         <option value="bestia">Bestia</option>
         <option value="caballero">Caballero</option>
       </select>
-    </div>
-
-    <div class="deck-grid">
-      @for (deck of publicDecks; track deck.id) {
-        <a [routerLink]="compareMode ? null : ['/decks', deck.id]"
-           class="deck-card"
-           [class.compare-selected]="isSelectedForCompare(deck.id)"
-           [class.compare-mode]="compareMode"
-           (click)="compareMode && toggleDeckCompare($event, deck.id)">
-          @if (compareMode) {
-            <span class="compare-check" [class.checked]="isSelectedForCompare(deck.id)">
-              <i class="bi" [class.bi-check-square-fill]="isSelectedForCompare(deck.id)" [class.bi-square]="!isSelectedForCompare(deck.id)"></i>
-            </span>
-          }
-          <div class="deck-header">
-            <h3>{{ deck.name }}</h3>
-          </div>
-          <div class="deck-tags">
-            <span class="format-tag">{{ getFormatLabel(deck.format) }}</span>
-            @if (deck.sub_format && deck.sub_format !== 'racial') { <span class="format-tag vcr">{{ getSubFormatLabel(deck.sub_format) }}</span> }
-            <span class="race-tag">{{ getRaceLabel(deck.race) }}</span>
-            <span class="card-count">{{ deck.card_count }} cartas</span>
-          </div>
-          @if (deck.description) {
-            <p class="deck-desc">{{ deck.description }}</p>
-          }
-          <div class="deck-footer">
-            <span class="deck-author">por {{ deck.owner_username }}</span>
-            @if (deck.like_count) {
-              <span class="deck-likes">♥ {{ deck.like_count }}</span>
-            }
-          </div>
-        </a>
-      } @empty {
-        <p class="empty">No hay mazos públicos aún.</p>
+      <select [(ngModel)]="sort" (change)="onSortChange()" aria-label="Ordenar por" class="sort-select">
+        @for (opt of sortOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+      @if (activeFilterCount > 0) {
+        <button class="btn-clear-filters" (click)="clearFilters()" type="button">
+          <i class="bi bi-x-circle"></i>
+          Limpiar ({{ activeFilterCount }})
+        </button>
       }
     </div>
+  </div>
 
-    @if (publicTotalPages > 1) {
-      <div class="pagination">
-        <button class="btn btn-secondary btn-sm" (click)="publicPrevPage()" [disabled]="publicPage === 1">← Anterior</button>
-        <span>Página {{ publicPage }} de {{ publicTotalPages }}</span>
-        <button class="btn btn-secondary btn-sm" (click)="publicNextPage()" [disabled]="publicPage >= publicTotalPages">Siguiente →</button>
+  <!-- ===== PÃºblicos ===== -->
+  @if (activeTab === 'public') {
+    @if (loadingPublic && publicDecks.length === 0) {
+      <div class="deck-grid">
+        @for (s of skeletonRange; track $index) {
+          <div class="deck-card skeleton">
+            <div class="deck-cover skeleton-block"></div>
+            <div class="skeleton-line w-70"></div>
+            <div class="skeleton-line w-40"></div>
+            <div class="skeleton-line w-90"></div>
+          </div>
+        }
       </div>
+    } @else {
+      <div class="deck-grid">
+        @for (deck of publicDecks; track deck.id) {
+          <a [routerLink]="compareMode ? null : ['/decks', deck.id]"
+             class="deck-card"
+             [class.compare-selected]="isSelectedForCompare(deck.id)"
+             [class.compare-mode]="compareMode"
+             [attr.role]="compareMode ? 'checkbox' : null"
+             [attr.aria-checked]="compareMode ? isSelectedForCompare(deck.id) : null"
+             [style.--race-accent]="getRaceAccent(deck.race)"
+             (click)="compareMode && toggleDeckCompare($event, deck.id)">
+
+            <ng-container *ngTemplateOutlet="cover; context: { $implicit: deck }"></ng-container>
+
+            @if (compareMode) {
+              <span class="compare-check" [class.checked]="isSelectedForCompare(deck.id)">
+                <i class="bi" [class.bi-check-square-fill]="isSelectedForCompare(deck.id)" [class.bi-square]="!isSelectedForCompare(deck.id)"></i>
+              </span>
+            }
+
+            <div class="deck-body">
+              <h3 class="deck-name">{{ deck.name }}</h3>
+              <div class="deck-tags">
+                <span class="format-tag">{{ getFormatLabel(deck.format) }}</span>
+                @if (deck.sub_format && deck.sub_format !== 'racial') { <span class="format-tag vcr">{{ getSubFormatLabel(deck.sub_format) }}</span> }
+                <span class="race-tag" [style.color]="getRaceAccent(deck.race)" [style.border-color]="getRaceAccent(deck.race) + '55'">{{ getRaceLabel(deck.race) }}</span>
+                <span class="card-count"><i class="bi bi-stack"></i> {{ deck.card_count }}</span>
+              </div>
+              @if (deck.description) {
+                <p class="deck-desc">{{ deck.description }}</p>
+              }
+              <div class="deck-footer">
+                <span class="deck-author"><i class="bi bi-person"></i> {{ deck.owner_username }}</span>
+                <span class="deck-meta-right">
+                  <span class="deck-date" [title]="deck.updated_at">{{ deck.updated_at | relativeTime }}</span>
+                  @if (deck.like_count) {
+                    <span class="deck-likes"><i class="bi bi-heart-fill"></i> {{ deck.like_count }}</span>
+                  }
+                </span>
+              </div>
+            </div>
+          </a>
+        } @empty {
+          <p class="empty">No hay mazos pÃºblicos para mostrar.</p>
+        }
+      </div>
+
+      @if (publicTotalPages > 1) {
+        <div class="pagination">
+          <button class="btn btn-secondary btn-sm" (click)="publicPrevPage()" [disabled]="publicPage === 1">â† Anterior</button>
+          <span>PÃ¡gina {{ publicPage }} de {{ publicTotalPages }}</span>
+          <button class="btn btn-secondary btn-sm" (click)="publicNextPage()" [disabled]="publicPage >= publicTotalPages">Siguiente â†’</button>
+        </div>
+      }
     }
   }
 
+  <!-- ===== MÃ­os ===== -->
   @if (activeTab === 'mine') {
     <div class="my-decks-header">
+      <span class="results-count">
+        @if (mineTotal > 0) { {{ mineTotal }} mazo{{ mineTotal === 1 ? '' : 's' }} }
+      </span>
       <a routerLink="/builder" class="btn btn-gold">+ Crear Mazo</a>
     </div>
 
-    <div class="deck-grid">
-      @for (deck of myDecks; track deck.id) {
-        <div class="deck-card"
-             [class.compare-selected]="isSelectedForCompare(deck.id)"
-             [class.compare-mode]="compareMode"
-             (click)="compareMode && toggleDeckCompare($event, deck.id)">
-          @if (compareMode) {
-            <span class="compare-check" [class.checked]="isSelectedForCompare(deck.id)">
-              <i class="bi" [class.bi-check-square-fill]="isSelectedForCompare(deck.id)" [class.bi-square]="!isSelectedForCompare(deck.id)"></i>
-            </span>
-          }
-          <div class="deck-header">
-            <a [routerLink]="['/decks', deck.id]"><h3>{{ deck.name }}</h3></a>
+    @if (loadingMine && myDecks.length === 0) {
+      <div class="deck-grid">
+        @for (s of skeletonRange; track $index) {
+          <div class="deck-card skeleton">
+            <div class="deck-cover skeleton-block"></div>
+            <div class="skeleton-line w-70"></div>
+            <div class="skeleton-line w-40"></div>
           </div>
-          <div class="deck-tags">
-            <span class="format-tag">{{ getFormatLabel(deck.format) }}</span>
-            @if (deck.sub_format && deck.sub_format !== 'racial') { <span class="format-tag vcr">{{ getSubFormatLabel(deck.sub_format) }}</span> }
-            <span class="race-tag">{{ getRaceLabel(deck.race) }}</span>
-            <span class="card-count">{{ deck.card_count }} cartas</span>
-          </div>
-          @if (deck.description) {
-            <p class="deck-desc">{{ deck.description }}</p>
-          }
-          <div class="deck-footer">
-            <span class="deck-visibility" [class.public]="deck.is_public">
-              {{ deck.is_public ? '🌐 Público' : '🔒 Privado' }}
-            </span>
-            <div class="deck-actions">
-              <a [routerLink]="['/builder', deck.id]" class="btn btn-secondary btn-sm">Editar</a>
-              <button class="btn btn-danger btn-sm" (click)="deleteDeck(deck.id)">Eliminar</button>
+        }
+      </div>
+    } @else {
+      <div class="deck-grid">
+        @for (deck of myDecks; track deck.id) {
+          <div class="deck-card"
+               [class.compare-selected]="isSelectedForCompare(deck.id)"
+               [class.compare-mode]="compareMode"
+               [attr.role]="compareMode ? 'checkbox' : null"
+               [attr.aria-checked]="compareMode ? isSelectedForCompare(deck.id) : null"
+               [style.--race-accent]="getRaceAccent(deck.race)"
+               (click)="compareMode && toggleDeckCompare($event, deck.id)">
+
+            <a class="cover-link" [routerLink]="compareMode ? null : ['/decks', deck.id]" tabindex="-1">
+              <ng-container *ngTemplateOutlet="cover; context: { $implicit: deck }"></ng-container>
+            </a>
+
+            @if (compareMode) {
+              <span class="compare-check" [class.checked]="isSelectedForCompare(deck.id)">
+                <i class="bi" [class.bi-check-square-fill]="isSelectedForCompare(deck.id)" [class.bi-square]="!isSelectedForCompare(deck.id)"></i>
+              </span>
+            }
+
+            <div class="deck-body">
+              <a class="deck-title-link" [routerLink]="['/decks', deck.id]"><h3 class="deck-name">{{ deck.name }}</h3></a>
+              <div class="deck-tags">
+                <span class="format-tag">{{ getFormatLabel(deck.format) }}</span>
+                @if (deck.sub_format && deck.sub_format !== 'racial') { <span class="format-tag vcr">{{ getSubFormatLabel(deck.sub_format) }}</span> }
+                <span class="race-tag" [style.color]="getRaceAccent(deck.race)" [style.border-color]="getRaceAccent(deck.race) + '55'">{{ getRaceLabel(deck.race) }}</span>
+                <span class="card-count"><i class="bi bi-stack"></i> {{ deck.card_count }}</span>
+              </div>
+              @if (deck.description) {
+                <p class="deck-desc">{{ deck.description }}</p>
+              }
+              <div class="deck-footer">
+                <span class="deck-visibility" [class.public]="deck.is_public" [title]="deck.is_public ? 'Visible para todos' : 'Solo tÃº lo ves'">
+                  <i class="bi" [class.bi-globe2]="deck.is_public" [class.bi-lock-fill]="!deck.is_public"></i>
+                  {{ deck.is_public ? 'PÃºblico' : 'Privado' }}
+                </span>
+                <span class="deck-meta-right">
+                  <span class="deck-date" [title]="'Editado: ' + deck.updated_at">{{ deck.updated_at | relativeTime }}</span>
+                  @if (deck.like_count) {
+                    <span class="deck-likes"><i class="bi bi-heart-fill"></i> {{ deck.like_count }}</span>
+                  }
+                </span>
+              </div>
+              <div class="deck-actions">
+                <a [routerLink]="['/builder', deck.id]" class="btn btn-secondary btn-sm" aria-label="Editar mazo"><i class="bi bi-pencil-square"></i> Editar</a>
+                <button class="btn btn-danger btn-sm" (click)="deleteDeck(deck.id)" aria-label="Eliminar mazo"><i class="bi bi-trash3"></i></button>
+              </div>
             </div>
           </div>
+        } @empty {
+          <p class="empty">No tienes mazos aÃºn. <a routerLink="/builder">Crea uno aquÃ­</a>.</p>
+        }
+      </div>
+
+      @if (mineTotalPages > 1) {
+        <div class="pagination">
+          <button class="btn btn-secondary btn-sm" (click)="minePrevPage()" [disabled]="minePage === 1">â† Anterior</button>
+          <span>PÃ¡gina {{ minePage }} de {{ mineTotalPages }}</span>
+          <button class="btn btn-secondary btn-sm" (click)="mineNextPage()" [disabled]="minePage >= mineTotalPages">Siguiente â†’</button>
         </div>
-      } @empty {
-        <p class="empty">No tienes mazos aún. <a routerLink="/builder">Crea uno aquí</a>.</p>
       }
-    </div>
+    }
   }
 
+  <!-- ===== Equipo ===== -->
   @if (activeTab === 'team') {
-    <div class="deck-grid">
-      @for (deck of teamDecks; track deck.id) {
-        <a [routerLink]="compareMode ? null : ['/decks', deck.id]"
-           class="deck-card"
-           [class.compare-selected]="isSelectedForCompare(deck.id)"
-           [class.compare-mode]="compareMode"
-           (click)="compareMode && toggleDeckCompare($event, deck.id)">
-          @if (compareMode) {
-            <span class="compare-check" [class.checked]="isSelectedForCompare(deck.id)">
-              <i class="bi" [class.bi-check-square-fill]="isSelectedForCompare(deck.id)" [class.bi-square]="!isSelectedForCompare(deck.id)"></i>
-            </span>
-          }
-          <div class="deck-header">
-            <h3>{{ deck.name }}</h3>
+    @if (loadingTeam && teamDecks.length === 0) {
+      <div class="deck-grid">
+        @for (s of skeletonRange; track $index) {
+          <div class="deck-card skeleton">
+            <div class="deck-cover skeleton-block"></div>
+            <div class="skeleton-line w-70"></div>
+            <div class="skeleton-line w-40"></div>
           </div>
-          <div class="deck-tags">
-            <span class="format-tag">{{ getFormatLabel(deck.format) }}</span>
-            @if (deck.sub_format && deck.sub_format !== 'racial') { <span class="format-tag vcr">{{ getSubFormatLabel(deck.sub_format) }}</span> }
-            <span class="race-tag">{{ getRaceLabel(deck.race) }}</span>
-            <span class="card-count">{{ deck.card_count }} cartas</span>
-          </div>
-          @if (deck.description) {
-            <p class="deck-desc">{{ deck.description }}</p>
-          }
-          <div class="deck-footer">
-            <span class="deck-author">por {{ deck.owner_username }}</span>
-          </div>
-        </a>
-      } @empty {
-        <p class="empty">No hay mazos compartidos por tu equipo.</p>
+        }
+      </div>
+    } @else {
+      <div class="deck-grid">
+        @for (deck of teamDecks; track deck.id) {
+          <a [routerLink]="compareMode ? null : ['/decks', deck.id]"
+             class="deck-card"
+             [class.compare-selected]="isSelectedForCompare(deck.id)"
+             [class.compare-mode]="compareMode"
+             [attr.role]="compareMode ? 'checkbox' : null"
+             [attr.aria-checked]="compareMode ? isSelectedForCompare(deck.id) : null"
+             [style.--race-accent]="getRaceAccent(deck.race)"
+             (click)="compareMode && toggleDeckCompare($event, deck.id)">
+
+            <ng-container *ngTemplateOutlet="cover; context: { $implicit: deck }"></ng-container>
+
+            @if (compareMode) {
+              <span class="compare-check" [class.checked]="isSelectedForCompare(deck.id)">
+                <i class="bi" [class.bi-check-square-fill]="isSelectedForCompare(deck.id)" [class.bi-square]="!isSelectedForCompare(deck.id)"></i>
+              </span>
+            }
+
+            <div class="deck-body">
+              <h3 class="deck-name">{{ deck.name }}</h3>
+              <div class="deck-tags">
+                <span class="format-tag">{{ getFormatLabel(deck.format) }}</span>
+                @if (deck.sub_format && deck.sub_format !== 'racial') { <span class="format-tag vcr">{{ getSubFormatLabel(deck.sub_format) }}</span> }
+                <span class="race-tag" [style.color]="getRaceAccent(deck.race)" [style.border-color]="getRaceAccent(deck.race) + '55'">{{ getRaceLabel(deck.race) }}</span>
+                <span class="card-count"><i class="bi bi-stack"></i> {{ deck.card_count }}</span>
+              </div>
+              @if (deck.description) {
+                <p class="deck-desc">{{ deck.description }}</p>
+              }
+              <div class="deck-footer">
+                <span class="deck-author"><i class="bi bi-person"></i> {{ deck.owner_username }}</span>
+                <span class="deck-meta-right">
+                  <span class="deck-date" [title]="deck.updated_at">{{ deck.updated_at | relativeTime }}</span>
+                  @if (deck.like_count) {
+                    <span class="deck-likes"><i class="bi bi-heart-fill"></i> {{ deck.like_count }}</span>
+                  }
+                </span>
+              </div>
+            </div>
+          </a>
+        } @empty {
+          <p class="empty">No hay mazos compartidos por tu equipo.</p>
+        }
+      </div>
+
+      @if (teamTotalPages > 1) {
+        <div class="pagination">
+          <button class="btn btn-secondary btn-sm" (click)="teamPrevPage()" [disabled]="teamPage === 1">â† Anterior</button>
+          <span>PÃ¡gina {{ teamPage }} de {{ teamTotalPages }}</span>
+          <button class="btn btn-secondary btn-sm" (click)="teamNextPage()" [disabled]="teamPage >= teamTotalPages">Siguiente â†’</button>
+        </div>
       }
-    </div>
+    }
   }
 
   @if (compareMode && selectedForCompare.size >= 2) {
@@ -187,3 +310,24 @@
     </div>
   }
 </div>
+
+<!-- Plantilla de portada (cover_card_detail o mosaico cover_preview) -->
+<ng-template #cover let-deck>
+  @if (getCoverCard(deck); as cv) {
+    <div class="deck-cover single">
+      <img [src]="cv.image_url | thumb:350" [alt]="cv.name" loading="lazy" decoding="async">
+      <div class="cover-fade"></div>
+    </div>
+  } @else if (getMosaic(deck).length > 0) {
+    <div class="deck-cover mosaic" [class.cells-1]="getMosaic(deck).length === 1" [class.cells-2]="getMosaic(deck).length === 2" [class.cells-3]="getMosaic(deck).length === 3">
+      @for (c of getMosaic(deck); track c.id) {
+        <img [src]="c.image_url | thumb:200" [alt]="c.name" loading="lazy" decoding="async">
+      }
+      <div class="cover-fade"></div>
+    </div>
+  } @else {
+    <div class="deck-cover empty-cover">
+      <i class="bi bi-collection-fill"></i>
+    </div>
+  }
+</ng-template>

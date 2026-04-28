@@ -10,12 +10,13 @@ export class DeckService {
 
   constructor(private http: HttpClient) {}
 
-  getPublicDecks(search?: string, page?: number, format?: string, race?: string): Observable<PaginatedResponse<Deck>> {
+  getPublicDecks(search?: string, page?: number, format?: string, race?: string, ordering?: string): Observable<PaginatedResponse<Deck>> {
     let params: any = {};
     if (search) params.search = search;
     if (page) params.page = page;
     if (format) params.format = format;
     if (race) params.race = race;
+    if (ordering) params.ordering = ordering;
     return this.http.get<PaginatedResponse<Deck>>(`${this.apiUrl}/public/`, { params });
   }
 
@@ -23,16 +24,28 @@ export class DeckService {
     return this.http.get<Deck>(`${this.apiUrl}/public/${id}/`);
   }
 
-  getTeamDecks(): Observable<PaginatedResponse<Deck>> {
-    return this.http.get<PaginatedResponse<Deck>>(`${this.apiUrl}/team/`);
+  getTeamDecks(page?: number, search?: string, format?: string, race?: string, ordering?: string): Observable<PaginatedResponse<Deck>> {
+    let params: any = {};
+    if (page) params.page = page;
+    if (search) params.search = search;
+    if (format) params.format = format;
+    if (race) params.race = race;
+    if (ordering) params.ordering = ordering;
+    return this.http.get<PaginatedResponse<Deck>>(`${this.apiUrl}/team/`, { params });
   }
 
   getTeamDeck(id: number): Observable<Deck> {
     return this.http.get<Deck>(`${this.apiUrl}/team/${id}/`);
   }
 
-  getMyDecks(): Observable<PaginatedResponse<Deck>> {
-    return this.http.get<PaginatedResponse<Deck>>(`${this.apiUrl}/my/`);
+  getMyDecks(page?: number, search?: string, format?: string, race?: string, ordering?: string): Observable<PaginatedResponse<Deck>> {
+    let params: any = {};
+    if (page) params.page = page;
+    if (search) params.search = search;
+    if (format) params.format = format;
+    if (race) params.race = race;
+    if (ordering) params.ordering = ordering;
+    return this.http.get<PaginatedResponse<Deck>>(`${this.apiUrl}/my/`, { params });
   }
 
   createDeck(data: { name: string; description?: string; is_public?: boolean }): Observable<Deck> {
@@ -66,6 +79,14 @@ export class DeckService {
 
   getChangelog(deckId: number): Observable<{ id: number; summary: string; created_at: string }[]> {
     return this.http.get<{ id: number; summary: string; created_at: string }[]>(`${this.apiUrl}/my/${deckId}/changelog/`);
+  }
+
+  setCoverCard(deckId: number, cardId: number): Observable<{ cover_card: number | null }> {
+    return this.http.post<{ cover_card: number | null }>(`${this.apiUrl}/my/${deckId}/cover/`, { card_id: cardId });
+  }
+
+  clearCoverCard(deckId: number): Observable<{ cover_card: number | null }> {
+    return this.http.delete<{ cover_card: number | null }>(`${this.apiUrl}/my/${deckId}/cover/`);
   }
 
   // Likes

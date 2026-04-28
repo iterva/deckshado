@@ -104,6 +104,26 @@ export class DeckViewComponent implements OnInit {
     });
   }
 
+  /** Fijar/quitar la carta como portada del mazo (solo owner). */
+  toggleCover(card: Card, event: Event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!this.deck || !this.isOwner) return;
+    const isCurrent = this.deck.cover_card === card.id;
+    const obs = isCurrent
+      ? this.deckService.clearCoverCard(this.deck.id)
+      : this.deckService.setCoverCard(this.deck.id, card.id);
+    obs.subscribe({
+      next: (res) => {
+        if (this.deck) {
+          this.deck.cover_card = res.cover_card;
+          (this.deck as any).cover_card_detail = res.cover_card ? card : null;
+          this.cdr.detectChanges();
+        }
+      },
+    });
+  }
+
   shareDeck() {
     const url = window.location.href;
     navigator.clipboard.writeText(url).then(() => {

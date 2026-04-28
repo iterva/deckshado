@@ -15,11 +15,39 @@ class DeckListSerializer(serializers.ModelSerializer):
     owner_username = serializers.CharField(source="owner.username", read_only=True)
     card_count = serializers.IntegerField(read_only=True)
     like_count = serializers.IntegerField(read_only=True, default=0)
+    cover_card_detail = CardListSerializer(source="cover_card", read_only=True)
+    cover_preview = serializers.SerializerMethodField()
 
     class Meta:
         model = Deck
-        fields = ["id", "name", "description", "is_public", "shared_with_team", "owner_username", "card_count", "like_count", "format", "sub_format", "race", "starting_gold", "created_at", "updated_at"]
+        fields = ["id", "name", "description", "is_public", "shared_with_team", "owner_username", "card_count", "like_count", "format", "sub_format", "race", "starting_gold", "cover_card", "cover_card_detail", "cover_preview", "created_at", "updated_at"]
         read_only_fields = ["created_at", "updated_at"]
+
+    def get_cover_preview(self, obj):
+        """Up to 3 cards as a fallback mosaic when no cover is set.
+        Picks one of each main type if available."""
+        if obj.cover_card_id:
+            return []
+        seen_types = set()
+        result = []
+        for entry in obj.entries.filter(is_sideboard=False).select_related("card", "card__card_type").order_by("-quantity")[:30]:
+            t = entry.card.card_type_id
+            if t in seen_types:
+                continue
+            seen_types.add(t)
+            result.append(CardListSerializer(entry.card).data)
+            if len(result) >= 3:
+                break
+        # If we didn't fill 3 slots by type, fill with whatever else
+        if len(result) < 3:
+            existing_ids = {c["id"] for c in result}
+            for entry in obj.entries.filter(is_sideboard=False).select_related("card")[:3 - len(result) + len(existing_ids)]:
+                if entry.card_id in existing_ids:
+                    continue
+                result.append(CardListSerializer(entry.card).data)
+                if len(result) >= 3:
+                    break
+        return result
 
 
 class DeckDetailSerializer(serializers.ModelSerializer):
@@ -30,11 +58,12 @@ class DeckDetailSerializer(serializers.ModelSerializer):
     like_count = serializers.IntegerField(read_only=True, default=0)
     user_liked = serializers.SerializerMethodField()
     starting_gold_detail = CardListSerializer(source="starting_gold", read_only=True)
+    cover_card_detail = CardListSerializer(source="cover_card", read_only=True)
     comment_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Deck
-        fields = ["id", "name", "description", "is_public", "shared_with_team", "owner_username", "card_count", "like_count", "user_liked", "comment_count", "format", "sub_format", "race", "starting_gold", "starting_gold_detail", "entries", "sideboard_entries", "created_at", "updated_at"]
+        fields = ["id", "name", "description", "is_public", "shared_with_team", "owner_username", "card_count", "like_count", "user_liked", "comment_count", "format", "sub_format", "race", "starting_gold", "starting_gold_detail", "cover_card", "cover_card_detail", "entries", "sideboard_entries", "created_at", "updated_at"]
         read_only_fields = ["created_at", "updated_at"]
 
     def get_user_liked(self, obj):
@@ -60,7 +89,7 @@ class DeckCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Deck
-        fields = ["id", "name", "description", "is_public", "shared_with_team", "format", "sub_format", "race", "starting_gold", "entries"]
+        fields = ["id", "name", "description", "is_public", "shared_with_team", "format", "sub_format", "race", "starting_gold", "cover_card", "entries"]
 
     def create(self, validated_data):
         entries_data = validated_data.pop("entries", [])
@@ -74,7 +103,7 @@ class DeckCreateSerializer(serializers.ModelSerializer):
 
         # Track changes for changelog
         changes = []
-        for field in ("name", "description", "format", "sub_format", "is_public", "shared_with_team", "starting_gold"):
+        for field in ("name", "description", "format", "sub_format", "is_public", "shared_with_team", "starting_gold", "cover_card"):
             new_val = validated_data.get(field)
             if new_val is not None and getattr(instance, field) != new_val:
                 changes.append(field)
@@ -86,6 +115,7 @@ class DeckCreateSerializer(serializers.ModelSerializer):
         instance.is_public = validated_data.get("is_public", instance.is_public)
         instance.shared_with_team = validated_data.get("shared_with_team", instance.shared_with_team)
         instance.starting_gold = validated_data.get("starting_gold", instance.starting_gold)
+        instance.cover_card = validated_data.get("cover_card", instance.cover_card)
         instance.save()
 
         if entries_data is not None:

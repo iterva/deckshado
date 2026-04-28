@@ -109,6 +109,12 @@ body.light-theme {
   .export-card-grid { background: #f0f2f5 !important; }
   .changelog-toggle { border-color: #ccc !important; color: #555 !important; }
   .changelog-section { color: #444 !important; }
+  .draw-prob { background: #fff !important; border-color: #ddd !important;
+    .draw-prob-title { color: #555 !important; }
+    .draw-prob-name { color: #333 !important; .draw-prob-qty { color: #888 !important; } }
+    .draw-prob-bar-wrap { background: #e0e0e0 !important; }
+    .draw-prob-pct { color: #16a34a !important; }
+  }
 
   // ── Deck builder ──
   .card-browser {

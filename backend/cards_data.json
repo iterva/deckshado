@@ -30850,7 +30850,7 @@
       "damage": null,
       "ability": "",
       "flavour": "",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/shdwbn_01.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269047/deckshado/extra_cards/shdwbn_01.png"
     }
   },
   {
@@ -31116,7 +31116,7 @@
       "damage": null,
       "ability": "",
       "flavour": "",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/shdwbn_02.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269048/deckshado/extra_cards/shdwbn_02.png"
     }
   },
   {
@@ -220527,7 +220527,7 @@
       "damage": null,
       "ability": "Las habilidades de este Oro no pueden ser canceladas.\nCuando entra en juego, Roba dos cartas.\nPuedes convertirlo en un Oro sin habilidad para prevenir que una habilidad sea cancelada o un Aliado de coste 1 sea Anulado.\nPuedes Desterrarlo de tu mano o Cementerio para cancelar el ataque de hasta dos Aliados.",
       "flavour": "Drácula es una danza entre lo oscuro y lo sublime. El conde, vampiro eterno, acecha con sed insaciable. Castillos sombríos, barcos malditos, y Londres vulnerable son el escenario del terror inmortal.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_01.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269049/deckshado/extra_cards/tk26_01.png"
     }
   },
   {
@@ -220546,7 +220546,7 @@
       "damage": null,
       "ability": "Indesterrable.\nCuando entra en juego, mira cuatro cartas del tope de tu Castillo. Pon una de ahí en tu mano, otra en tu Cementerio y ordena el resto.\nPuedes convertir este Oro en un Oro sin habilidad para cancelar la habilidad de una carta fuera del juego o un Oro.",
       "flavour": "Las máscaras caen, revelando el miedo, en Carcosa, donde la realidad se tuerce, bajo el Signo Amarillo, todo es un juego, y la cordura, en sombras, se disuelve.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_02.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269050/deckshado/extra_cards/tk26_02.png"
     }
   },
   {
@@ -220584,7 +220584,7 @@
       "damage": null,
       "ability": "Al comienzo de la Vigilia oponente, si no controlas más Oros que él puedes ponerlo en juego como si fuera tu Vigilia y no puedes poner Oros en juego en tu próximo turno.\nCuando entra en juego, Roba dos cartas o busca un Aliado u Oro en tu Castillo y ponlo en tu mano.",
       "flavour": "Escarapela verde, blanco y rojo: latido de la patria. Águila sobre nopal, cielo y sangre. Maíz y jade, plata y volcán. Honor, memoria y coraje: México se alza, libre, eterno.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_03.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269051/deckshado/extra_cards/tk26_03.png"
     }
   },
   {
@@ -220603,7 +220603,7 @@
       "damage": null,
       "ability": "No puede ser Anulado. Elige un efecto:\n- En respuesta a que se juegue una carta sin pagar su coste o que no pueda ser Anulada, esa carta entra en juego sin habilidad por el turno. Si es Talismán, se resuelve sin efecto.\n- Baraja una carta de coste 2 o menos y Roba dos cartas.",
       "flavour": "Los que lo ven escuchan risas de ultratumba y gritos atrapados. Sus tripulantes, almas perdidas, te invitan a subir. Solo un brujo poderoso podría sobrevivir a esa convocatoria.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_04.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269052/deckshado/extra_cards/tk26_04.png"
     }
   },
   {
@@ -220622,7 +220622,7 @@
       "damage": null,
       "ability": "Cuando lo juegues, Destiérralo. Elige un efecto:\n- Busca una carta en tu Castillo, ponla en tu mano y Roba una carta. No puedes jugar más cartas este turno.\n- Paga dos Oros para Barajar cartas cuyos costes sumen hasta 4 y Robar dos cartas.",
       "flavour": "Guía mi alma por los mares del oeste, abuela, cuéntame de aquella tierra más allá del mar, el Ngill chenmaywe.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_05.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269052/deckshado/extra_cards/tk26_05.png"
     }
   },
   {
@@ -220641,7 +220641,7 @@
       "damage": null,
       "ability": "No puede ser Anulado. Si atacaste en tu turno anterior, tiene Exhumar en tu Cementerio.\nPuedes poner esta y otra carta de tu mano en el fondo de tu Castillo y Robar dos cartas. Sólo puedes utilizar esta habilidad de Cuervo Nocturno una vez por turno.\nDestierra seis cartas del tope del Castillo oponente.",
       "flavour": "\"¡Dime cuál es tu nombre en la ribera de la Noche Plutónica!\" Y el Cuervo dijo: \"Nunca más.\" - E.A. Poe.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_06.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269053/deckshado/extra_cards/tk26_06.png"
     }
   },
   {
@@ -220660,7 +220660,7 @@
       "damage": null,
       "ability": "Exhumar.\nEl portador gana 2 de Fuerza e Indesterrable.\nEn tu Vigilia, una vez por turno, puedes Barajar una carta que no sea Oro o buscar un Oro en tu Castillo y ponerlo en tu mano.\nEn tu Fase Final, Destierra hasta tres cartas de los Cementerios y Roba dos cartas.",
       "flavour": "En Rancagua, O'Higgins enfrentó lo imposible. Rodeado, sin más aliados que su coraje, luchó por la libertad. Su determinación encendió la llama de la patria, resistiendo hasta el final.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_07.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269054/deckshado/extra_cards/tk26_07.png"
     }
   },
   {
@@ -220679,7 +220679,7 @@
       "damage": null,
       "ability": "Exhumar.\nCuando entra en juego, Baraja o Destierra una carta oponente de coste 3 o menos.\nEn tu Vigilia o al comienzo de tu Fase Final, una vez por turno, puedes Desterrar o Barajar hasta tres cartas de los Cementerios.",
       "flavour": "Para reinar tuvo que reinventarse y adaptarse, manteniendo a la vez su identidad y personalidad. Los señores que desempeñaron cargos bajo su mandato se sintieron orgullosos de servirla y honrarla.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_08.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269055/deckshado/extra_cards/tk26_08.png"
     }
   },
   {
@@ -220698,7 +220698,7 @@
       "damage": null,
       "ability": "Reduce su coste en un Oro por cada carta que no sea Oro en juego, hasta un mínimo de 1.\nConvierte los Aliados en Aliados de Fuerza 1 con la habilidad \"No puede portar Armas\".\nSi está en tu Cementerio, el daño directo y de combate que recibe tu Castillo se reduce en dos.",
       "flavour": "Las calles se encienden con calaveras danzantes, flores vibrantes y velas titilantes, donde la vida celebra a la muerte en un eterno abrazo.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_09.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269056/deckshado/extra_cards/tk26_09.png"
     }
   },
   {
@@ -220717,7 +220717,7 @@
       "damage": null,
       "ability": null,
       "flavour": null,
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_001.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268968/deckshado/extra_cards/heroes_de_dharma_001.jpg"
     }
   },
   {
@@ -220736,7 +220736,7 @@
       "damage": "3",
       "ability": "Furia (Este Aliado no necesita pasar por una Fase de Agrupacion para ser Recurso Atacante).\nEn tu Fase Final, Destruye este Aliado. Cuando juegues un Aliado de Raza Bestia, puedes jugar este Aliado desde tu Cementerio sin pagar su coste.",
       "flavour": "Nuestras fauces resguardarán la tranquilidad de los dioses, no te atrevas a interponerte en nuestros dominios.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/esc_adicionales_001.webp"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268967/deckshado/extra_cards/esc_adicionales_001.webp"
     }
   },
   {
@@ -220755,7 +220755,7 @@
       "damage": null,
       "ability": "Sólo puedes jugarlo en respuesta a que tu oponente juegue su segunda carta del turno y no puede ser Anulado.\nTu oponente sólo puede jugar una carta más de ese mismo tipo este turno y tú no puedes jugar más cartas este turno.",
       "flavour": "Entre sombras, las velas marcan senderos dorados, guiando a los espíritus con ternura hacia el calor del recuerdo eterno.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_10.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269057/deckshado/extra_cards/tk26_10.png"
     }
   },
   {
@@ -220774,7 +220774,7 @@
       "damage": null,
       "ability": null,
       "flavour": null,
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_010.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268975/deckshado/extra_cards/heroes_de_dharma_010.jpg"
     }
   },
   {
@@ -220793,7 +220793,7 @@
       "damage": null,
       "ability": "Oro Inicial.\nNo puede ser afectado por Aliados.\nTu oponente sólo puede utilizar las habilidades de Oros y cartas de coste 2 o más si no controla más copias de esa carta.\nEn tu Fase Final, puedes Barajar hasta tres cartas de los Cementerios.",
       "flavour": "Envueltos en maíz y tradición, reposan como ofrenda sagrada, alimento de memoria para los que ya partieron.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_11.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269058/deckshado/extra_cards/tk26_11.png"
     }
   },
   {
@@ -220812,7 +220812,7 @@
       "damage": null,
       "ability": null,
       "flavour": null,
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_011.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268976/deckshado/extra_cards/heroes_de_dharma_011.jpg"
     }
   },
   {
@@ -220831,7 +220831,7 @@
       "damage": null,
       "ability": "En tu Vigilia, una vez por turno, puedes pagarlo para buscar un Talismán o Tótem de coste 2 o más en tu Castillo y jugarlo reduciendo su coste en un Oro.\nSólo se puede Botar y/o Desterrar hasta quince cartas de cada Castillo por turno y tus Aliados son Indestructibles mientras bloquean.",
       "flavour": "Con su forma redonda y decoración de azúcar, el pan de muerto guarda en su dulzura el recuerdo de quienes siguen vivos en el corazón.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_12.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269067/deckshado/extra_cards/tk26i_12.png"
     }
   },
   {
@@ -220850,7 +220850,7 @@
       "damage": null,
       "ability": null,
       "flavour": null,
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_012.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268976/deckshado/extra_cards/heroes_de_dharma_012.jpg"
     }
   },
   {
@@ -220869,7 +220869,7 @@
       "damage": "2",
       "ability": "Exhumar.\nCuando entra en juego, Baraja las cartas oponentes que no sean Oro y por cada Oro que controle tu oponente, el Destierra la primera carta del tope de su Castillo.\nLas cartas en el Cementerio y Destierro oponente pierden su habilidad.",
       "flavour": "Con vestido majestuoso y mirada hueca, simboliza la unión entre lo terrenal y lo eterno en la celebración de la vida.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_13.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269058/deckshado/extra_cards/tk26_13.png"
     }
   },
   {
@@ -220888,7 +220888,7 @@
       "damage": null,
       "ability": null,
       "flavour": null,
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_013.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268978/deckshado/extra_cards/heroes_de_dharma_013.png"
     }
   },
   {
@@ -220907,7 +220907,7 @@
       "damage": null,
       "ability": "En respuesta a que tu oponente fuera a buscar cartas en tu Castillo o por segunda vez en su Castillo este turno, juégalo sin pagar su coste.\nBusca hasta dos cartas con distinto nombre en un Castillo y Destiérralas o prevén que tu oponente busque cartas en tu Castillo.",
       "flavour": "Velas titilan, aromas de pan y recuerdos; los ancestros susurran, guiando pasos con cariño eterno.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_14.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269059/deckshado/extra_cards/tk26_14.png"
     }
   },
   {
@@ -220926,7 +220926,7 @@
       "damage": null,
       "ability": null,
       "flavour": null,
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_014.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268988/deckshado/extra_cards/heroes_de_dharma_014.jpg"
     }
   },
   {
@@ -220964,7 +220964,7 @@
       "damage": null,
       "ability": null,
       "flavour": null,
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_015.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268992/deckshado/extra_cards/heroes_de_dharma_015.jpg"
     }
   },
   {
@@ -220983,7 +220983,7 @@
       "damage": null,
       "ability": "No puede portarse en Aliados de Fuerza 2 o 3.\nEl portador gana 2 de Fuerza e Indestructible.\nCuando entra en juego, puedes Destruir un Aliado.\nEn tu Fase Final, si no controlas Aliados con Furia o Imbloqueable, agrupa un Oro y muestra cartas del tope de tu Castillo hasta mostrar un Talismán y ponlo en tu mano.",
       "flavour": "Entre humo de copal y pétalos, su guadaña guía a quienes veneran la Santa Muerte con fe profunda.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_16.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269060/deckshado/extra_cards/tk26_16.png"
     }
   },
   {
@@ -221002,7 +221002,7 @@
       "damage": null,
       "ability": "Cuando entra en juego, Baraja la mitad de los Aliados de cada jugador redondeado hacia arriba o una carta de coste 3 o menos.\nUna vez en tu turno, elige que tu oponente Bote dos o Destierra una carta del tope de su Castillo, por cada Tótem que controles. Si controlas dos Tótem o menos, Roba una carta.",
       "flavour": "Flores, velas y recuerdos se entrelazan; el altar susurra historias de aquellos que viven en memoria.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_17.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269061/deckshado/extra_cards/tk26_17.png"
     }
   },
   {
@@ -221040,7 +221040,7 @@
       "damage": null,
       "ability": "Cuando lo juegues, Destiérralo.\nAnula o cancela la habilidad de un Aliado. Si tenía coste 2 o menos, Destierra ese Aliado.\nPuedes Desterrarlo de tu Cementerio para que un Aliado pierda su habilidad por el turno.",
       "flavour": "La red de la diosa lunar atrapa los sueños y promesas de un futuro impredecible.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_19.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269062/deckshado/extra_cards/tk26_19.png"
     }
   },
   {
@@ -221059,7 +221059,7 @@
       "damage": null,
       "ability": null,
       "flavour": null,
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_002.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268969/deckshado/extra_cards/heroes_de_dharma_002.jpg"
     }
   },
   {
@@ -221078,7 +221078,7 @@
       "damage": null,
       "ability": "El portador gana 2 de Fuerza.\nCuando entra en juego, Roba dos cartas y Baraja una carta oponente de coste igual o menor a la cantidad de Aliados que controles.\nPuedes pagar un Oro y Desterrar esta carta de tu mano para Anular una carta de coste 1.",
       "flavour": "Su hoja lleva la furia del norte y runas grabadas en su alma de metal. Un arma fiel que canta con cada golpe, símbolo de honor y destino.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_20.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269063/deckshado/extra_cards/tk26_20.png"
     }
   },
   {
@@ -221097,7 +221097,7 @@
       "damage": null,
       "ability": "Cuando entra en juego y al comienzo del turno oponente, Destierra una carta que no sea Oro o mira la mano de tu oponente y Destierra un Talismán de ahí. Roba una carta.\nAl comienzo de tu turno y cuando salga del juego, tu oponente Bota cuatro cartas.",
       "flavour": "En Carcosa, los vivos no viven, y los muertos nunca se van, la locura y el miedo conviven, en un baile eterno sin final.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_21.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269064/deckshado/extra_cards/tk26_21.png"
     }
   },
   {
@@ -221116,7 +221116,7 @@
       "damage": null,
       "ability": "Exhumar.\nSi está en tu Destierro puedes pagar un Oro para Barajarlo en tu Castillo y que tu oponente Destierre tres cartas del tope de su Castillo.\nBusca tres cartas de distinto tipo en el Castillo oponente, Destiérralas y Roba una carta.",
       "flavour": "Los colosos de la tierra son amalgamas de acero y voluntad. Héroes altruistas que no dudan en ponerse al frente de la lucha.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_219.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269008/deckshado/extra_cards/kvm_219.png"
     }
   },
   {
@@ -221135,7 +221135,7 @@
       "damage": null,
       "ability": "En tu Vigilia, reduce su coste en un Oro por cada carta que jugó tu oponente este turno hasta un mínimo de 0 y no puedes jugar más Ritual Vudú este turno.\nRoba una carta, sube hasta un Aliado de tu Cementerio a tu mano y al comienzo de tu próximo turno genera un Oro y Roba dos cartas.",
       "flavour": "Tambores resuenan, humo se eleva; espíritus obedecen al ritual que une lo humano y lo invisible.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_22.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269065/deckshado/extra_cards/tk26_22.png"
     }
   },
   {
@@ -221154,7 +221154,7 @@
       "damage": null,
       "ability": "Cuando lo juegues, Destiérralo.\nElige un Aliado que controles. Hasta tu próximo turno, si está en tu Línea de Ataque no puede salir del juego por efectos y su daño de combate es enviado al Destierro, de lo contrario, tu oponente no puede atacar con Aliados de mayor Fuerza que ese Aliado.",
       "flavour": "Los invasores monstruosos tienen muchas formas y objetivos. Vestigios de lo que alguna vez fue una civilización estelar.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_220.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269014/deckshado/extra_cards/kvm_220.png"
     }
   },
   {
@@ -221173,7 +221173,7 @@
       "damage": null,
       "ability": "Busca dos cartas en un Castillo y Destiérralas.\nSi está en tu Cementerio, los jugadores deben Barajar una carta de su mano para jugar cartas de coste 0 o sin pagar su coste.\nAl comienzo de tu Vigilia, puedes subir esta carta de tu Cementerio a tu mano.",
       "flavour": "Las Guerras Titán cambiarán el futuro de la galaxia para siempre. Creando alianzas imposibles y forjando héroes eternos.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_221.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269019/deckshado/extra_cards/kvm_221.png"
     }
   },
   {
@@ -221192,7 +221192,7 @@
       "damage": null,
       "ability": "Un Aliado gana la habilidad \"En tu Vigilia, una vez por turno, puedes Barajar todos los Aliados de menor Fuerza que este Aliado.\"\nSi está en tu Cementerio, tu Aliado de mayor coste no puede ser afectado por Aliados oponentes de menor coste que él.",
       "flavour": "No inclines la cabeza ante nadie, pues tu grandeza no conoce límites. No necesitas aliados, sólo escalones hacia la cima.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_222.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269022/deckshado/extra_cards/kvm_222.png"
     }
   },
   {
@@ -221211,7 +221211,7 @@
       "damage": null,
       "ability": "Busca en tu Castillo tres Oros. Pon dos de ellos en tu Oro Pagado, sin habilidad por el turno, y el otro en tu mano. Si controlas siete o más Oros, Roba dos cartas.\nCuando pongas un Oro en juego, puedes subir este Talismán de tu Cementerio a tu mano.",
       "flavour": "El mundo no es suficiente, sus deseos no conocen saciedad. Lo que toca, lo reclama. Lo que ve, lo desea.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_223.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269025/deckshado/extra_cards/kvm_223.png"
     }
   },
   {
@@ -221230,7 +221230,7 @@
       "damage": null,
       "ability": "Busca dos Aliados en tu Castillo y ponlos en tu mano. Hasta tu próximo turno no tienes límite de cartas en tu mano y no puedes ser afectado por efectos oponentes este turno.\nPuedes Desterrarlo de tu Cementerio para Barajar hasta tres cartas de los Cementerios.",
       "flavour": "Prometió placer, pero entregó condena. Su toque es un susurro que arrastra reinos a la ruina, pues no hay espada que corte la obsesión.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_224.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269029/deckshado/extra_cards/kvm_224.png"
     }
   },
   {
@@ -221249,7 +221249,7 @@
       "damage": null,
       "ability": "Un Aliado gana Furia, Imbloqueable, 3 de Fuerza y hace daño al Destierro por el turno.\nSi está en tu Cementerio, puedes Desterrarlo para que un Aliado gane 1 de Fuerza y su ataque no pueda ser cancelado por el turno.",
       "flavour": "No hubo dioses, ni templos, ni imperios que escaparan de su fuego. Su grito quebró la razón y selló destinos, sólo por el placer de destruir.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_225.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269032/deckshado/extra_cards/kvm_225.png"
     }
   },
   {
@@ -221268,7 +221268,7 @@
       "damage": null,
       "ability": "Roba siete cartas. Cada vez que muevas Oros a tu Oro Pagado este turno, Baraja hasta una carta de tu Cementerio y Roba una carta.\nAl comienzo de la Vigilia, si está en tu Cementerio y no tienes Oros en Reserva, Roba una carta.",
       "flavour": "Devora cuerpos y almas, aún así, su hambre no termina. No come por necesidad, lo hace por llenar el vacío de su alma.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_226.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269034/deckshado/extra_cards/kvm_226.png"
     }
   },
   {
@@ -221287,7 +221287,7 @@
       "damage": null,
       "ability": "Anula una carta de coste 3 o menos. Juega esa carta bajo tu control sin pagar su coste. Si es un Talismán, puedes elegir nuevos objetivos.\nSi está en tu Cementerio y si tienes menos cartas en tu mano que tu oponente, puedes Desterrarlo para Robar una carta.",
       "flavour": "No quería su corona, sólo quería verla caer. Porque nada se anhela más, que lo que tienen los demás.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_227.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269037/deckshado/extra_cards/kvm_227.png"
     }
   },
   {
@@ -221306,7 +221306,7 @@
       "damage": null,
       "ability": "Cuando lo juegues, Destiérralo.\nLos próximos dos turnos, no se puede atacar y no puedes jugar más de una carta por turno.\nSi está en tu Cementerio, no se puede poner más de una carta en juego desde una Zona que no sea la mano por turno.",
       "flavour": "Si nadie lo ha hecho, ¿porque debo hacerlo yo? Los milenios pasan a su lado sin afectarle, pues vive fuera del tiempo.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_228.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269039/deckshado/extra_cards/kvm_228.png"
     }
   },
   {
@@ -221325,7 +221325,7 @@
       "damage": null,
       "ability": "Elige un efecto. Si tu oponente tiene menos de veinte cartas en su Castillo, elige ambos.\n- Convierte una carta oponente en una del mismo tipo sin habilidad y Roba una carta.\n- Si tu oponente no ha recibido daño este turno, Bota cinco cartas de su Castillo y cuando se resuelva, sube esta carta a tu mano.",
       "flavour": "La bruma cubre el lago al amanecer; antiguos secretos despiertan mientras la ceremonia invoca fuerzas ocultas y murmullos olvidados.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26_23.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269066/deckshado/extra_cards/tk26_23.png"
     }
   },
   {
@@ -221344,7 +221344,7 @@
       "damage": null,
       "ability": "Las habilidades de este Oro no pueden ser canceladas.\nCuando entra en juego, Roba dos cartas.\nPuedes convertirlo en un Oro sin habilidad para prevenir que una habilidad sea cancelada o un Aliado de coste 1 sea Anulado.\nPuedes Desterrarlo de tu mano o Cementerio para cancelar el ataque de hasta dos Aliados.",
       "flavour": null,
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_230.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269041/deckshado/extra_cards/kvm_230.png"
     }
   },
   {
@@ -221363,7 +221363,7 @@
       "damage": null,
       "ability": "Indesterrable.\nCuando entra en juego, mira cuatro cartas del tope de tu Castillo. Pon una de ahí en tu mano, otra en tu Cementerio y ordena el resto.\nPuedes convertir este Oro en un Oro sin habilidad para cancelar la habilidad de una carta fuera del juego o un Oro.",
       "flavour": null,
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_231.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269042/deckshado/extra_cards/kvm_231.png"
     }
   },
   {
@@ -221382,7 +221382,7 @@
       "damage": null,
       "ability": "Cuando entra o sale del juego, Baraja hasta una carta oponente de coste 3 o menos y Roba dos cartas.\nUna vez por turno, puedes Barajar una carta de tu mano para Anular o Desterrar una carta de coste 1 o menos, o pagar un Oro para Anular una carta de coste 2 o más.",
       "flavour": null,
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_232.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269043/deckshado/extra_cards/kvm_232.png"
     }
   },
   {
@@ -221401,7 +221401,7 @@
       "damage": "1",
       "ability": "Indestructible.\nPuedes jugarlo al comienzo de la Vigilia.\nNo puede ser afectado por Oros oponentes.\nCuando entra en juego, Roba una carta.\nLas cartas sólo pueden ser puestas en juego desde la mano de su dueño.",
       "flavour": null,
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_233.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269045/deckshado/extra_cards/kvm_233.png"
     }
   },
   {
@@ -221420,7 +221420,7 @@
       "damage": null,
       "ability": "Oro Inicial.\nEn tu Vigilia, si no has puesto Oros en juego este turno, puedes mirar las primeras seis cartas de tu Castillo y poner un Oro de ahí en tu Reserva.\nEsta habilidad no puede ser cancelada.\nTus Aliados de coste 1 o más ganan 1 de Fuerza y no son Destruidos cuando bloquean.",
       "flavour": null,
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/kvm_234.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269046/deckshado/extra_cards/kvm_234.png"
     }
   },
   {
@@ -221439,7 +221439,7 @@
       "damage": null,
       "ability": "Oro Inicial.\nDurante la Vigilia de su oponente, los jugadores sólo pueden jugar hasta dos Talismanes y/o utilizar hasta dos habilidades.\nAl comienzo de la Vigilia oponente, puedes Desterrar hasta una carta de un Cementerio por cada Aliado que haya atacado en tu turno.",
       "flavour": "Pequeños amuletos cuelgan al viento; en sus símbolos y hechizos, se esconde poder antiguo y protección silenciosa.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_24.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269068/deckshado/extra_cards/tk26i_24.png"
     }
   },
   {
@@ -221458,7 +221458,7 @@
       "damage": null,
       "ability": "En tu Vigilia, si controlas Aliados con Furia, puedes pagarlo para mirar la mano de tu oponente. Elige un Talismán o Tótem de ahí y Barájalo. Esta habilidad no puede ser cancelada ni prevenida.\nEn tu Vigilia, una vez por turno, un Aliado gana 2 de Fuerza permanentemente.",
       "flavour": "Hilos y alfileres marcan su destino; el muñeco refleja deseos, penas y fuerzas ocultas del corazón.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_25.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269069/deckshado/extra_cards/tk26i_25.png"
     }
   },
   {
@@ -221477,7 +221477,7 @@
       "damage": "4",
       "ability": "Cuando entra en juego o ataque, puedes mostrar cartas del tope de tu Castillo hasta mostrar un Aliado con Furia y un Arma, pon una en tu mano y la otra en tu Cementerio. Si mostraste ambos, busca en un Castillo dos cartas con distinto nombre y Destiérralas.",
       "flavour": "En la encrucijada espera; abre caminos y susurra secretos antiguos, conectando el mundo terrenal con lo invisible.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_26.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269070/deckshado/extra_cards/tk26i_26.png"
     }
   },
   {
@@ -221496,7 +221496,7 @@
       "damage": null,
       "ability": "Prevén que un Aliado sea Anulado, Destruido, Desterrado o cambie de controlador.\nEn tu Vigilia, si no has puesto Oros en juego este turno, puedes convertir este Talismán de tu mano en un Oro sin habilidad, ponlo en tu Reserva y Roba una carta.",
       "flavour": "Susurros cruzan el tiempo; rituales y ofrendas conectan vivos y muertos en un hilo místico eterno.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_27.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269071/deckshado/extra_cards/tk26i_27.png"
     }
   },
   {
@@ -221515,7 +221515,7 @@
       "damage": null,
       "ability": "Sólo puedes jugarlo durante tu turno.\nCancela una habilidad o una carta en juego pierde su habilidad por el turno. En tu Fase Final mueve tus Oros a tu Oro Pagado.\nPuedes Desterrarlo de tu Cementerio para Barajar o Desterrar una carta de un Cementerio.",
       "flavour": "Sombras y símbolos se entrelazan; la maldición se cierne, guiando el destino con fuerza oscura y siniestra.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_28.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269072/deckshado/extra_cards/tk26i_28.png"
     }
   },
   {
@@ -221534,7 +221534,7 @@
       "damage": "2",
       "ability": "Exhumar.\nEl portador gana 2 de Fuerza, Furia y hace daño de combate al Destierro.\nCuando el portador haga daño de combate, pon un Oro del Destierro oponente en tu Oro Pagado o busca un Aliado y un Arma en tu Castillo y ponlos en tu mano.",
       "flavour": "Acero y runas brillan al fuego; la daga marca pactos y canaliza poder antiguo en manos ceremoniales.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_29.png?v=1"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269072/deckshado/extra_cards/tk26i_29.png"
     }
   },
   {
@@ -221553,7 +221553,7 @@
       "damage": null,
       "ability": null,
       "flavour": null,
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_003.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268969/deckshado/extra_cards/heroes_de_dharma_003.png"
     }
   },
   {
@@ -221572,7 +221572,7 @@
       "damage": null,
       "ability": "Cuando entra en juego, Roba dos cartas.\nUna vez por turno, Descarta o Destruye una carta que controles para que hasta dos Aliados de coste 2 o menos ganen 1 de Fuerza y Furia.\nEn tu Vigilia o Fase Final, Destierra hasta tres cartas del Cementerio oponente.",
       "flavour": "La bruma envuelve los cipreses; aguas lentas guardan secretos antiguos y ecos de rituales olvidados.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_30.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269073/deckshado/extra_cards/tk26i_30.png"
     }
   },
   {
@@ -221591,7 +221591,7 @@
       "damage": null,
       "ability": "Cuando entra en juego y al comienzo de tu Vigilia, puedes mostrar las tres primeras cartas de tu Castillo y poner un Aliado de coste 1 o menos o con Furia, o un Arma de ahí en tu mano. Si lo haces, hasta tu próximo turno jugar Talismanes cuesta un Oro adicional si ese jugador ha jugado Talismanes en el turno.",
       "flavour": "Escamas brillan al sol; el amuleto protege y atrae astucia, poder y misterios silenciosos.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_31.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269074/deckshado/extra_cards/tk26i_31.png"
     }
   },
   {
@@ -221610,7 +221610,7 @@
       "damage": null,
       "ability": "Al comienzo del turno, puedes Descartar una carta para nombrar una carta que no sea Oro. Las cartas con ese nombre no tienen habilidad por el turno.\nLos jugadores sólo pueden jugar y/o utilizar hasta tres habilidades de Oros, cartas de coste 0 y/o de cartas fuera del juego por turno.",
       "flavour": "Superstición y oración se entrelazan; la medalla ofrece protección y guía bajo la mirada de la Santa Muerte.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_32.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269076/deckshado/extra_cards/tk26i_32.png"
     }
   },
   {
@@ -221629,7 +221629,7 @@
       "damage": null,
       "ability": "Cuando entra en juego, puedes Robar una carta.\nEn tu Vigilia, una vez por turno, si tu oponente jugó cartas y/o utilizó habilidades más de dos veces este turno y controlas Aliados con Furia, puedes poner la primera carta de su Castillo en tu Oro Pagado como un Oro sin habilidad.",
       "flavour": "Magia y símbolos antiguos se unen; la medalla abre caminos y conecta con fuerzas invisibles que guían destinos.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_33.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269077/deckshado/extra_cards/tk26i_33.png"
     }
   },
   {
@@ -221648,7 +221648,7 @@
       "damage": null,
       "ability": "Única.\nCuando juegues este Talismán, Destiérralo.\nAnula una carta. Luego, Baraja tantas cartas de tu mano como coste tenga esa carta.",
       "flavour": "Su brillo es luz sagrada, guardián de sabidurías antiguas. Sus escamas resplandecen como el sol naciente, y su aliento purifica o destruye. Majestuoso y eterno, es la esperanza y el juicio para quienes se atreven a buscarlo.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_34.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269078/deckshado/extra_cards/tk26i_34.png"
     }
   },
   {
@@ -221667,7 +221667,7 @@
       "damage": null,
       "ability": "Única.\nElige un efecto:\n- Anula una carta de coste 2 o menos que no sea Aliado y Destierra esa carta.\n- Cancela la habilidad de una carta y tu oponente no puede utilizar más habilidades de cartas con ese nombre este turno.",
       "flavour": "Velas y ofrendas iluminan la fe; el culto honra a los que partieron y protege a los vivos.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_35.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269079/deckshado/extra_cards/tk26i_35.png"
     }
   },
   {
@@ -221686,7 +221686,7 @@
       "damage": null,
       "ability": "Cuando lo juegues, Destiérralo.\nHasta tu próximo turno, cada vez que recibas daño oponente, tu oponente Bota esa misma cantidad y tú pones en juego un Aliado de un Cementerio como un Aliado sin habilidad.\nPuedes Desterrarlo de tu Cementerio para Barajar hasta tres cartas de los Cementerios.",
       "flavour": "Manos se alzan entre tierra y sombras; antiguos rituales devuelven la vida a cuerpos olvidados.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/tk26i_36.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777269080/deckshado/extra_cards/tk26i_36.png"
     }
   },
   {
@@ -221705,7 +221705,7 @@
       "damage": null,
       "ability": null,
       "flavour": null,
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_004.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268970/deckshado/extra_cards/heroes_de_dharma_004.jpg"
     }
   },
   {
@@ -221724,7 +221724,7 @@
       "damage": null,
       "ability": null,
       "flavour": null,
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_005.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268971/deckshado/extra_cards/heroes_de_dharma_005.png"
     }
   },
   {
@@ -221743,7 +221743,7 @@
       "damage": null,
       "ability": null,
       "flavour": null,
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_006.jpg"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268972/deckshado/extra_cards/heroes_de_dharma_006.jpg"
     }
   },
   {
@@ -221762,7 +221762,7 @@
       "damage": null,
       "ability": null,
       "flavour": null,
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_007.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268972/deckshado/extra_cards/heroes_de_dharma_007.jpg"
     }
   },
   {
@@ -221781,7 +221781,7 @@
       "damage": null,
       "ability": null,
       "flavour": null,
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_008.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268974/deckshado/extra_cards/heroes_de_dharma_008.jpg"
     }
   },
   {
@@ -221800,7 +221800,7 @@
       "damage": null,
       "ability": null,
       "flavour": null,
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/heroes_de_dharma_009.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268975/deckshado/extra_cards/heroes_de_dharma_009.jpg"
     }
   },
   {
@@ -221819,7 +221819,7 @@
       "damage": "1",
       "ability": "Exhumar.\nCuando entra en juego, puedes buscar una carta en tu Castillo y ponerla en tu mano o Barajar una carta de coste 2 o menos.\nCuando tu oponente juegue una carta o utilice una habilidad, puedes Barajarla para reducir en cuatro el próximo daño que reciba tu Castillo.",
       "flavour": "Calles vacías y luces parpadeantes; su silueta atrae a los incautos conductores de las calles de Santiago.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_0-1.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268953/deckshado/extra_cards/c-o-2_0-1.png"
     }
   },
   {
@@ -221838,7 +221838,7 @@
       "damage": "1",
       "ability": "Furia.\nCuando entra en juego, un Aliado gana 2 de Fuerza permanentemente o Destruye una carta oponente de coste 1 o menos.\nCuando este u otro Aliado salga del juego por efectos, una vez por turno, un Aliado gana su Fuerza permanentemente.",
       "flavour": "Una abominable criatura sembró el pánico en la cordillera Rancagüina. Su terrible apariencia aterrorizó a los pobladores desamparados.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_03-1.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268962/deckshado/extra_cards/c-o-2_03-1.png"
     }
   },
   {
@@ -221857,7 +221857,7 @@
       "damage": "3",
       "ability": "Exhumar.\nCuando entra en juego o ataca, convierte una carta del tope de un Castillo o una carta de coste 1 o menos en un Aliado de Fuerza 2 con la habilidad Furia, Imbloqueable. Hace dano de combate al Destierro, y ponlo en juego bajo tu control o gana su control.",
       "flavour": "A lo largo de todo el pais, sombras se arrastran por la noche. Su saco esconde hoy terrores que acechan a los desobedientes.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_04.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268963/deckshado/extra_cards/c-o-2_04.png"
     }
   },
   {
@@ -221895,7 +221895,7 @@
       "damage": null,
       "ability": "Cuando juegues este Talismán, Destiérralo.\nBusca dos cartas en cada Castillo, ponlas en el Cementerio de su dueño y Roba una carta.\nPuedes pagar tres Oros y Barajar tres copias de La Hora del Diablo de tu Destierro en tu Castillo para Desterrar hasta tres cartas oponentes de distinto tipo.",
       "flavour": "En la hora más lejana a la muerte del Cristo; las presencias demoníacas y fenómenos espectrales se concentran maléficamente.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_06-1.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268964/deckshado/extra_cards/c-o-2_06-1.png"
     }
   },
   {
@@ -221914,7 +221914,7 @@
       "damage": null,
       "ability": "Cuando lo juegues, puedes pagar un Oro adicional para elegir una carta de cualquier coste en vez de coste 3 o menos.\nBaraja una carta de coste 3 o menos.\nSi está en tu Cementerio, puedes pagar el coste de un Aliado en tu Cementerio para poner este Talismán en juego como una copia de ese Aliado.",
       "flavour": "El Palacio Echeverría fue el centro del espiritismo nacional. Incontables espectros aún recorren los pasillos de \"La casa de los Espíritus\".",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_07-2.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268965/deckshado/extra_cards/c-o-2_07-2.png"
     }
   },
   {
@@ -221952,7 +221952,7 @@
       "damage": null,
       "ability": "Cuando lo juegues, Destiérralo.\nElige un Aliado que controles de coste 2 o más y un Aliado que controle tu oponente de igual o menor Fuerza. Gana el control del Aliado oponente, mientras tu Aliado esté en juego.",
       "flavour": "Cuerdas y velas enlazan destinos. El amarre ata corazones y deseos con el poder antiguo y silencioso de la brujería.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_09.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268965/deckshado/extra_cards/c-o-2_09.png"
     }
   },
   {
@@ -221971,7 +221971,7 @@
       "damage": null,
       "ability": "Sube a la mano de su dueño una carta oponente de coste 3 o menos. Si esa carta era un Aliado o Tótem, tu oponente no puede jugar cartas con ese nombre hasta tu próximo turno y tú generas un Oro para jugar Armas o Tótem.",
       "flavour": "Desaparecido por 15 minutos, el cabo es encontrado con una crecida barba y su reloj adelantado cinco días del presente.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_010.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268954/deckshado/extra_cards/c-o-2_010.png"
     }
   },
   {
@@ -221990,7 +221990,7 @@
       "damage": null,
       "ability": "Elige un efecto. Muestra la primera carta de tu Castillo y si es un Aliado, elige ambos:\n- Mira la mano de tu oponente, elige una carta de ahí que no sea Oro y Barájala en su Castillo.\n- En la próxima Fase Final oponente, puedes mover un Oro oponente a su Oro Pagado.",
       "flavour": "Extrañas luces e imposibles objetos recorren las carreteras del norte Chileno. Camioneros y viajeros son silentes testigos de estos inexplicables fenómenos.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_011.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268956/deckshado/extra_cards/c-o-2_011.png"
     }
   },
   {
@@ -222009,7 +222009,7 @@
       "damage": null,
       "ability": "Gana el control de un Arma. Si eres el dueño de esa Arma, genera un Oro por el turno.\nSi atacaste o bloqueaste desde tu turno anterior, puedes Desterrarlo de tu mano o Cementerio para prevenir que tu oponente Baraje y/o Destierre cartas de los Cementerios.",
       "flavour": "Un grupo de radioaficionados estableció contacto con seres de habilidades curativas únicas y tecnología avanzada. Habitantes de una isla imposible en el sur del mundo.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_013-1.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268956/deckshado/extra_cards/c-o-2_013-1.png"
     }
   },
   {
@@ -222085,7 +222085,7 @@
       "damage": null,
       "ability": "Exhumar.\nCuando entra en juego, Baraja hasta tantas cartas oponentes de coste 3 o menos como cartas Exhumar controles y Roba dos cartas.\nLas cartas en tu Cementerio no pueden perder su habilidad ni ser Desterradas por efectos.\nTus Aliados con Exhumar ganan Furia.",
       "flavour": "Entre sus mausoleos y nichos, terribles apariciones e inexplicables sensaciones envuelven al epicentro del misterio nacional.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_017.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268957/deckshado/extra_cards/c-o-2_017.png"
     }
   },
   {
@@ -222104,7 +222104,7 @@
       "damage": null,
       "ability": "Cuando entra en juego, pon la primera o la última carta de tu Castillo en tu mano.\nUna vez por turno, puedes jugar una carta de tu Cementerio o del tope de tu Castillo.\nJuega mostrando la primera carta de tu Castillo.",
       "flavour": "Las Hermanas Morla y el palacio Echeverría fueron el centro del espiritismo nacional. En sus sesiones se utilizó para contactar con fuerzas desconocidas.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_018.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268959/deckshado/extra_cards/c-o-2_018.png"
     }
   },
   {
@@ -222123,7 +222123,7 @@
       "damage": null,
       "ability": "Al comienzo de la Vigilia, si no tienes Oros en Reserva, Destierra dos cartas del tope de un Castillo y hasta una carta de un Cementerio.\nPuedes convertirlo en un Oro sin habilidad para prevenir que un Aliado sea Destruido, cambie de controlador o sea convertido, por un efecto oponente.",
       "flavour": "Perdido entre el humo y la cera de miles de velas, poco queda de la animita original. En su lugar, un muro inmenso reúne peticiones y agradecimientos.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_019-1.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268960/deckshado/extra_cards/c-o-2_019-1.png"
     }
   },
   {
@@ -222142,7 +222142,7 @@
       "damage": null,
       "ability": "Elige un efecto. Si pagaste dos Oros por este Talismán, no se pueden jugar cartas ni utilizar habilidades en respuesta a esta carta.\n- Una carta de coste 2 o menos pierde su habilidad, es Desterrada y Roba una carta.\n- Paga un Oro para que un Aliado pierda su habilidad, sea Desterrado y Roba dos cartas.",
       "flavour": "A veces de manera intencionada, a veces por azar. Voces espectrales son atrapadas en ondas de audio. ¿Interferencias casuales o mensajes del más allá?",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_020.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268961/deckshado/extra_cards/c-o-2_020.png"
     }
   },
   {
@@ -222161,7 +222161,7 @@
       "damage": null,
       "ability": "Cuando lo juegues, Destiérralo.\nHasta tu próximo turno cada vez que tu oponente ponga cartas en su mano por un efecto, puedes poner esa misma cantidad de cartas del tope de tu Castillo en tu mano.\nPor el resto del juego el daño de combate a tu Castillo se reduce en dos.",
       "flavour": "Velas y murmullos llenan la habitación. La sesión abre puertas entre vivos y espíritus, conectando dos mundos que no deberían coexistir.",
-      "custom_image_url": "https://iterva.pythonanywhere.com/media/extra_cards/c-o-2_021-1.png"
+      "custom_image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/v1777268961/deckshado/extra_cards/c-o-2_021-1.png"
     }
   },
   {

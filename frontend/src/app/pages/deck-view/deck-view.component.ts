@@ -1,16 +1,18 @@
 import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { Title, Meta } from '@angular/platform-browser';
+import { DatePipe } from '@angular/common';
 import { DeckService } from '../../services/deck.service';
 import { CardService } from '../../services/card.service';
 import { AuthService } from '../../services/auth.service';
-import { Deck, Card } from '../../models';
+import { Deck, Card, BanlistEntry } from '../../models';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
 
 @Component({
   selector: 'app-deck-view',
   standalone: true,
-  imports: [RouterLink, FormsModule, ThumbnailPipe],
+  imports: [RouterLink, FormsModule, ThumbnailPipe, DatePipe],
   templateUrl: './deck-view.component.html',
   styleUrl: './deck-view.component.scss',
 })
@@ -33,6 +35,14 @@ export class DeckViewComponent implements OnInit {
   handSize = 0;
   handActive = false;
 
+  // Banlist
+  banlistByName = new Map<string, BanlistEntry>();
+  banlistByCardId = new Map<number, BanlistEntry>();
+
+  // Changelog
+  changelog: { id: number; summary: string; created_at: string }[] = [];
+  showChangelog = false;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -40,6 +50,8 @@ export class DeckViewComponent implements OnInit {
     private cardService: CardService,
     private auth: AuthService,
     private cdr: ChangeDetectorRef,
+    private titleService: Title,
+    private metaService: Meta,
   ) {}
 
   get isOwner(): boolean {
@@ -90,6 +102,34 @@ export class DeckViewComponent implements OnInit {
     });
   }
 
+  exportText() {
+    if (!this.deck) return;
+    let text = `// ${this.deck.name}\n// ${this.formatLabel}`;
+    if (this.raceLabel) text += ` · ${this.raceLabel}`;
+    text += `\n\n`;
+    for (const g of this.groupedEntries) {
+      text += `// ${g.type} (${g.total})\n`;
+      for (const e of g.entries) {
+        text += `${e.quantity}x ${e.card_detail.name}\n`;
+      }
+      text += `\n`;
+    }
+    if (this.deck.sideboard_entries && this.deck.sideboard_entries.length > 0) {
+      text += `// Sidedeck\n`;
+      for (const e of this.deck.sideboard_entries) {
+        text += `${e.quantity}x ${e.card_detail.name}\n`;
+      }
+    }
+    navigator.clipboard.writeText(text.trim()).then(() => {
+      this.shareToast = true;
+      this.cdr.detectChanges();
+      setTimeout(() => {
+        this.shareToast = false;
+        this.cdr.detectChanges();
+      }, 2000);
+    });
+  }
+
   private readonly typeOrder: Record<string, number> = {
     'Oro': 0, 'Aliado': 1, 'Talismán': 2, 'Arma': 3, 'Tótem': 4,
   };
@@ -102,6 +142,17 @@ export class DeckViewComponent implements OnInit {
       this.buildGroups();
       this.loading = false;
       this.preloadImages();
+      this.loadBanlist();
+      // SEO
+      this.titleService.setTitle(`${deck.name} — ShadowForge`);
+      this.metaService.updateTag({ name: 'description', content: `Mazo ${deck.name} por ${deck.owner_username} — ${this.formatLabel} · ${deck.card_count} cartas` });
+      // Load changelog if owner
+      if (this.isOwner) {
+        this.deckService.getChangelog(deck.id).subscribe({
+          next: (log) => { this.changelog = log; this.cdr.detectChanges(); },
+          error: () => {},
+        });
+      }
     };
     // Try owner endpoint first if authenticated, then team, then public
     if (this.auth.isAuthenticated()) {
@@ -258,6 +309,31 @@ export class DeckViewComponent implements OnInit {
     }).sort((a, b) => b.pct - a.pct);
   }
 
+  /** Type distribution: percentage of each card type in the main deck. */
+  get typeDistribution(): { type: string; count: number; pct: number; color: string }[] {
+    if (!this.deck?.entries) return [];
+    const total = this.deck.entries.reduce((s, e) => s + e.quantity, 0);
+    if (total === 0) return [];
+    const colors: Record<string, string> = {
+      'Oro': '#ffbd39', 'Aliado': '#4ade80', 'Talismán': '#60a5fa',
+      'Arma': '#e94560', 'Tótem': '#c084fc',
+    };
+    return this.groupedEntries.map(g => ({
+      type: g.type,
+      count: g.total,
+      pct: Math.round((g.total / total) * 100),
+      color: colors[g.type] || '#888',
+    }));
+  }
+
+  /** Ratio aliados vs armas. */
+  get allyWeaponRatio(): { allies: number; weapons: number; ratio: string } {
+    const allies = this.groupedEntries.find(g => g.type === 'Aliado')?.total || 0;
+    const weapons = this.groupedEntries.find(g => g.type === 'Arma')?.total || 0;
+    const ratio = weapons > 0 ? `${(allies / weapons).toFixed(1)}:1` : `${allies}:0`;
+    return { allies, weapons, ratio };
+  }
+
   showPreview(card: Card, event: MouseEvent) {
     event.stopPropagation();
     this.previewCard = card;
@@ -281,6 +357,27 @@ export class DeckViewComponent implements OnInit {
   hidePreview() {
     this.previewCard = null;
     this.previewAbility = null;
+  }
+
+  private loadBanlist() {
+    if (!this.deck) return;
+    const fmt = this.deck.format || 'imp';
+    const sub = this.deck.sub_format && this.deck.sub_format !== 'racial' ? this.deck.sub_format : undefined;
+    this.cardService.getBanlist(fmt, sub).subscribe(entries => {
+      this.banlistByName.clear();
+      this.banlistByCardId.clear();
+      for (const e of entries) {
+        this.banlistByName.set(e.card_name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''), e);
+        if (e.card_id) this.banlistByCardId.set(e.card_id, e);
+      }
+      this.cdr.detectChanges();
+    });
+  }
+
+  getBanStatus(card: Card): BanlistEntry | null {
+    return this.banlistByCardId.get(card.id)
+      || this.banlistByName.get(card.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''))
+      || null;
   }
 
   /** Flat list of cards expanded by quantity (for horizontal export) */

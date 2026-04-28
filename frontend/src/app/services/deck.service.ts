@@ -63,4 +63,8 @@ export class DeckService {
       body: { card_id: cardId },
     });
   }
+
+  getChangelog(deckId: number): Observable<{ id: number; summary: string; created_at: string }[]> {
+    return this.http.get<{ id: number; summary: string; created_at: string }[]>(`${this.apiUrl}/my/${deckId}/changelog/`);
+  }
 }

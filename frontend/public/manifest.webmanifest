@@ -1,0 +1,16 @@
+{
+  "name": "ShadowForge",
+  "short_name": "ShadowForge",
+  "description": "Constructor de mazos MYL",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0f23",
+  "theme_color": "#e94560",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}

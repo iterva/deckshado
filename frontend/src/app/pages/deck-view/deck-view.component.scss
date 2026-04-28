@@ -548,6 +548,66 @@
     }
   }
 
+  .type-dist {
+    background: #0f1923;
+    border: 1px solid #1a3a4a;
+    border-radius: 10px;
+    padding: 1rem 1.2rem 0.8rem;
+
+    .type-dist-title {
+      display: block;
+      font-size: 0.85rem;
+      color: #b0b0cc;
+      margin-bottom: 0.7rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .type-dist-bar {
+      display: flex;
+      height: 28px;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 0.6rem;
+
+      .type-dist-segment {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 2px;
+        transition: width 0.4s ease;
+
+        span {
+          font-size: 0.7rem;
+          font-weight: 700;
+          color: #0f0f23;
+        }
+      }
+    }
+
+    .type-dist-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+
+      .type-dist-item {
+        font-size: 0.8rem;
+        color: #ccc;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+      }
+
+      .type-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        display: inline-block;
+      }
+    }
+  }
+
   .draw-prob {
     background: #0f1923;
     border: 1px solid #1a3a4a;
@@ -670,6 +730,68 @@
   .col-qty { width: 80px; }
   .col-cost { width: 70px; text-align: center; }
   th.col-cost { text-align: center; }
+
+  tr.ban-row td { color: #dc9600; }
+}
+
+.ban-badge-view {
+  display: inline-block;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  margin-left: 0.3rem;
+  vertical-align: middle;
+
+  &.banned { background: rgba(220, 0, 0, 0.85); color: #fff; }
+  &.limited { background: rgba(220, 150, 0, 0.85); color: #fff; }
+}
+
+.changelog-section {
+  margin-top: 2rem;
+  border-top: 1px solid #2a2a4a;
+  padding-top: 1rem;
+
+  .changelog-toggle {
+    background: transparent;
+    border: 1px solid #333;
+    color: #888;
+    padding: 0.4rem 0.9rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.2s;
+    &:hover { border-color: #e94560; color: #e94560; }
+  }
+
+  .changelog-list {
+    list-style: none;
+    margin-top: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+
+    li {
+      display: flex;
+      gap: 0.8rem;
+      font-size: 0.82rem;
+      padding: 0.35rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .changelog-date {
+      color: #666;
+      white-space: nowrap;
+      min-width: 100px;
+    }
+
+    .changelog-summary {
+      color: #ccc;
+    }
+  }
 }
 
 // Card Preview Overlay

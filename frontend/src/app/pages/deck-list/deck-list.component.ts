@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { Title } from '@angular/platform-browser';
 import { DeckService } from '../../services/deck.service';
 import { AuthService } from '../../services/auth.service';
 import { Deck } from '../../models';
@@ -20,6 +21,9 @@ export class DeckListComponent implements OnInit {
   filterFormat = '';
   filterRace = '';
   activeTab: 'public' | 'mine' | 'team' = 'public';
+  publicPage = 1;
+  publicTotal = 0;
+  readonly pageSize = 20;
 
   // ===== Comparar mazos (#5) =====
   /** Modo selección múltiple para comparar. */
@@ -57,9 +61,10 @@ export class DeckListComponent implements OnInit {
     return this.subFormatLabels[subFormat] || subFormat;
   }
 
-  constructor(public deckService: DeckService, public auth: AuthService, private cdr: ChangeDetectorRef, private router: Router) {}
+  constructor(public deckService: DeckService, public auth: AuthService, private cdr: ChangeDetectorRef, private router: Router, private titleService: Title) {}
 
   ngOnInit() {
+    this.titleService.setTitle('Mazos — ShadowForge');
     this.loadPublicDecks();
     if (this.auth.isAuthenticated()) {
       this.loadMyDecks();
@@ -70,13 +75,32 @@ export class DeckListComponent implements OnInit {
   loadPublicDecks() {
     this.deckService.getPublicDecks(
       this.search || undefined,
-      undefined,
+      this.publicPage,
       this.filterFormat || undefined,
       this.filterRace || undefined,
     ).subscribe(res => {
       this.publicDecks = res.results;
+      this.publicTotal = res.count;
       this.cdr.detectChanges();
     });
+  }
+
+  get publicTotalPages(): number {
+    return Math.ceil(this.publicTotal / this.pageSize);
+  }
+
+  publicNextPage() {
+    if (this.publicPage < this.publicTotalPages) {
+      this.publicPage++;
+      this.loadPublicDecks();
+    }
+  }
+
+  publicPrevPage() {
+    if (this.publicPage > 1) {
+      this.publicPage--;
+      this.loadPublicDecks();
+    }
   }
 
   loadMyDecks() {
@@ -97,6 +121,7 @@ export class DeckListComponent implements OnInit {
   }
 
   onSearch() {
+    this.publicPage = 1;
     this.loadPublicDecks();
   }
 

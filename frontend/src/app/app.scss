@@ -65,6 +65,21 @@
       }
     }
 
+    .theme-toggle {
+      background: transparent;
+      border: 1px solid #444;
+      border-radius: 50%;
+      width: 34px;
+      height: 34px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      &:hover { border-color: #ffbd39; }
+    }
+
     .btn-logout {
       background: transparent;
       color: #ccc;

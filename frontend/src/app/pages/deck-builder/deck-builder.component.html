@@ -380,6 +380,9 @@
                 <button class="ctrl-btn" (click)="removeCard(dc.card.id)">−</button>
                 <span class="entry-qty">{{ dc.quantity }}</span>
                 <button class="ctrl-btn" (click)="addCard(dc.card)" [disabled]="getNameCount(dc.card.name) >= getEffectiveMaxCopies(dc.card) || totalDeckCards >= 50">+</button>
+                <button class="ctrl-btn move-btn" (click)="moveToSide(dc.card.id)" [disabled]="totalSideCards >= 15" title="Mover al sidedeck">
+                  <i class="bi bi-arrow-down-short"></i>
+                </button>
               </div>
             </div>
           }
@@ -420,6 +423,9 @@
                 <button class="ctrl-btn" (click)="removeFromSide(dc.card.id)">−</button>
                 <span class="entry-qty">{{ dc.quantity }}</span>
                 <button class="ctrl-btn" (click)="addToSide(dc.card)" [disabled]="getNameCount(dc.card.name) >= getEffectiveMaxCopies(dc.card) || totalSideCards >= 15">+</button>
+                <button class="ctrl-btn move-btn" (click)="moveToMain(dc.card.id)" [disabled]="totalDeckCards >= 50" title="Mover al mazo principal">
+                  <i class="bi bi-arrow-up-short"></i>
+                </button>
               </div>
             </div>
           }

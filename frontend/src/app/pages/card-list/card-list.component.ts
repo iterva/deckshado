@@ -1,5 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Title } from '@angular/platform-browser';
 import { CardService } from '../../services/card.service';
 import { Card, Edition, CardType, Race, Rarity } from '../../models';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
@@ -30,9 +31,10 @@ export class CardListComponent implements OnInit {
   selectedCard: Card | null = null;
   viewMode: 'grid' | 'table' = 'grid';
 
-  constructor(private cardService: CardService, private cdr: ChangeDetectorRef) {}
+  constructor(private cardService: CardService, private cdr: ChangeDetectorRef, private titleService: Title) {}
 
   ngOnInit() {
+    this.titleService.setTitle('Colección de Cartas — ShadowForge');
     this.loadFilters();
     this.loadCards();
   }

@@ -40,6 +40,9 @@
     } @else {
       <a routerLink="/login" routerLinkActive="active" class="btn-login">Ingresar</a>
     }
+    <button class="theme-toggle" (click)="theme.toggle()" [title]="theme.isDark() ? 'Modo claro' : 'Modo oscuro'">
+      {{ theme.isDark() ? '☀️' : '🌙' }}
+    </button>
   </div>
 </nav>
 <main class="content">

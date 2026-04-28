@@ -35,6 +35,9 @@
         <button class="action-btn" (click)="shareDeck()" title="Compartir enlace">
           <i class="bi bi-share"></i>
         </button>
+        <button class="action-btn" (click)="exportText()" title="Copiar lista como texto">
+          <i class="bi bi-file-text"></i>
+        </button>
       </div>
       <div class="action-group">
         <select [(ngModel)]="exportOrientation" class="orientation-select">
@@ -154,9 +157,16 @@
               </thead>
               <tbody>
                 @for (entry of group.entries; track entry.id) {
-                  <tr>
+                  <tr [class.ban-row]="getBanStatus(entry.card_detail)">
                     <td class="col-qty">{{ entry.quantity }}</td>
-                    <td class="col-name">{{ entry.card_detail.name }}</td>
+                    <td class="col-name">
+                      {{ entry.card_detail.name }}
+                      @if (getBanStatus(entry.card_detail); as ban) {
+                        @if (ban.status === 'banned') { <span class="ban-badge-view banned">🚫</span> }
+                        @else if (ban.status === 'limited_1') { <span class="ban-badge-view limited">☢️1</span> }
+                        @else if (ban.status === 'limited_2') { <span class="ban-badge-view limited">☢️2</span> }
+                      }
+                    </td>
                     @if (group.type !== 'Oro') {
                       <td class="col-cost">{{ entry.card_detail.cost ?? '-' }}</td>
                     }
@@ -234,7 +244,30 @@
               <span class="stat-caption">{{ startingGoldCard.name }}</span>
             </div>
           }
+          <div class="stat-card">
+            <span class="stat-number">{{ allyWeaponRatio.ratio }}</span>
+            <span class="stat-caption">Aliados / Armas</span>
+          </div>
         </div>
+
+        <!-- Type distribution -->
+        @if (typeDistribution.length > 0) {
+          <div class="type-dist">
+            <span class="type-dist-title">Distribución por tipo</span>
+            <div class="type-dist-bar">
+              @for (t of typeDistribution; track t.type) {
+                <div class="type-dist-segment" [style.width.%]="t.pct" [style.background]="t.color" [title]="t.type + ': ' + t.count + ' (' + t.pct + '%)'">
+                  @if (t.pct >= 8) { <span>{{ t.pct }}%</span> }
+                </div>
+              }
+            </div>
+            <div class="type-dist-legend">
+              @for (t of typeDistribution; track t.type) {
+                <span class="type-dist-item"><span class="type-dot" [style.background]="t.color"></span> {{ t.type }} ({{ t.count }})</span>
+              }
+            </div>
+          </div>
+        }
 
         @if (hasAnyCost) {
           <div class="cost-curve" aria-label="Curva de coste">
@@ -328,6 +361,26 @@
           }
         </div>
       }
+    }
+
+    <!-- Changelog (owner only) -->
+    @if (isOwner && changelog.length > 0) {
+      <div class="changelog-section">
+        <button class="changelog-toggle" (click)="showChangelog = !showChangelog">
+          <i class="bi" [class.bi-clock-history]="!showChangelog" [class.bi-chevron-up]="showChangelog"></i>
+          {{ showChangelog ? 'Ocultar historial' : 'Historial de cambios (' + changelog.length + ')' }}
+        </button>
+        @if (showChangelog) {
+          <ul class="changelog-list">
+            @for (log of changelog; track log.id) {
+              <li>
+                <span class="changelog-date">{{ log.created_at | date:'dd/MM/yy HH:mm' }}</span>
+                <span class="changelog-summary">{{ log.summary }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
     }
   } @else {
     <p class="empty">Mazo no encontrado.</p>

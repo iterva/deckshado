@@ -84,6 +84,14 @@
         <p class="empty">No hay mazos públicos aún.</p>
       }
     </div>
+
+    @if (publicTotalPages > 1) {
+      <div class="pagination">
+        <button class="btn btn-secondary btn-sm" (click)="publicPrevPage()" [disabled]="publicPage === 1">← Anterior</button>
+        <span>Página {{ publicPage }} de {{ publicTotalPages }}</span>
+        <button class="btn btn-secondary btn-sm" (click)="publicNextPage()" [disabled]="publicPage >= publicTotalPages">Siguiente →</button>
+      </div>
+    }
   }
 
   @if (activeTab === 'mine') {

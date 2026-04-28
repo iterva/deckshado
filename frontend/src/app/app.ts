@@ -1,6 +1,7 @@
 import { Component, HostListener, signal } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from './services/auth.service';
+import { ThemeService } from './services/theme.service';
 
 @Component({
   selector: 'app-root',
@@ -12,7 +13,7 @@ import { AuthService } from './services/auth.service';
 export class App {
   showDropdown = signal(false);
 
-  constructor(public auth: AuthService) {
+  constructor(public auth: AuthService, public theme: ThemeService) {
     sessionStorage.removeItem('chunk_reload');
   }
 

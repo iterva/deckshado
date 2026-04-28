@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from django.db.models import Q, Sum, Value
 from django.db.models.functions import Coalesce
 from .models import Deck, DeckEntry
-from .serializers import DeckListSerializer, DeckDetailSerializer, DeckCreateSerializer, DeckEntrySerializer
+from .serializers import DeckListSerializer, DeckDetailSerializer, DeckCreateSerializer, DeckEntrySerializer, DeckChangeLogSerializer
 from teams.models import TeamMember
 
 
@@ -131,3 +131,16 @@ def deck_entry_view(request, deck_id):
         if deleted:
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response({"error": "Entrada no encontrada"}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def deck_changelog_view(request, deck_id):
+    """Historial de cambios de un mazo."""
+    from .models import DeckChangeLog
+    try:
+        deck = Deck.objects.get(id=deck_id, owner=request.user)
+    except Deck.DoesNotExist:
+        return Response({"error": "Mazo no encontrado"}, status=status.HTTP_404_NOT_FOUND)
+    entries = DeckChangeLog.objects.filter(deck=deck)[:20]
+    return Response(DeckChangeLogSerializer(entries, many=True).data)

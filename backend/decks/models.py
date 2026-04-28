@@ -36,3 +36,16 @@ class DeckEntry(models.Model):
 
     def __str__(self):
         return f"{self.quantity}x {self.card.name}"
+
+
+class DeckChangeLog(models.Model):
+    """Lightweight changelog: one row per save/update."""
+    deck = models.ForeignKey(Deck, on_delete=models.CASCADE, related_name="changelog")
+    summary = models.CharField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"[{self.created_at:%Y-%m-%d %H:%M}] {self.summary[:60]}"

@@ -781,6 +781,13 @@
 
       &:hover { border-color: #e94560; color: #e94560; background: rgba(233, 69, 96, 0.1); }
       &:disabled { opacity: 0.3; cursor: not-allowed; &:hover { background: transparent; border-color: #444; color: #ccc; } }
+
+      &.move-btn {
+        font-size: 0.85rem;
+        border-color: #2ac5c5;
+        color: #2ac5c5;
+        &:hover { background: rgba(42, 197, 197, 0.1); }
+      }
     }
 
     .entry-qty {

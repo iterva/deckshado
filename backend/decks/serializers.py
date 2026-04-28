@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Deck, DeckEntry
+from .models import Deck, DeckEntry, DeckChangeLog
 from cards.serializers import CardListSerializer
 
 
@@ -58,6 +58,14 @@ class DeckCreateSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         entries_data = validated_data.pop("entries", None)
+
+        # Track changes for changelog
+        changes = []
+        for field in ("name", "description", "format", "sub_format", "is_public", "shared_with_team", "starting_gold"):
+            new_val = validated_data.get(field)
+            if new_val is not None and getattr(instance, field) != new_val:
+                changes.append(field)
+
         instance.name = validated_data.get("name", instance.name)
         instance.description = validated_data.get("description", instance.description)
         instance.format = validated_data.get("format", instance.format)
@@ -68,7 +76,23 @@ class DeckCreateSerializer(serializers.ModelSerializer):
         instance.save()
 
         if entries_data is not None:
+            old_entries = {(e.card_id, e.is_sideboard): e.quantity for e in instance.entries.all()}
             instance.entries.all().delete()
+            new_entries = {}
             for entry in entries_data:
                 DeckEntry.objects.create(deck=instance, **entry)
+                new_entries[(entry["card"].id if hasattr(entry["card"], "id") else entry["card"], entry.get("is_sideboard", False))] = entry["quantity"]
+            if old_entries != new_entries:
+                changes.append("cartas")
+
+        if changes:
+            summary = "Actualizado: " + ", ".join(changes)
+            DeckChangeLog.objects.create(deck=instance, summary=summary)
+
         return instance
+
+
+class DeckChangeLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeckChangeLog
+        fields = ["id", "summary", "created_at"]

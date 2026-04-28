@@ -774,6 +774,51 @@ export class DeckBuilderComponent implements OnInit {
     }
   }
 
+  /** Move one copy of a card from main deck to sideboard. */
+  moveToSide(cardId: number) {
+    const mainEntry = this.deckCards.find(dc => dc.card.id === cardId);
+    if (!mainEntry) return;
+    if (this.totalSideCards >= 15) return;
+    // Remove one from main
+    if (mainEntry.quantity > 1) {
+      mainEntry.quantity--;
+    } else {
+      this.deckCards.splice(this.deckCards.indexOf(mainEntry), 1);
+      if (this.startingGoldId === cardId) this.startingGoldId = null;
+    }
+    // Add one to side
+    const sideEntry = this.sideCards.find(dc => dc.card.id === cardId);
+    if (sideEntry) {
+      sideEntry.quantity++;
+    } else {
+      this.sideCards.push({ card: mainEntry.card, quantity: 1 });
+      this.sortDeckCards(this.sideCards);
+    }
+    this.markDirty();
+  }
+
+  /** Move one copy of a card from sideboard to main deck. */
+  moveToMain(cardId: number) {
+    const sideEntry = this.sideCards.find(dc => dc.card.id === cardId);
+    if (!sideEntry) return;
+    if (this.totalDeckCards >= 50) return;
+    // Remove one from side
+    if (sideEntry.quantity > 1) {
+      sideEntry.quantity--;
+    } else {
+      this.sideCards.splice(this.sideCards.indexOf(sideEntry), 1);
+    }
+    // Add one to main
+    const mainEntry = this.deckCards.find(dc => dc.card.id === cardId);
+    if (mainEntry) {
+      mainEntry.quantity++;
+    } else {
+      this.deckCards.push({ card: sideEntry.card, quantity: 1 });
+      this.sortDeckCards(this.deckCards);
+    }
+    this.markDirty();
+  }
+
   get totalDeckCards(): number {
     return this.deckCards.reduce((sum, dc) => sum + dc.quantity, 0);
   }

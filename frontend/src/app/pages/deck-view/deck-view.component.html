@@ -181,6 +181,17 @@
             </div>
           </div>
           @if (handActive && handCards.length > 0) {
+            @if (startingGoldCard) {
+              <div class="hand-field">
+                <span class="field-label">En campo (oro inicial):</span>
+                <div class="hand-card is-starting-gold" (click)="showPreview(startingGoldCard, $event)">
+                  <img [src]="startingGoldCard.image_url | thumb:250" [alt]="startingGoldCard.name" loading="lazy">
+                  <span class="hand-gold-badge" title="Oro inicial"><i class="bi bi-star-fill"></i></span>
+                  <span class="hand-card-name">{{ startingGoldCard.name }}</span>
+                </div>
+              </div>
+              <div class="hand-divider"></div>
+            }
             <div class="hand-cards">
               @for (card of handCards; track $index) {
                 <div class="hand-card" (click)="showPreview(card, $event)">
@@ -190,7 +201,7 @@
               }
             </div>
           } @else if (!handActive) {
-            <p class="hand-hint">Simula una mano inicial para probar tu mazo.</p>
+            <p class="hand-hint">Simula una mano inicial para probar tu mazo.@if (startingGoldCard) { Tu oro inicial ({{ startingGoldCard.name }}) no se baraja, empieza en campo.}</p>
           }
         </div>
 
@@ -209,6 +220,12 @@
             <div class="stat-card type">
               <span class="stat-number">{{ g.total }}</span>
               <span class="stat-caption">{{ g.type }}</span>
+            </div>
+          }
+          @if (startingGoldCard) {
+            <div class="stat-card starting-gold" title="Oro inicial: siempre en tu mano de apertura">
+              <span class="stat-number"><i class="bi bi-star-fill"></i></span>
+              <span class="stat-caption">{{ startingGoldCard.name }}</span>
             </div>
           }
         </div>

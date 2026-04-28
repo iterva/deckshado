@@ -286,6 +286,15 @@
           <span class="oro-pill" [class.warn]="oroCount < 10 || oroCount > 18" title="Cantidad de Oros">
             <i class="bi bi-coin"></i> {{ oroCount }}
           </span>
+          @if (startingGoldCard) {
+            <span class="starting-gold-pill" title="Oro inicial: {{ startingGoldCard.name }}">
+              <i class="bi bi-star-fill"></i> {{ startingGoldCard.name }}
+            </span>
+          } @else if (oroCount > 0) {
+            <span class="starting-gold-pill empty" title="Selecciona un oro inicial desde la lista de oros">
+              <i class="bi bi-star"></i> Sin oro inicial
+            </span>
+          }
           @if (avgCostMain > 0) {
             <span class="avg-pill" title="Coste promedio (sin Oros)">μ {{ avgCostMain }}</span>
           }
@@ -362,6 +371,11 @@
                 <span class="entry-name">{{ dc.card.name }}@if (dc.card.is_unique) { <span class="unique-badge">Única</span> }@if (getBanStatus(dc.card); as ban) { @if (ban.status === 'limited_1') { <span class="ban-badge-sm limited">☢️1</span> } @else if (ban.status === 'limited_2') { <span class="ban-badge-sm limited">☢️2</span> } }</span>
                 <span class="entry-type">{{ dc.card.type_name }}@if (dc.card.cost) { · 💰{{ dc.card.cost }} }</span>
               </div>
+              @if (isEligibleStartingGold(dc.card)) {
+                <button class="starting-gold-btn" [class.active]="startingGoldId === dc.card.id" (click)="startingGoldId === dc.card.id ? clearStartingGold() : setStartingGold(dc.card.id)" [title]="startingGoldId === dc.card.id ? 'Quitar como oro inicial' : 'Seleccionar como oro inicial'">
+                  <i class="bi" [class.bi-star-fill]="startingGoldId === dc.card.id" [class.bi-star]="startingGoldId !== dc.card.id"></i>
+                </button>
+              }
               <div class="entry-controls">
                 <button class="ctrl-btn" (click)="removeCard(dc.card.id)">−</button>
                 <span class="entry-qty">{{ dc.quantity }}</span>

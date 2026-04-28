@@ -740,6 +740,25 @@
     }
   }
 
+  .starting-gold-btn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: #555;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 50%;
+    transition: all 0.15s;
+
+    &:hover { color: #ffbd39; background: rgba(255, 189, 57, 0.1); }
+    &.active { color: #ffbd39; }
+  }
+
   .entry-controls {
     display: flex;
     align-items: center;
@@ -1432,6 +1451,14 @@
 }
 .oro-pill { color: #f4d35e; }
 .oro-pill.warn { border-color: #f4a261; color: #f4a261; }
+.starting-gold-pill {
+  font-size: 0.72rem; padding: 0.18rem 0.5rem; border-radius: 12px;
+  background: #2a2a3e; color: #ffbd39; display: inline-flex; align-items: center; gap: 0.25rem;
+  border: 1px solid rgba(255, 189, 57, 0.3);
+  max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  i { flex-shrink: 0; }
+  &.empty { color: #666; border-color: transparent; }
+}
 .race-pill.ok { color: #4ade80; }
 .race-pill.bad { color: #f87171; border-color: #f87171; background: rgba(248, 113, 113, 0.08); }
 

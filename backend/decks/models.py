@@ -11,6 +11,10 @@ class Deck(models.Model):
     race = models.CharField(max_length=50, blank=True, default="")
     is_public = models.BooleanField(default=True)
     shared_with_team = models.BooleanField(default=False)
+    starting_gold = models.ForeignKey(
+        "cards.Card", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="+",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

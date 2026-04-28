@@ -17,7 +17,7 @@ class DeckListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Deck
-        fields = ["id", "name", "description", "is_public", "shared_with_team", "owner_username", "card_count", "format", "sub_format", "race", "created_at", "updated_at"]
+        fields = ["id", "name", "description", "is_public", "shared_with_team", "owner_username", "card_count", "format", "sub_format", "race", "starting_gold", "created_at", "updated_at"]
         read_only_fields = ["created_at", "updated_at"]
 
 
@@ -26,10 +26,11 @@ class DeckDetailSerializer(serializers.ModelSerializer):
     entries = serializers.SerializerMethodField()
     sideboard_entries = serializers.SerializerMethodField()
     card_count = serializers.IntegerField(read_only=True)
+    starting_gold_detail = CardListSerializer(source="starting_gold", read_only=True)
 
     class Meta:
         model = Deck
-        fields = ["id", "name", "description", "is_public", "shared_with_team", "owner_username", "card_count", "format", "sub_format", "race", "entries", "sideboard_entries", "created_at", "updated_at"]
+        fields = ["id", "name", "description", "is_public", "shared_with_team", "owner_username", "card_count", "format", "sub_format", "race", "starting_gold", "starting_gold_detail", "entries", "sideboard_entries", "created_at", "updated_at"]
         read_only_fields = ["created_at", "updated_at"]
 
     def get_entries(self, obj):
@@ -46,7 +47,7 @@ class DeckCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Deck
-        fields = ["id", "name", "description", "is_public", "shared_with_team", "format", "sub_format", "race", "entries"]
+        fields = ["id", "name", "description", "is_public", "shared_with_team", "format", "sub_format", "race", "starting_gold", "entries"]
 
     def create(self, validated_data):
         entries_data = validated_data.pop("entries", [])
@@ -63,6 +64,7 @@ class DeckCreateSerializer(serializers.ModelSerializer):
         instance.sub_format = validated_data.get("sub_format", instance.sub_format)
         instance.is_public = validated_data.get("is_public", instance.is_public)
         instance.shared_with_team = validated_data.get("shared_with_team", instance.shared_with_team)
+        instance.starting_gold = validated_data.get("starting_gold", instance.starting_gold)
         instance.save()
 
         if entries_data is not None:

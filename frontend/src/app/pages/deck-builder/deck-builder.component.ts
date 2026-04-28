@@ -52,6 +52,7 @@ export class DeckBuilderComponent implements OnInit {
   sharedWithTeam = false;
   deckCards: DeckCard[] = [];
   sideCards: DeckCard[] = [];
+  startingGoldId: number | null = null;
 
   // Validation & toast
   toastMessage = '';
@@ -253,6 +254,7 @@ export class DeckBuilderComponent implements OnInit {
 
     if (deck.format) this.selectedFormat = deck.format;
     if (deck.sub_format) this.selectedSubFormat = deck.sub_format;
+    this.startingGoldId = deck.starting_gold || null;
   }
 
   loadDeck() {
@@ -273,6 +275,9 @@ export class DeckBuilderComponent implements OnInit {
           quantity: e.quantity,
         }));
         this.sortDeckCards(this.sideCards);
+
+        // Restore starting gold
+        this.startingGoldId = deck.starting_gold || null;
 
         // Restore format, sub_format and race from saved deck
         const needsReload =
@@ -722,6 +727,10 @@ export class DeckBuilderComponent implements OnInit {
         this.deckCards[idx].quantity--;
       } else {
         this.deckCards.splice(idx, 1);
+        // If removed card was the starting gold, clear it
+        if (this.startingGoldId === cardId) {
+          this.startingGoldId = null;
+        }
       }
       this.markDirty();
     }
@@ -818,6 +827,35 @@ export class DeckBuilderComponent implements OnInit {
     let n = 0;
     for (const dc of this.deckCards) if (dc.card.type_name === 'Oro') n += dc.quantity;
     return n;
+  }
+
+  /** ¿La carta es elegible como oro inicial? Solo Oro con habilidad que contenga "oro inicial". */
+  isEligibleStartingGold(card: Card): boolean {
+    if (card.type_name !== 'Oro') return false;
+    const ab = (card.ability || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    return ab.includes('oro inicial');
+  }
+
+  /** Seleccionar un oro como oro inicial. */
+  setStartingGold(cardId: number) {
+    const found = this.deckCards.find(dc => dc.card.id === cardId);
+    if (found && this.isEligibleStartingGold(found.card)) {
+      this.startingGoldId = cardId;
+      this.markDirty();
+    }
+  }
+
+  /** Quitar la selección de oro inicial. */
+  clearStartingGold() {
+    this.startingGoldId = null;
+    this.markDirty();
+  }
+
+  /** El Card object del oro inicial seleccionado, si existe en el mazo. */
+  get startingGoldCard(): Card | null {
+    if (!this.startingGoldId) return null;
+    const found = this.deckCards.find(dc => dc.card.id === this.startingGoldId);
+    return found ? found.card : null;
   }
 
   /** Coste promedio del mazo principal sin Oros (para sugerencia visual). */
@@ -1004,6 +1042,7 @@ export class DeckBuilderComponent implements OnInit {
       format: this.selectedFormat,
       sub_format: this.selectedSubFormat,
       race: this.selectedRace || '',
+      starting_gold: this.startingGoldId,
       entries: [...entries, ...sideEntries],
     };
 
@@ -1289,6 +1328,7 @@ export class DeckBuilderComponent implements OnInit {
         selectedRace: this.selectedRace,
         deckCards: this.deckCards.map(dc => ({ cardId: dc.card.id, quantity: dc.quantity })),
         sideCards: this.sideCards.map(dc => ({ cardId: dc.card.id, quantity: dc.quantity })),
+        startingGoldId: this.startingGoldId,
         savedAt: new Date().toISOString(),
       };
       localStorage.setItem(this.autosaveKey(), JSON.stringify(payload));
@@ -1308,6 +1348,7 @@ export class DeckBuilderComponent implements OnInit {
       this.deckDescription = data.deckDescription ?? '';
       this.deckIsPublic = !!data.deckIsPublic;
       this.sharedWithTeam = !!data.sharedWithTeam;
+      this.startingGoldId = data.startingGoldId ?? null;
       // Las cartas se rehidratan tras cargar el listado de cartas (no podemos cargar Card completos desde el storage)
       // Para simplificar, solo restauramos los IDs y los re-pedimos:
       const ids = [...data.deckCards.map((d: any) => d.cardId), ...data.sideCards.map((d: any) => d.cardId)];
@@ -1347,6 +1388,7 @@ export class DeckBuilderComponent implements OnInit {
     this.deckDescription = '';
     this.deckCards = [];
     this.sideCards = [];
+    this.startingGoldId = null;
     this.cdr.detectChanges();
   }
 

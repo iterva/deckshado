@@ -312,6 +312,25 @@ export class DeckViewComponent implements OnInit {
     return pool;
   }
 
+  /** Pool without the starting gold (it starts on the field, never drawn). */
+  private get shufflePool(): Card[] {
+    const sgId = this.deck?.starting_gold;
+    if (!sgId) return this.cardPool;
+    const pool = this.cardPool;
+    // Remove exactly one copy of the starting gold from the pool
+    const idx = pool.findIndex(c => c.id === sgId);
+    if (idx !== -1) pool.splice(idx, 1);
+    return pool;
+  }
+
+  /** The starting gold Card object, if set and present in the deck. */
+  get startingGoldCard(): Card | null {
+    const sgId = this.deck?.starting_gold;
+    if (!sgId || !this.deck?.entries) return null;
+    const entry = this.deck.entries.find(e => e.card_detail.id === sgId);
+    return entry ? entry.card_detail : null;
+  }
+
   /** Fisher-Yates shuffle and take n */
   private drawRandom(pool: Card[], n: number): Card[] {
     const arr = [...pool];
@@ -324,19 +343,19 @@ export class DeckViewComponent implements OnInit {
 
   drawHand() {
     this.handSize = 8;
-    this.handCards = this.drawRandom(this.cardPool, 8);
+    this.handCards = this.drawRandom(this.shufflePool, 8);
     this.handActive = true;
   }
 
   mulligan() {
     if (this.handSize <= 1) return;
     this.handSize--;
-    this.handCards = this.drawRandom(this.cardPool, this.handSize);
+    this.handCards = this.drawRandom(this.shufflePool, this.handSize);
   }
 
   resetHand() {
     this.handSize = 8;
-    this.handCards = this.drawRandom(this.cardPool, 8);
+    this.handCards = this.drawRandom(this.shufflePool, 8);
   }
 
   /** Preload card images in background so they're cached for viewing & export */

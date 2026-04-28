@@ -69,6 +69,8 @@ export interface Deck {
   format?: string;
   sub_format?: string;
   race?: string;
+  starting_gold?: number | null;
+  starting_gold_detail?: Card | null;
   entries?: DeckEntry[];
   sideboard_entries?: DeckEntry[];
   created_at: string;

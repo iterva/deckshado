@@ -34,12 +34,23 @@
     </div>
   </div>
 
-  <p class="results-count">Mostrando {{ cards.length }} de {{ totalCards }} cartas</p>
+  <div class="results-bar">
+    <p class="results-count">Mostrando {{ cards.length }} de {{ totalCards }} cartas</p>
+    <div class="view-toggle">
+      <button class="toggle-btn" [class.active]="viewMode === 'grid'" (click)="viewMode = 'grid'" title="Vista cuadrícula">
+        <i class="bi bi-grid-3x3-gap-fill"></i>
+      </button>
+      <button class="toggle-btn" [class.active]="viewMode === 'table'" (click)="viewMode = 'table'" title="Vista tabla">
+        <i class="bi bi-list-ul"></i>
+      </button>
+    </div>
+  </div>
 
   @if (loading) {
     <div class="loading">Cargando...</div>
   }
 
+  @if (viewMode === 'grid') {
   <div class="card-grid">
     @for (card of cards; track card.id) {
       <div class="card-item" [class.selected]="selectedCard?.id === card.id" (click)="selectCard(card)">
@@ -59,6 +70,36 @@
       </div>
     }
   </div>
+  } @else {
+  <div class="card-table-wrap">
+    <table class="card-table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Tipo</th>
+          <th>Raza</th>
+          <th>Coste</th>
+          <th>Fuerza</th>
+          <th>Frecuencia</th>
+          <th>Edición</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (card of cards; track card.id) {
+          <tr [class.selected]="selectedCard?.id === card.id" (click)="selectCard(card)">
+            <td class="name-cell">{{ card.name }}</td>
+            <td>{{ card.type_name ?? '-' }}</td>
+            <td>{{ card.race_name ?? '-' }}</td>
+            <td>{{ card.cost ?? '-' }}</td>
+            <td>{{ card.damage ?? '-' }}</td>
+            <td>{{ card.rarity_name ?? '-' }}</td>
+            <td>{{ card.edition_title }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  }
 
   @if (selectedCard) {
     <div class="card-detail-overlay" (click)="selectedCard = null">

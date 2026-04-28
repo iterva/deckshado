@@ -24,6 +24,7 @@ export class DeckViewComponent implements OnInit {
   previewAbility: string | null = null;
   exportOrientation: 'vertical' | 'horizontal' = 'vertical';
   exporting = false;
+  shareToast = false;
   @ViewChild('deckContent') deckContent!: ElementRef;
   private abilityCache = new Map<number, string>();
 
@@ -74,6 +75,18 @@ export class DeckViewComponent implements OnInit {
     this.router.navigate(['/builder/new', fmt], {
       queryParams: qp,
       state: { copyFrom: this.deck },
+    });
+  }
+
+  shareDeck() {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      this.shareToast = true;
+      this.cdr.detectChanges();
+      setTimeout(() => {
+        this.shareToast = false;
+        this.cdr.detectChanges();
+      }, 2000);
     });
   }
 
@@ -218,6 +231,31 @@ export class DeckViewComponent implements OnInit {
       }
     }
     return n === 0 ? 0 : Math.round((sum / n) * 10) / 10;
+  }
+
+  /**
+   * Draw probability: for each unique card, probability of drawing at least
+   * one copy in an 8-card opening hand (hypergeometric).
+   * P(≥1) = 1 − C(N−K, n) / C(N, n)
+   */
+  get drawProbabilities(): { name: string; qty: number; pct: number }[] {
+    if (!this.deck?.entries) return [];
+    const N = this.cardPool.length; // total pool size
+    const n = Math.min(8, N); // draw size
+    if (N === 0 || n === 0) return [];
+    return this.deck.entries.map(entry => {
+      const K = entry.quantity;
+      // P(draw 0) = C(N-K, n) / C(N, n)
+      let p0 = 1;
+      for (let i = 0; i < n; i++) {
+        p0 *= (N - K - i) / (N - i);
+      }
+      return {
+        name: entry.card_detail.name,
+        qty: K,
+        pct: Math.round((1 - Math.max(0, p0)) * 100),
+      };
+    }).sort((a, b) => b.pct - a.pct);
   }
 
   showPreview(card: Card, event: MouseEvent) {

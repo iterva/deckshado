@@ -28,6 +28,29 @@
       <input type="text" placeholder="Buscar mazos..." [(ngModel)]="search" (keyup.enter)="onSearch()">
       <button class="btn btn-primary btn-sm" (click)="onSearch()">Buscar</button>
     </div>
+    <div class="filter-row">
+      <select [(ngModel)]="filterFormat" (change)="onSearch()">
+        <option value="">Todos los formatos</option>
+        <option value="imp">Imperial</option>
+        <option value="esc">Escuelas Elementales</option>
+        <option value="imp_r">Imperio Retro</option>
+        <option value="fx">FX</option>
+      </select>
+      <select [(ngModel)]="filterRace" (change)="onSearch()">
+        <option value="">Todas las razas</option>
+        <option value="dream">Dream</option>
+        <option value="totem">Tótem</option>
+        <option value="eterno">Eterno</option>
+        <option value="faerie">Faerie</option>
+        <option value="dragon">Dragón</option>
+        <option value="sombra">Sombra</option>
+        <option value="heroe">Héroe</option>
+        <option value="sacerdote">Sacerdote</option>
+        <option value="guerrero">Guerrero</option>
+        <option value="bestia">Bestia</option>
+        <option value="caballero">Caballero</option>
+      </select>
+    </div>
 
     <div class="deck-grid">
       @for (deck of publicDecks; track deck.id) {

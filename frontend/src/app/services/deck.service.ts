@@ -10,10 +10,12 @@ export class DeckService {
 
   constructor(private http: HttpClient) {}
 
-  getPublicDecks(search?: string, page?: number): Observable<PaginatedResponse<Deck>> {
+  getPublicDecks(search?: string, page?: number, format?: string, race?: string): Observable<PaginatedResponse<Deck>> {
     let params: any = {};
     if (search) params.search = search;
     if (page) params.page = page;
+    if (format) params.format = format;
+    if (race) params.race = race;
     return this.http.get<PaginatedResponse<Deck>>(`${this.apiUrl}/public/`, { params });
   }
 

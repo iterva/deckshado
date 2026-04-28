@@ -17,6 +17,8 @@ export class DeckListComponent implements OnInit {
   myDecks: Deck[] = [];
   teamDecks: Deck[] = [];
   search = '';
+  filterFormat = '';
+  filterRace = '';
   activeTab: 'public' | 'mine' | 'team' = 'public';
 
   // ===== Comparar mazos (#5) =====
@@ -33,7 +35,7 @@ export class DeckListComponent implements OnInit {
   };
 
   private readonly formatLabels: Record<string, string> = {
-    imp: 'Imperial', fx: 'FX',
+    imp: 'Imperial', fx: 'FX', esc: 'Escuelas Elementales', imp_r: 'Imperio Retro',
   };
 
   private readonly subFormatLabels: Record<string, string> = {
@@ -66,7 +68,12 @@ export class DeckListComponent implements OnInit {
   }
 
   loadPublicDecks() {
-    this.deckService.getPublicDecks(this.search || undefined).subscribe(res => {
+    this.deckService.getPublicDecks(
+      this.search || undefined,
+      undefined,
+      this.filterFormat || undefined,
+      this.filterRace || undefined,
+    ).subscribe(res => {
       this.publicDecks = res.results;
       this.cdr.detectChanges();
     });

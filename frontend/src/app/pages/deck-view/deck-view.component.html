@@ -32,6 +32,9 @@
             <i class="bi bi-clipboard"></i>
           </button>
         }
+        <button class="action-btn" (click)="shareDeck()" title="Compartir enlace">
+          <i class="bi bi-share"></i>
+        </button>
       </div>
       <div class="action-group">
         <select [(ngModel)]="exportOrientation" class="orientation-select">
@@ -51,7 +54,10 @@
       @if (raceLabel) { <span>{{ raceLabel }}</span> }
     </div>
     @if (deck.description) {
-      <p class="deck-description">{{ deck.description }}</p>
+      <div class="deck-description-box">
+        <i class="bi bi-chat-left-text"></i>
+        <p class="deck-description">{{ deck.description }}</p>
+      </div>
     }
 
     <!-- Hidden export area (rendered offscreen, captured by html2canvas) -->
@@ -248,6 +254,24 @@
         } @else {
           <p class="empty">Este mazo no tiene cartas con coste para graficar.</p>
         }
+
+        <!-- Draw probabilities -->
+        @if (drawProbabilities.length > 0) {
+          <div class="draw-prob">
+            <span class="draw-prob-title">Probabilidad de robo (mano de 8)</span>
+            <div class="draw-prob-list">
+              @for (dp of drawProbabilities; track dp.name) {
+                <div class="draw-prob-row">
+                  <span class="draw-prob-name">{{ dp.name }} <span class="draw-prob-qty">×{{ dp.qty }}</span></span>
+                  <div class="draw-prob-bar-wrap">
+                    <div class="draw-prob-bar" [style.width.%]="dp.pct"></div>
+                  </div>
+                  <span class="draw-prob-pct">{{ dp.pct }}%</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
       </div>
     }
 
@@ -368,4 +392,8 @@
       </div>
     </div>
   </div>
+}
+
+@if (shareToast) {
+  <div class="share-toast">Enlace copiado al portapapeles</div>
 }

@@ -22,6 +22,12 @@ class PublicDeckListView(generics.ListAPIView):
         search = self.request.query_params.get("search")
         if search:
             qs = qs.filter(Q(name__icontains=search) | Q(owner__username__icontains=search))
+        fmt = self.request.query_params.get("format")
+        if fmt:
+            qs = qs.filter(format=fmt)
+        race = self.request.query_params.get("race")
+        if race:
+            qs = qs.filter(race=race)
         return qs
 
 

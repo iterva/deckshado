@@ -28,6 +28,7 @@ export class CardListComponent implements OnInit {
   currentPage = 1;
   loading = false;
   selectedCard: Card | null = null;
+  viewMode: 'grid' | 'table' = 'grid';
 
   constructor(private cardService: CardService, private cdr: ChangeDetectorRef) {}
 

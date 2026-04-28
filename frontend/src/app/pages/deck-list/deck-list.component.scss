@@ -30,7 +30,7 @@
 .search-bar {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
 
   input {
     flex: 1;
@@ -40,6 +40,24 @@
     background: #1a1a2e;
     color: #e0e0e0;
     outline: none;
+    &:focus { border-color: #e94560; }
+  }
+}
+
+.filter-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+
+  select {
+    padding: 0.5rem 0.8rem;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    outline: none;
+    font-size: 0.85rem;
     &:focus { border-color: #e94560; }
   }
 }

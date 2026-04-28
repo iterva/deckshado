@@ -63,7 +63,7 @@ export class CompareDecksComponent implements OnInit {
     dragon: 'Dragón', sombra: 'Sombra', heroe: 'Héroe', sacerdote: 'Sacerdote',
     guerrero: 'Guerrero', bestia: 'Bestia', caballero: 'Caballero',
   };
-  private readonly formatLabels: Record<string, string> = { imp: 'Imperial', fx: 'FX' };
+  private readonly formatLabels: Record<string, string> = { imp: 'Imperial', fx: 'FX', esc: 'Escuelas Elementales', imp_r: 'Imperio Retro' };
 
   constructor(
     private route: ActivatedRoute,

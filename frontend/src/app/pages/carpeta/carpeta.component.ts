@@ -1,5 +1,6 @@
 import { Component, OnInit, signal, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { DecimalPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { CarpetaService } from '../../services/carpeta.service';
@@ -10,12 +11,12 @@ import {
   Edition, CardType, Race, Rarity, CarpetaIds,
 } from '../../models';
 
-type Tab = 'carpeta' | 'codex' | 'wishlist' | 'mercado';
+type Tab = 'carpeta' | 'codex' | 'wishlist' | 'mercado' | 'stats';
 
 @Component({
   selector: 'app-carpeta',
   standalone: true,
-  imports: [FormsModule, ThumbnailPipe],
+  imports: [FormsModule, ThumbnailPipe, DecimalPipe],
   templateUrl: './carpeta.component.html',
   styleUrl: './carpeta.component.scss',
 })
@@ -28,6 +29,10 @@ export class CarpetaComponent implements OnInit {
   collectionTotal = 0;
   collectionPage = 1;
   collectionSearch = '';
+
+  // ── Stats ──
+  stats: any = null;
+  statsLoading = false;
   collectionLoading = false;
   showSellingOnly = false;
   dirtyEntries = new Map<number, { quantity?: number; price?: number | null; selling_quantity?: number }>();
@@ -99,6 +104,15 @@ export class CarpetaComponent implements OnInit {
     if (tab === 'codex' && !this.codexCards.length) this.loadCodex();
     if (tab === 'wishlist') this.loadWishlist();
     if (tab === 'mercado') this.loadMercado();
+    if (tab === 'stats' && !this.stats) this.loadStats();
+  }
+
+  loadStats() {
+    this.statsLoading = true;
+    this.carpetaService.getCollectionStats().subscribe({
+      next: (s) => { this.stats = s; this.statsLoading = false; this.cdr.detectChanges(); },
+      error: () => { this.statsLoading = false; },
+    });
   }
 
   // ── Binder Profile ──

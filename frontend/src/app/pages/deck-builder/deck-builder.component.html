@@ -433,6 +433,27 @@
       }
     </div>
 
+    <!-- Sugerencias -->
+    @if (deckId && suggestions.length > 0) {
+      <div class="suggestions-section">
+        <button class="section-toggle" (click)="showSuggestions = !showSuggestions">
+          <i class="bi" [class.bi-chevron-down]="showSuggestions" [class.bi-chevron-right]="!showSuggestions"></i>
+          💡 Sugerencias ({{ suggestions.length }})
+        </button>
+        @if (showSuggestions) {
+          <div class="suggestions-list">
+            @for (s of suggestions; track s.id) {
+              <div class="suggestion-item">
+                <span class="suggestion-name">{{ s.name }}</span>
+                <span class="suggestion-count" title="Usado en mazos similares">×{{ s.times_used }}</span>
+                <button class="ctrl-btn" (click)="addCard(s)" [disabled]="totalDeckCards >= 50" title="Añadir al mazo">+</button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
     <div class="deck-actions">
       @if (autosaveLabel) {
         <span class="autosave-label" title="El borrador se guarda automáticamente en este navegador">

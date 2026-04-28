@@ -38,6 +38,10 @@
         <button class="action-btn" (click)="exportText()" title="Copiar lista como texto">
           <i class="bi bi-file-text"></i>
         </button>
+        <button class="action-btn like-btn" [class.liked]="liked" (click)="toggleLike()" title="Me gusta">
+          <i class="bi" [class.bi-heart-fill]="liked" [class.bi-heart]="!liked"></i>
+          <span class="like-count">{{ likeCount }}</span>
+        </button>
       </div>
       <div class="action-group">
         <select [(ngModel)]="exportOrientation" class="orientation-select">
@@ -449,4 +453,65 @@
 
 @if (shareToast) {
   <div class="share-toast">Enlace copiado al portapapeles</div>
+}
+
+<!-- Snapshots (owner only) -->
+@if (isOwner && deck) {
+  <div class="container snapshots-section">
+    <button class="section-toggle" (click)="showSnapshots = !showSnapshots">
+      <i class="bi" [class.bi-chevron-down]="!showSnapshots" [class.bi-chevron-up]="showSnapshots"></i>
+      Versiones guardadas ({{ snapshots.length }})
+    </button>
+    @if (showSnapshots) {
+      <div class="snapshot-create">
+        <input type="text" [(ngModel)]="snapshotLabel" placeholder="Nombre versión (opcional)" />
+        <button class="btn btn-sm btn-primary" (click)="createSnapshot()">📸 Guardar versión</button>
+      </div>
+      @for (s of snapshots; track s.id) {
+        <div class="snapshot-item">
+          <span class="snapshot-label">{{ s.label }}</span>
+          <time>{{ s.created_at | date:'dd/MM/yy HH:mm' }}</time>
+          <button class="btn btn-sm btn-secondary" (click)="restoreSnapshot(s.id)">Restaurar</button>
+        </div>
+      }
+      @if (snapshots.length === 0) {
+        <p class="empty-text">No hay versiones guardadas</p>
+      }
+    }
+  </div>
+}
+
+<!-- Comments -->
+@if (deck) {
+  <div class="container comments-section">
+    <button class="section-toggle" (click)="showComments = !showComments">
+      <i class="bi bi-chat-dots"></i>
+      Comentarios ({{ comments.length }})
+    </button>
+    @if (showComments) {
+      @if (auth.isAuthenticated()) {
+        <div class="comment-form">
+          <textarea [(ngModel)]="newComment" placeholder="Escribe un comentario..." rows="2" maxlength="1000"></textarea>
+          <button class="btn btn-sm btn-primary" (click)="submitComment()" [disabled]="!newComment.trim()">Enviar</button>
+        </div>
+      }
+      @for (c of comments; track c.id) {
+        <div class="comment-item">
+          <div class="comment-header">
+            <strong>{{ c.username }}</strong>
+            <time>{{ c.created_at | date:'dd/MM/yy HH:mm' }}</time>
+            @if (c.username === auth.user()?.username || isOwner) {
+              <button class="comment-delete" (click)="deleteComment(c.id)" title="Eliminar">
+                <i class="bi bi-trash3"></i>
+              </button>
+            }
+          </div>
+          <p class="comment-text">{{ c.text }}</p>
+        </div>
+      }
+      @if (comments.length === 0) {
+        <p class="empty-text">No hay comentarios aún</p>
+      }
+    }
+  </div>
 }

@@ -255,6 +255,42 @@ body.light-theme {
   // ── Modal overlays → lighter backdrop ──
   .modal-overlay { background: rgba(0, 0, 0, 0.4) !important; }
   .preview-modal .close-btn { color: #333 !important; }
+
+  // ── Notifications ──
+  .notif-dropdown { background: #fff !important; border-color: #ddd !important; box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important; }
+  .notif-header { color: #333 !important; border-color: #eee !important; }
+  .notif-item { border-color: #eee !important; color: #555 !important; &.unread { background: #f0f4ff !important; } }
+  .notif-msg { color: #333 !important; }
+  .notif-time { color: #999 !important; }
+  .notif-empty { color: #999 !important; }
+  .notif-read-all { color: #e94560 !important; }
+
+  // ── Global search ──
+  .search-wrapper { background: #fff !important; border-color: #ddd !important; box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important; }
+  .search-results { background: #fff !important; border-color: #ddd !important; }
+  .sr-label { color: #888 !important; border-color: #eee !important; }
+  .sr-item { color: #333 !important; &:hover { background: #f5f5f8 !important; } }
+
+  // ── Likes / Comments / Snapshots ──
+  .like-btn { color: #555 !important; &.liked { color: #e94560 !important; } }
+  .section-toggle { color: #555 !important; &:hover { color: #e94560 !important; } }
+  .comments-section { color: #333 !important; }
+  .comment-item { background: #f8f8fc !important; border-color: #eee !important; }
+  .comment-header { color: #555 !important; }
+  .comment-text { color: #333 !important; }
+  .snapshots-section { color: #333 !important; }
+  .snapshot-item { background: #f8f8fc !important; border-color: #eee !important; color: #555 !important; }
+
+  // ── Collection stats ──
+  .stat-card-s { background: #fff !important; border-color: #ddd !important; color: #333 !important; }
+  .stats-heading { color: #555 !important; }
+  .completeness-item { background: #f8f8fc !important; border-color: #eee !important; color: #555 !important; }
+  .completeness-bar { background: #e0e0e0 !important; }
+  .dist-row { color: #555 !important; }
+
+  // ── Suggestions ──
+  .suggestions-section { border-color: #ddd !important; .section-toggle { color: #b88a00 !important; } }
+  .suggestion-item { background: rgba(0,0,0,0.03) !important; .suggestion-name { color: #333 !important; } .suggestion-count { color: #888 !important; } }
 }
 
 a {

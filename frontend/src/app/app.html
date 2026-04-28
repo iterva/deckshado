@@ -9,9 +9,67 @@
     <a routerLink="/cards" routerLinkActive="active">Cartas</a>
     <a routerLink="/decks" routerLinkActive="active">Mazos</a>
     <a routerLink="/team" routerLinkActive="active">Equipo</a>
+    <!-- Global search -->
+    <button class="search-toggle" (click)="toggleSearch()" title="Buscar">
+      <i class="bi bi-search"></i>
+    </button>
+    @if (showSearch()) {
+      <div class="search-wrapper">
+        <input type="text" [(ngModel)]="searchQuery" (input)="onSearch()" placeholder="Buscar cartas, mazos, usuarios..." autofocus />
+        @if (searchResults) {
+          <div class="search-results">
+            @if (searchResults.cards.length) {
+              <div class="sr-group"><span class="sr-label">Cartas</span>
+                @for (c of searchResults.cards; track c.id) {
+                  <button class="sr-item" (click)="goToResult('card', c.id)">{{ c.name }} <small>{{ c.edition__name }}</small></button>
+                }
+              </div>
+            }
+            @if (searchResults.decks.length) {
+              <div class="sr-group"><span class="sr-label">Mazos</span>
+                @for (d of searchResults.decks; track d.id) {
+                  <button class="sr-item" (click)="goToResult('deck', d.id)">{{ d.name }} <small>{{ d.owner__username }}</small></button>
+                }
+              </div>
+            }
+            @if (!searchResults.cards.length && !searchResults.decks.length && !searchResults.users.length) {
+              <div class="sr-empty">Sin resultados</div>
+            }
+          </div>
+        }
+      </div>
+    }
     @if (auth.isAuthenticated()) {
       <a routerLink="/carpeta" routerLinkActive="active">Carpeta</a>
       <a routerLink="/builder" routerLinkActive="active">Constructor</a>
+      <!-- Notifications -->
+      <div class="notif-wrapper">
+        <button class="notif-btn" (click)="toggleNotifs()" title="Notificaciones">
+          <i class="bi bi-bell"></i>
+          @if (notifs.unreadCount() > 0) {
+            <span class="notif-badge">{{ notifs.unreadCount() }}</span>
+          }
+        </button>
+        @if (showNotifs()) {
+          <div class="notif-dropdown">
+            <div class="notif-header">
+              <strong>Notificaciones</strong>
+              @if (notifs.unreadCount() > 0) {
+                <button class="notif-read-all" (click)="notifs.markAllRead()">Marcar todo leído</button>
+              }
+            </div>
+            @if (notifs.notifications().length === 0) {
+              <div class="notif-empty">Sin notificaciones</div>
+            }
+            @for (n of notifs.notifications(); track n.id) {
+              <button class="notif-item" [class.unread]="!n.is_read" (click)="onNotifClick(n)">
+                <span class="notif-msg">{{ n.message }}</span>
+                <time class="notif-time">{{ n.created_at | date:'dd/MM HH:mm' }}</time>
+              </button>
+            }
+          </div>
+        }
+      </div>
       <div class="avatar-wrapper">
         <button class="avatar-btn" (click)="toggleDropdown()">
           @if (auth.user()?.avatar_url) {

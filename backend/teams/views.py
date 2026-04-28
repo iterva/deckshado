@@ -7,6 +7,7 @@ from .serializers import (
     TeamListSerializer, TeamDetailSerializer, TeamCreateSerializer,
     JoinRequestSerializer,
 )
+from users.models import Notification
 
 
 class TeamListView(generics.ListAPIView):
@@ -70,6 +71,14 @@ def join_request(request, team_id):
     if JoinRequest.objects.filter(team=team, user=request.user, status="pending").exists():
         return Response({"error": "Ya tienes una solicitud pendiente"}, status=status.HTTP_400_BAD_REQUEST)
     jr = JoinRequest.objects.create(team=team, user=request.user)
+    # Notify captains
+    for cap in TeamMember.objects.filter(team=team, role="captain").select_related("user"):
+        Notification.objects.create(
+            user=cap.user,
+            notif_type="team_join",
+            message=f"{request.user.username} quiere unirse a {team.name}",
+            link="/team",
+        )
     return Response(JoinRequestSerializer(jr).data, status=status.HTTP_201_CREATED)
 
 
@@ -105,10 +114,22 @@ def handle_request(request, request_id):
         TeamMember.objects.create(team=jr.team, user=jr.user, role="member")
         jr.status = "accepted"
         jr.save()
+        Notification.objects.create(
+            user=jr.user,
+            notif_type="team_accepted",
+            message=f"Tu solicitud a {jr.team.name} fue aceptada 🎉",
+            link="/team",
+        )
         return Response({"detail": "Solicitud aceptada"})
     else:
         jr.status = "rejected"
         jr.save()
+        Notification.objects.create(
+            user=jr.user,
+            notif_type="team_rejected",
+            message=f"Tu solicitud a {jr.team.name} fue rechazada",
+            link="/team",
+        )
         return Response({"detail": "Solicitud rechazada"})
 
 

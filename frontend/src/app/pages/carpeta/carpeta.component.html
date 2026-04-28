@@ -32,6 +32,9 @@
     <button class="tab" [class.active]="activeTab === 'mercado'" (click)="switchTab('mercado')">
       🏪 MERCADO
     </button>
+    <button class="tab" [class.active]="activeTab === 'stats'" (click)="switchTab('stats')">
+      📊 STATS
+    </button>
   </div>
 
   <!-- ═══ TAB: CARPETA ═══ -->
@@ -383,6 +386,81 @@
           </div>
         </div>
       </div>
+    </div>
+  }
+
+  <!-- ═══ TAB: STATS ═══ -->
+  @if (activeTab === 'stats') {
+    <div class="tab-content">
+      @if (statsLoading) {
+        <p class="loading">Calculando estadísticas...</p>
+      } @else if (stats) {
+        <div class="stats-overview">
+          <div class="stat-card-s">
+            <div class="stat-big">{{ stats.total_cards }}</div>
+            <div class="stat-desc">Cartas totales</div>
+          </div>
+          <div class="stat-card-s">
+            <div class="stat-big">{{ stats.unique_cards }}</div>
+            <div class="stat-desc">Cartas únicas</div>
+          </div>
+          <div class="stat-card-s">
+            <div class="stat-big">${{ stats.total_value | number }}</div>
+            <div class="stat-desc">Valor estimado</div>
+          </div>
+        </div>
+
+        @if (stats.edition_completeness.length) {
+          <h3 class="stats-heading">Completitud por Edición</h3>
+          <div class="completeness-grid">
+            @for (ed of stats.edition_completeness; track ed.edition) {
+              <div class="completeness-item">
+                <div class="completeness-label">{{ ed.edition }}</div>
+                <div class="completeness-bar-wrap">
+                  <div class="completeness-bar" [style.width.%]="ed.pct"></div>
+                </div>
+                <span class="completeness-pct">{{ ed.owned }}/{{ ed.total }} ({{ ed.pct }}%)</span>
+              </div>
+            }
+          </div>
+        }
+
+        @if (stats.by_rarity.length) {
+          <h3 class="stats-heading">Por Rareza</h3>
+          <div class="stats-dist">
+            @for (r of stats.by_rarity; track r.card__rarity__name) {
+              <div class="dist-row">
+                <span class="dist-label">{{ r.card__rarity__name || 'Sin rareza' }}</span>
+                <span class="dist-count">{{ r.count }}</span>
+              </div>
+            }
+          </div>
+        }
+
+        @if (stats.by_type.length) {
+          <h3 class="stats-heading">Por Tipo</h3>
+          <div class="stats-dist">
+            @for (t of stats.by_type; track t.card__card_type__name) {
+              <div class="dist-row">
+                <span class="dist-label">{{ t.card__card_type__name || 'Sin tipo' }}</span>
+                <span class="dist-count">{{ t.count }}</span>
+              </div>
+            }
+          </div>
+        }
+
+        @if (stats.by_edition.length) {
+          <h3 class="stats-heading">Top Ediciones</h3>
+          <div class="stats-dist">
+            @for (e of stats.by_edition; track e.card__edition__name) {
+              <div class="dist-row">
+                <span class="dist-label">{{ e.card__edition__name || 'Sin edición' }}</span>
+                <span class="dist-count">{{ e.count }}</span>
+              </div>
+            }
+          </div>
+        }
+      }
     </div>
   }
 

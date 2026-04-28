@@ -18,6 +18,8 @@ urlpatterns = [
     path("ids/", views.my_ids, name="carpeta-ids"),
     # Share token
     path("share-token/", views.my_share_token, name="share-token"),
+    # Collection stats
+    path("stats/", views.collection_stats, name="collection-stats"),
     # Public store
     path("store/<uuid:token>/", views.PublicStoreListView.as_view(), name="public-store"),
 ]

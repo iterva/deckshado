@@ -49,3 +49,44 @@ class DeckChangeLog(models.Model):
 
     def __str__(self):
         return f"[{self.created_at:%Y-%m-%d %H:%M}] {self.summary[:60]}"
+
+
+class DeckLike(models.Model):
+    """User likes on public decks."""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="deck_likes")
+    deck = models.ForeignKey(Deck, on_delete=models.CASCADE, related_name="likes")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "deck")
+
+    def __str__(self):
+        return f"{self.user.username} ♥ {self.deck.name}"
+
+
+class DeckSnapshot(models.Model):
+    """Saved version of a deck for rollback."""
+    deck = models.ForeignKey(Deck, on_delete=models.CASCADE, related_name="snapshots")
+    label = models.CharField(max_length=100)
+    snapshot_data = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"[{self.created_at:%Y-%m-%d}] {self.label}"
+
+
+class DeckComment(models.Model):
+    """Comments on public decks."""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="deck_comments")
+    deck = models.ForeignKey(Deck, on_delete=models.CASCADE, related_name="comments")
+    text = models.TextField(max_length=1000)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user.username}: {self.text[:50]}"

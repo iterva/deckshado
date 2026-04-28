@@ -751,6 +751,88 @@
   }
 }
 
+// ── Stats Tab ──
+.stats-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-card-s {
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 10px;
+  padding: 1.2rem;
+  text-align: center;
+
+  .stat-big {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #ffbd39;
+  }
+
+  .stat-desc {
+    color: #888;
+    font-size: 0.85rem;
+    margin-top: 0.3rem;
+  }
+}
+
+.stats-heading {
+  font-size: 1rem;
+  color: #ccc;
+  margin: 1.2rem 0 0.6rem;
+  border-bottom: 1px solid #2a2a4a;
+  padding-bottom: 0.3rem;
+}
+
+.completeness-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.completeness-item {
+  display: grid;
+  grid-template-columns: 1fr 120px auto;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+
+  .completeness-label { color: #e0e0e0; }
+  .completeness-bar-wrap {
+    height: 8px;
+    background: rgba(26, 58, 74, 0.5);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .completeness-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #2ac5c5, #4ade80);
+    border-radius: 4px;
+  }
+  .completeness-pct { color: #888; font-size: 0.75rem; white-space: nowrap; }
+}
+
+.stats-dist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 1rem;
+}
+
+.dist-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  &:nth-child(odd) { background: rgba(255,255,255,0.02); }
+
+  .dist-label { color: #e0e0e0; font-size: 0.85rem; }
+  .dist-count { color: #ffbd39; font-weight: 600; font-size: 0.85rem; }
+}
+
 // ── Responsive ──
 @media (max-width: 768px) {
   .carpeta-header {

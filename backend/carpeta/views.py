@@ -278,3 +278,70 @@ def my_share_token(request):
     """Retorna el share_token del usuario autenticado."""
     profile, _ = BinderProfile.objects.get_or_create(user=request.user)
     return Response({"share_token": str(profile.share_token)})
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def collection_stats(request):
+    """Estadísticas de la colección del usuario."""
+    from django.db.models import Sum, Count
+    from cards.models import Edition, Race, Rarity, Card
+
+    entries = CollectionEntry.objects.filter(user=request.user)
+
+    total_cards = entries.aggregate(t=Sum("quantity"))["t"] or 0
+    unique_cards = entries.count()
+    total_value = entries.aggregate(v=Sum("price"))["v"] or 0
+
+    # Per edition
+    by_edition = list(
+        entries.values("card__edition__name")
+        .annotate(count=Sum("quantity"))
+        .order_by("-count")[:15]
+    )
+
+    # Per rarity
+    by_rarity = list(
+        entries.values("card__rarity__name")
+        .annotate(count=Sum("quantity"))
+        .order_by("-count")
+    )
+
+    # Per race
+    by_race = list(
+        entries.values("card__race__name")
+        .annotate(count=Sum("quantity"))
+        .order_by("-count")[:15]
+    )
+
+    # Per type
+    by_type = list(
+        entries.values("card__card_type__name")
+        .annotate(count=Sum("quantity"))
+        .order_by("-count")
+    )
+
+    # Edition completeness (top 5 editions by owned count)
+    edition_completeness = []
+    top_editions = entries.values("card__edition_id", "card__edition__name").annotate(
+        owned=Count("card_id", distinct=True)
+    ).order_by("-owned")[:5]
+    for ed in top_editions:
+        total_in_ed = Card.objects.filter(edition_id=ed["card__edition_id"]).count()
+        edition_completeness.append({
+            "edition": ed["card__edition__name"],
+            "owned": ed["owned"],
+            "total": total_in_ed,
+            "pct": round(ed["owned"] / total_in_ed * 100, 1) if total_in_ed else 0,
+        })
+
+    return Response({
+        "total_cards": total_cards,
+        "unique_cards": unique_cards,
+        "total_value": total_value,
+        "by_edition": by_edition,
+        "by_rarity": by_rarity,
+        "by_race": by_race,
+        "by_type": by_type,
+        "edition_completeness": edition_completeness,
+    })

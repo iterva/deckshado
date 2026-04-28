@@ -1537,3 +1537,36 @@
     font-size: 0.72rem; color: #888; font-style: italic;
   }
 }
+
+/* Suggestions */
+.suggestions-section {
+  margin-top: 1rem;
+  border-top: 1px solid #2a2a3e;
+  padding-top: 0.5rem;
+
+  .section-toggle {
+    background: none; border: none; color: #c8a96e;
+    cursor: pointer; font-size: 0.85rem; font-weight: 600;
+    padding: 0.25rem 0;
+    &:hover { color: #e5c77d; }
+  }
+}
+.suggestions-list {
+  display: flex; flex-direction: column; gap: 0.25rem;
+  margin-top: 0.4rem;
+}
+.suggestion-item {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 4px;
+  background: rgba(200,169,110,0.06);
+
+  .suggestion-name { flex: 1; font-size: 0.8rem; color: #ddd; }
+  .suggestion-count { font-size: 0.72rem; color: #888; }
+  .ctrl-btn {
+    background: #c8a96e; color: #1a1a2e; border: none; border-radius: 3px;
+    width: 22px; height: 22px; font-size: 0.8rem; cursor: pointer;
+    &:hover { background: #e5c77d; }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+  }
+}

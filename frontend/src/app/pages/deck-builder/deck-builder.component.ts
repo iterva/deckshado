@@ -54,6 +54,10 @@ export class DeckBuilderComponent implements OnInit {
   sideCards: DeckCard[] = [];
   startingGoldId: number | null = null;
 
+  // Suggestions
+  suggestions: any[] = [];
+  showSuggestions = false;
+
   // Validation & toast
   toastMessage = '';
   toastType: 'error' | 'success' = 'error';
@@ -315,6 +319,8 @@ export class DeckBuilderComponent implements OnInit {
           this.loadBanlist();
           this.loadCards();
         }
+
+        this.loadSuggestions();
       },
       error: () => this.router.navigate(['/decks']),
     });
@@ -795,6 +801,14 @@ export class DeckBuilderComponent implements OnInit {
       this.sortDeckCards(this.sideCards);
     }
     this.markDirty();
+  }
+
+  loadSuggestions() {
+    if (!this.deckId) return;
+    this.deckService.getSuggestions(this.deckId).subscribe({
+      next: (data: any[]) => this.suggestions = data,
+      error: () => this.suggestions = [],
+    });
   }
 
   /** Move one copy of a card from sideboard to main deck. */

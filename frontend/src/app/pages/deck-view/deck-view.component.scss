@@ -1223,3 +1223,138 @@
   0%, 70% { opacity: 1; }
   100% { opacity: 0; }
 }
+
+// Like button
+.like-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+
+  &.liked {
+    color: #e94560 !important;
+    .bi-heart-fill { color: #e94560; }
+  }
+
+  .like-count {
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+}
+
+// Section toggle
+.section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #ccc;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  cursor: pointer;
+  margin-bottom: 0.8rem;
+  transition: border-color 0.2s;
+  &:hover { border-color: #e94560; }
+}
+
+// Snapshots
+.snapshots-section {
+  margin-top: 1.5rem;
+
+  .snapshot-create {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.8rem;
+
+    input {
+      flex: 1;
+      padding: 0.4rem 0.8rem;
+      border: 1px solid #333;
+      border-radius: 6px;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      font-size: 0.85rem;
+      outline: none;
+      &:focus { border-color: #e94560; }
+    }
+  }
+
+  .snapshot-item {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.5rem 0.8rem;
+    border-bottom: 1px solid #2a2a4a;
+    font-size: 0.85rem;
+
+    .snapshot-label { color: #e0e0e0; flex: 1; }
+    time { color: #888; font-size: 0.75rem; }
+  }
+}
+
+// Comments
+.comments-section {
+  margin-top: 1.5rem;
+  margin-bottom: 2rem;
+
+  .comment-form {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    align-items: flex-start;
+
+    textarea {
+      flex: 1;
+      padding: 0.5rem 0.8rem;
+      border: 1px solid #333;
+      border-radius: 6px;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      font-size: 0.85rem;
+      font-family: inherit;
+      resize: vertical;
+      outline: none;
+      &:focus { border-color: #e94560; }
+    }
+  }
+
+  .comment-item {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid #2a2a4a;
+
+    .comment-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.3rem;
+
+      strong { color: #ffbd39; font-size: 0.85rem; }
+      time { color: #888; font-size: 0.7rem; }
+    }
+
+    .comment-delete {
+      background: none;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 0;
+      &:hover { color: #e94560; }
+    }
+
+    .comment-text {
+      color: #ccc;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      margin: 0;
+    }
+  }
+}
+
+.empty-text {
+  color: #666;
+  font-size: 0.85rem;
+  padding: 0.5rem 0;
+}

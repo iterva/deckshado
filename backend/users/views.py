@@ -50,3 +50,41 @@ def change_password(request):
     request.user.set_password(serializer.validated_data["new_password"])
     request.user.save()
     return Response({"detail": "Contraseña actualizada correctamente."})
+
+
+# ── Notifications ────────────────────────────────────────
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def notifications_view(request):
+    from .models import Notification
+    notifs = Notification.objects.filter(user=request.user)[:30]
+    data = [
+        {
+            "id": n.id,
+            "type": n.notif_type,
+            "message": n.message,
+            "link": n.link,
+            "is_read": n.is_read,
+            "created_at": n.created_at,
+        }
+        for n in notifs
+    ]
+    unread = Notification.objects.filter(user=request.user, is_read=False).count()
+    return Response({"notifications": data, "unread_count": unread})
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def mark_read(request, notif_id):
+    from .models import Notification
+    Notification.objects.filter(id=notif_id, user=request.user).update(is_read=True)
+    return Response({"detail": "ok"})
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def mark_all_read(request):
+    from .models import Notification
+    Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    return Response({"detail": "ok"})

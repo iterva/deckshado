@@ -43,12 +43,26 @@ export class DeckViewComponent implements OnInit {
   changelog: { id: number; summary: string; created_at: string }[] = [];
   showChangelog = false;
 
+  // Likes
+  liked = false;
+  likeCount = 0;
+
+  // Comments
+  comments: any[] = [];
+  showComments = false;
+  newComment = '';
+
+  // Snapshots
+  snapshots: any[] = [];
+  showSnapshots = false;
+  snapshotLabel = '';
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private deckService: DeckService,
     private cardService: CardService,
-    private auth: AuthService,
+    public auth: AuthService,
     private cdr: ChangeDetectorRef,
     private titleService: Title,
     private metaService: Meta,
@@ -134,24 +148,94 @@ export class DeckViewComponent implements OnInit {
     'Oro': 0, 'Aliado': 1, 'Talismán': 2, 'Arma': 3, 'Tótem': 4,
   };
 
+  // ── Likes ──
+  toggleLike() {
+    if (!this.deck || !this.auth.isAuthenticated()) return;
+    this.deckService.toggleLike(this.deck.id).subscribe({
+      next: (res) => {
+        this.liked = res.liked;
+        this.likeCount = res.like_count;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  // ── Comments ──
+  loadComments() {
+    if (!this.deck) return;
+    this.deckService.getComments(this.deck.id).subscribe({
+      next: (c) => { this.comments = c; this.cdr.detectChanges(); },
+    });
+  }
+
+  submitComment() {
+    if (!this.deck || !this.newComment.trim()) return;
+    this.deckService.addComment(this.deck.id, this.newComment.trim()).subscribe({
+      next: (c) => {
+        this.comments = [c, ...this.comments];
+        this.newComment = '';
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  deleteComment(commentId: number) {
+    this.deckService.deleteComment(commentId).subscribe({
+      next: () => {
+        this.comments = this.comments.filter(c => c.id !== commentId);
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  // ── Snapshots ──
+  loadSnapshots() {
+    if (!this.deck) return;
+    this.deckService.getSnapshots(this.deck.id).subscribe({
+      next: (s) => { this.snapshots = s; this.cdr.detectChanges(); },
+    });
+  }
+
+  createSnapshot() {
+    if (!this.deck) return;
+    this.deckService.createSnapshot(this.deck.id, this.snapshotLabel || undefined).subscribe({
+      next: (s) => {
+        this.snapshots = [s, ...this.snapshots];
+        this.snapshotLabel = '';
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  restoreSnapshot(snapshotId: number) {
+    if (!confirm('¿Restaurar el mazo a esta versión? Se perderán los cambios actuales.')) return;
+    this.deckService.restoreSnapshot(snapshotId).subscribe({
+      next: () => window.location.reload(),
+    });
+  }
+
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     const loadDeck = (deck: Deck) => {
       this.deck = deck;
+      this.likeCount = (deck as any).like_count || 0;
+      this.liked = (deck as any).user_liked || false;
       this.sortEntries();
       this.buildGroups();
       this.loading = false;
       this.preloadImages();
       this.loadBanlist();
+      this.loadComments();
       // SEO
       this.titleService.setTitle(`${deck.name} — ShadowForge`);
       this.metaService.updateTag({ name: 'description', content: `Mazo ${deck.name} por ${deck.owner_username} — ${this.formatLabel} · ${deck.card_count} cartas` });
-      // Load changelog if owner
+      // Load changelog + snapshots if owner
       if (this.isOwner) {
         this.deckService.getChangelog(deck.id).subscribe({
           next: (log) => { this.changelog = log; this.cdr.detectChanges(); },
           error: () => {},
         });
+        this.loadSnapshots();
       }
     };
     // Try owner endpoint first if authenticated, then team, then public
@@ -512,6 +596,19 @@ export class DeckViewComponent implements OnInit {
     }
   }
 
+  private getRaceBackground(): string {
+    const raceColors: Record<string, string> = {
+      dream: '#1a0a2e', totem: '#0a1e0a', eterno: '#1e1e2e', faerie: '#1a0e28',
+      dragon: '#2e0a0a', sombra: '#0a0a1e', heroe: '#1e1a0a', sacerdote: '#1e1e0a',
+      guerrero: '#2e1a0a', bestia: '#0a1e1a', caballero: '#1a1a2e',
+      ancestral: '#1e0a1e', barbaro: '#2e1a1a', samurai: '#1e0a0a', oni: '#1e0a1a',
+      'culto-tenebris': '#0e0a1e', 'vigilantes-etereos': '#0a1a2e',
+      'gremio-paladin': '#1e1e0a', 'clan-desafiante': '#2e0e0a',
+      oscuridad: '#0a0a0e', luz: '#1e1e1a',
+    };
+    return raceColors[this.deck?.race ?? ''] || '#0f0f23';
+  }
+
   async exportImage() {
     if (!this.deckContent || this.exporting) return;
     this.exporting = true;
@@ -531,11 +628,10 @@ export class DeckViewComponent implements OnInit {
         });
       }));
 
+      const bgColor = this.getRaceBackground();
       const html2canvas = (await import('html2canvas')).default;
-      // Fixed scale: always 2x regardless of device pixel ratio
-      // This ensures the same output on mobile, 1080p, and 4K screens
       const canvas = await html2canvas(el, {
-        backgroundColor: '#0f0f23',
+        backgroundColor: bgColor,
         useCORS: true,
         allowTaint: true,
         scale: 2,

@@ -84,4 +84,9 @@ export class CarpetaService {
     if (search) params = params.set('search', search);
     return this.http.get<any>(`${this.apiUrl}/store/${token}/`, { params });
   }
+
+  // ── Collection Stats ──
+  getCollectionStats(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/stats/`);
+  }
 }

@@ -78,6 +78,9 @@
           }
           <div class="deck-footer">
             <span class="deck-author">por {{ deck.owner_username }}</span>
+            @if (deck.like_count) {
+              <span class="deck-likes">♥ {{ deck.like_count }}</span>
+            }
           </div>
         </a>
       } @empty {

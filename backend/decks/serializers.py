@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Deck, DeckEntry, DeckChangeLog
+from .models import Deck, DeckEntry, DeckChangeLog, DeckLike, DeckSnapshot, DeckComment
 from cards.serializers import CardListSerializer
 
 
@@ -14,10 +14,11 @@ class DeckEntrySerializer(serializers.ModelSerializer):
 class DeckListSerializer(serializers.ModelSerializer):
     owner_username = serializers.CharField(source="owner.username", read_only=True)
     card_count = serializers.IntegerField(read_only=True)
+    like_count = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = Deck
-        fields = ["id", "name", "description", "is_public", "shared_with_team", "owner_username", "card_count", "format", "sub_format", "race", "starting_gold", "created_at", "updated_at"]
+        fields = ["id", "name", "description", "is_public", "shared_with_team", "owner_username", "card_count", "like_count", "format", "sub_format", "race", "starting_gold", "created_at", "updated_at"]
         read_only_fields = ["created_at", "updated_at"]
 
 
@@ -26,12 +27,24 @@ class DeckDetailSerializer(serializers.ModelSerializer):
     entries = serializers.SerializerMethodField()
     sideboard_entries = serializers.SerializerMethodField()
     card_count = serializers.IntegerField(read_only=True)
+    like_count = serializers.IntegerField(read_only=True, default=0)
+    user_liked = serializers.SerializerMethodField()
     starting_gold_detail = CardListSerializer(source="starting_gold", read_only=True)
+    comment_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Deck
-        fields = ["id", "name", "description", "is_public", "shared_with_team", "owner_username", "card_count", "format", "sub_format", "race", "starting_gold", "starting_gold_detail", "entries", "sideboard_entries", "created_at", "updated_at"]
+        fields = ["id", "name", "description", "is_public", "shared_with_team", "owner_username", "card_count", "like_count", "user_liked", "comment_count", "format", "sub_format", "race", "starting_gold", "starting_gold_detail", "entries", "sideboard_entries", "created_at", "updated_at"]
         read_only_fields = ["created_at", "updated_at"]
+
+    def get_user_liked(self, obj):
+        request = self.context.get("request")
+        if request and request.user.is_authenticated:
+            return DeckLike.objects.filter(user=request.user, deck=obj).exists()
+        return False
+
+    def get_comment_count(self, obj):
+        return obj.comments.count()
 
     def get_entries(self, obj):
         qs = obj.entries.filter(is_sideboard=False)
@@ -96,3 +109,27 @@ class DeckChangeLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = DeckChangeLog
         fields = ["id", "summary", "created_at"]
+
+
+class DeckCommentSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+    avatar_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DeckComment
+        fields = ["id", "username", "avatar_url", "text", "created_at"]
+        read_only_fields = ["created_at"]
+
+    def get_avatar_url(self, obj):
+        request = self.context.get("request")
+        if hasattr(obj.user, "profile") and obj.user.profile.avatar:
+            if request:
+                return request.build_absolute_uri(obj.user.profile.avatar.url)
+            return obj.user.profile.avatar.url
+        return None
+
+
+class DeckSnapshotSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeckSnapshot
+        fields = ["id", "label", "created_at"]

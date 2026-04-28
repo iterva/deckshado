@@ -67,4 +67,40 @@ export class DeckService {
   getChangelog(deckId: number): Observable<{ id: number; summary: string; created_at: string }[]> {
     return this.http.get<{ id: number; summary: string; created_at: string }[]>(`${this.apiUrl}/my/${deckId}/changelog/`);
   }
+
+  // Likes
+  toggleLike(deckId: number): Observable<{ liked: boolean; like_count: number }> {
+    return this.http.post<{ liked: boolean; like_count: number }>(`${this.apiUrl}/public/${deckId}/like/`, {});
+  }
+
+  // Comments
+  getComments(deckId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/public/${deckId}/comments/`);
+  }
+
+  addComment(deckId: number, text: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/public/${deckId}/comments/`, { text });
+  }
+
+  deleteComment(commentId: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/comments/${commentId}/`);
+  }
+
+  // Snapshots
+  getSnapshots(deckId: number): Observable<{ id: number; label: string; created_at: string }[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/my/${deckId}/snapshots/`);
+  }
+
+  createSnapshot(deckId: number, label?: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/my/${deckId}/snapshots/`, { label });
+  }
+
+  restoreSnapshot(snapshotId: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/snapshots/${snapshotId}/restore/`, {});
+  }
+
+  // Suggestions
+  getSuggestions(deckId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/my/${deckId}/suggestions/`);
+  }
 }

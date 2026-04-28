@@ -75,6 +75,9 @@ export interface Deck {
   sideboard_entries?: DeckEntry[];
   created_at: string;
   updated_at: string;
+  like_count?: number;
+  user_liked?: boolean;
+  comment_count?: number;
 }
 
 export interface DeckEntry {

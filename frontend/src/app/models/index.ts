@@ -120,6 +120,22 @@ export interface User {
   last_name: string;
   league_code: string;
   avatar_url: string | null;
+  is_admin?: boolean;
+}
+
+export interface AdminUser {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  league_code: string;
+  avatar_url: string | null;
+  is_active: boolean;
+  is_staff: boolean;
+  is_admin: boolean;
+  date_joined: string;
+  last_login: string | null;
 }
 
 export interface TeamMember {

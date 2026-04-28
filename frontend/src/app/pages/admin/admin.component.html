@@ -1,0 +1,172 @@
+<div class="admin-container">
+  <header class="admin-header">
+    <a routerLink="/" class="back-link">← Volver</a>
+    <h1>Panel de administración</h1>
+    <p class="subtitle">Gestión de usuarios registrados</p>
+  </header>
+
+  @if (message()) {
+    <div class="alert alert-success">{{ message() }}</div>
+  }
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+
+  <div class="toolbar">
+    <input
+      type="text"
+      [(ngModel)]="searchQuery"
+      placeholder="Buscar por usuario o email..."
+      class="search-input"
+    />
+    <button class="btn-secondary" (click)="loadUsers()" [disabled]="loading()">
+      {{ loading() ? 'Cargando...' : '↻ Recargar' }}
+    </button>
+    <span class="counter">{{ filtered().length }} usuario(s)</span>
+  </div>
+
+  @if (loading()) {
+    <p class="loading">Cargando usuarios...</p>
+  } @else {
+    <div class="table-wrapper">
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Avatar</th>
+            <th>Usuario</th>
+            <th>Email</th>
+            <th>Nombre</th>
+            <th>Liga</th>
+            <th>Registro</th>
+            <th>Último login</th>
+            <th>Estado</th>
+            <th>Staff</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of filtered(); track u.id) {
+            <tr [class.banned]="!u.is_active" [class.is-admin-row]="u.is_admin">
+              <td>{{ u.id }}</td>
+              <td>
+                @if (u.avatar_url) {
+                  <img [src]="u.avatar_url" alt="" class="avatar-mini" />
+                } @else {
+                  <div class="avatar-placeholder">{{ u.username.charAt(0).toUpperCase() }}</div>
+                }
+              </td>
+              <td>
+                <strong>{{ u.username }}</strong>
+                @if (u.is_admin) { <span class="badge badge-admin">ADMIN</span> }
+              </td>
+              <td>{{ u.email || '—' }}</td>
+              <td>{{ (u.first_name || '') + ' ' + (u.last_name || '') | slice:0:30 }}</td>
+              <td>{{ u.league_code || '—' }}</td>
+              <td>{{ u.date_joined | date:'dd/MM/yyyy' }}</td>
+              <td>{{ u.last_login ? (u.last_login | date:'dd/MM/yy HH:mm') : 'Nunca' }}</td>
+              <td>
+                @if (u.is_active) {
+                  <span class="badge badge-active">Activo</span>
+                } @else {
+                  <span class="badge badge-banned">Baneado</span>
+                }
+              </td>
+              <td>
+                <input
+                  type="checkbox"
+                  [checked]="u.is_staff"
+                  (change)="toggleStaff(u)"
+                  [disabled]="u.username === 'iterva' && auth.user()?.username !== 'iterva'"
+                />
+              </td>
+              <td class="actions">
+                <button class="btn-icon" (click)="openEdit(u)" title="Editar">✏️</button>
+                <button class="btn-icon" (click)="openReset(u)" title="Cambiar contraseña">🔑</button>
+                <button
+                  class="btn-icon"
+                  [class.btn-ban]="u.is_active"
+                  [class.btn-unban]="!u.is_active"
+                  (click)="toggleActive(u)"
+                  [disabled]="u.id === auth.user()?.id"
+                  [title]="u.is_active ? 'Banear' : 'Reactivar'"
+                >
+                  {{ u.is_active ? '🚫' : '✓' }}
+                </button>
+              </td>
+            </tr>
+          }
+          @if (filtered().length === 0) {
+            <tr><td colspan="11" class="empty">No hay usuarios.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+<!-- Edit modal -->
+@if (editing(); as u) {
+  <div class="modal-backdrop" (click)="closeEdit()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h2>Editar usuario: {{ u.username }}</h2>
+      <div class="field">
+        <label>Username</label>
+        <input type="text" [(ngModel)]="editForm.username" />
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" [(ngModel)]="editForm.email" />
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Nombre</label>
+          <input type="text" [(ngModel)]="editForm.first_name" />
+        </div>
+        <div class="field">
+          <label>Apellido</label>
+          <input type="text" [(ngModel)]="editForm.last_name" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Código liga</label>
+        <input type="text" [(ngModel)]="editForm.league_code" />
+      </div>
+      <div class="field-row">
+        <label class="checkbox">
+          <input type="checkbox" [(ngModel)]="editForm.is_active" />
+          Activo (no baneado)
+        </label>
+        <label class="checkbox">
+          <input type="checkbox" [(ngModel)]="editForm.is_staff" />
+          Staff (admin)
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" (click)="closeEdit()" [disabled]="saving()">Cancelar</button>
+        <button class="btn-primary" (click)="saveEdit()" [disabled]="saving()">
+          {{ saving() ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Password reset modal -->
+@if (resettingFor(); as u) {
+  <div class="modal-backdrop" (click)="closeReset()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h2>Cambiar contraseña: {{ u.username }}</h2>
+      <div class="field">
+        <label>Nueva contraseña (mín. 8 caracteres)</label>
+        <input type="text" [(ngModel)]="newPassword" autocomplete="new-password" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" (click)="closeReset()" [disabled]="resetSaving()">Cancelar</button>
+        <button class="btn-primary" (click)="saveReset()" [disabled]="resetSaving()">
+          {{ resetSaving() ? 'Guardando...' : 'Cambiar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

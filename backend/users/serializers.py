@@ -31,20 +31,73 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 
+def _is_admin_user(user):
+    """Devuelve True si el usuario tiene privilegios de administración."""
+    if not user or not user.is_authenticated:
+        return False
+    return user.username == "iterva" or user.is_superuser or user.is_staff
+
+
 class UserSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(source="profile.first_name", read_only=True)
     last_name = serializers.CharField(source="profile.last_name", read_only=True)
     league_code = serializers.CharField(source="profile.league_code", read_only=True)
     avatar_url = serializers.SerializerMethodField()
+    is_admin = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ["id", "username", "email", "first_name", "last_name", "league_code", "avatar_url"]
+        fields = [
+            "id", "username", "email", "first_name", "last_name",
+            "league_code", "avatar_url", "is_admin",
+        ]
 
     def get_avatar_url(self, obj):
         if hasattr(obj, "profile") and obj.profile.avatar:
             return obj.profile.avatar
         return None
+
+    def get_is_admin(self, obj):
+        return _is_admin_user(obj)
+
+
+class AdminUserSerializer(serializers.ModelSerializer):
+    """Serializer extendido para la vista de administración."""
+    first_name = serializers.CharField(source="profile.first_name", required=False, allow_blank=True)
+    last_name = serializers.CharField(source="profile.last_name", required=False, allow_blank=True)
+    league_code = serializers.CharField(source="profile.league_code", required=False, allow_blank=True)
+    avatar_url = serializers.SerializerMethodField()
+    is_admin = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            "id", "username", "email", "first_name", "last_name",
+            "league_code", "avatar_url", "is_active", "is_staff",
+            "is_admin", "date_joined", "last_login",
+        ]
+        read_only_fields = ["id", "date_joined", "last_login", "avatar_url", "is_admin"]
+
+    def get_avatar_url(self, obj):
+        if hasattr(obj, "profile") and obj.profile.avatar:
+            return obj.profile.avatar
+        return None
+
+    def get_is_admin(self, obj):
+        return _is_admin_user(obj)
+
+    def update(self, instance, validated_data):
+        profile_data = validated_data.pop("profile", {})
+        for field in ("username", "email", "is_active", "is_staff"):
+            if field in validated_data:
+                setattr(instance, field, validated_data[field])
+        instance.save()
+        if profile_data:
+            profile = instance.profile
+            for k, v in profile_data.items():
+                setattr(profile, k, v)
+            profile.save()
+        return instance
 
 
 class ProfileUpdateSerializer(serializers.Serializer):

@@ -93,6 +93,11 @@
             <a routerLink="/profile/edit" class="dropdown-item" (click)="showDropdown.set(false)">
               <span>✏️</span> Editar
             </a>
+            @if (auth.user()?.is_admin) {
+              <a routerLink="/admin" class="dropdown-item" (click)="showDropdown.set(false)">
+                <span>🛡️</span> Admin
+              </a>
+            }
             <button class="dropdown-item logout" (click)="auth.logout(); showDropdown.set(false)">
               <span>🚪</span> Cerrar Sesión
             </button>

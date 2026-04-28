@@ -13,6 +13,24 @@ from teams.models import TeamMember
 from users.models import Notification
 
 
+def _get_visible_deck(deck_id, user=None):
+    """Return a deck if it's public, owned by user, or shared with user's team."""
+    try:
+        deck = Deck.objects.get(id=deck_id)
+    except Deck.DoesNotExist:
+        return None
+    if deck.is_public:
+        return deck
+    if user and user.is_authenticated:
+        if deck.owner == user:
+            return deck
+        if deck.shared_with_team:
+            owner_team_ids = TeamMember.objects.filter(user=deck.owner).values_list("team_id", flat=True)
+            if TeamMember.objects.filter(user=user, team_id__in=owner_team_ids).exists():
+                return deck
+    return None
+
+
 def _annotate_card_count(qs):
     return qs.annotate(
         card_count=Coalesce(Sum("entries__quantity"), Value(0)),
@@ -159,10 +177,9 @@ def deck_changelog_view(request, deck_id):
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
 def toggle_like(request, deck_id):
-    """Toggle like on a public deck."""
-    try:
-        deck = Deck.objects.get(id=deck_id, is_public=True)
-    except Deck.DoesNotExist:
+    """Toggle like on a visible deck."""
+    deck = _get_visible_deck(deck_id, request.user)
+    if not deck:
         return Response({"error": "Mazo no encontrado"}, status=status.HTTP_404_NOT_FOUND)
     existing = DeckLike.objects.filter(user=request.user, deck=deck).first()
     if existing:
@@ -184,10 +201,9 @@ def toggle_like(request, deck_id):
 
 @api_view(["GET", "POST"])
 def deck_comments_view(request, deck_id):
-    """List or add comments on a public deck."""
-    try:
-        deck = Deck.objects.get(id=deck_id, is_public=True)
-    except Deck.DoesNotExist:
+    """List or add comments on a visible deck."""
+    deck = _get_visible_deck(deck_id, request.user if request.user.is_authenticated else None)
+    if not deck:
         return Response({"error": "Mazo no encontrado"}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == "GET":

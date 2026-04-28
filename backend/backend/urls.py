@@ -22,7 +22,7 @@ def global_search(request):
     cards = list(
         Card.objects.filter(name__icontains=q)
         .select_related("edition", "card_type")
-        .values("id", "name", "edition__name", "card_type__name")[:8]
+        .values("id", "name", "edition__title", "card_type__name")[:8]
     )
     decks = list(
         Deck.objects.filter(is_public=True, name__icontains=q)

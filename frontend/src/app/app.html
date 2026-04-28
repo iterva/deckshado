@@ -27,7 +27,7 @@
             @if (searchResults.cards.length) {
               <div class="sr-group"><span class="sr-label">Cartas</span>
                 @for (c of searchResults.cards; track c.id) {
-                  <button class="sr-item" (click)="goToResult('card', c.id)">{{ c.name }} <small>{{ c.edition__name }}</small></button>
+                  <button class="sr-item" (click)="goToResult('card', c.id)">{{ c.name }} <small>{{ c.edition__title }}</small></button>
                 }
               </div>
             }

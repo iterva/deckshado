@@ -9,6 +9,12 @@
     <a routerLink="/cards" routerLinkActive="active">Cartas</a>
     <a routerLink="/decks" routerLinkActive="active">Mazos</a>
     <a routerLink="/team" routerLinkActive="active">Equipo</a>
+    @if (auth.isAuthenticated()) {
+      <a routerLink="/carpeta" routerLinkActive="active">Carpeta</a>
+      <a routerLink="/builder" routerLinkActive="active">Constructor</a>
+    }
+  </div>
+  <div class="navbar-actions">
     <!-- Global search -->
     <button class="search-toggle" (click)="toggleSearch()" title="Buscar">
       <i class="bi bi-search"></i>
@@ -40,8 +46,6 @@
       </div>
     }
     @if (auth.isAuthenticated()) {
-      <a routerLink="/carpeta" routerLinkActive="active">Carpeta</a>
-      <a routerLink="/builder" routerLinkActive="active">Constructor</a>
       <!-- Notifications -->
       <div class="notif-wrapper">
         <button class="notif-btn" (click)="toggleNotifs()" title="Notificaciones">

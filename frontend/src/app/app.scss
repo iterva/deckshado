@@ -52,6 +52,13 @@
         color: #ffbd39;
       }
     }
+  }
+
+  .navbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    position: relative;
 
     .btn-login {
       background: #e94560;
@@ -95,7 +102,7 @@
     .search-wrapper {
       position: absolute;
       top: 56px;
-      right: 40px;
+      right: 0;
       width: 360px;
       z-index: 300;
 

@@ -635,8 +635,13 @@ export class DeckViewComponent implements OnInit {
       this.banlistByName.clear();
       this.banlistByCardId.clear();
       for (const e of entries) {
-        this.banlistByName.set(e.card_name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''), e);
-        if (e.card_id) this.banlistByCardId.set(e.card_id, e);
+        if (e.card_id) {
+          // Entrada específica de una edición: solo afecta a ese card_id.
+          this.banlistByCardId.set(e.card_id, e);
+        } else {
+          // Entrada genérica por nombre: afecta a cualquier carta con ese nombre.
+          this.banlistByName.set(e.card_name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''), e);
+        }
       }
       this.cdr.detectChanges();
     });

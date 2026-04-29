@@ -5,7 +5,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
-from django.db.models import Q, Count, Sum
+from django.db.models import Q, Count, Sum, F
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
@@ -462,10 +462,12 @@ def collection_stats(request):
     total_value = entries.aggregate(v=Sum("price"))["v"] or 0
 
     by_edition = list(
-        entries.values("card__edition__name")
+        entries.annotate(_ed_name=F("card__edition__title"))
+        .values("_ed_name")
         .annotate(count=Sum("quantity"))
         .order_by("-count")[:15]
     )
+    by_edition = [{"card__edition__name": x["_ed_name"], "count": x["count"]} for x in by_edition]
     by_rarity = list(
         entries.values("card__rarity__name")
         .annotate(count=Sum("quantity"))
@@ -482,13 +484,13 @@ def collection_stats(request):
         .order_by("-count")
     )
     edition_completeness = []
-    top_editions = entries.values("card__edition_id", "card__edition__name").annotate(
+    top_editions = entries.annotate(_ed_name=F("card__edition__title")).values("card__edition_id", "_ed_name").annotate(
         owned=Count("card_id", distinct=True)
     ).order_by("-owned")[:5]
     for ed in top_editions:
         total_in_ed = Card.objects.filter(edition_id=ed["card__edition_id"]).count()
         edition_completeness.append({
-            "edition": ed["card__edition__name"],
+            "edition": ed["_ed_name"],
             "owned": ed["owned"],
             "total": total_in_ed,
             "pct": round(ed["owned"] / total_in_ed * 100, 1) if total_in_ed else 0,

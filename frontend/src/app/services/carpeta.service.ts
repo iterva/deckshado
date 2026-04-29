@@ -5,11 +5,35 @@ import { switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import {
   BinderProfile,
+  PublicBinderProfile,
   CollectionEntry,
   WishlistEntry,
   CarpetaIds,
   PaginatedResponse,
 } from '../models';
+
+export interface PublicStoreResponse extends PaginatedResponse<CollectionEntry> {
+  store: PublicBinderProfile;
+  // legacy
+  store_owner: string;
+  store_avatar: string | null;
+  store_binder_avatar: string | null;
+}
+
+export interface StoreFilters {
+  page?: number;
+  search?: string;
+  edition?: string;
+  race?: string;
+  rarity?: string;
+  type?: string;
+  condition?: string;
+  foil?: '0' | '1';
+  price_min?: number;
+  price_max?: number;
+  only_priced?: '1';
+  ordering?: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class CarpetaService {
@@ -20,6 +44,10 @@ export class CarpetaService {
   // ── Binder Profile ──
   getBinderProfile(): Observable<BinderProfile> {
     return this.http.get<BinderProfile>(`${this.apiUrl}/profile/`);
+  }
+
+  updateBinderProfile(data: Partial<BinderProfile>): Observable<BinderProfile> {
+    return this.http.patch<BinderProfile>(`${this.apiUrl}/profile/`, data);
   }
 
   uploadBinderAvatar(file: File): Observable<BinderProfile> {
@@ -34,6 +62,10 @@ export class CarpetaService {
     );
   }
 
+  regenerateShareToken(): Observable<{ share_token: string }> {
+    return this.http.post<{ share_token: string }>(`${this.apiUrl}/share-token/regenerate/`, {});
+  }
+
   // ── Collection ──
   getCollection(page?: number, search?: string, selling?: boolean): Observable<PaginatedResponse<CollectionEntry>> {
     let params = new HttpParams();
@@ -43,12 +75,19 @@ export class CarpetaService {
     return this.http.get<PaginatedResponse<CollectionEntry>>(`${this.apiUrl}/collection/`, { params });
   }
 
-  upsertCollection(data: { card: number; quantity?: number; price?: number | null; selling_quantity?: number }): Observable<CollectionEntry> {
+  upsertCollection(data: Partial<CollectionEntry> & { card: number }): Observable<CollectionEntry> {
     return this.http.post<CollectionEntry>(`${this.apiUrl}/collection/upsert/`, data);
   }
 
   removeFromCollection(cardId: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/collection/${cardId}/`);
+  }
+
+  bulkImport(text: string, mode: 'add' | 'set' = 'add'): Observable<{
+    added: number; updated: number; not_found: number; ambiguous: number;
+    not_found_lines: string[]; ambiguous_lines: { line: string; matches: string[] }[];
+  }> {
+    return this.http.post<any>(`${this.apiUrl}/collection/bulk-import/`, { text, mode });
   }
 
   // ── Wishlist ──
@@ -69,30 +108,40 @@ export class CarpetaService {
     return this.http.patch<WishlistEntry>(`${this.apiUrl}/wishlist/${cardId}/`, { desired_quantity: desiredQuantity });
   }
 
-  // ── Bulk IDs ──
+  // ── IDs ──
   getMyIds(): Observable<CarpetaIds> {
     return this.http.get<CarpetaIds>(`${this.apiUrl}/ids/`);
   }
 
   // ── Batch upsert ──
-  batchUpsertCollection(items: { card: number; quantity?: number; price?: number | null; selling_quantity?: number }[]): Observable<{ updated: number }> {
+  batchUpsertCollection(items: Array<Partial<CollectionEntry> & { card: number }>): Observable<{ updated: number }> {
     return this.http.post<{ updated: number }>(`${this.apiUrl}/collection/batch-upsert/`, items);
   }
 
   // ── Share token ──
-  getShareToken(): Observable<{ share_token: string }> {
-    return this.http.get<{ share_token: string }>(`${this.apiUrl}/share-token/`);
+  getShareToken(): Observable<{ share_token: string; store_slug: string; is_store_public: boolean }> {
+    return this.http.get<any>(`${this.apiUrl}/share-token/`);
   }
 
   // ── Public Store ──
-  getPublicStore(token: string, page?: number, search?: string): Observable<PaginatedResponse<CollectionEntry> & { store_owner: string; store_avatar: string | null; store_binder_avatar: string | null }> {
+  getPublicStore(tokenOrSlug: string, filters: StoreFilters = {}): Observable<PublicStoreResponse> {
     let params = new HttpParams();
-    if (page) params = params.set('page', page.toString());
-    if (search) params = params.set('search', search);
-    return this.http.get<any>(`${this.apiUrl}/store/${token}/`, { params });
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') params = params.set(k, String(v));
+    });
+    return this.http.get<PublicStoreResponse>(`${this.apiUrl}/store/${tokenOrSlug}/`, { params });
   }
 
-  // ── Collection Stats ──
+  getPublicStores(filters: { page?: number; search?: string; country?: string; ordering?: string } = {})
+    : Observable<PaginatedResponse<PublicBinderProfile>> {
+    let params = new HttpParams();
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') params = params.set(k, String(v));
+    });
+    return this.http.get<PaginatedResponse<PublicBinderProfile>>(`${this.apiUrl}/stores/`, { params });
+  }
+
+  // ── Stats ──
   getCollectionStats(): Observable<any> {
     return this.http.get(`${this.apiUrl}/stats/`);
   }

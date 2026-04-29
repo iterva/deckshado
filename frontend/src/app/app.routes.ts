@@ -17,6 +17,8 @@ export const routes: Routes = [
   { path: 'profile', loadComponent: () => import('./pages/profile/profile.component').then(m => m.ProfileComponent) },
   { path: 'profile/edit', loadComponent: () => import('./pages/profile-edit/profile-edit.component').then(m => m.ProfileEditComponent) },
   { path: 'tienda/:token', loadComponent: () => import('./pages/tienda/tienda.component').then(m => m.TiendaComponent) },
+  { path: 't/:slug', loadComponent: () => import('./pages/tienda/tienda.component').then(m => m.TiendaComponent) },
+  { path: 'tiendas', loadComponent: () => import('./pages/stores-index/stores-index.component').then(m => m.StoresIndexComponent) },
   { path: 'admin', loadComponent: () => import('./pages/admin/admin.component').then(m => m.AdminComponent) },
   { path: '**', redirectTo: '' },
 ];

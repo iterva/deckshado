@@ -751,6 +751,158 @@
   }
 }
 
+// ── Import panel ──
+.import-panel {
+  background: #15152a;
+  border: 1px solid #2a2a4a;
+  border-radius: 10px;
+  padding: 1rem;
+  margin: 0.5rem 0 1rem;
+
+  h4 { margin: 0 0 0.4rem; color: #ffbd39; }
+  .import-hint { margin: 0 0 0.5rem; color: #aaa; font-size: 0.8rem;
+    code { background: #2a2a4a; padding: 0.05rem 0.3rem; border-radius: 3px; }
+  }
+  textarea {
+    width: 100%; padding: 0.6rem;
+    background: #0f0f23; color: #e0e0e0;
+    border: 1px solid #333; border-radius: 6px;
+    font-family: monospace; font-size: 0.85rem;
+    resize: vertical;
+    &:focus { outline: none; border-color: #00d4ff; }
+  }
+  .import-controls {
+    display: flex; flex-wrap: wrap; gap: 0.6rem;
+    align-items: center; margin-top: 0.5rem;
+    label { font-size: 0.8rem; color: #ccc; cursor: pointer;
+      input { margin-right: 0.25rem; }
+    }
+  }
+  .import-result {
+    margin-top: 0.7rem; padding: 0.6rem;
+    background: #0f0f23; border-radius: 6px;
+    p { margin: 0 0 0.4rem; font-size: 0.85rem; }
+    details { font-size: 0.8rem; color: #aaa; margin-top: 0.3rem;
+      summary { cursor: pointer; color: #ffbd39; }
+      ul { margin: 0.3rem 0 0; padding-left: 1.2rem; }
+    }
+  }
+}
+
+// ── TCG fields (condition/lang/foil) ──
+.tcg-fields {
+  margin-top: 0.3rem;
+  .field {
+    flex: 0 0 auto;
+    label { font-size: 0.7rem; }
+    select {
+      padding: 0.25rem 0.4rem; font-size: 0.75rem;
+      background: #1e1e3a; border: 1px solid #333;
+      color: #e0e0e0; border-radius: 4px;
+    }
+  }
+  .foil-toggle {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    font-size: 0.75rem; color: #ddd; cursor: pointer;
+    align-self: flex-end;
+    input { margin: 0; }
+  }
+}
+
+// ── Store config panel ──
+.store-config-panel {
+  background: linear-gradient(135deg, #15152a, #1a1a2e);
+  border: 1px solid #2a2a4a;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+
+  .config-toggle {
+    width: 100%;
+    background: transparent; border: none; color: #ffbd39;
+    padding: 0.85rem 1rem;
+    font-size: 1rem; font-weight: 700;
+    text-align: left; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+    .chev { font-size: 0.7rem; color: #888; }
+    &:hover { background: rgba(255, 189, 57, 0.05); }
+  }
+
+  .config-body {
+    padding: 0 1rem 1rem;
+    border-top: 1px solid #2a2a4a;
+
+    .config-row.toggle-row {
+      display: flex; flex-direction: column; gap: 0.2rem;
+      padding: 0.7rem 0;
+      .toggle {
+        display: flex; align-items: center; gap: 0.5rem;
+        cursor: pointer;
+        input { width: 16px; height: 16px; }
+        span strong { color: #ffbd39; }
+      }
+      small { color: #888; font-size: 0.75rem;
+        a { color: #00d4ff; }
+      }
+    }
+
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.7rem;
+      .field { display: flex; flex-direction: column;
+        &.full { grid-column: 1 / -1; }
+        label { font-size: 0.75rem; color: #aaa; margin-bottom: 0.2rem;
+          small { color: #666; }
+        }
+        input, select, textarea {
+          padding: 0.45rem 0.6rem;
+          background: #0f0f23; color: #e0e0e0;
+          border: 1px solid #333; border-radius: 5px;
+          font-family: inherit; font-size: 0.85rem;
+          &:focus { outline: none; border-color: #00d4ff; }
+        }
+        textarea { resize: vertical; }
+      }
+      .checkbox-row {
+        display: flex; align-items: center; gap: 0.45rem;
+        font-size: 0.85rem; color: #ccc; cursor: pointer;
+        grid-column: 1 / -1;
+        input { width: 16px; height: 16px; margin: 0; }
+      }
+    }
+
+    .config-actions { padding: 0.8rem 0; }
+
+    .links-block {
+      background: #0f0f23;
+      border: 1px dashed #333;
+      border-radius: 8px; padding: 0.7rem 0.85rem;
+      h5 { margin: 0 0 0.5rem; color: #93c5fd; font-size: 0.85rem; }
+      .link-row {
+        display: flex; align-items: center; gap: 0.4rem;
+        padding: 0.25rem 0;
+        flex-wrap: wrap;
+        .link-label { font-size: 0.75rem; color: #888; min-width: 60px; }
+        code {
+          flex: 1 1 auto;
+          background: #1a1a2e; color: #ffbd39;
+          padding: 0.2rem 0.45rem; border-radius: 4px;
+          font-size: 0.75rem; word-break: break-all;
+          &.trunc {
+            max-width: 320px; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis;
+          }
+        }
+      }
+      .hint-warn { color: #fbbf24; font-size: 0.8rem; margin: 0; }
+    }
+  }
+}
+
+.btn-warn { background: #5a3a3a !important; }
+.btn-warn:hover { background: #7a4a4a !important; }
+
 // ── Stats Tab ──
 .stats-overview {
   display: grid;
@@ -882,3 +1034,5 @@
     opacity: 0.7;
   }
 }
+
+

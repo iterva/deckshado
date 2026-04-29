@@ -1,0 +1,62 @@
+<div class="stores-page">
+  <div class="page-header">
+    <h1>🏪 Tiendas de la comunidad</h1>
+    <p>Descubre vendedores y encuentra las cartas que te faltan.</p>
+  </div>
+
+  <div class="filters-bar">
+    <input type="text" placeholder="🔍 Buscar por nombre o ciudad..." [(ngModel)]="search" (keyup.enter)="apply()" class="search-input" />
+    <select [(ngModel)]="country" (change)="apply()">
+      @for (c of countries; track c.code) { <option [value]="c.code">{{ c.name }}</option> }
+    </select>
+    <select [(ngModel)]="ordering" (change)="apply()">
+      <option value="-last_active">Más activas</option>
+      <option value="-selling_count">Más cartas en venta</option>
+      <option value="user__username">Nombre A→Z</option>
+    </select>
+  </div>
+
+  @if (loading) { <div class="loading">Cargando...</div> }
+  @if (!loading && stores.length === 0) {
+    <div class="empty">
+      <p>No hay tiendas que coincidan. ¡Sé el primero! Activa tu tienda en la pestaña <strong>Tienda</strong> de tu carpeta.</p>
+    </div>
+  }
+
+  <div class="stores-grid">
+    @for (s of stores; track s.username) {
+      <a class="store-card" [routerLink]="['/t', s.store_slug]">
+        <div class="avatar">
+          @if (s.binder_avatar_url) {
+            <img [src]="s.binder_avatar_url" [alt]="s.username" />
+          } @else if (s.user_avatar_url) {
+            <img [src]="s.user_avatar_url" [alt]="s.username" />
+          } @else {
+            <div class="placeholder">🏪</div>
+          }
+        </div>
+        <div class="info">
+          <h3>{{ s.display_name || s.username }}</h3>
+          <p class="handle">{{ '@' + s.username }}</p>
+          @if (s.city || s.country_display) {
+            <p class="loc">📍 {{ s.city }}{{ s.city && s.country_display ? ', ' : '' }}{{ s.country_display }}</p>
+          }
+          <div class="badges">
+            <span class="badge primary">{{ s.selling_count }} en venta</span>
+            @if (s.accepts_trades) { <span class="badge green">🔄 cambios</span> }
+            @if (s.whatsapp) { <span class="badge wa">📱 WA</span> }
+          </div>
+          @if (s.bio) { <p class="bio">{{ s.bio }}</p> }
+        </div>
+      </a>
+    }
+  </div>
+
+  @if (totalPages > 1) {
+    <div class="pagination">
+      <button class="btn btn-sm" (click)="prev()" [disabled]="page === 1">← Anterior</button>
+      <span>{{ page }} / {{ totalPages }}</span>
+      <button class="btn btn-sm" (click)="next()" [disabled]="page >= totalPages">Siguiente →</button>
+    </div>
+  }
+</div>

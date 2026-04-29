@@ -173,7 +173,45 @@ export interface BinderProfile {
   username: string;
   binder_avatar_url: string | null;
   share_token: string;
+  store_slug: string;
+  is_store_public: boolean;
+  display_name: string;
+  bio: string;
+  city: string;
+  country: string;
+  country_display?: string;
+  whatsapp: string;
+  instagram: string;
+  discord: string;
+  email_public: string;
+  payment_methods: string;
+  shipping_info: string;
+  accepts_trades: boolean;
 }
+
+export interface PublicBinderProfile {
+  username: string;
+  store_slug: string;
+  binder_avatar_url: string | null;
+  user_avatar_url: string | null;
+  display_name: string;
+  bio: string;
+  city: string;
+  country: string;
+  country_display?: string;
+  whatsapp: string;
+  instagram: string;
+  discord: string;
+  email_public: string;
+  payment_methods: string;
+  shipping_info: string;
+  accepts_trades: boolean;
+  last_active: string;
+  selling_count: number;
+}
+
+export type CardCondition = 'NM' | 'LP' | 'MP' | 'HP' | 'DMG';
+export type CardLanguage = 'ES' | 'EN' | 'PT' | 'FR' | 'OT';
 
 export interface CollectionEntry {
   id: number;
@@ -181,7 +219,14 @@ export interface CollectionEntry {
   quantity: number;
   price: number | null;
   selling_quantity: number;
+  condition: CardCondition;
+  condition_display?: string;
+  language: CardLanguage;
+  language_display?: string;
+  is_foil: boolean;
+  notes: string;
   card_detail: Card;
+  in_my_wishlist?: boolean;
 }
 
 export interface WishlistEntry {

@@ -2,50 +2,101 @@
   @if (notFound) {
     <div class="not-found">
       <h2>Tienda no encontrada</h2>
-      <p>El enlace que seguiste no es válido o la tienda ya no existe.</p>
+      <p>El enlace que seguiste no es válido o el dueño la pausó.</p>
+      <a routerLink="/tiendas" class="btn btn-primary btn-sm">Ver otras tiendas</a>
     </div>
   } @else {
     <!-- Header -->
-    <div class="tienda-header">
+    <div class="tienda-header" [class.has-bio]="store?.bio">
       <div class="store-avatar-wrapper">
-        @if (storeBinder) {
-          <img [src]="storeBinder" alt="Avatar" class="store-avatar" />
-        } @else if (storeAvatar) {
-          <img [src]="storeAvatar" alt="Avatar" class="store-avatar" />
+        @if (store?.binder_avatar_url) {
+          <img [src]="store!.binder_avatar_url" alt="Avatar" class="store-avatar" />
+        } @else if (store?.user_avatar_url) {
+          <img [src]="store!.user_avatar_url" alt="Avatar" class="store-avatar" />
         } @else {
           <div class="store-avatar-placeholder">🏪</div>
         }
       </div>
       <div class="store-info">
-        <h1>Tienda de {{ storeOwner }}</h1>
-        <p class="store-count">{{ total }} cartas en venta</p>
+        <h1>{{ store?.display_name || ('Tienda de ' + (store?.username || '')) }}</h1>
+        @if (store?.username) {
+          <p class="store-handle">{{ '@' + store!.username }}</p>
+        }
+        <div class="store-meta">
+          <span class="badge meta">{{ total }} cartas en venta</span>
+          @if (store?.city || store?.country_display) {
+            <span class="badge meta">📍 {{ store?.city }}{{ store?.city && store?.country_display ? ', ' : '' }}{{ store?.country_display }}</span>
+          }
+          @if (store?.accepts_trades) {
+            <span class="badge trade">🔄 Acepta cambios</span>
+          }
+          @if (store?.payment_methods) {
+            <span class="badge pay">💳 {{ store?.payment_methods }}</span>
+          }
+        </div>
+        @if (store?.bio) {
+          <p class="store-bio">{{ store?.bio }}</p>
+        }
       </div>
       <div class="store-actions">
-        <button class="btn btn-sm btn-share" (click)="copyLink()">🔗 Copiar Link</button>
-        <button class="btn btn-sm btn-pdf" (click)="exportPdf()">📄 Exportar PDF</button>
+        <button class="btn btn-primary btn-sm" (click)="showContactModal = true">📩 Contactar</button>
+        <button class="btn btn-sm" (click)="copyLink()">🔗 Copiar Link</button>
+        <button class="btn btn-sm" (click)="shareWhatsApp()">📱 Compartir</button>
+        <button class="btn btn-sm btn-pdf" (click)="exportPdf()">📄 PDF</button>
       </div>
     </div>
 
-    <!-- Search -->
-    <div class="search-bar">
-      <input type="text" placeholder="Buscar cartas en venta..." [(ngModel)]="search" (keyup.enter)="onSearch()" />
-      <button class="btn btn-primary btn-sm" (click)="onSearch()">Buscar</button>
+    <!-- Filters bar -->
+    <div class="filters-bar">
+      <input type="text" placeholder="🔍 Buscar carta..." [(ngModel)]="filters.search" (keyup.enter)="applyFilter()" class="search-input" />
+      <select [(ngModel)]="filters.edition" (change)="applyFilter()">
+        <option value="">Todas las ediciones</option>
+        @for (e of editions; track e.id) { <option [value]="e.slug">{{ e.title }}</option> }
+      </select>
+      <select [(ngModel)]="filters.race" (change)="applyFilter()">
+        <option value="">Todas las razas</option>
+        @for (r of races; track r.id) { <option [value]="r.slug">{{ r.name }}</option> }
+      </select>
+      <select [(ngModel)]="filters.rarity" (change)="applyFilter()">
+        <option value="">Todas las rarezas</option>
+        @for (r of rarities; track r.id) { <option [value]="r.slug">{{ r.name }}</option> }
+      </select>
+      <select [(ngModel)]="filters.type" (change)="applyFilter()">
+        <option value="">Todos los tipos</option>
+        @for (t of types; track t.id) { <option [value]="t.slug">{{ t.name }}</option> }
+      </select>
+      <select [(ngModel)]="filters.condition" (change)="applyFilter()">
+        <option value="">Cond.</option>
+        <option value="NM">NM</option>
+        <option value="LP">LP</option>
+        <option value="MP">MP</option>
+        <option value="HP">HP</option>
+        <option value="DMG">DMG</option>
+      </select>
+      <select [(ngModel)]="filters.ordering" (change)="applyFilter()">
+        <option value="-id">Más recientes</option>
+        <option value="price">Precio ↑</option>
+        <option value="-price">Precio ↓</option>
+        <option value="card__name">Nombre A→Z</option>
+        <option value="-card__name">Nombre Z→A</option>
+      </select>
+      <button class="btn btn-xs btn-ghost" (click)="resetFilters()">Limpiar</button>
     </div>
 
-    @if (loading) {
-      <div class="loading">Cargando...</div>
-    }
-
-    @if (!loading && entries.length === 0 && !notFound) {
+    @if (loading) { <div class="loading">Cargando...</div> }
+    @if (!loading && entries.length === 0) {
       <div class="empty-state">
-        <p>Esta tienda no tiene cartas en venta por el momento.</p>
+        <p>No hay cartas que coincidan con tu búsqueda.</p>
       </div>
     }
 
     <!-- Cards Grid -->
     <div class="store-grid">
       @for (entry of entries; track entry.id) {
-        <div class="store-card">
+        <div class="store-card" [class.in-wishlist]="entry.in_my_wishlist">
+          @if (entry.in_my_wishlist) {
+            <span class="wl-flag" title="Está en tu wishlist">❤️</span>
+          }
           <div class="card-image" (click)="previewCard = entry.card_detail">
             <img [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" loading="lazy"
               (error)="$any($event.target).src = entry.card_detail.image_url" />
@@ -53,14 +104,29 @@
           <div class="card-body">
             <h4>{{ entry.card_detail.name }}</h4>
             <span class="card-meta">{{ entry.card_detail.type_name }} · {{ entry.card_detail.edition_title }}</span>
+            <div class="card-tags">
+              <span class="tag" [attr.data-cond]="entry.condition">{{ entry.condition }}</span>
+              <span class="tag">{{ entry.language }}</span>
+              @if (entry.is_foil) { <span class="tag foil">✨ Foil</span> }
+            </div>
+            @if (entry.notes) { <p class="card-notes" [title]="entry.notes">📝 {{ entry.notes }}</p> }
             <div class="card-selling-info">
               @if (entry.price) {
-                <span class="price-tag">${{ entry.price }}</span>
+                <span class="price-tag">${{ entry.price | number:'1.0-0':'es-CL' }}</span>
               } @else {
                 <span class="price-tag no-price">Consultar</span>
               }
-              <span class="qty-tag">x{{ entry.selling_quantity }} disponibles</span>
+              <span class="qty-tag">x{{ entry.selling_quantity }}</span>
             </div>
+            <button class="btn btn-xs btn-primary btn-add-cart"
+                    (click)="addToCart(entry, $event)"
+                    [disabled]="inCart(entry.id) >= entry.selling_quantity">
+              @if (inCart(entry.id)) {
+                🛒 En carrito ({{ inCart(entry.id) }})
+              } @else {
+                🛒 Añadir
+              }
+            </button>
           </div>
         </div>
       }
@@ -68,9 +134,98 @@
 
     @if (totalPages > 1) {
       <div class="pagination">
-        <button class="btn btn-sm" (click)="prevPage()" [disabled]="page === 1">← Anterior</button>
-        <span>{{ page }} / {{ totalPages }}</span>
-        <button class="btn btn-sm" (click)="nextPage()" [disabled]="page >= totalPages">Siguiente →</button>
+        <button class="btn btn-sm" (click)="prevPage()" [disabled]="(filters.page || 1) === 1">← Anterior</button>
+        <span>{{ filters.page || 1 }} / {{ totalPages }}</span>
+        <button class="btn btn-sm" (click)="nextPage()" [disabled]="(filters.page || 1) >= totalPages">Siguiente →</button>
+      </div>
+    }
+
+    <!-- Floating cart button -->
+    @if (cartCount > 0) {
+      <button class="cart-fab" (click)="showCart = true">
+        🛒 {{ cartCount }} · ${{ cartTotal | number:'1.0-0':'es-CL' }}
+      </button>
+    }
+
+    <!-- Cart modal -->
+    @if (showCart) {
+      <div class="modal-overlay" (click)="showCart = false">
+        <div class="cart-modal" (click)="$event.stopPropagation()">
+          <div class="cart-head">
+            <h3>🛒 Tu pedido</h3>
+            <button class="close-btn" (click)="showCart = false">✕</button>
+          </div>
+          @if (cart.length === 0) {
+            <p class="empty-cart">Aún no agregas cartas.</p>
+          } @else {
+            <ul class="cart-list">
+              @for (item of cart; track item.entryId) {
+                <li class="cart-item">
+                  <img [src]="item.image | thumb:150" [alt]="item.name" />
+                  <div class="cart-item-info">
+                    <strong>{{ item.name }}</strong>
+                    <small>{{ item.price ? ('$' + (item.price | number:'1.0-0':'es-CL')) : 'Sin precio' }}</small>
+                  </div>
+                  <div class="cart-qty">
+                    <button (click)="changeCartQty(item, -1)">−</button>
+                    <span>{{ item.qty }}</span>
+                    <button (click)="changeCartQty(item, 1)" [disabled]="item.qty >= item.available">+</button>
+                  </div>
+                  <strong class="cart-line-total">${{ ((item.price || 0) * item.qty) | number:'1.0-0':'es-CL' }}</strong>
+                  <button class="btn-icon" (click)="removeFromCart(item)" title="Quitar">🗑️</button>
+                </li>
+              }
+            </ul>
+            <div class="cart-total">
+              <span>Total estimado:</span>
+              <strong>${{ cartTotal | number:'1.0-0':'es-CL' }}</strong>
+              @if (cartHasUnpriced) { <small class="warn">⚠ Hay cartas sin precio, consulta al vendedor.</small> }
+            </div>
+            <div class="cart-actions">
+              @if (store?.whatsapp) {
+                <button class="btn btn-primary" (click)="sendWhatsApp()">📱 Enviar pedido por WhatsApp</button>
+              }
+              <button class="btn btn-sm" (click)="copyOrder()">📋 Copiar pedido</button>
+              <button class="btn btn-sm btn-ghost" (click)="clearCart()">🗑️ Vaciar</button>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Contact modal -->
+    @if (showContactModal && store) {
+      <div class="modal-overlay" (click)="showContactModal = false">
+        <div class="contact-modal" (click)="$event.stopPropagation()">
+          <button class="close-btn" (click)="showContactModal = false">✕</button>
+          <h3>Contactar a {{ store.display_name || store.username }}</h3>
+          <ul class="contact-list">
+            @if (store.whatsapp) {
+              <li><button class="btn btn-primary btn-block" (click)="contactWhatsAppDirect()">📱 WhatsApp: {{ store.whatsapp }}</button></li>
+            }
+            @if (store.instagram) {
+              <li><a class="btn btn-block" [href]="'https://instagram.com/' + instagramHandle" target="_blank">📷 Instagram: &#64;{{ instagramHandle }}</a></li>
+            }
+            @if (store.discord) {
+              <li><span class="contact-static">🎮 Discord: <strong>{{ store.discord }}</strong></span></li>
+            }
+            @if (store.email_public) {
+              <li><a class="btn btn-block" [href]="'mailto:' + store.email_public">✉️ {{ store.email_public }}</a></li>
+            }
+          </ul>
+          @if (store.shipping_info) {
+            <div class="contact-section">
+              <h4>📦 Envío</h4>
+              <p>{{ store.shipping_info }}</p>
+            </div>
+          }
+          @if (store.payment_methods) {
+            <div class="contact-section">
+              <h4>💳 Pagos</h4>
+              <p>{{ store.payment_methods }}</p>
+            </div>
+          }
+        </div>
       </div>
     }
 

@@ -48,12 +48,48 @@
         <button class="btn btn-sm btn-filter" [class.active]="showSellingOnly" (click)="toggleSellingFilter()">
           🏷️ Solo en venta
         </button>
+        <button class="btn btn-sm btn-filter" [class.active]="importOpen" (click)="importOpen = !importOpen">
+          📥 Importar lista
+        </button>
         @if (dirtyEntries.size > 0) {
           <button class="btn btn-sm btn-primary" (click)="saveAllChanges()" [disabled]="batchSaving">
             {{ batchSaving ? '⏳ Guardando...' : '💾 Guardar Cambios (' + dirtyEntries.size + ')' }}
           </button>
         }
       </div>
+
+      @if (importOpen) {
+        <div class="import-panel">
+          <h4>📥 Importar cartas desde texto</h4>
+          <p class="import-hint">Una carta por línea. Formato: <code>2 Nombre</code> o <code>2x Nombre</code> o <code>Nombre</code>.</p>
+          <textarea [(ngModel)]="importText" rows="6" placeholder="2 Caballero del Alba&#10;1 Dragón Carmesí&#10;Talismán de la Furia"></textarea>
+          <div class="import-controls">
+            <label><input type="radio" [(ngModel)]="importMode" value="add" /> Sumar a cantidades existentes</label>
+            <label><input type="radio" [(ngModel)]="importMode" value="set" /> Reemplazar cantidades</label>
+            <button class="btn btn-sm btn-primary" (click)="runBulkImport()" [disabled]="importing || !importText.trim()">
+              {{ importing ? '⏳ Importando...' : '✅ Importar' }}
+            </button>
+            <button class="btn btn-sm" (click)="clearImport()">Limpiar</button>
+          </div>
+          @if (importResult) {
+            <div class="import-result">
+              <p><strong>Añadidas:</strong> {{ importResult.added }} · <strong>Actualizadas:</strong> {{ importResult.updated }} · <strong>No encontradas:</strong> {{ importResult.not_found }} · <strong>Ambiguas:</strong> {{ importResult.ambiguous }}</p>
+              @if (importResult.not_found_lines?.length) {
+                <details><summary>Líneas no encontradas ({{ importResult.not_found_lines.length }})</summary>
+                  <ul>@for (l of importResult.not_found_lines; track l) { <li>{{ l }}</li> }</ul>
+                </details>
+              }
+              @if (importResult.ambiguous_lines?.length) {
+                <details><summary>Líneas ambiguas ({{ importResult.ambiguous_lines.length }})</summary>
+                  <ul>@for (a of importResult.ambiguous_lines; track a.line) {
+                    <li><strong>{{ a.line }}</strong> → {{ a.matches.join(', ') }}</li>
+                  }</ul>
+                </details>
+              }
+            </div>
+          }
+        </div>
+      }
 
       <p class="results-count">{{ collectionTotal }} cartas en tu colección</p>
 
@@ -94,6 +130,33 @@
                   <input type="number" [value]="entry.selling_quantity" min="0" [max]="entry.quantity"
                     (input)="onFieldChange(entry, 'selling_quantity', $any($event.target).valueAsNumber)" />
                 </div>
+              </div>
+              <div class="inline-fields tcg-fields">
+                <div class="field">
+                  <label>Cond.</label>
+                  <select [value]="entry.condition" (change)="onFieldChange(entry, 'condition', $any($event.target).value)">
+                    <option value="NM">NM</option>
+                    <option value="LP">LP</option>
+                    <option value="MP">MP</option>
+                    <option value="HP">HP</option>
+                    <option value="DMG">DMG</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Idioma</label>
+                  <select [value]="entry.language" (change)="onFieldChange(entry, 'language', $any($event.target).value)">
+                    <option value="ES">ES</option>
+                    <option value="EN">EN</option>
+                    <option value="PT">PT</option>
+                    <option value="FR">FR</option>
+                    <option value="OT">Otro</option>
+                  </select>
+                </div>
+                <label class="foil-toggle">
+                  <input type="checkbox" [checked]="entry.is_foil"
+                    (change)="onFieldChange(entry, 'is_foil', $any($event.target).checked)" />
+                  ✨ Foil
+                </label>
               </div>
               <div class="card-action-row">
                 @if (dirtyEntries.has(entry.id)) {
@@ -254,6 +317,108 @@
   <!-- ═══ TAB: MERCADO ═══ -->
   @if (activeTab === 'mercado') {
     <div class="tab-content">
+      <!-- Tienda config -->
+      <div class="store-config-panel" [class.open]="storeConfigOpen">
+        <button class="config-toggle" (click)="storeConfigOpen = !storeConfigOpen">
+          ⚙️ Configurar mi tienda pública
+          <span class="chev">{{ storeConfigOpen ? '▲' : '▼' }}</span>
+        </button>
+
+        @if (storeConfigOpen && binderProfile) {
+          <div class="config-body">
+            <div class="config-row toggle-row">
+              <label class="toggle">
+                <input type="checkbox" [(ngModel)]="binderProfile.is_store_public" />
+                <span>Tienda <strong>{{ binderProfile.is_store_public ? 'pública' : 'privada' }}</strong></span>
+              </label>
+              <small>Si la activas, aparece en el índice <a routerLink="/tiendas">/tiendas</a> y es buscable.</small>
+            </div>
+
+            <div class="config-grid">
+              <div class="field">
+                <label>Nombre público</label>
+                <input type="text" [(ngModel)]="binderProfile.display_name" placeholder="ej: Cartas de Iván" maxlength="80" />
+              </div>
+              <div class="field full">
+                <label>Bio (máx 500)</label>
+                <textarea [(ngModel)]="binderProfile.bio" rows="2" maxlength="500" placeholder="Vendo desde 2022, envíos a todo Chile..."></textarea>
+              </div>
+              <div class="field">
+                <label>Ciudad</label>
+                <input type="text" [(ngModel)]="binderProfile.city" maxlength="80" />
+              </div>
+              <div class="field">
+                <label>País</label>
+                <select [(ngModel)]="binderProfile.country">
+                  <option value="CL">Chile</option><option value="AR">Argentina</option>
+                  <option value="PE">Perú</option><option value="MX">México</option>
+                  <option value="CO">Colombia</option><option value="UY">Uruguay</option>
+                  <option value="EC">Ecuador</option><option value="BO">Bolivia</option>
+                  <option value="VE">Venezuela</option><option value="PY">Paraguay</option>
+                  <option value="ES">España</option><option value="US">EE.UU.</option>
+                  <option value="OT">Otro</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>WhatsApp <small>(con código país)</small></label>
+                <input type="text" [(ngModel)]="binderProfile.whatsapp" placeholder="+56912345678" maxlength="20" />
+              </div>
+              <div class="field">
+                <label>Instagram</label>
+                <input type="text" [(ngModel)]="binderProfile.instagram" placeholder="usuario" maxlength="80" />
+              </div>
+              <div class="field">
+                <label>Discord</label>
+                <input type="text" [(ngModel)]="binderProfile.discord" placeholder="usuario#1234" maxlength="80" />
+              </div>
+              <div class="field">
+                <label>Email público</label>
+                <input type="email" [(ngModel)]="binderProfile.email_public" maxlength="254" />
+              </div>
+              <div class="field full">
+                <label>Métodos de pago</label>
+                <input type="text" [(ngModel)]="binderProfile.payment_methods" placeholder="Transferencia, efectivo, MercadoPago..." maxlength="200" />
+              </div>
+              <div class="field full">
+                <label>Info de envío</label>
+                <textarea [(ngModel)]="binderProfile.shipping_info" rows="2" maxlength="500" placeholder="Envío Starken/Chilexpress por pagar, retiro en metro Los Leones..."></textarea>
+              </div>
+              <label class="checkbox-row">
+                <input type="checkbox" [(ngModel)]="binderProfile.accepts_trades" />
+                🔄 Acepto cambios / trades
+              </label>
+            </div>
+
+            <div class="config-actions">
+              <button class="btn btn-primary btn-sm" (click)="saveStoreProfile()" [disabled]="storeProfileSaving">
+                {{ storeProfileSaving ? '⏳ Guardando...' : (storeProfileSaved ? '✅ Guardado' : '💾 Guardar perfil') }}
+              </button>
+            </div>
+
+            <div class="links-block">
+              <h5>🌐 Enlaces de tu tienda</h5>
+              @if (binderProfile.is_store_public) {
+                <div class="link-row">
+                  <span class="link-label">Pública:</span>
+                  <code>{{ publicStoreUrl() }}</code>
+                  <button class="btn btn-xs" (click)="copyPublicUrl()">{{ shareLinkCopied ? '✅' : '📋 Copiar' }}</button>
+                </div>
+              } @else {
+                <p class="hint-warn">⚠ Activa "Tienda pública" para tener URL bonita y aparecer en el índice.</p>
+              }
+              <div class="link-row">
+                <span class="link-label">Privada:</span>
+                <code class="trunc">{{ privateStoreUrl() }}</code>
+                <button class="btn btn-xs" (click)="copyShareLink()">{{ shareLinkCopied ? '✅' : '📋' }}</button>
+                <button class="btn btn-xs btn-warn" (click)="regenerateShareToken()" [disabled]="storeRegenerating">
+                  {{ storeRegenerating ? '⏳' : '♻️ Regenerar' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
       <div class="tab-toolbar">
         <div class="search-bar">
           <input type="text" placeholder="Buscar en tu mercado..." [(ngModel)]="mercadoSearch" (keyup.enter)="onMercadoSearch()" />

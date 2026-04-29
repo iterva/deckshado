@@ -1,7 +1,7 @@
 import { Component, OnInit, signal, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { CarpetaService } from '../../services/carpeta.service';
 import { CardService } from '../../services/card.service';
@@ -16,7 +16,7 @@ type Tab = 'carpeta' | 'codex' | 'wishlist' | 'mercado' | 'stats';
 @Component({
   selector: 'app-carpeta',
   standalone: true,
-  imports: [FormsModule, ThumbnailPipe, DecimalPipe],
+  imports: [FormsModule, ThumbnailPipe, DecimalPipe, RouterLink],
   templateUrl: './carpeta.component.html',
   styleUrl: './carpeta.component.scss',
 })
@@ -35,7 +35,7 @@ export class CarpetaComponent implements OnInit {
   statsLoading = false;
   collectionLoading = false;
   showSellingOnly = false;
-  dirtyEntries = new Map<number, { quantity?: number; price?: number | null; selling_quantity?: number }>();
+  dirtyEntries = new Map<number, { quantity?: number; price?: number | null; selling_quantity?: number; condition?: string; language?: string; is_foil?: boolean; notes?: string }>();
   previewCard: Card | null = null;
 
   // ── Codex ──
@@ -78,6 +78,19 @@ export class CarpetaComponent implements OnInit {
   batchSaving = false;
   exportingPdf = false;
   mercadoAllEntries: CollectionEntry[] = [];
+
+  // ── Tienda config ──
+  storeConfigOpen = false;
+  storeProfileSaving = false;
+  storeProfileSaved = false;
+  storeRegenerating = false;
+
+  // ── Bulk import ──
+  importOpen = false;
+  importText = '';
+  importMode: 'add' | 'set' = 'add';
+  importing = false;
+  importResult: any = null;
 
   constructor(
     public auth: AuthService,
@@ -178,7 +191,7 @@ export class CarpetaComponent implements OnInit {
   collectionNext() { if (this.collectionPage * 40 < this.collectionTotal) { this.collectionPage++; this.loadCollection(); } }
   get collectionTotalPages() { return Math.ceil(this.collectionTotal / 40); }
 
-  onFieldChange(entry: CollectionEntry, field: string, value: number) {
+  onFieldChange(entry: CollectionEntry, field: string, value: any) {
     let pending = this.dirtyEntries.get(entry.id) || {};
     (pending as any)[field] = value;
     // Cap selling_quantity to quantity
@@ -198,6 +211,10 @@ export class CarpetaComponent implements OnInit {
       quantity: pending.quantity ?? entry.quantity,
       price: pending.price !== undefined ? pending.price : entry.price,
       selling_quantity: pending.selling_quantity ?? entry.selling_quantity,
+      condition: (pending.condition ?? entry.condition) as any,
+      language: (pending.language ?? entry.language) as any,
+      is_foil: pending.is_foil ?? entry.is_foil,
+      notes: pending.notes ?? entry.notes,
     }).subscribe(updated => {
       const idx = this.collectionEntries.findIndex(e => e.id === entry.id);
       if (idx >= 0) this.collectionEntries[idx] = updated;
@@ -325,7 +342,7 @@ export class CarpetaComponent implements OnInit {
   saveAllChanges() {
     if (this.dirtyEntries.size === 0) return;
     this.batchSaving = true;
-    const items: { card: number; quantity?: number; price?: number | null; selling_quantity?: number }[] = [];
+    const items: any[] = [];
     this.dirtyEntries.forEach((pending, entryId) => {
       const entry = this.collectionEntries.find(e => e.id === entryId);
       if (!entry) return;
@@ -334,6 +351,10 @@ export class CarpetaComponent implements OnInit {
         quantity: pending.quantity ?? entry.quantity,
         price: pending.price !== undefined ? pending.price : entry.price,
         selling_quantity: pending.selling_quantity ?? entry.selling_quantity,
+        condition: pending.condition ?? entry.condition,
+        language: pending.language ?? entry.language,
+        is_foil: pending.is_foil ?? entry.is_foil,
+        notes: pending.notes ?? entry.notes,
       });
     });
     this.carpetaService.batchUpsertCollection(items).subscribe({
@@ -508,5 +529,91 @@ export class CarpetaComponent implements OnInit {
 
     this.exportingPdf = false;
     this.cdr.detectChanges();
+  }
+
+  // ── Tienda config ──
+  saveStoreProfile() {
+    if (!this.binderProfile) return;
+    this.storeProfileSaving = true;
+    const payload = {
+      is_store_public: this.binderProfile.is_store_public,
+      display_name: this.binderProfile.display_name,
+      bio: this.binderProfile.bio,
+      city: this.binderProfile.city,
+      country: this.binderProfile.country,
+      whatsapp: this.binderProfile.whatsapp,
+      instagram: this.binderProfile.instagram,
+      discord: this.binderProfile.discord,
+      email_public: this.binderProfile.email_public,
+      payment_methods: this.binderProfile.payment_methods,
+      shipping_info: this.binderProfile.shipping_info,
+      accepts_trades: this.binderProfile.accepts_trades,
+    };
+    this.carpetaService.updateBinderProfile(payload).subscribe({
+      next: p => {
+        this.binderProfile = p;
+        this.storeProfileSaving = false;
+        this.storeProfileSaved = true;
+        this.cdr.detectChanges();
+        setTimeout(() => { this.storeProfileSaved = false; this.cdr.detectChanges(); }, 2000);
+      },
+      error: () => { this.storeProfileSaving = false; this.cdr.detectChanges(); },
+    });
+  }
+
+  regenerateShareToken() {
+    if (!confirm('¿Generar un nuevo enlace privado? El anterior dejará de funcionar.')) return;
+    this.storeRegenerating = true;
+    this.carpetaService.regenerateShareToken().subscribe({
+      next: r => {
+        this.shareToken = r.share_token;
+        if (this.binderProfile) this.binderProfile.share_token = r.share_token;
+        this.storeRegenerating = false;
+        this.cdr.detectChanges();
+      },
+      error: () => { this.storeRegenerating = false; this.cdr.detectChanges(); },
+    });
+  }
+
+  publicStoreUrl(): string {
+    if (!this.binderProfile?.store_slug) return '';
+    return `${window.location.origin}/t/${this.binderProfile.store_slug}`;
+  }
+
+  privateStoreUrl(): string {
+    if (!this.shareToken) return '';
+    return `${window.location.origin}/tienda/${this.shareToken}`;
+  }
+
+  copyPublicUrl() {
+    navigator.clipboard.writeText(this.publicStoreUrl()).then(() => {
+      this.shareLinkCopied = true;
+      this.cdr.detectChanges();
+      setTimeout(() => { this.shareLinkCopied = false; this.cdr.detectChanges(); }, 2000);
+    });
+  }
+
+  // ── Bulk import ──
+  runBulkImport() {
+    if (!this.importText.trim()) return;
+    this.importing = true;
+    this.importResult = null;
+    this.carpetaService.bulkImport(this.importText, this.importMode).subscribe({
+      next: res => {
+        this.importing = false;
+        this.importResult = res;
+        if (res.added || res.updated) {
+          this.loadIds();
+          this.loadCollection();
+        }
+        this.cdr.detectChanges();
+      },
+      error: () => { this.importing = false; this.cdr.detectChanges(); },
+    });
+  }
+
+  clearImport() {
+    this.importText = '';
+    this.importResult = null;
   }
 }

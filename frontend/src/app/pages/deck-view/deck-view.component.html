@@ -634,6 +634,7 @@
         <button class="hand-modal-close" (click)="showHandModal = false" aria-label="Cerrar">✕</button>
       </div>
       <div class="hand-modal-body">
+        <div class="hand-simulator hand-simulator--modal">
         <div class="hand-actions">
           @if (!handActive) {
             <button class="hand-btn primary" (click)="drawHand()">Robar 8 cartas</button>
@@ -668,6 +669,7 @@
         } @else if (!handActive) {
           <p class="hand-hint">Simula una mano inicial para probar tu mazo.@if (startingGoldCard) { Tu oro inicial ({{ startingGoldCard.name }}) no se baraja, empieza en campo.}</p>
         }
+        </div>
       </div>
     </div>
   </div>
@@ -675,4 +677,10 @@
 
 @if (shareToast) {
   <div class="share-toast">¡Listo!</div>
+}
+
+@if (presentationMode) {
+  <button class="exit-presentation-fab" (click)="togglePresentation()" title="Salir de pantalla completa (Esc)" aria-label="Salir de pantalla completa">
+    <i class="bi bi-fullscreen-exit"></i>
+  </button>
 }

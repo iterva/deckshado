@@ -194,7 +194,7 @@
 }
 
 .action-bar .action-btn {
-  display: inline-flex; align-items: center; gap: 0.4rem;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
   padding: 0.42rem 0.75rem;
   border: 1px solid #2a3a4a;
   background: transparent;
@@ -492,6 +492,167 @@
   &:hover { color: #fff; background: rgba(233,69,96,0.18); }
 }
 .hand-modal-body { padding: 1.2rem; }
+
+// ─────────────────────────────────────────
+// Hand simulator (modal version)
+// Los estilos de .hand-simulator viven anidados dentro de .stats-view; aquí
+// los redefinimos para el modal con una pinta más prolija y layout en grid.
+// ─────────────────────────────────────────
+.hand-modal-body .hand-simulator {
+  background: transparent;
+  border: 0;
+  padding: 0;
+
+  .hand-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    padding-bottom: 0.9rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #1e3a4a;
+  }
+
+  .hand-size-label {
+    font-size: 0.85rem;
+    color: #ffbd39;
+    font-weight: 700;
+    margin-right: auto;
+  }
+
+  .hand-btn {
+    padding: 0.45rem 0.95rem;
+    border: 1px solid #2a3a4a;
+    border-radius: 8px;
+    background: #111827;
+    color: #cdd6e0;
+    font-size: 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.18s;
+
+    &:hover { background: #1e2d3d; border-color: #3a5a6a; color: #fff; }
+
+    &.primary {
+      background: #2a8a8a;
+      color: #fff;
+      border-color: #2a8a8a;
+      &:hover { background: #35a0a0; border-color: #35a0a0; }
+    }
+  }
+
+  .hand-hint {
+    color: #8899aa;
+    font-size: 0.9rem;
+    margin: 0;
+    line-height: 1.45;
+  }
+
+  .hand-field {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 0.4rem;
+
+    .field-label {
+      font-size: 0.7rem;
+      color: #ffbd39;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+  }
+
+  .hand-divider {
+    width: 100%;
+    height: 1px;
+    background: #1e3a4a;
+    margin: 0.9rem 0;
+  }
+
+  // Layout en grid responsivo: las cartas se acomodan a la derecha en desktop
+  .hand-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 12px;
+    margin-top: 0;
+    overflow: visible;
+  }
+
+  .hand-card {
+    width: auto;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.15s;
+    position: relative;
+
+    &:hover { transform: translateY(-4px); }
+
+    img {
+      width: 100%;
+      height: auto;
+      border-radius: 6px;
+      border: 2px solid #1a3a4a;
+      display: block;
+      transition: border-color 0.15s;
+    }
+
+    &:hover img { border-color: #ffbd39; }
+    &.is-starting-gold img { border-color: #ffbd39; }
+
+    .hand-gold-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      color: #ffbd39;
+      font-size: 0.7rem;
+      background: #0f1923;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #ffbd39;
+    }
+
+    .hand-card-name {
+      display: block;
+      font-size: 0.7rem;
+      color: #b0b0cc;
+      margin-top: 5px;
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  // En el "campo" (oro inicial) la carta debe ser más grande/destacada
+  .hand-field .hand-card {
+    width: 130px;
+    flex-shrink: 0;
+  }
+}
+
+// Móvil: cartas más chicas, acciones apiladas
+@media (max-width: 600px) {
+  .hand-modal {
+    max-height: 95vh;
+    border-radius: 12px;
+  }
+  .hand-modal-body { padding: 0.8rem; }
+  .hand-modal-body .hand-simulator {
+    .hand-cards { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; }
+    .hand-card-name { font-size: 0.62rem; }
+    .hand-field .hand-card { width: 100px; }
+    .hand-actions {
+      .hand-btn { font-size: 0.78rem; padding: 0.4rem 0.7rem; flex: 1; min-width: 0; }
+      .hand-size-label { width: 100%; margin-right: 0; }
+    }
+  }
+}
 
 // ─────────────────────────────────────────
 // Exporting overlay
@@ -1550,6 +1711,14 @@
       width: 32px;
       height: 32px;
       font-size: 1rem;
+      padding: 0;
+      justify-content: center;
+      gap: 0;
+    }
+
+    .seg-control button {
+      justify-content: center;
+      padding: 0.35rem 0.55rem;
     }
 
     .orientation-select {
@@ -1659,6 +1828,30 @@
     font-size: 0.95rem;
     margin: 1rem 0 0.5rem;
     padding-top: 0.6rem;
+  }
+}
+
+// Botón flotante "salir pantalla completa" — solo visible en presentación
+.exit-presentation-fab {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 1500;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(15, 25, 35, 0.85);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.15rem;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+  transition: background 0.18s, transform 0.18s;
+  &:hover { background: rgba(233,69,96,0.85); transform: scale(1.05); }
+  @media (max-width: 600px) {
+    top: 10px; right: 10px; width: 40px; height: 40px;
   }
 }
 

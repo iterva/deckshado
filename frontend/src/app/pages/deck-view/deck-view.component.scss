@@ -686,6 +686,11 @@
 // ─────────────────────────────────────────
 // Modo presentación / fullscreen
 // ─────────────────────────────────────────
+:host {
+  display: block;
+  max-width: 100%;
+  overflow-x: hidden;
+}
 :host-context(body.deck-presentation) {
   ::ng-deep {
     .navbar, .footer, app-navbar, app-footer { display: none !important; }
@@ -1781,6 +1786,32 @@
   .cost-curve,
   .type-dist {
     padding: 0.7rem 0.8rem !important;
+  }
+
+  // Curva de coste compacta en móvil
+  .cost-curve {
+    .cost-curve-bars {
+      gap: 0.25rem !important;
+      height: 140px !important;
+    }
+    .cost-bar {
+      .cost-bar-count { font-size: 0.7rem !important; }
+      .cost-bar-label { font-size: 0.7rem !important; }
+    }
+  }
+
+  .type-dist {
+    .type-dist-segment span { font-size: 0.7rem !important; }
+    .type-dist-legend { font-size: 0.75rem !important; gap: 0.4rem 0.8rem !important; }
+  }
+
+  // Probabilidad de robo: filas más compactas
+  .stats-card {
+    .prob-row,
+    .draw-prob-row {
+      font-size: 0.78rem !important;
+      gap: 0.4rem !important;
+    }
   }
 
   .card-grid {

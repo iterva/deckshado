@@ -33,6 +33,7 @@ export class CarpetaComponent implements OnInit {
   // ── Stats ──
   stats: any = null;
   statsLoading = false;
+  statsError: string | null = null;
   collectionLoading = false;
   showSellingOnly = false;
   dirtyEntries = new Map<number, { quantity?: number; price?: number | null; selling_quantity?: number; condition?: string; language?: string; is_foil?: boolean; notes?: string }>();
@@ -122,9 +123,16 @@ export class CarpetaComponent implements OnInit {
 
   loadStats() {
     this.statsLoading = true;
+    this.statsError = null;
     this.carpetaService.getCollectionStats().subscribe({
       next: (s) => { this.stats = s; this.statsLoading = false; this.cdr.detectChanges(); },
-      error: () => { this.statsLoading = false; },
+      error: (err) => {
+        this.statsLoading = false;
+        const status = err?.status ?? '?';
+        const detail = err?.error?.detail || err?.message || 'sin detalle';
+        this.statsError = `HTTP ${status}: ${detail}`;
+        this.cdr.detectChanges();
+      },
     });
   }
 

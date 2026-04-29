@@ -629,8 +629,11 @@
       } @else {
         <div class="empty-state">
           <p>No se pudieron cargar las estadísticas.</p>
+          @if (statsError) {
+            <p style="font-size: 0.8rem; color: #f87171; font-family: monospace;">{{ statsError }}</p>
+          }
           <p style="font-size: 0.85rem; color: #888;">
-            Si acabas de actualizar, asegúrate de aplicar las migraciones del backend.
+            Si acabas de actualizar, asegúrate de aplicar las migraciones del backend y recargar la web app.
           </p>
           <button class="btn btn-sm btn-primary" (click)="loadStats()">🔄 Reintentar</button>
         </div>

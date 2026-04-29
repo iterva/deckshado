@@ -691,6 +691,12 @@
     .navbar, .footer, app-navbar, app-footer { display: none !important; }
   }
 }
+// En móvil mantenemos la bottom-nav visible aún en modo presentación
+@media (max-width: 768px) {
+  :host-context(body.deck-presentation) {
+    ::ng-deep .bottom-nav { display: flex !important; }
+  }
+}
 .is-presentation {
   .hidden-pres { display: none !important; }
   .deck-hero { min-height: 140px; .hero-cover { width: 130px; } }
@@ -699,10 +705,33 @@
 // ─────────────────────────────────────────
 // Responsive grid
 // ─────────────────────────────────────────
-@media (max-width: 600px) {
-  .deck-hero .hero-content { flex-direction: column; }
-  .deck-hero .hero-cover { width: 130px; align-self: flex-start; }
-  .deck-hero .page-title { font-size: 1.5rem; }
+@media (max-width: 768px) {
+  .deck-hero {
+    min-height: 0;
+    margin-bottom: 0.6rem;
+
+    .hero-content {
+      flex-direction: row;
+      gap: 0.8rem;
+      padding: 0.8rem 0.9rem;
+    }
+    .hero-cover {
+      width: 90px;
+      align-self: flex-start;
+      border-radius: 8px;
+    }
+    .hero-info { gap: 0.4rem; }
+    .page-title { font-size: 1.25rem; }
+    .hero-description {
+      font-size: 0.8rem;
+      max-height: 4.5em;
+      padding-left: 0.5rem;
+    }
+  }
+  .deck-chips {
+    gap: 0.3rem;
+    .chip { font-size: 0.7rem; padding: 0.22rem 0.5rem; }
+  }
   .seg-control button span { display: none; }
 }
 
@@ -1731,6 +1760,27 @@
     font-size: 0.8rem;
     gap: 0.8rem;
     margin-bottom: 0.5rem;
+  }
+
+  // Stats / charts más compactos en móvil
+  .stats-summary {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+
+    .stat-card {
+      padding: 0.55rem 0.5rem !important;
+      gap: 0.15rem !important;
+
+      .stat-number { font-size: 1.3rem !important; }
+      .stat-caption { font-size: 0.65rem !important; letter-spacing: 0.04em !important; }
+      &.starting-gold .stat-number { font-size: 1rem !important; }
+    }
+  }
+
+  .stats-card,
+  .cost-curve,
+  .type-dist {
+    padding: 0.7rem 0.8rem !important;
   }
 
   .card-grid {

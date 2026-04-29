@@ -1619,12 +1619,29 @@
       i { font-size: 0.65rem; }
     }
 
-    .cover-badge,
+    // En móvil ocultamos el badge siempre-visible: la estrella superior-izquierda
+    // (.cover-star) hace de toggle. Aparece al tocar/acercar el dedo (:active /
+    // :focus) y queda tenue cuando es la portada actual para no estorbar.
+    .cover-badge { display: none; }
+
     .cover-star {
-      width: 18px;
-      height: 18px;
-      font-size: 0.6rem;
+      width: 22px;
+      height: 22px;
+      font-size: 0.75rem;
+      top: 3px;
+      left: 3px;
+      opacity: 0;
+
+      i { font-size: 0.8rem; }
+
+      &.is-cover { opacity: 0.45; }
+      &:active,
+      &:focus,
+      &:focus-visible { opacity: 1; }
     }
+    // Cualquier interacción con la carta también la revela
+    &:active .cover-star,
+    .img-wrapper:active .cover-star { opacity: 1; }
   }
 
   // compensate stacked card offsets so they don't clip

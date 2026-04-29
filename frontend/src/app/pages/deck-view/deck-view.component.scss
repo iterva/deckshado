@@ -1161,7 +1161,7 @@
         font-weight: 600;
       }
       &.empty {
-        .cost-bar-count { color: transparent; }
+        .cost-bar-count { color: #4a5d8a; }
         .cost-bar-fill { background: #1a3a4a; opacity: 0.5; min-height: 8%; }
       }
     }

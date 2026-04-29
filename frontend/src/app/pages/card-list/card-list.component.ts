@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChild, HostListener } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
 import { CardService } from '../../services/card.service';
@@ -31,7 +31,26 @@ export class CardListComponent implements OnInit {
   selectedCard: Card | null = null;
   viewMode: 'grid' | 'table' = 'grid';
 
+  @ViewChild('searchInput') searchInput?: ElementRef<HTMLInputElement>;
+
   constructor(private cardService: CardService, private cdr: ChangeDetectorRef, private titleService: Title) {}
+
+  /** Atajo: "/" enfoca el buscador (ignora si ya estás tipeando en otro input). */
+  @HostListener('document:keydown', ['$event'])
+  onKeydown(ev: KeyboardEvent) {
+    if (ev.key === '/' && !this.isTypingTarget(ev.target)) {
+      ev.preventDefault();
+      this.searchInput?.nativeElement.focus();
+      this.searchInput?.nativeElement.select();
+    }
+  }
+
+  private isTypingTarget(t: EventTarget | null): boolean {
+    if (!t) return false;
+    const el = t as HTMLElement;
+    const tag = (el.tagName || '').toLowerCase();
+    return tag === 'input' || tag === 'textarea' || el.isContentEditable;
+  }
 
   ngOnInit() {
     this.titleService.setTitle('Colección de Cartas — ShadowForge');

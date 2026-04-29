@@ -51,3 +51,29 @@ def create_or_update_profile(sender, instance, created, **kwargs):
         Profile.objects.create(user=instance)
     else:
         Profile.objects.get_or_create(user=instance)
+
+
+class SocialAccount(models.Model):
+    """Cuenta social vinculada a un usuario (Google, etc.)."""
+    PROVIDER_CHOICES = [("google", "Google")]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="social_accounts",
+    )
+    provider = models.CharField(max_length=20, choices=PROVIDER_CHOICES, default="google")
+    provider_uid = models.CharField(max_length=255)
+    email = models.EmailField(blank=True, default="")
+    linked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("provider", "provider_uid"),
+                name="users_socialaccount_provider_uid_unique",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.provider}:{self.email or self.provider_uid} → {self.user.username}"

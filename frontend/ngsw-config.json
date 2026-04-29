@@ -45,6 +45,19 @@
       }
     },
     {
+      "name": "decks-api",
+      "urls": [
+        "https://iterva.pythonanywhere.com/api/decks/public/**",
+        "https://iterva.pythonanywhere.com/api/decks/my/**"
+      ],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 100,
+        "maxAge": "7d",
+        "timeout": "5s"
+      }
+    },
+    {
       "name": "card-images",
       "urls": [
         "https://wsrv.nl/**",

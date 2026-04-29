@@ -112,6 +112,13 @@ export class DeckViewComponent implements OnInit {
 
   copyDeck() {
     if (!this.deck) return;
+    if (!this.auth.isAuthenticated()) {
+      // Invitar a registrarse / iniciar sesión y volver al mazo
+      this.router.navigate(['/login'], {
+        queryParams: { returnUrl: this.router.url, action: 'clone' },
+      });
+      return;
+    }
     const fmt = this.deck.format || 'imp';
     const qp: any = {};
     if (this.deck.race) qp.race = this.deck.race;

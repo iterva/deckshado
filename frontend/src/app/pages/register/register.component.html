@@ -3,31 +3,26 @@
     <h2>Crear Cuenta</h2>
     <p class="auth-subtitle">Regístrate para construir y guardar tus mazos</p>
 
-    @if (error) {
-      <div class="error-msg">{{ error }}</div>
-    }
+    <ul class="register-perks">
+      <li><i class="bi bi-check2-circle"></i> Sin contraseñas que recordar</li>
+      <li><i class="bi bi-check2-circle"></i> Tu nombre y avatar de Google se rellenan automáticamente</li>
+      <li><i class="bi bi-check2-circle"></i> Más seguro: verificación 2FA si la tienes en Google</li>
+    </ul>
 
-    <form (ngSubmit)="onSubmit()">
-      <div class="form-group">
-        <label for="username">Usuario</label>
-        <input id="username" type="text" [(ngModel)]="username" name="username" required autocomplete="username">
-      </div>
-      <div class="form-group">
-        <label for="email">Correo electrónico</label>
-        <input id="email" type="email" [(ngModel)]="email" name="email" required autocomplete="email">
-      </div>
-      <div class="form-group">
-        <label for="password">Contraseña</label>
-        <input id="password" type="password" [(ngModel)]="password" name="password" required minlength="8" autocomplete="new-password">
-      </div>
-      <div class="form-group">
-        <label for="confirmPassword">Confirmar Contraseña</label>
-        <input id="confirmPassword" type="password" [(ngModel)]="confirmPassword" name="confirmPassword" required autocomplete="new-password">
-      </div>
-      <button type="submit" class="btn btn-primary btn-full" [disabled]="loading">
-        {{ loading ? 'Registrando...' : 'Registrarse' }}
-      </button>
-    </form>
+    <div class="google-section">
+      <div #googleBtn class="google-btn-host"></div>
+      @if (error) {
+        <div class="error-msg">{{ error }}</div>
+      }
+      @if (loading) {
+        <p class="loading-msg">Creando tu cuenta...</p>
+      }
+    </div>
+
+    <p class="auth-hint">
+      Al registrarte aceptas nuestras condiciones de uso. Solo usamos tu email, nombre y foto de perfil de Google.
+    </p>
+
     <p class="auth-link">¿Ya tienes cuenta? <a routerLink="/login">Inicia sesión</a></p>
   </div>
 </div>

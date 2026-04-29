@@ -3,4 +3,5 @@ export const environment = {
   apiUrl: 'https://iterva.pythonanywhere.com/api',
   cloudinaryCloudName: 'dmvu6tuee',
   cloudinaryUploadPreset: 'deckshado_avatars',
+  googleClientId: '739285382559-c10lo6ddtaa7j7fi07halv5jr1e6laju.apps.googleusercontent.com',
 };

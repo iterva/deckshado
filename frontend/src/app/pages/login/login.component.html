@@ -1,25 +1,43 @@
 <div class="auth-page">
   <div class="auth-card">
     <h2>Iniciar Sesión</h2>
-    <p class="auth-subtitle">Accede al Constructor de Mazos</p>
+    <p class="auth-subtitle">Accede a ShadowForge</p>
 
-    @if (error) {
-      <div class="error-msg">{{ error }}</div>
+    <!-- Google Sign-In (recomendado) -->
+    <div class="google-section">
+      <div #googleBtn class="google-btn-host"></div>
+      @if (googleError) {
+        <div class="error-msg">{{ googleError }}</div>
+      }
+    </div>
+
+    <button type="button" class="toggle-classic" (click)="showClassic = !showClassic">
+      {{ showClassic ? 'Ocultar' : '¿Tienes una cuenta antigua con usuario y contraseña?' }}
+    </button>
+
+    @if (showClassic) {
+      <div class="divider"><span>Acceso clásico</span></div>
+
+      @if (error) {
+        <div class="error-msg">{{ error }}</div>
+      }
+
+      <form (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label for="username">Usuario</label>
+          <input id="username" type="text" [(ngModel)]="username" name="username" autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="password">Contraseña</label>
+          <input id="password" type="password" [(ngModel)]="password" name="password" autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" [disabled]="loading || !username || !password">
+          {{ loading ? 'Ingresando...' : 'Iniciar Sesión' }}
+        </button>
+      </form>
+      <p class="auth-hint">El registro clásico está deshabilitado. Los nuevos usuarios deben registrarse con Google.</p>
     }
 
-    <form (ngSubmit)="onSubmit()">
-      <div class="form-group">
-        <label for="username">Usuario</label>
-        <input id="username" type="text" [(ngModel)]="username" name="username" required autocomplete="username">
-      </div>
-      <div class="form-group">
-        <label for="password">Contraseña</label>
-        <input id="password" type="password" [(ngModel)]="password" name="password" required autocomplete="current-password">
-      </div>
-      <button type="submit" class="btn btn-primary btn-full" [disabled]="loading">
-        {{ loading ? 'Ingresando...' : 'Iniciar Sesión' }}
-      </button>
-    </form>
-    <p class="auth-link">¿No tienes una cuenta? <a routerLink="/register">Regístrate aquí</a></p>
+    <p class="auth-link">¿No tienes cuenta? <a routerLink="/register">Regístrate con Google</a></p>
   </div>
 </div>

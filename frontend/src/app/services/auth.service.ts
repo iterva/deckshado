@@ -29,6 +29,33 @@ export class AuthService {
     return this.http.post<AuthTokens>(`${this.apiUrl}/login/`, { username, password });
   }
 
+  /** Login / signup con id_token de Google. */
+  loginWithGoogle(credential: string) {
+    return this.http.post<AuthTokens & { linked?: boolean; created?: boolean }>(
+      `${this.apiUrl}/google/`, { credential }
+    );
+  }
+
+  /** Vincula Google a la cuenta autenticada. */
+  linkGoogle(credential: string) {
+    return this.http.post<{ linked: boolean; email: string }>(
+      `${this.apiUrl}/google/link/`, { credential }
+    );
+  }
+
+  /** Desvincula Google de la cuenta autenticada. */
+  unlinkGoogle() {
+    return this.http.delete<{ unlinked: boolean }>(`${this.apiUrl}/google/unlink/`);
+  }
+
+  /** Estado de cuentas sociales del usuario actual. */
+  getSocialStatus() {
+    return this.http.get<{
+      has_usable_password: boolean;
+      accounts: { provider: string; email: string; linked_at: string }[];
+    }>(`${this.apiUrl}/social/`);
+  }
+
   register(username: string, email: string, password: string) {
     return this.http.post<User>(`${this.apiUrl}/register/`, { username, email, password });
   }

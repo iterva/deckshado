@@ -1,48 +1,54 @@
-import { Component } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Component, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { GoogleAuthService } from '../../services/google-auth.service';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [RouterLink],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',
 })
-export class RegisterComponent {
-  username = '';
-  email = '';
-  password = '';
-  confirmPassword = '';
+export class RegisterComponent implements AfterViewInit {
   error = '';
   loading = false;
 
-  constructor(private auth: AuthService, private router: Router) {}
+  @ViewChild('googleBtn') googleBtn?: ElementRef<HTMLDivElement>;
 
-  onSubmit() {
-    this.error = '';
-    if (this.password !== this.confirmPassword) {
-      this.error = 'Las contraseñas no coinciden';
-      return;
-    }
-    this.loading = true;
-    this.auth.register(this.username, this.email, this.password).subscribe({
-      next: () => {
-        this.auth.login(this.username, this.password).subscribe({
-          next: (tokens) => {
-            this.auth.handleLoginSuccess(tokens);
-            this.router.navigate(['/builder']);
-          },
-          error: () => this.router.navigate(['/login']),
+  constructor(
+    private auth: AuthService,
+    private router: Router,
+    private route: ActivatedRoute,
+    private googleAuth: GoogleAuthService,
+  ) {}
+
+  ngAfterViewInit() {
+    if (this.googleBtn?.nativeElement) {
+      this.googleAuth
+        .renderButton(this.googleBtn.nativeElement, (cred) => this.onGoogleCredential(cred))
+        .catch((e) => {
+          console.error(e);
+          this.error = 'No se pudo cargar Google Sign-In. Refresca la página.';
         });
+    }
+  }
+
+  private onGoogleCredential(credential: string) {
+    this.error = '';
+    this.loading = true;
+    this.auth.loginWithGoogle(credential).subscribe({
+      next: (tokens) => {
+        this.auth.handleLoginSuccess(tokens);
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        if (returnUrl && returnUrl.startsWith('/')) {
+          this.router.navigateByUrl(returnUrl);
+        } else {
+          this.router.navigate(['/']);
+        }
       },
       error: (err) => {
-        const detail = err.error;
-        if (detail?.username) this.error = detail.username[0];
-        else if (detail?.email) this.error = detail.email[0];
-        else if (detail?.password) this.error = detail.password[0];
-        else this.error = 'Error al registrar. Intenta de nuevo.';
+        this.error = err.error?.detail || 'No se pudo registrar con Google.';
         this.loading = false;
       },
     });

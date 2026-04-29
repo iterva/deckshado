@@ -49,6 +49,39 @@
       </button>
     </form>
 
+    <!-- Linked accounts -->
+    <div class="linked-section">
+      <h2>Cuentas vinculadas</h2>
+      <div class="linked-row">
+        <div class="linked-info">
+          <i class="bi bi-google"></i>
+          <div>
+            <strong>Google</strong>
+            @if (googleLinked()) {
+              <p class="linked-email">{{ googleEmail() }}</p>
+            } @else {
+              <p class="linked-email muted">No vinculada</p>
+            }
+          </div>
+        </div>
+        <div class="linked-action">
+          @if (googleLinked()) {
+            <button class="btn-unlink" (click)="unlinkGoogle()" [disabled]="!hasUsablePassword()" [title]="hasUsablePassword() ? 'Desvincular Google' : 'Establece una contraseña antes de desvincular'">
+              Desvincular
+            </button>
+          } @else {
+            <div #googleLinkBtn class="google-link-host"></div>
+          }
+        </div>
+      </div>
+      @if (googleLinked() && !hasUsablePassword()) {
+        <p class="linked-hint">⚠️ No tienes contraseña configurada. Establece una más abajo si quieres poder entrar sin Google.</p>
+      }
+      @if (socialMessage()) {
+        <p class="feedback" [class.success]="socialMessage().includes('correctamente') || socialMessage().includes('desvinculado')">{{ socialMessage() }}</p>
+      }
+    </div>
+
     <!-- Password section -->
     <div class="password-section">
       <h2>Cambiar Contraseña</h2>

@@ -1,7 +1,8 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, AfterViewInit, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { GoogleAuthService } from '../../services/google-auth.service';
 
 @Component({
   selector: 'app-profile-edit',
@@ -10,7 +11,7 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './profile-edit.component.html',
   styleUrl: './profile-edit.component.scss',
 })
-export class ProfileEditComponent {
+export class ProfileEditComponent implements AfterViewInit {
   firstName = '';
   lastName = '';
   leagueCode = '';
@@ -25,13 +26,83 @@ export class ProfileEditComponent {
   avatarPreview = signal<string | null>(null);
   private avatarFile: File | null = null;
 
-  constructor(public auth: AuthService, private router: Router) {
+  // Cuentas vinculadas
+  googleLinked = signal(false);
+  googleEmail = signal('');
+  hasUsablePassword = signal(true);
+  socialMessage = signal('');
+
+  @ViewChild('googleLinkBtn') googleLinkBtn?: ElementRef<HTMLDivElement>;
+
+  constructor(
+    public auth: AuthService,
+    private router: Router,
+    private googleAuth: GoogleAuthService,
+    private cdr: ChangeDetectorRef,
+  ) {
     const user = this.auth.user();
     if (user) {
       this.firstName = user.first_name || '';
       this.lastName = user.last_name || '';
       this.leagueCode = user.league_code || '';
     }
+    this.loadSocialStatus();
+  }
+
+  ngAfterViewInit() {
+    this.maybeRenderGoogleLinkButton();
+  }
+
+  private loadSocialStatus() {
+    this.auth.getSocialStatus().subscribe({
+      next: (s) => {
+        const google = s.accounts.find(a => a.provider === 'google');
+        this.googleLinked.set(!!google);
+        this.googleEmail.set(google?.email || '');
+        this.hasUsablePassword.set(s.has_usable_password);
+        // Render boton si no está vinculado todavía
+        setTimeout(() => this.maybeRenderGoogleLinkButton(), 0);
+      },
+    });
+  }
+
+  private maybeRenderGoogleLinkButton() {
+    if (this.googleLinked()) return;
+    const host = this.googleLinkBtn?.nativeElement;
+    if (!host) return;
+    if (host.hasChildNodes()) return;
+    this.googleAuth.renderButton(host, (cred) => this.onGoogleLink(cred)).catch(() => {});
+  }
+
+  private onGoogleLink(credential: string) {
+    this.socialMessage.set('');
+    this.auth.linkGoogle(credential).subscribe({
+      next: (res) => {
+        this.googleLinked.set(true);
+        this.googleEmail.set(res.email);
+        this.socialMessage.set('Google vinculado correctamente.');
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.socialMessage.set(err.error?.detail || 'No se pudo vincular Google.');
+      },
+    });
+  }
+
+  unlinkGoogle() {
+    if (!confirm('¿Desvincular tu cuenta de Google? Después solo podrás entrar con usuario y contraseña.')) return;
+    this.socialMessage.set('');
+    this.auth.unlinkGoogle().subscribe({
+      next: () => {
+        this.googleLinked.set(false);
+        this.googleEmail.set('');
+        this.socialMessage.set('Google desvinculado.');
+        setTimeout(() => this.maybeRenderGoogleLinkButton(), 0);
+      },
+      error: (err) => {
+        this.socialMessage.set(err.error?.detail || 'No se pudo desvincular.');
+      },
+    });
   }
 
   onAvatarSelected(event: Event) {
@@ -97,6 +168,7 @@ export class ProfileEditComponent {
         this.oldPassword = '';
         this.newPassword = '';
         this.confirmPassword = '';
+        this.hasUsablePassword.set(true);
       },
       error: (err) => {
         this.savingPassword.set(false);

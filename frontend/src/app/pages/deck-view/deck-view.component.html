@@ -55,11 +55,10 @@
       <button class="social-btn" (click)="shareDeck()" title="Copiar enlace">
         <i class="bi bi-share"></i>
       </button>
-      @if (auth.isAuthenticated()) {
-        <button class="social-btn" (click)="copyDeck()" title="Copiar mazo a un nuevo borrador">
-          <i class="bi bi-clipboard-plus"></i>
-        </button>
-      }
+      <button class="social-btn" (click)="copyDeck()" [title]="auth.isAuthenticated() ? 'Copiar mazo a un nuevo borrador' : 'Inicia sesión para clonar este mazo'">
+        <i class="bi bi-clipboard-plus"></i>
+        @if (!auth.isAuthenticated()) { <span class="clone-cta">Clonar</span> }
+      </button>
     </div>
 
     <!-- ── Action bar compacta ── -->

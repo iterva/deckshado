@@ -115,6 +115,12 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
 
+# Google OAuth (Sign-In). El client secret no es necesario para verificar id_token.
+GOOGLE_CLIENT_ID = os.environ.get(
+    "GOOGLE_CLIENT_ID",
+    "739285382559-c10lo6ddtaa7j7fi07halv5jr1e6laju.apps.googleusercontent.com",
+)
+
 # CSRF trusted origins (for admin panel access from these domains)
 CSRF_TRUSTED_ORIGINS = [
     "https://iterva.pythonanywhere.com",

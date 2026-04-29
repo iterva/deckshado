@@ -22,8 +22,23 @@ class IsAdminUserCustom(permissions.BasePermission):
 
 
 class RegisterView(generics.CreateAPIView):
+    """Registro clásico bloqueado: los nuevos usuarios deben usar Google.
+
+    Se mantiene login clásico para usuarios ya existentes (compatibilidad).
+    """
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        return Response(
+            {
+                "detail": (
+                    "El registro con usuario y contraseña está deshabilitado. "
+                    "Por favor regístrate con Google."
+                )
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
 
 @api_view(["GET"])

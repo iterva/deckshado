@@ -166,6 +166,7 @@ class CardListView(generics.ListAPIView):
                 "miguel grau",
                 "caon naval",
                 "abordaje",
+                "monumento inmortal",
             ]
             # Subquery: exists a VCR card with same name and same ability
             vcr_match = Card.objects.filter(

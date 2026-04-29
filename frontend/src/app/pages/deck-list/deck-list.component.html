@@ -212,8 +212,12 @@
                 </span>
               </div>
               <div class="deck-actions">
-                <a [routerLink]="['/builder', deck.id]" class="btn btn-secondary btn-sm" aria-label="Editar mazo"><i class="bi bi-pencil-square"></i> Editar</a>
-                <button class="btn btn-danger btn-sm" (click)="deleteDeck(deck.id)" aria-label="Eliminar mazo"><i class="bi bi-trash3"></i></button>
+                <a [routerLink]="['/builder', deck.id]" class="action-btn action-edit" aria-label="Editar mazo" title="Editar">
+                  <i class="bi bi-pencil-square"></i><span>Editar</span>
+                </a>
+                <button class="action-btn action-delete" (click)="deleteDeck(deck.id)" aria-label="Eliminar mazo" title="Eliminar">
+                  <i class="bi bi-trash3"></i>
+                </button>
               </div>
             </div>
           </div>

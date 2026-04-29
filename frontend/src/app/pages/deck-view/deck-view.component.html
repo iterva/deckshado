@@ -1,71 +1,141 @@
-<div class="container">
+<div class="container" [class.is-presentation]="presentationMode">
   @if (loading) {
     <p class="loading">Cargando mazo...</p>
   } @else if (deck) {
-    <a routerLink="/decks" class="back-link">← Volver a mazos</a>
-    <div class="title-row">
-      <h1 class="page-title">{{ deck.name }}</h1>
-      <!-- Botonera de acciones -->
-      <div class="action-bar">
-      <div class="action-group">
-        <button class="action-btn" [class.active]="viewMode === 'grid'" (click)="viewMode = 'grid'" title="Vista cartas">
-          <i class="bi bi-grid-3x3-gap-fill"></i>
-        </button>
-        <button class="action-btn" [class.active]="viewMode === 'list'" (click)="viewMode = 'list'" title="Vista listado">
-          <i class="bi bi-list-ul"></i>
-        </button>
-        <button class="action-btn" [class.active]="viewMode === 'stats'" (click)="viewMode = 'stats'" title="Estadísticas">
-          <i class="bi bi-bar-chart-fill"></i>
-        </button>
-      </div>
-      <div class="action-group">
-        @if (isOwner) {
-          <button class="action-btn accent" (click)="editDeck()" title="Editar mazo">
-            <i class="bi bi-pencil-square"></i>
-          </button>
-          <button class="action-btn danger" (click)="deleteDeck()" title="Eliminar mazo">
-            <i class="bi bi-trash3"></i>
-          </button>
+    <a routerLink="/decks" class="back-link" [class.hidden-pres]="presentationMode">← Volver a mazos</a>
+
+    <!-- ── Hero con portada ── -->
+    <div class="deck-hero" [class.with-cover]="deck.cover_card_detail?.image_url">
+      @if (deck.cover_card_detail?.image_url) {
+        <div class="hero-bg" [style.backgroundImage]="'url(' + (deck.cover_card_detail!.image_url | thumb:600) + ')'"></div>
+      }
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        @if (deck.cover_card_detail?.image_url) {
+          <img class="hero-cover" [src]="deck.cover_card_detail!.image_url | thumb:350" [alt]="deck.cover_card_detail!.name" />
+        } @else {
+          <div class="hero-cover hero-cover-empty"><i class="bi bi-collection"></i></div>
         }
-        @if (canCopy) {
-          <button class="action-btn" (click)="copyDeck()" title="Copiar mazo">
-            <i class="bi bi-clipboard"></i>
-          </button>
-        }
-        <button class="action-btn" (click)="shareDeck()" title="Compartir enlace">
-          <i class="bi bi-share"></i>
-        </button>
-        <button class="action-btn" (click)="exportText()" title="Copiar lista como texto">
-          <i class="bi bi-file-text"></i>
-        </button>
-        <button class="action-btn like-btn" [class.liked]="liked" (click)="toggleLike()" title="Me gusta">
-          <i class="bi" [class.bi-heart-fill]="liked" [class.bi-heart]="!liked"></i>
-          <span class="like-count">{{ likeCount }}</span>
-        </button>
-      </div>
-      <div class="action-group">
-        <select [(ngModel)]="exportOrientation" class="orientation-select">
-          <option value="vertical">Vertical</option>
-          <option value="horizontal">Horizontal</option>
-        </select>
-        <button class="action-btn" (click)="exportImage()" [disabled]="exporting" title="Exportar imagen">
-          <i class="bi bi-camera"></i>
-        </button>
-      </div>
+        <div class="hero-info">
+          <h1 class="page-title">{{ deck.name }}</h1>
+          <div class="deck-chips">
+            <span class="chip chip-owner" title="Autor">
+              <i class="bi bi-person-circle"></i> {{ deck.owner_username }}
+            </span>
+            <span class="chip chip-fmt">{{ formatLabel }}</span>
+            @if (raceLabel) {
+              <span class="chip chip-race" [attr.data-race]="deck.race">{{ raceLabel }}</span>
+            }
+            <span class="chip chip-cards"><i class="bi bi-stack"></i> {{ deck.card_count }}</span>
+            <span class="chip" [class.chip-public]="deck.is_public" [class.chip-private]="!deck.is_public">
+              <i class="bi" [class.bi-globe]="deck.is_public" [class.bi-lock-fill]="!deck.is_public"></i>
+              {{ deck.is_public ? 'Público' : 'Privado' }}
+            </span>
+            <span class="chip chip-time" [title]="'Editado: ' + deck.updated_at">
+              <i class="bi bi-clock-history"></i> {{ deck.updated_at | relativeTime }}
+            </span>
+          </div>
+          @if (deck.description) {
+            <p class="hero-description">{{ deck.description }}</p>
+          }
+        </div>
       </div>
     </div>
-    <div class="deck-meta">
-      <span>por {{ deck.owner_username }}</span>
-      <span>{{ deck.card_count }} cartas</span>
-      <span>{{ formatLabel }}</span>
-      @if (raceLabel) { <span>{{ raceLabel }}</span> }
+
+    <!-- ── Barra social (likes, comentarios, compartir) ── -->
+    <div class="social-bar" [class.hidden-pres]="presentationMode">
+      <button class="social-btn" [class.liked]="liked" (click)="toggleLike()" [disabled]="!auth.isAuthenticated()" [title]="auth.isAuthenticated() ? 'Me gusta' : 'Inicia sesión para dar like'">
+        <i class="bi" [class.bi-heart-fill]="liked" [class.bi-heart]="!liked"></i>
+        <span>{{ likeCount }}</span>
+      </button>
+      <button class="social-btn" [class.active]="socialTab === 'comments'" (click)="setSocialTab('comments')" title="Comentarios">
+        <i class="bi bi-chat-dots"></i>
+        <span>{{ comments.length }}</span>
+      </button>
+      <button class="social-btn" (click)="shareDeck()" title="Copiar enlace">
+        <i class="bi bi-share"></i>
+      </button>
+      @if (auth.isAuthenticated()) {
+        <button class="social-btn" (click)="copyDeck()" title="Copiar mazo a un nuevo borrador">
+          <i class="bi bi-clipboard-plus"></i>
+        </button>
+      }
     </div>
-    @if (deck.description) {
-      <div class="deck-description-box">
-        <i class="bi bi-chat-left-text"></i>
-        <p class="deck-description">{{ deck.description }}</p>
+
+    <!-- ── Action bar compacta ── -->
+    <div class="action-bar" [class.hidden-pres]="presentationMode">
+      <div class="seg-control" role="tablist" aria-label="Modo de vista">
+        <button role="tab" [attr.aria-selected]="viewMode === 'grid'" [class.active]="viewMode === 'grid'" (click)="setViewMode('grid')" title="Vista cartas">
+          <i class="bi bi-grid-3x3-gap-fill"></i><span>Cartas</span>
+        </button>
+        <button role="tab" [attr.aria-selected]="viewMode === 'list'" [class.active]="viewMode === 'list'" (click)="setViewMode('list')" title="Vista listado">
+          <i class="bi bi-list-ul"></i><span>Lista</span>
+        </button>
+        <button role="tab" [attr.aria-selected]="viewMode === 'stats'" [class.active]="viewMode === 'stats'" (click)="setViewMode('stats')" title="Estadísticas">
+          <i class="bi bi-bar-chart-fill"></i><span>Stats</span>
+        </button>
       </div>
-    }
+
+      <div class="action-spacer"></div>
+
+      <button class="action-btn" (click)="showHandModal = true" title="Probar mano (8 cartas)">
+        <i class="bi bi-hand-index"></i><span>Probar mano</span>
+      </button>
+
+      @if (isOwner) {
+        <button class="action-btn accent" (click)="editDeck()" title="Editar mazo">
+          <i class="bi bi-pencil-square"></i><span class="lbl">Editar</span>
+        </button>
+      }
+
+      <button class="action-btn" (click)="togglePresentation()" title="Modo presentación (F)">
+        <i class="bi" [class.bi-fullscreen]="!presentationMode" [class.bi-fullscreen-exit]="presentationMode"></i>
+      </button>
+
+      <!-- Kebab menu -->
+      <div class="more-wrapper" (click)="$event.stopPropagation()">
+        <button class="action-btn" (click)="toggleMoreMenu($event)" [attr.aria-expanded]="showMoreMenu" title="Más opciones">
+          <i class="bi bi-three-dots-vertical"></i>
+        </button>
+        @if (showMoreMenu) {
+          <div class="more-menu" role="menu">
+            <button role="menuitem" (click)="exportText(); showMoreMenu = false">
+              <i class="bi bi-file-text"></i> Copiar como texto
+            </button>
+            <button role="menuitem" (click)="exportImage(); showMoreMenu = false" [disabled]="exporting">
+              <i class="bi bi-camera"></i> Descargar imagen
+            </button>
+            <button role="menuitem" (click)="copyImageToClipboard(); showMoreMenu = false" [disabled]="exporting">
+              <i class="bi bi-clipboard-check"></i> Imagen al portapapeles
+            </button>
+            <div class="more-divider"></div>
+            <label class="more-orient" (click)="$event.stopPropagation()">
+              <span>Orientación:</span>
+              <select [(ngModel)]="exportOrientation">
+                <option value="vertical">Vertical</option>
+                <option value="horizontal">Horizontal</option>
+              </select>
+            </label>
+            @if (isOwner) {
+              <div class="more-divider"></div>
+              <button role="menuitem" (click)="setSocialTab('changelog'); showMoreMenu = false" [disabled]="!changelog.length">
+                <i class="bi bi-clock-history"></i> Historial ({{ changelog.length }})
+              </button>
+              <button role="menuitem" (click)="setSocialTab('snapshots'); showMoreMenu = false">
+                <i class="bi bi-bookmark-star"></i> Versiones ({{ snapshots.length }})
+              </button>
+              <button role="menuitem" (click)="setSocialTab('suggestions'); showMoreMenu = false">
+                <i class="bi bi-lightbulb"></i> Sugerencias
+              </button>
+              <div class="more-divider"></div>
+              <button role="menuitem" class="danger" (click)="deleteDeck(); showMoreMenu = false">
+                <i class="bi bi-trash3"></i> Eliminar mazo
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
 
     <!-- Hidden export area (rendered offscreen, captured by html2canvas) -->
     <div #deckContent class="deck-export-area" [class.export-horizontal]="exportOrientation === 'horizontal'" [class.export-vertical]="exportOrientation === 'vertical'" [class.export-visible]="exporting">
@@ -132,9 +202,19 @@
             @if (entry.quantity >= 2) {
               <img class="stack-shadow s2" [src]="entry.card_detail.image_url | thumb:80" aria-hidden="true" loading="lazy" fetchpriority="low" (error)="$any($event.target).src = entry.card_detail.image_url">
             }
-            <div class="img-wrapper">
+            <div class="img-wrapper" [class.is-banned]="getBanStatus(entry.card_detail)?.status === 'banned'" [class.is-limited]="getBanStatus(entry.card_detail) && getBanStatus(entry.card_detail)?.status !== 'banned'">
               <img class="stack-top" [src]="entry.card_detail.image_url | thumb:250" [alt]="entry.card_detail.name" loading="lazy" decoding="async" (error)="$any($event.target).src = entry.card_detail.image_url">
-              <span class="eye-icon" (click)="showPreview(entry.card_detail, $event)">👁</span>
+              <button type="button" class="icon-overlay eye-icon" (click)="showPreview(entry.card_detail, $event)" aria-label="Ver detalle">
+                <i class="bi bi-eye-fill"></i>
+              </button>
+              @if (getBanStatus(entry.card_detail); as ban) {
+                <span class="ban-overlay" [class.banned]="ban.status === 'banned'" [class.limited]="ban.status !== 'banned'" [title]="ban.status === 'banned' ? 'Baneada' : 'Limitada'">
+                  @if (ban.status === 'banned') { <i class="bi bi-slash-circle-fill"></i> }
+                  @else if (ban.status === 'limited_1') { <span>L1</span> }
+                  @else if (ban.status === 'limited_2') { <span>L2</span> }
+                  @else { <i class="bi bi-exclamation-triangle-fill"></i> }
+                </span>
+              }
               @if (isOwner) {
                 <button type="button"
                         class="cover-star"
@@ -147,7 +227,7 @@
               }
             </div>
             @if (entry.quantity > 1) {
-              <span class="qty-badge">x{{ entry.quantity }}</span>
+              <span class="qty-badge"><i class="bi bi-x"></i>{{ entry.quantity }}</span>
             }
             @if (deck.cover_card === entry.card_detail.id) {
               <span class="cover-badge" title="Portada del mazo"><i class="bi bi-star-fill"></i></span>
@@ -177,11 +257,14 @@
                   <tr [class.ban-row]="getBanStatus(entry.card_detail)">
                     <td class="col-qty">{{ entry.quantity }}</td>
                     <td class="col-name">
-                      {{ entry.card_detail.name }}
+                      <span class="list-card-link">
+                        <img class="list-thumb" [src]="entry.card_detail.image_url | thumb:60" [alt]="entry.card_detail.name" loading="lazy">
+                        <span class="list-name">{{ entry.card_detail.name }}</span>
+                      </span>
                       @if (getBanStatus(entry.card_detail); as ban) {
-                        @if (ban.status === 'banned') { <span class="ban-badge-view banned">🚫</span> }
-                        @else if (ban.status === 'limited_1') { <span class="ban-badge-view limited">☢️1</span> }
-                        @else if (ban.status === 'limited_2') { <span class="ban-badge-view limited">☢️2</span> }
+                        @if (ban.status === 'banned') { <span class="ban-badge-view banned" title="Baneada"><i class="bi bi-slash-circle-fill"></i></span> }
+                        @else if (ban.status === 'limited_1') { <span class="ban-badge-view limited" title="Limitada a 1">L1</span> }
+                        @else if (ban.status === 'limited_2') { <span class="ban-badge-view limited" title="Limitada a 2">L2</span> }
                       }
                     </td>
                     @if (group.type !== 'Oro') {
@@ -197,47 +280,6 @@
     } @else {
       <!-- Estadísticas -->
       <div class="stats-view">
-        <!-- Hand Simulator -->
-        <div class="hand-simulator">
-          <div class="hand-header">
-            <span class="hand-title"><i class="bi bi-hand-index"></i> Mano de prueba</span>
-            <div class="hand-actions">
-              @if (!handActive) {
-                <button class="hand-btn primary" (click)="drawHand()">Robar 8 cartas</button>
-              } @else {
-                <span class="hand-size-label">{{ handCards.length }} cartas</span>
-                @if (handSize > 1) {
-                  <button class="hand-btn" (click)="mulligan()">Mulligan ({{ handSize - 1 }})</button>
-                }
-                <button class="hand-btn primary" (click)="resetHand()">Nueva mano (8)</button>
-              }
-            </div>
-          </div>
-          @if (handActive && handCards.length > 0) {
-            @if (startingGoldCard) {
-              <div class="hand-field">
-                <span class="field-label">En campo (oro inicial):</span>
-                <div class="hand-card is-starting-gold" (click)="showPreview(startingGoldCard, $event)">
-                  <img [src]="startingGoldCard.image_url | thumb:250" [alt]="startingGoldCard.name" loading="lazy">
-                  <span class="hand-gold-badge" title="Oro inicial"><i class="bi bi-star-fill"></i></span>
-                  <span class="hand-card-name">{{ startingGoldCard.name }}</span>
-                </div>
-              </div>
-              <div class="hand-divider"></div>
-            }
-            <div class="hand-cards">
-              @for (card of handCards; track $index) {
-                <div class="hand-card" (click)="showPreview(card, $event)">
-                  <img [src]="card.image_url | thumb:250" [alt]="card.name" loading="lazy">
-                  <span class="hand-card-name">{{ card.name }}</span>
-                </div>
-              }
-            </div>
-          } @else if (!handActive) {
-            <p class="hand-hint">Simula una mano inicial para probar tu mazo.@if (startingGoldCard) { Tu oro inicial ({{ startingGoldCard.name }}) no se baraja, empieza en campo.}</p>
-          }
-        </div>
-
         <div class="stats-summary">
           <div class="stat-card">
             <span class="stat-number">{{ deck.card_count }}</span>
@@ -288,10 +330,13 @@
 
         @if (hasAnyCost) {
           <div class="cost-curve" aria-label="Curva de coste">
-            <span class="cost-curve-title">Curva de coste</span>
+            <div class="cost-curve-head">
+              <span class="cost-curve-title">Curva de coste</span>
+              <span class="cost-curve-avg">Promedio: <strong>{{ avgCost }}</strong></span>
+            </div>
             <div class="cost-curve-bars">
               @for (b of costCurve; track b.label) {
-                <div class="cost-bar" [class.empty]="b.count === 0" [title]="b.count + ' cartas con coste ' + b.label">
+                <div class="cost-bar" [class.empty]="b.count === 0" [class.is-avg]="b.label === avgCostBucket" [title]="b.count + ' cartas con coste ' + b.label">
                   <span class="cost-bar-count">{{ b.count }}</span>
                   <div class="cost-bar-fill-wrap">
                     <div class="cost-bar-fill" [style.height.%]="b.pct"></div>
@@ -326,7 +371,11 @@
     }
 
     @if (deck.sideboard_entries && deck.sideboard_entries.length > 0 && viewMode !== 'stats') {
-      <h2 class="side-title">Sidedeck</h2>
+      <button class="side-toggle" (click)="sideOpen = !sideOpen" [attr.aria-expanded]="sideOpen">
+        <i class="bi" [class.bi-chevron-down]="sideOpen" [class.bi-chevron-right]="!sideOpen"></i>
+        Sidedeck ({{ deck.sideboard_entries.length }})
+      </button>
+      @if (sideOpen) {
       @if (viewMode === 'grid') {
         <div class="card-grid side-grid">
           @for (entry of deck.sideboard_entries; track entry.id) {
@@ -337,12 +386,21 @@
               @if (entry.quantity >= 2) {
                 <img class="stack-shadow s2" [src]="entry.card_detail.image_url | thumb:80" aria-hidden="true" loading="lazy" fetchpriority="low">
               }
-              <div class="img-wrapper">
+              <div class="img-wrapper" [class.is-banned]="getBanStatus(entry.card_detail)?.status === 'banned'" [class.is-limited]="getBanStatus(entry.card_detail) && getBanStatus(entry.card_detail)?.status !== 'banned'">
                 <img class="stack-top" [src]="entry.card_detail.image_url | thumb:250" [alt]="entry.card_detail.name" loading="lazy" decoding="async">
-                <span class="eye-icon" (click)="showPreview(entry.card_detail, $event)">👁</span>
+                <button type="button" class="icon-overlay eye-icon" (click)="showPreview(entry.card_detail, $event)" aria-label="Ver detalle">
+                  <i class="bi bi-eye-fill"></i>
+                </button>
+                @if (getBanStatus(entry.card_detail); as ban) {
+                  <span class="ban-overlay" [class.banned]="ban.status === 'banned'" [class.limited]="ban.status !== 'banned'" [title]="ban.status === 'banned' ? 'Baneada' : 'Limitada'">
+                    @if (ban.status === 'banned') { <i class="bi bi-slash-circle-fill"></i> }
+                    @else if (ban.status === 'limited_1') { <span>L1</span> }
+                    @else if (ban.status === 'limited_2') { <span>L2</span> }
+                  </span>
+                }
               </div>
               @if (entry.quantity > 1) {
-                <span class="qty-badge">x{{ entry.quantity }}</span>
+                <span class="qty-badge"><i class="bi bi-x"></i>{{ entry.quantity }}</span>
               }
             </div>
           }
@@ -366,7 +424,12 @@
                   @for (entry of group.entries; track entry.id) {
                     <tr>
                       <td class="col-qty">{{ entry.quantity }}</td>
-                      <td class="col-name">{{ entry.card_detail.name }}</td>
+                      <td class="col-name">
+                        <span class="list-card-link">
+                          <img class="list-thumb" [src]="entry.card_detail.image_url | thumb:60" [alt]="entry.card_detail.name" loading="lazy">
+                          <span class="list-name">{{ entry.card_detail.name }}</span>
+                        </span>
+                      </td>
                       @if (group.type !== 'Oro') {
                         <td class="col-cost">{{ entry.card_detail.cost ?? '-' }}</td>
                       }
@@ -378,25 +441,108 @@
           }
         </div>
       }
+      }
     }
 
-    <!-- Changelog (owner only) -->
-    @if (isOwner && changelog.length > 0) {
-      <div class="changelog-section">
-        <button class="changelog-toggle" (click)="showChangelog = !showChangelog">
-          <i class="bi" [class.bi-clock-history]="!showChangelog" [class.bi-chevron-up]="showChangelog"></i>
-          {{ showChangelog ? 'Ocultar historial' : 'Historial de cambios (' + changelog.length + ')' }}
-        </button>
-        @if (showChangelog) {
-          <ul class="changelog-list">
-            @for (log of changelog; track log.id) {
-              <li>
-                <span class="changelog-date">{{ log.created_at | date:'dd/MM/yy HH:mm' }}</span>
-                <span class="changelog-summary">{{ log.summary }}</span>
-              </li>
+    <!-- ── Tabs sociales (panel inferior unificado) ── -->
+    @if (socialTab !== 'none') {
+      <div class="social-panel" [class.hidden-pres]="presentationMode">
+        <div class="social-panel-header">
+          <div class="social-panel-tabs">
+            <button [class.active]="socialTab === 'comments'" (click)="setSocialTab('comments')">
+              <i class="bi bi-chat-dots"></i> Comentarios ({{ comments.length }})
+            </button>
+            @if (isOwner && changelog.length > 0) {
+              <button [class.active]="socialTab === 'changelog'" (click)="setSocialTab('changelog')">
+                <i class="bi bi-clock-history"></i> Historial ({{ changelog.length }})
+              </button>
             }
-          </ul>
-        }
+            @if (isOwner) {
+              <button [class.active]="socialTab === 'snapshots'" (click)="setSocialTab('snapshots')">
+                <i class="bi bi-bookmark-star"></i> Versiones ({{ snapshots.length }})
+              </button>
+              <button [class.active]="socialTab === 'suggestions'" (click)="setSocialTab('suggestions')">
+                <i class="bi bi-lightbulb"></i> Sugerencias
+              </button>
+            }
+          </div>
+          <button class="social-panel-close" (click)="socialTab = 'none'" aria-label="Cerrar panel">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <div class="social-panel-body">
+          @if (socialTab === 'comments') {
+            @if (auth.isAuthenticated()) {
+              <div class="comment-form">
+                <textarea [(ngModel)]="newComment" placeholder="Escribe un comentario..." rows="2" maxlength="1000"></textarea>
+                <button class="btn btn-sm btn-primary" (click)="submitComment()" [disabled]="!newComment.trim()">Enviar</button>
+              </div>
+            } @else {
+              <p class="empty-text">Inicia sesión para comentar.</p>
+            }
+            @for (c of comments; track c.id) {
+              <div class="comment-item">
+                <div class="comment-header">
+                  <strong>{{ c.username }}</strong>
+                  <time>{{ c.created_at | date:'dd/MM/yy HH:mm' }}</time>
+                  @if (c.username === auth.user()?.username || isOwner) {
+                    <button class="comment-delete" (click)="deleteComment(c.id)" title="Eliminar">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  }
+                </div>
+                <p class="comment-text">{{ c.text }}</p>
+              </div>
+            }
+            @if (comments.length === 0) {
+              <p class="empty-text">No hay comentarios aún.</p>
+            }
+          } @else if (socialTab === 'changelog') {
+            <ul class="changelog-list">
+              @for (log of changelog; track log.id) {
+                <li>
+                  <span class="changelog-date">{{ log.created_at | date:'dd/MM/yy HH:mm' }}</span>
+                  <span class="changelog-summary">{{ log.summary }}</span>
+                </li>
+              } @empty {
+                <p class="empty-text">No hay cambios registrados.</p>
+              }
+            </ul>
+          } @else if (socialTab === 'snapshots') {
+            <div class="snapshot-create">
+              <input type="text" [(ngModel)]="snapshotLabel" placeholder="Nombre versión (opcional)" />
+              <button class="btn btn-sm btn-primary" (click)="createSnapshot()"><i class="bi bi-camera2"></i> Guardar versión</button>
+            </div>
+            @for (s of snapshots; track s.id) {
+              <div class="snapshot-item">
+                <span class="snapshot-label">{{ s.label || 'Sin nombre' }}</span>
+                <time>{{ s.created_at | date:'dd/MM/yy HH:mm' }}</time>
+                <button class="btn btn-sm btn-secondary" (click)="restoreSnapshot(s.id)">Restaurar</button>
+              </div>
+            } @empty {
+              <p class="empty-text">No hay versiones guardadas.</p>
+            }
+          } @else if (socialTab === 'suggestions') {
+            @if (loadingSuggestions) {
+              <p class="empty-text">Cargando sugerencias...</p>
+            } @else if (suggestions.length === 0) {
+              <p class="empty-text">No hay sugerencias para este mazo.</p>
+            } @else {
+              <div class="suggestions-grid">
+                @for (s of suggestions; track $index) {
+                  <div class="suggestion-card">
+                    @if (s.image_url) {
+                      <img [src]="s.image_url | thumb:150" [alt]="s.name" loading="lazy">
+                    }
+                    <span class="suggestion-name">{{ s.name }}</span>
+                    @if (s.reason) { <span class="suggestion-reason">{{ s.reason }}</span> }
+                  </div>
+                }
+              </div>
+            }
+          }
+        </div>
       </div>
     }
   } @else {
@@ -404,10 +550,20 @@
   }
 </div>
 
+<!-- Overlay exportando -->
+@if (exporting) {
+  <div class="exporting-overlay">
+    <div class="exporting-card">
+      <div class="exporting-spinner"></div>
+      <p>Generando imagen…</p>
+    </div>
+  </div>
+}
+
 @if (previewCard) {
   <div class="preview-overlay" (click)="hidePreview()">
     <div class="preview-panel" (click)="$event.stopPropagation()">
-      <button class="preview-close" (click)="hidePreview()">✕</button>
+      <button class="preview-close" (click)="hidePreview()" aria-label="Cerrar">✕</button>
       <h3 class="preview-title">{{ previewCard.name }}</h3>
       <hr>
       <div class="preview-body">
@@ -458,73 +614,65 @@
               <p class="stat-ability loading">Cargando...</p>
             </div>
           }
+          <div class="stat-section">
+            <a class="btn btn-sm btn-secondary" routerLink="/cards" [queryParams]="{ search: previewCard.name }" (click)="hidePreview()">
+              <i class="bi bi-search"></i> Ver en buscador
+            </a>
+          </div>
         </div>
       </div>
     </div>
   </div>
 }
 
-@if (shareToast) {
-  <div class="share-toast">Enlace copiado al portapapeles</div>
-}
-
-<!-- Snapshots (owner only) -->
-@if (isOwner && deck) {
-  <div class="container snapshots-section">
-    <button class="section-toggle" (click)="showSnapshots = !showSnapshots">
-      <i class="bi" [class.bi-chevron-down]="!showSnapshots" [class.bi-chevron-up]="showSnapshots"></i>
-      Versiones guardadas ({{ snapshots.length }})
-    </button>
-    @if (showSnapshots) {
-      <div class="snapshot-create">
-        <input type="text" [(ngModel)]="snapshotLabel" placeholder="Nombre versión (opcional)" />
-        <button class="btn btn-sm btn-primary" (click)="createSnapshot()">📸 Guardar versión</button>
+<!-- Modal Hand Simulator -->
+@if (showHandModal && deck) {
+  <div class="hand-modal-overlay" (click)="showHandModal = false">
+    <div class="hand-modal" (click)="$event.stopPropagation()">
+      <div class="hand-modal-header">
+        <h3><i class="bi bi-hand-index"></i> Mano de prueba</h3>
+        <button class="hand-modal-close" (click)="showHandModal = false" aria-label="Cerrar">✕</button>
       </div>
-      @for (s of snapshots; track s.id) {
-        <div class="snapshot-item">
-          <span class="snapshot-label">{{ s.label }}</span>
-          <time>{{ s.created_at | date:'dd/MM/yy HH:mm' }}</time>
-          <button class="btn btn-sm btn-secondary" (click)="restoreSnapshot(s.id)">Restaurar</button>
+      <div class="hand-modal-body">
+        <div class="hand-actions">
+          @if (!handActive) {
+            <button class="hand-btn primary" (click)="drawHand()">Robar 8 cartas</button>
+          } @else {
+            <span class="hand-size-label">{{ handCards.length }} cartas</span>
+            @if (handSize > 1) {
+              <button class="hand-btn" (click)="mulligan()">Mulligan ({{ handSize - 1 }})</button>
+            }
+            <button class="hand-btn primary" (click)="resetHand()">Nueva mano (8)</button>
+          }
         </div>
-      }
-      @if (snapshots.length === 0) {
-        <p class="empty-text">No hay versiones guardadas</p>
-      }
-    }
-  </div>
-}
-
-<!-- Comments -->
-@if (deck) {
-  <div class="container comments-section">
-    <button class="section-toggle" (click)="showComments = !showComments">
-      <i class="bi bi-chat-dots"></i>
-      Comentarios ({{ comments.length }})
-    </button>
-    @if (showComments) {
-      @if (auth.isAuthenticated()) {
-        <div class="comment-form">
-          <textarea [(ngModel)]="newComment" placeholder="Escribe un comentario..." rows="2" maxlength="1000"></textarea>
-          <button class="btn btn-sm btn-primary" (click)="submitComment()" [disabled]="!newComment.trim()">Enviar</button>
-        </div>
-      }
-      @for (c of comments; track c.id) {
-        <div class="comment-item">
-          <div class="comment-header">
-            <strong>{{ c.username }}</strong>
-            <time>{{ c.created_at | date:'dd/MM/yy HH:mm' }}</time>
-            @if (c.username === auth.user()?.username || isOwner) {
-              <button class="comment-delete" (click)="deleteComment(c.id)" title="Eliminar">
-                <i class="bi bi-trash3"></i>
-              </button>
+        @if (handActive && handCards.length > 0) {
+          @if (startingGoldCard) {
+            <div class="hand-field">
+              <span class="field-label">En campo (oro inicial):</span>
+              <div class="hand-card is-starting-gold" (click)="showPreview(startingGoldCard, $event)">
+                <img [src]="startingGoldCard.image_url | thumb:250" [alt]="startingGoldCard.name" loading="lazy">
+                <span class="hand-gold-badge" title="Oro inicial"><i class="bi bi-star-fill"></i></span>
+                <span class="hand-card-name">{{ startingGoldCard.name }}</span>
+              </div>
+            </div>
+            <div class="hand-divider"></div>
+          }
+          <div class="hand-cards">
+            @for (card of handCards; track $index) {
+              <div class="hand-card" (click)="showPreview(card, $event)">
+                <img [src]="card.image_url | thumb:250" [alt]="card.name" loading="lazy">
+                <span class="hand-card-name">{{ card.name }}</span>
+              </div>
             }
           </div>
-          <p class="comment-text">{{ c.text }}</p>
-        </div>
-      }
-      @if (comments.length === 0) {
-        <p class="empty-text">No hay comentarios aún</p>
-      }
-    }
+        } @else if (!handActive) {
+          <p class="hand-hint">Simula una mano inicial para probar tu mazo.@if (startingGoldCard) { Tu oro inicial ({{ startingGoldCard.name }}) no se baraja, empieza en campo.}</p>
+        }
+      </div>
+    </div>
   </div>
+}
+
+@if (shareToast) {
+  <div class="share-toast">¡Listo!</div>
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChild, HostListener } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Title, Meta } from '@angular/platform-browser';
@@ -8,18 +8,36 @@ import { CardService } from '../../services/card.service';
 import { AuthService } from '../../services/auth.service';
 import { Deck, Card, BanlistEntry } from '../../models';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
+import { RelativeTimePipe } from '../../pipes/relative-time.pipe';
+
+type ViewMode = 'grid' | 'list' | 'stats';
+type SocialTab = 'none' | 'comments' | 'snapshots' | 'changelog' | 'suggestions';
 
 @Component({
   selector: 'app-deck-view',
   standalone: true,
-  imports: [RouterLink, FormsModule, ThumbnailPipe, DatePipe],
+  imports: [RouterLink, FormsModule, ThumbnailPipe, DatePipe, RelativeTimePipe],
   templateUrl: './deck-view.component.html',
   styleUrl: './deck-view.component.scss',
 })
 export class DeckViewComponent implements OnInit {
   deck: Deck | null = null;
   loading = true;
-  viewMode: 'grid' | 'list' | 'stats' = 'grid';
+  viewMode: ViewMode = 'grid';
+
+  // Tabs sociales (colíndan al final, una sola activa o ninguna)
+  socialTab: SocialTab = 'none';
+  // Menú kebab
+  showMoreMenu = false;
+  // Sidedeck colapsable
+  sideOpen = true;
+  // Hand simulator como modal global
+  showHandModal = false;
+  // Modo presentación / fullscreen
+  presentationMode = false;
+  // Suggestions
+  suggestions: any[] = [];
+  loadingSuggestions = false;
   groupedEntries: { type: string; total: number; entries: any[] }[] = [];
   groupedSideEntries: { type: string; total: number; entries: any[] }[] = [];
   previewCard: Card | null = null;
@@ -235,6 +253,12 @@ export class DeckViewComponent implements OnInit {
   }
 
   ngOnInit() {
+    // Restaurar viewMode persistido
+    try {
+      const saved = localStorage.getItem('deck-view:mode') as ViewMode | null;
+      if (saved === 'grid' || saved === 'list' || saved === 'stats') this.viewMode = saved;
+    } catch {}
+
     const id = Number(this.route.snapshot.paramMap.get('id'));
     const loadDeck = (deck: Deck) => {
       this.deck = deck;
@@ -256,6 +280,28 @@ export class DeckViewComponent implements OnInit {
           error: () => {},
         });
         this.loadSnapshots();
+      }
+      // Deep-link ?card=ID -> abrir preview
+      const cardParam = this.route.snapshot.queryParamMap.get('card');
+      if (cardParam) {
+        const cid = Number(cardParam);
+        const target = (deck.entries || []).concat(deck.sideboard_entries || [])
+          .find(e => e.card_detail.id === cid);
+        if (target) {
+          // Llamada manual (sin event) para no afectar handlers
+          this.previewCard = target.card_detail;
+          if (this.abilityCache.has(cid)) {
+            this.previewAbility = this.abilityCache.get(cid) || null;
+          } else {
+            this.cardService.getCard(cid).subscribe(detail => {
+              this.abilityCache.set(cid, detail.ability || '');
+              if (this.previewCard?.id === cid) {
+                this.previewAbility = detail.ability || null;
+                this.cdr.detectChanges();
+              }
+            });
+          }
+        }
       }
     };
     // Try owner endpoint first if authenticated, then team, then public
@@ -369,6 +415,14 @@ export class DeckViewComponent implements OnInit {
     return this.costCurve.some(b => b.count > 0);
   }
 
+  /** Bucket label correspondiente al promedio (para resaltarlo en la curva). */
+  get avgCostBucket(): string {
+    const a = this.avgCost;
+    if (!Number.isFinite(a) || a <= 0) return '';
+    const idx = a >= 7 ? 7 : Math.max(0, Math.min(7, Math.round(a)));
+    return idx === 7 ? '7+' : String(idx);
+  }
+
   /** Promedio de coste de cartas no-Oro con coste definido. */
   get avgCost(): number {
     let sum = 0;
@@ -441,6 +495,13 @@ export class DeckViewComponent implements OnInit {
   showPreview(card: Card, event: MouseEvent) {
     event.stopPropagation();
     this.previewCard = card;
+    // Permalink ?card=
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { card: card.id },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
     if (this.abilityCache.has(card.id)) {
       this.previewAbility = this.abilityCache.get(card.id) || null;
       this.cdr.detectChanges();
@@ -461,6 +522,109 @@ export class DeckViewComponent implements OnInit {
   hidePreview() {
     this.previewCard = null;
     this.previewAbility = null;
+    // Limpia ?card= del URL
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { card: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  /** Cambiar vista y persistir en localStorage. */
+  setViewMode(mode: ViewMode) {
+    this.viewMode = mode;
+    try { localStorage.setItem('deck-view:mode', mode); } catch {}
+  }
+
+  /** Tabs sociales (toggle). */
+  setSocialTab(tab: SocialTab) {
+    this.socialTab = (this.socialTab === tab) ? 'none' : tab;
+    if (this.socialTab === 'suggestions' && this.suggestions.length === 0) {
+      this.loadSuggestions();
+    }
+  }
+
+  toggleMoreMenu(e?: Event) {
+    if (e) { e.stopPropagation(); }
+    this.showMoreMenu = !this.showMoreMenu;
+  }
+
+  togglePresentation() {
+    this.presentationMode = !this.presentationMode;
+    document.body.classList.toggle('deck-presentation', this.presentationMode);
+  }
+
+  /** Esc cierra preview / menús / fullscreen. */
+  @HostListener('document:keydown', ['$event'])
+  onKeydown(ev: KeyboardEvent) {
+    if (ev.key === 'Escape') {
+      if (this.previewCard) { this.hidePreview(); return; }
+      if (this.showHandModal) { this.showHandModal = false; return; }
+      if (this.showMoreMenu) { this.showMoreMenu = false; return; }
+      if (this.presentationMode) { this.togglePresentation(); return; }
+    }
+    // F = fullscreen / presentación
+    if ((ev.key === 'f' || ev.key === 'F') && !this.previewCard && !this.isTypingTarget(ev.target)) {
+      this.togglePresentation();
+    }
+  }
+
+  /** Cerrar el menú "más" si se hace click afuera. */
+  @HostListener('document:click')
+  onDocClick() {
+    if (this.showMoreMenu) {
+      this.showMoreMenu = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  private isTypingTarget(t: EventTarget | null): boolean {
+    if (!t) return false;
+    const el = t as HTMLElement;
+    const tag = (el.tagName || '').toLowerCase();
+    return tag === 'input' || tag === 'textarea' || el.isContentEditable;
+  }
+
+  loadSuggestions() {
+    if (!this.deck || !this.isOwner) return;
+    this.loadingSuggestions = true;
+    this.deckService.getSuggestions(this.deck.id).subscribe({
+      next: (s) => { this.suggestions = s || []; this.loadingSuggestions = false; this.cdr.detectChanges(); },
+      error: () => { this.loadingSuggestions = false; this.cdr.detectChanges(); },
+    });
+  }
+
+  /** Copiar imagen exportada al portapapeles (si el navegador lo soporta). */
+  async copyImageToClipboard() {
+    if (!this.deckContent || this.exporting) return;
+    if (!('clipboard' in navigator) || !(navigator.clipboard as any).write) {
+      this.exportImage();
+      return;
+    }
+    this.exporting = true;
+    this.cdr.detectChanges();
+    try {
+      const el = this.deckContent.nativeElement as HTMLElement;
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(el, {
+        backgroundColor: this.getRaceBackground(),
+        useCORS: true, allowTaint: true, scale: 2,
+        windowWidth: el.scrollWidth, windowHeight: el.scrollHeight,
+      });
+      const blob: Blob | null = await new Promise(res => canvas.toBlob(b => res(b), 'image/png'));
+      if (blob) {
+        await (navigator.clipboard as any).write([
+          new (window as any).ClipboardItem({ 'image/png': blob }),
+        ]);
+        this.shareToast = true;
+        setTimeout(() => { this.shareToast = false; this.cdr.detectChanges(); }, 2000);
+      }
+    } catch (e) {
+      console.error('Error copiando imagen:', e);
+    }
+    this.exporting = false;
+    this.cdr.detectChanges();
   }
 
   private loadBanlist() {

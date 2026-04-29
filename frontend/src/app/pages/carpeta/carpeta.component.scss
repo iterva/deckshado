@@ -903,6 +903,36 @@
 .btn-warn { background: #5a3a3a !important; }
 .btn-warn:hover { background: #7a4a4a !important; }
 
+.btn-ghost {
+  background: transparent !important;
+  color: #ccc !important;
+  border: 1px solid #444 !important;
+  &:hover { background: rgba(255, 255, 255, 0.05) !important; }
+}
+
+.beta-badge {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  margin-left: 0.4rem;
+  background: linear-gradient(90deg, #c084fc, #f472b6);
+  color: #1a1a2e;
+  border-radius: 999px;
+  vertical-align: middle;
+  letter-spacing: 0.05em;
+}
+
+.beta-warn {
+  background: rgba(251, 191, 36, 0.08);
+  border-left: 3px solid #fbbf24;
+  color: #fcd34d;
+  padding: 0.45rem 0.7rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  margin: 0.3rem 0 0.6rem !important;
+}
+
 // ── Stats Tab ──
 .stats-overview {
   display: grid;

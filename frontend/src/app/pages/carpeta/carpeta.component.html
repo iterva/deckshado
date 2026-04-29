@@ -60,7 +60,8 @@
 
       @if (importOpen) {
         <div class="import-panel">
-          <h4>📥 Importar cartas desde texto</h4>
+          <h4>📥 Importar cartas desde texto <span class="beta-badge">BETA</span></h4>
+          <p class="beta-warn">⚠ Función experimental: revisa el reporte después de importar; nombres con tildes o variantes pueden no encontrarse o salir ambiguos.</p>
           <p class="import-hint">Una carta por línea. Formato: <code>2 Nombre</code> o <code>2x Nombre</code> o <code>Nombre</code>.</p>
           <textarea [(ngModel)]="importText" rows="6" placeholder="2 Caballero del Alba&#10;1 Dragón Carmesí&#10;Talismán de la Furia"></textarea>
           <div class="import-controls">
@@ -69,7 +70,7 @@
             <button class="btn btn-sm btn-primary" (click)="runBulkImport()" [disabled]="importing || !importText.trim()">
               {{ importing ? '⏳ Importando...' : '✅ Importar' }}
             </button>
-            <button class="btn btn-sm" (click)="clearImport()">Limpiar</button>
+            <button class="btn btn-sm btn-ghost" (click)="clearImport()">Limpiar</button>
           </div>
           @if (importResult) {
             <div class="import-result">

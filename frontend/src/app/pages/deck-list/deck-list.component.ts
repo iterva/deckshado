@@ -54,16 +54,16 @@ export class DeckListComponent implements OnInit {
 
   readonly sortOptions: { value: SortKey; label: string }[] = [
     { value: 'recent', label: 'Recientes' },
-    { value: 'created', label: 'CreaciÃ³n' },
+    { value: 'created', label: 'Creación' },
     { value: 'popular', label: 'Populares' },
-    { value: 'cards', label: 'MÃ¡s cartas' },
+    { value: 'cards', label: 'Más cartas' },
     { value: 'name', label: 'A â†’ Z' },
     { value: 'name_desc', label: 'Z â†’ A' },
   ];
 
   private readonly raceLabels: Record<string, string> = {
-    dream: 'Dream', totem: 'TÃ³tem', eterno: 'Eterno', faerie: 'Faerie',
-    dragon: 'DragÃ³n', sombra: 'Sombra', heroe: 'HÃ©roe', sacerdote: 'Sacerdote',
+    dream: 'Dream', totem: 'Tótem', eterno: 'Eterno', faerie: 'Faerie',
+    dragon: 'Dragón', sombra: 'Sombra', heroe: 'Héroe', sacerdote: 'Sacerdote',
     guerrero: 'Guerrero', bestia: 'Bestia', caballero: 'Caballero',
   };
 
@@ -114,13 +114,13 @@ export class DeckListComponent implements OnInit {
     return null;
   }
 
-  /** Hasta 3 cartas para mosaico cuando no hay portada explÃ­cita. */
+  /** Hasta 3 cartas para mosaico cuando no hay portada explícita. */
   getMosaic(deck: Deck): Card[] {
     if (deck.cover_card_detail) return [];
     return (deck.cover_preview || []).slice(0, 3);
   }
 
-  /** Â¿Hay algÃºn filtro activo (excluye orden)? */
+  /** ¿Hay algún filtro activo (excluye orden)? */
   get activeFilterCount(): number {
     let n = 0;
     if (this.search.trim()) n++;
@@ -204,7 +204,7 @@ export class DeckListComponent implements OnInit {
     });
   }
 
-  /** Recargar la pestaÃ±a activa, reseteando a pÃ¡gina 1. */
+  /** Recargar la pestaña activa, reseteando a página 1. */
   private reloadActive() {
     if (this.activeTab === 'public') {
       this.publicPage = 1;
@@ -253,7 +253,7 @@ export class DeckListComponent implements OnInit {
 
   // â”€â”€ Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   deleteDeck(id: number) {
-    if (confirm('Â¿EstÃ¡s seguro de eliminar este mazo?')) {
+    if (confirm('¿Estás seguro de eliminar este mazo?')) {
       this.deckService.deleteDeck(id).subscribe(() => this.loadMyDecks());
     }
   }

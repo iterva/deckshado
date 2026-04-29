@@ -1,5 +1,5 @@
-﻿// =====================================================
-// Deck list â€” toolbar, tarjetas, mosaicos, skeleton
+// =====================================================
+// Deck list - toolbar, tarjetas, mosaicos, skeleton
 // =====================================================
 
 .page-title {
@@ -7,7 +7,7 @@
   margin-bottom: 1rem;
 }
 
-// â”€â”€ Toolbar superior (tabs + comparar) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Toolbar superior (tabs + comparar)
 .toolbar-row {
   display: flex;
   align-items: center;
@@ -52,7 +52,7 @@
   }
 }
 
-// â”€â”€ Filtros + bÃºsqueda + orden â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Filtros + busqueda + orden
 .filter-toolbar {
   display: flex;
   flex-direction: column;
@@ -147,7 +147,7 @@
   }
 }
 
-// â”€â”€ Cabecera de "Mis mazos" â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Cabecera de "Mis mazos"
 .my-decks-header {
   display: flex;
   justify-content: space-between;
@@ -157,14 +157,14 @@
   .results-count { color: #777; font-size: 0.85rem; }
 }
 
-// â”€â”€ Grid de mazos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Grid de mazos
 .deck-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1rem;
 }
 
-// â”€â”€ Tarjeta de mazo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Tarjeta de mazo
 .deck-card {
   --race-accent: #e94560;
   position: relative;
@@ -201,7 +201,7 @@
   }
 }
 
-// â”€â”€ Portada (cover) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Portada (cover)
 .deck-cover {
   position: relative;
   width: 100%;
@@ -251,7 +251,7 @@
   }
 }
 
-// â”€â”€ Cuerpo de la tarjeta â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Cuerpo de la tarjeta
 .deck-body {
   padding: 0.85rem 0.95rem 0.95rem 1.1rem;
   display: flex;
@@ -386,7 +386,7 @@
   .btn-danger { flex: 0 0 auto; }
 }
 
-// â”€â”€ Skeletons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Skeletons
 .deck-card.skeleton {
   pointer-events: none;
   animation: pulse 1.2s ease-in-out infinite;
@@ -425,7 +425,7 @@
   100% { background-position: -200% 0; }
 }
 
-// â”€â”€ Empty / paginaciÃ³n â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Empty / paginacion
 .empty {
   color: #666;
   text-align: center;
@@ -445,7 +445,7 @@
   color: #888;
 }
 
-// â”€â”€ Comparar mazos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Comparar mazos
 .compare-bar {
   display: flex;
   align-items: center;
@@ -530,7 +530,7 @@
   }
 }
 
-// â”€â”€ MÃ³vil â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Movil
 @media (max-width: 600px) {
   .toolbar-row { gap: 0.4rem; }
 
@@ -566,3 +566,4 @@
 
   .deck-name { font-size: 1rem; }
 }
+// =====================================================

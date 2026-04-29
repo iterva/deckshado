@@ -1,14 +1,14 @@
-﻿<div class="container">
+<div class="container">
   <h1 class="page-title">Mazos</h1>
 
   @if (auth.isAuthenticated()) {
     <div class="toolbar-row" role="tablist">
       <div class="tabs">
         <button role="tab" [attr.aria-selected]="activeTab === 'public'" [class.active]="activeTab === 'public'" (click)="setTab('public')">
-          <i class="bi bi-globe2"></i><span>PÃºblicos</span>
+          <i class="bi bi-globe2"></i><span>Públicos</span>
         </button>
         <button role="tab" [attr.aria-selected]="activeTab === 'mine'" [class.active]="activeTab === 'mine'" (click)="setTab('mine')">
-          <i class="bi bi-person-fill"></i><span>MÃ­os</span>
+          <i class="bi bi-person-fill"></i><span>Míos</span>
         </button>
         <button role="tab" [attr.aria-selected]="activeTab === 'team'" [class.active]="activeTab === 'team'" (click)="setTab('team')">
           <i class="bi bi-people-fill"></i><span>Equipo</span>
@@ -32,13 +32,13 @@
     </div>
   }
 
-  <!-- Filtros + bÃºsqueda + orden (comÃºn a todas las pestaÃ±as) -->
+  <!-- Filtros + búsqueda + orden (común a todas las pestañas) -->
   <div class="filter-toolbar">
     <div class="search-bar">
       <i class="bi bi-search search-icon"></i>
       <input type="text" placeholder="Buscar mazos..." [(ngModel)]="search" (keyup.enter)="onSearch()" aria-label="Buscar mazos">
       @if (search) {
-        <button class="search-clear" (click)="search=''; onSearch()" aria-label="Limpiar bÃºsqueda"><i class="bi bi-x"></i></button>
+        <button class="search-clear" (click)="search=''; onSearch()" aria-label="Limpiar búsqueda"><i class="bi bi-x"></i></button>
       }
       <button class="btn btn-primary btn-sm search-go" (click)="onSearch()">Buscar</button>
     </div>
@@ -53,12 +53,12 @@
       <select [(ngModel)]="filterRace" (change)="onFilterChange()" aria-label="Filtrar por raza">
         <option value="">Todas las razas</option>
         <option value="dream">Dream</option>
-        <option value="totem">TÃ³tem</option>
+        <option value="totem">Tótem</option>
         <option value="eterno">Eterno</option>
         <option value="faerie">Faerie</option>
-        <option value="dragon">DragÃ³n</option>
+        <option value="dragon">Dragón</option>
         <option value="sombra">Sombra</option>
-        <option value="heroe">HÃ©roe</option>
+        <option value="heroe">Héroe</option>
         <option value="sacerdote">Sacerdote</option>
         <option value="guerrero">Guerrero</option>
         <option value="bestia">Bestia</option>
@@ -78,7 +78,7 @@
     </div>
   </div>
 
-  <!-- ===== PÃºblicos ===== -->
+  <!-- ===== Públicos ===== -->
   @if (activeTab === 'public') {
     @if (loadingPublic && publicDecks.length === 0) {
       <div class="deck-grid">
@@ -134,21 +134,21 @@
             </div>
           </a>
         } @empty {
-          <p class="empty">No hay mazos pÃºblicos para mostrar.</p>
+          <p class="empty">No hay mazos públicos para mostrar.</p>
         }
       </div>
 
       @if (publicTotalPages > 1) {
         <div class="pagination">
-          <button class="btn btn-secondary btn-sm" (click)="publicPrevPage()" [disabled]="publicPage === 1">â† Anterior</button>
-          <span>PÃ¡gina {{ publicPage }} de {{ publicTotalPages }}</span>
-          <button class="btn btn-secondary btn-sm" (click)="publicNextPage()" [disabled]="publicPage >= publicTotalPages">Siguiente â†’</button>
+          <button class="btn btn-secondary btn-sm" (click)="publicPrevPage()" [disabled]="publicPage === 1">← Anterior</button>
+          <span>Página {{ publicPage }} de {{ publicTotalPages }}</span>
+          <button class="btn btn-secondary btn-sm" (click)="publicNextPage()" [disabled]="publicPage >= publicTotalPages">Siguiente →</button>
         </div>
       }
     }
   }
 
-  <!-- ===== MÃ­os ===== -->
+  <!-- ===== Míos ===== -->
   @if (activeTab === 'mine') {
     <div class="my-decks-header">
       <span class="results-count">
@@ -200,9 +200,9 @@
                 <p class="deck-desc">{{ deck.description }}</p>
               }
               <div class="deck-footer">
-                <span class="deck-visibility" [class.public]="deck.is_public" [title]="deck.is_public ? 'Visible para todos' : 'Solo tÃº lo ves'">
+                <span class="deck-visibility" [class.public]="deck.is_public" [title]="deck.is_public ? 'Visible para todos' : 'Solo tú lo ves'">
                   <i class="bi" [class.bi-globe2]="deck.is_public" [class.bi-lock-fill]="!deck.is_public"></i>
-                  {{ deck.is_public ? 'PÃºblico' : 'Privado' }}
+                  {{ deck.is_public ? 'Público' : 'Privado' }}
                 </span>
                 <span class="deck-meta-right">
                   <span class="deck-date" [title]="'Editado: ' + deck.updated_at">{{ deck.updated_at | relativeTime }}</span>
@@ -218,15 +218,15 @@
             </div>
           </div>
         } @empty {
-          <p class="empty">No tienes mazos aÃºn. <a routerLink="/builder">Crea uno aquÃ­</a>.</p>
+          <p class="empty">No tienes mazos aún. <a routerLink="/builder">Crea uno aquí</a>.</p>
         }
       </div>
 
       @if (mineTotalPages > 1) {
         <div class="pagination">
-          <button class="btn btn-secondary btn-sm" (click)="minePrevPage()" [disabled]="minePage === 1">â† Anterior</button>
-          <span>PÃ¡gina {{ minePage }} de {{ mineTotalPages }}</span>
-          <button class="btn btn-secondary btn-sm" (click)="mineNextPage()" [disabled]="minePage >= mineTotalPages">Siguiente â†’</button>
+          <button class="btn btn-secondary btn-sm" (click)="minePrevPage()" [disabled]="minePage === 1">← Anterior</button>
+          <span>Página {{ minePage }} de {{ mineTotalPages }}</span>
+          <button class="btn btn-secondary btn-sm" (click)="mineNextPage()" [disabled]="minePage >= mineTotalPages">Siguiente →</button>
         </div>
       }
     }
@@ -293,9 +293,9 @@
 
       @if (teamTotalPages > 1) {
         <div class="pagination">
-          <button class="btn btn-secondary btn-sm" (click)="teamPrevPage()" [disabled]="teamPage === 1">â† Anterior</button>
-          <span>PÃ¡gina {{ teamPage }} de {{ teamTotalPages }}</span>
-          <button class="btn btn-secondary btn-sm" (click)="teamNextPage()" [disabled]="teamPage >= teamTotalPages">Siguiente â†’</button>
+          <button class="btn btn-secondary btn-sm" (click)="teamPrevPage()" [disabled]="teamPage === 1">← Anterior</button>
+          <span>Página {{ teamPage }} de {{ teamTotalPages }}</span>
+          <button class="btn btn-secondary btn-sm" (click)="teamNextPage()" [disabled]="teamPage >= teamTotalPages">Siguiente →</button>
         </div>
       }
     }

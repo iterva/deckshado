@@ -630,7 +630,14 @@ export class DeckViewComponent implements OnInit {
   private loadBanlist() {
     if (!this.deck) return;
     const fmt = this.deck.format || 'imp';
-    const sub = this.deck.sub_format && this.deck.sub_format !== 'racial' ? this.deck.sub_format : undefined;
+    // Para Imperio existen dos sub-banlists (racial y vcr). Si el mazo no es VCR,
+    // forzamos 'racial' para no traer límites del meta VCR a un mazo clásico.
+    let sub: string | undefined;
+    if (fmt === 'imp') {
+      sub = this.deck.sub_format === 'vcr' ? 'vcr' : 'racial';
+    } else {
+      sub = this.deck.sub_format && this.deck.sub_format !== 'racial' ? this.deck.sub_format : undefined;
+    }
     this.cardService.getBanlist(fmt, sub).subscribe(entries => {
       this.banlistByName.clear();
       this.banlistByCardId.clear();

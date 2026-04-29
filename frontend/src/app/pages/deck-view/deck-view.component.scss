@@ -1117,7 +1117,8 @@
       display: grid;
       grid-template-columns: repeat(8, minmax(0, 1fr));
       gap: 0.5rem;
-      align-items: end;
+      align-items: stretch;
+      justify-items: stretch;
       height: 180px;
       width: 100%;
     }
@@ -1128,6 +1129,7 @@
       align-items: stretch;
       justify-content: flex-end;
       height: 100%;
+      width: 100%;
       min-width: 0;
       gap: 4px;
 

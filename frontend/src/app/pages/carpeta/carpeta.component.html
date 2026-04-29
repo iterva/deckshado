@@ -625,6 +625,14 @@
             }
           </div>
         }
+      } @else {
+        <div class="empty-state">
+          <p>No se pudieron cargar las estadísticas.</p>
+          <p style="font-size: 0.85rem; color: #888;">
+            Si acabas de actualizar, asegúrate de aplicar las migraciones del backend.
+          </p>
+          <button class="btn btn-sm btn-primary" (click)="loadStats()">🔄 Reintentar</button>
+        </div>
       }
     </div>
   }

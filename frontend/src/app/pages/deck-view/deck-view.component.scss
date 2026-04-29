@@ -1137,6 +1137,7 @@
         font-weight: 700;
         line-height: 1;
         min-height: 0.85rem;
+        text-align: center;
       }
       .cost-bar-fill-wrap {
         width: 100%;
@@ -1159,6 +1160,7 @@
         color: #8a8aa8;
         line-height: 1;
         font-weight: 600;
+        text-align: center;
       }
       &.empty {
         .cost-bar-count { color: #4a5d8a; }

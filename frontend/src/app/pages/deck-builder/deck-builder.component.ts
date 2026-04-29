@@ -527,13 +527,10 @@ export class DeckBuilderComponent implements OnInit {
       this.banlistMap.clear();
       this.banlistByCardId.clear();
       for (const e of entries) {
-        if (e.card_id) {
-          // Entrada específica de una edición: solo afecta a ese card_id.
-          this.banlistByCardId.set(e.card_id, e);
-        } else {
-          // Entrada genérica por nombre: afecta a cualquier carta con ese nombre.
-          this.banlistMap.set(normalizeName(e.card_name), e);
-        }
+        // Indexar por nombre SIEMPRE: el límite aplica a todas las ediciones con ese nombre.
+        this.banlistMap.set(normalizeName(e.card_name), e);
+        // Indexar también por card_id si existe (precedencia para mostrar status específico).
+        if (e.card_id) this.banlistByCardId.set(e.card_id, e);
       }
       this.cdr.detectChanges();
     });

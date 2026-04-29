@@ -1,16 +1,33 @@
 {
-  "name": "ShadowForge",
+  "name": "ShadowForge — MYL Deck Builder",
   "short_name": "ShadowForge",
-  "description": "Constructor de mazos MYL",
+  "description": "Constructor de mazos y colección de cartas de Mitos y Leyendas",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#0f0f23",
   "theme_color": "#e94560",
+  "lang": "es-CL",
+  "categories": ["games", "entertainment", "utilities"],
   "icons": [
+    { "src": "favicon.ico", "sizes": "48x48", "type": "image/x-icon" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
     {
-      "src": "favicon.ico",
-      "sizes": "64x64",
-      "type": "image/x-icon"
+      "name": "Mis mazos",
+      "url": "/decks",
+      "description": "Ver y construir tus mazos"
+    },
+    {
+      "name": "Cartas",
+      "url": "/cards",
+      "description": "Buscar en la colección"
     }
   ]
 }
+

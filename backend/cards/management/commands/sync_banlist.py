@@ -21,7 +21,6 @@ SUB_FORMAT_MAP = {
     "formato racial": "racial",
     "vcr:": "vcr",
     "vcr": "vcr",
-    "triadas": "triadas",
     "racial libre": "racial_libre",
     "racial limitado": "racial_limitado",
 }

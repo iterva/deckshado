@@ -151,11 +151,8 @@ class DeckCommentSerializer(serializers.ModelSerializer):
         read_only_fields = ["created_at"]
 
     def get_avatar_url(self, obj):
-        request = self.context.get("request")
         if hasattr(obj.user, "profile") and obj.user.profile.avatar:
-            if request:
-                return request.build_absolute_uri(obj.user.profile.avatar.url)
-            return obj.user.profile.avatar.url
+            return obj.user.profile.avatar
         return None
 
 

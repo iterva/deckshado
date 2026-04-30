@@ -130,3 +130,23 @@ CSRF_TRUSTED_ORIGINS = [
 
 # MyL API
 MYL_API_BASE_URL = "https://api.myl.cl"
+
+# ── Sentry (opcional, se activa solo si SENTRY_DSN está definido) ──
+SENTRY_DSN = os.environ.get("SENTRY_DSN", "").strip()
+if SENTRY_DSN:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.django import DjangoIntegration
+
+        sentry_sdk.init(
+            dsn=SENTRY_DSN,
+            integrations=[DjangoIntegration()],
+            traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
+            send_default_pii=False,
+            environment=os.environ.get("SENTRY_ENVIRONMENT", "production" if not DEBUG else "development"),
+            release=os.environ.get("SENTRY_RELEASE"),
+        )
+    except ImportError:
+        # sentry-sdk no está instalado; se ignora silenciosamente.
+        pass
+

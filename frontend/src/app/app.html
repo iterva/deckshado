@@ -17,8 +17,8 @@
   </div>
   <div class="navbar-actions">
     <!-- Global search -->
-    <button class="search-toggle" (click)="toggleSearch()" title="Buscar">
-      <i class="bi bi-search"></i>
+    <button class="search-toggle" (click)="toggleSearch()" title="Buscar" [attr.aria-label]="showSearch() ? 'Cerrar búsqueda' : 'Abrir búsqueda'" [attr.aria-expanded]="showSearch()">
+      <i class="bi bi-search" aria-hidden="true"></i>
     </button>
     @if (showSearch()) {
       <div class="search-wrapper">
@@ -49,10 +49,10 @@
     @if (auth.isAuthenticated()) {
       <!-- Notifications -->
       <div class="notif-wrapper">
-        <button class="notif-btn" (click)="toggleNotifs()" title="Notificaciones">
-          <i class="bi bi-bell"></i>
+        <button class="notif-btn" (click)="toggleNotifs()" title="Notificaciones" [attr.aria-label]="'Notificaciones' + (notifs.unreadCount() > 0 ? ' (' + notifs.unreadCount() + ' sin leer)' : '')" [attr.aria-expanded]="showNotifs()">
+          <i class="bi bi-bell" aria-hidden="true"></i>
           @if (notifs.unreadCount() > 0) {
-            <span class="notif-badge">{{ notifs.unreadCount() }}</span>
+            <span class="notif-badge" aria-hidden="true">{{ notifs.unreadCount() }}</span>
           }
         </button>
         @if (showNotifs()) {
@@ -76,11 +76,11 @@
         }
       </div>
       <div class="avatar-wrapper">
-        <button class="avatar-btn" (click)="toggleDropdown()">
+        <button class="avatar-btn" (click)="toggleDropdown()" aria-label="Menú de usuario" [attr.aria-expanded]="showDropdown()">
           @if (auth.user()?.avatar_url) {
-            <img [src]="auth.user()!.avatar_url!" alt="Avatar" class="avatar-img" />
+            <img [src]="auth.user()!.avatar_url!" alt="" class="avatar-img" />
           } @else {
-            <svg class="avatar-icon" viewBox="0 0 24 24" fill="currentColor">
+            <svg class="avatar-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <circle cx="12" cy="8" r="4"/>
               <path d="M12 14c-6 0-8 3-8 4v1h16v-1c0-1-2-4-8-4z"/>
             </svg>
@@ -108,8 +108,8 @@
     } @else {
       <a routerLink="/login" routerLinkActive="active" class="btn-login">Ingresar</a>
     }
-    <button class="theme-toggle" (click)="theme.toggle()" [title]="theme.isDark() ? 'Modo claro' : 'Modo oscuro'">
-      {{ theme.isDark() ? '☀️' : '🌙' }}
+    <button class="theme-toggle" (click)="theme.toggle()" [title]="theme.isDark() ? 'Modo claro' : 'Modo oscuro'" [attr.aria-label]="theme.isDark() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'">
+      <span aria-hidden="true">{{ theme.isDark() ? '☀️' : '🌙' }}</span>
     </button>
   </div>
 </nav>
@@ -160,3 +160,4 @@
   <p class="disclaimer">Mitos y Leyendas y sus respectivas artes de cartas son propiedad de sus creadores.</p>
 </footer>
 <app-ios-install-hint></app-ios-install-hint>
+<app-pwa-install-hint></app-pwa-install-hint>

@@ -24,8 +24,8 @@ jobs:
         run: npm ci
       - name: Build (production)
         run: npm run build -- --configuration=production
-      # - name: Run tests
-      #   run: npm test -- --run
+      - name: Run tests
+        run: npx ng test --watch=false
 
   backend:
     name: Backend (Django check)
@@ -52,9 +52,9 @@ jobs:
         run: |
           python manage.py check
           python manage.py makemigrations --check --dry-run
-      # - name: Run tests
-      #   env:
-      #     DJANGO_SECRET_KEY: ci-test-secret-key-not-for-production
-      #     DJANGO_DEBUG: 'False'
-      #     DJANGO_ALLOWED_HOSTS: 'localhost,127.0.0.1,testserver'
-      #   run: python manage.py test
+      - name: Run tests
+        env:
+          DJANGO_SECRET_KEY: ci-test-secret-key-not-for-production
+          DJANGO_DEBUG: 'False'
+          DJANGO_ALLOWED_HOSTS: 'localhost,127.0.0.1,testserver'
+        run: python manage.py test

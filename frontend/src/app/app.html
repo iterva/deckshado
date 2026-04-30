@@ -1,4 +1,5 @@
-<nav class="navbar">
+<a class="skip-link" href="#main-content">Saltar al contenido</a>
+<nav class="navbar" aria-label="Navegación principal">
   <div class="navbar-brand">
     <a routerLink="/" class="logo">
       <span class="logo-icon">⚔️</span>
@@ -113,10 +114,10 @@
     </button>
   </div>
 </nav>
-<main class="content">
+<main class="content" id="main-content" tabindex="-1">
   <router-outlet />
 </main>
-<nav class="bottom-nav">
+<nav class="bottom-nav" aria-label="Navegación inferior">
   <a routerLink="/" routerLinkActive="active">
     <span class="icon">🏠</span>
     <span class="label">Inicio</span>

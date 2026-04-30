@@ -151,6 +151,14 @@ export class DeckViewComponent implements OnInit {
 
   shareDeck() {
     const url = window.location.href;
+    const title = this.deck ? `${this.deck.name} · ShadowForge` : 'ShadowForge';
+    const text = this.deck ? `Mira este mazo: ${this.deck.name}` : '';
+    // Usa Web Share API en mobile/PWA cuando esté disponible.
+    const nav = navigator as any;
+    if (nav.share) {
+      nav.share({ title, text, url }).catch(() => {/* usuario canceló */});
+      return;
+    }
     navigator.clipboard.writeText(url).then(() => {
       this.shareToast = true;
       this.cdr.detectChanges();
@@ -159,6 +167,43 @@ export class DeckViewComponent implements OnInit {
         this.cdr.detectChanges();
       }, 2000);
     });
+  }
+
+  /** Exporta el mazo como JSON descargable (formato propio, importable). */
+  exportJson() {
+    if (!this.deck) return;
+    const payload = {
+      version: 1,
+      app: 'shadowforge',
+      name: this.deck.name,
+      description: this.deck.description ?? '',
+      format: this.deck.format,
+      sub_format: (this.deck as any).sub_format ?? '',
+      race: this.deck.race ?? '',
+      starting_gold: (this.deck as any).starting_gold_detail?.myl_id ?? null,
+      cover_card: (this.deck as any).cover_card_detail?.myl_id ?? null,
+      entries: (this.deck.entries ?? []).map(e => ({
+        myl_id: e.card_detail.myl_id,
+        name: e.card_detail.name,
+        quantity: e.quantity,
+      })),
+      sideboard: (this.deck.sideboard_entries ?? []).map(e => ({
+        myl_id: e.card_detail.myl_id,
+        name: e.card_detail.name,
+        quantity: e.quantity,
+      })),
+      exported_at: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const safeName = this.deck.name.replace(/[^\w\-]+/g, '_').slice(0, 60) || 'deck';
+    a.download = `${safeName}.deck.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   }
 
   exportText() {

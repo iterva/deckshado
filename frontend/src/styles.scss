@@ -14,6 +14,45 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
+// ── Accesibilidad ──
+// Skip link: oculto hasta recibir foco con Tab.
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 8px;
+  z-index: 10000;
+  background: #e94560;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 0 0 8px 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top .15s ease;
+
+  &:focus {
+    top: 0;
+    outline: 3px solid #ffbd39;
+    outline-offset: 2px;
+  }
+}
+
+// Foco visible consistente para teclado.
+:focus-visible {
+  outline: 2px solid #e94560;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+// Respeta usuarios con prefers-reduced-motion.
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 // Light theme overrides
 body.light-theme {
   background: #f0f2f5;

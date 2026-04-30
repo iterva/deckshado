@@ -107,6 +107,9 @@
             <button role="menuitem" (click)="copyImageToClipboard(); showMoreMenu = false" [disabled]="exporting">
               <i class="bi bi-clipboard-check"></i> Imagen al portapapeles
             </button>
+            <button role="menuitem" (click)="exportJson(); showMoreMenu = false">
+              <i class="bi bi-filetype-json"></i> Descargar JSON
+            </button>
             <div class="more-divider"></div>
             <label class="more-orient" (click)="$event.stopPropagation()">
               <span>Orientación:</span>

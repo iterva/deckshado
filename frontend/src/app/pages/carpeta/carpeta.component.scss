@@ -2,6 +2,8 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 1rem;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 // ── Header ──
@@ -1059,7 +1061,57 @@
       order: -1;
     }
 
-    .btn { font-size: 0.75rem; padding: 0.45rem 0.6rem; }
+    > .btn {
+      flex: 1 1 auto;
+      min-width: 0;
+      max-width: 100%;
+      font-size: 0.75rem;
+      padding: 0.45rem 0.6rem;
+      white-space: normal;
+      word-break: break-word;
+      text-align: center;
+    }
+  }
+
+  // Stat overview: que el valor no se desborde
+  .stat-card-s {
+    min-width: 0;
+
+    .stat-big {
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  // Completeness: en móvil pasa a 2 filas (label arriba, barra + % abajo)
+  .completeness-item {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "label  pct"
+      "bar    bar";
+    gap: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+
+    .completeness-label {
+      grid-area: label;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .completeness-pct { grid-area: pct; }
+    .completeness-bar-wrap { grid-area: bar; }
+  }
+
+  .stats-dist .dist-row {
+    gap: 0.5rem;
+    .dist-label {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
 
   .card-grid {
@@ -1138,11 +1190,6 @@
     padding: 0.8rem;
     .stat-big { font-size: 1.4rem; }
     .stat-desc { font-size: 0.75rem; }
-  }
-
-  .completeness-item {
-    grid-template-columns: 1fr 80px auto;
-    font-size: 0.75rem;
   }
 
   // Mercado: 1 columna en móvil

@@ -1017,6 +1017,10 @@
 
 // ── Responsive ──
 @media (max-width: 768px) {
+  .carpeta-container {
+    padding: 0.6rem;
+  }
+
   .carpeta-header {
     padding: 1rem;
     gap: 1rem;
@@ -1029,31 +1033,91 @@
     .binder-info h1 { font-size: 1.2rem; }
   }
 
-  .tabs .tab {
-    font-size: 0.8rem;
-    padding: 0.6rem 0.5rem;
+  // Tabs scrollables horizontalmente para que no se aplasten 5 tabs en pantallas pequeñas
+  .tabs {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+
+    .tab {
+      flex: 0 0 auto;
+      font-size: 0.78rem;
+      padding: 0.6rem 0.85rem;
+      white-space: nowrap;
+    }
+  }
+
+  .tab-toolbar {
+    gap: 0.4rem;
+
+    .search-bar {
+      flex: 1 1 100%;
+      min-width: 0;
+      order: -1;
+    }
+
+    .btn { font-size: 0.75rem; padding: 0.45rem 0.6rem; }
   }
 
   .card-grid {
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
     gap: 0.5rem;
+
+    .card-item .card-info h4 { font-size: 0.72rem; }
+    .card-item .card-info .card-type { font-size: 0.65rem; }
   }
 
   .collection-grid, .wishlist-grid {
     grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+
+  .collection-card, .wishlist-card {
+    padding: 0.6rem;
+    gap: 0.6rem;
+
+    .card-image { width: 70px; }
+    .card-body h4, .card-info h4 { font-size: 0.85rem; }
+    .card-body .card-meta, .card-info .card-meta { font-size: 0.7rem; }
+
+    .inline-fields {
+      gap: 0.3rem;
+
+      .field {
+        min-width: 0;
+        flex: 1 1 30%;
+
+        label { font-size: 0.6rem; }
+        input { font-size: 0.75rem; padding: 0.3rem 0.25rem; }
+      }
+    }
+
+    .inline-fields.tcg-fields {
+      .field {
+        flex: 1 1 30%;
+        select { font-size: 0.7rem; padding: 0.25rem; }
+      }
+      .foil-toggle { font-size: 0.7rem; }
+    }
   }
 
   .filter-row {
-    select { min-width: 0; flex: 1 1 45%; }
+    select { min-width: 0; flex: 1 1 45%; font-size: 0.8rem; }
   }
 
   .modal.modal-detail {
     flex-direction: column;
     max-height: 90vh;
     overflow-y: auto;
+    padding: 1rem;
 
-    .detail-image { width: 100%; max-width: 250px; margin: 0 auto; }
+    .detail-image { width: 100%; max-width: 220px; margin: 0 auto; }
   }
+
+  .modal-overlay { padding: 0.5rem; }
 
   .card-item .card-overlay-actions {
     opacity: 1;
@@ -1062,6 +1126,61 @@
   .collection-card .card-image .eye-overlay,
   .wishlist-card .card-image .eye-overlay {
     opacity: 0.7;
+  }
+
+  // Stats: una sola columna y más compacto
+  .stats-overview {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+  }
+
+  .stat-card-s {
+    padding: 0.8rem;
+    .stat-big { font-size: 1.4rem; }
+    .stat-desc { font-size: 0.75rem; }
+  }
+
+  .completeness-item {
+    grid-template-columns: 1fr 80px auto;
+    font-size: 0.75rem;
+  }
+
+  // Mercado: 1 columna en móvil
+  .mercado-export-area .export-grid {
+    grid-template-columns: 1fr;
+  }
+
+  // Panel de configuración de tienda
+  .store-config-panel .config-body .config-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pagination {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+
+    .btn { font-size: 0.75rem; }
+  }
+}
+
+@media (max-width: 420px) {
+  .carpeta-header {
+    .binder-info h1 { font-size: 1.05rem; }
+    .binder-user { font-size: 0.8rem; }
+  }
+
+  .tabs .tab {
+    font-size: 0.72rem;
+    padding: 0.55rem 0.65rem;
+  }
+
+  .card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .collection-card, .wishlist-card {
+    .card-image { width: 60px; }
   }
 }
 

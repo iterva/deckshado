@@ -58,15 +58,45 @@ export class GoogleAuthService {
     await this.waitForSdk();
     this.init();
     this.callback = onCredential;
-    google.accounts.id.renderButton(container, {
-      theme: 'filled_black',
-      size: 'large',
-      type: 'standard',
-      text: 'continue_with',
-      shape: 'pill',
-      logo_alignment: 'left',
-      width: 320,
-    });
+    // GSI requiere width en píxeles entre 200 y 400.
+    // Calculamos el ancho del contenedor para evitar overflow horizontal en móviles.
+    const measured = container.clientWidth || container.parentElement?.clientWidth || 0;
+    const width = Math.max(220, Math.min(360, Math.floor(measured) || 320));
+    const render = () => {
+      google.accounts.id.renderButton(container, {
+        theme: 'filled_black',
+        size: 'large',
+        type: 'standard',
+        text: 'continue_with',
+        shape: 'pill',
+        logo_alignment: 'left',
+        width,
+      });
+    };
+    render();
+
+    // Re-renderizar al rotar/redimensionar para mantener el ancho correcto.
+    if (typeof ResizeObserver !== 'undefined') {
+      let lastWidth = width;
+      const ro = new ResizeObserver(() => {
+        const m = container.clientWidth || container.parentElement?.clientWidth || 0;
+        const w = Math.max(220, Math.min(360, Math.floor(m) || 320));
+        if (w !== lastWidth) {
+          lastWidth = w;
+          container.innerHTML = '';
+          google.accounts.id.renderButton(container, {
+            theme: 'filled_black',
+            size: 'large',
+            type: 'standard',
+            text: 'continue_with',
+            shape: 'pill',
+            logo_alignment: 'left',
+            width: w,
+          });
+        }
+      });
+      ro.observe(container.parentElement || container);
+    }
   }
 
   /** Abre el popup One Tap (opcional). */

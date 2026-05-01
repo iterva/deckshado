@@ -8,12 +8,13 @@ import { ThemeService } from './services/theme.service';
 import { NotificationService } from './services/notification.service';
 import { IosInstallHintComponent } from './components/ios-install-hint/ios-install-hint.component';
 import { PwaInstallHintComponent } from './components/pwa-install-hint/pwa-install-hint.component';
+import { ThumbnailPipe } from './pipes/thumbnail.pipe';
 import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, FormsModule, DatePipe, IosInstallHintComponent, PwaInstallHintComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, FormsModule, DatePipe, IosInstallHintComponent, PwaInstallHintComponent, ThumbnailPipe],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })

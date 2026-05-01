@@ -1,0 +1,9 @@
+/
+/cards
+/decks
+/builder
+/decks/compare
+/tiendas
+/team
+/login
+/register

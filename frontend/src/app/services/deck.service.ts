@@ -124,4 +124,11 @@ export class DeckService {
   getSuggestions(deckId: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/my/${deckId}/suggestions/`);
   }
+
+  // Import
+  importDeck(payload: any): Observable<{ id: number; name: string; imported_entries: number; missing_myl_ids: string[] }> {
+    return this.http.post<{ id: number; name: string; imported_entries: number; missing_myl_ids: string[] }>(
+      `${this.apiUrl}/import/`, payload,
+    );
+  }
 }

@@ -17,4 +17,5 @@ urlpatterns = [
     path("my/<int:deck_id>/snapshots/", views.deck_snapshots_view, name="deck-snapshots"),
     path("my/<int:deck_id>/suggestions/", views.card_suggestions, name="deck-suggestions"),
     path("snapshots/<int:snapshot_id>/restore/", views.restore_snapshot, name="restore-snapshot"),
+    path("import/", views.import_deck, name="deck-import"),
 ]

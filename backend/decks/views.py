@@ -408,3 +408,91 @@ def card_suggestions(request, deck_id):
         result.append(data)
     result.sort(key=lambda x: -x["popularity"])
     return Response(result)
+
+
+# -- Import / Export --------------------------------------
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def import_deck(request):
+    """Importa un mazo desde JSON exportado por la app.
+
+    Body esperado (compatible con exportJson del frontend):
+    {
+      "version": 1,
+      "name": "Mi mazo",
+      "description": "...",
+      "format": "imp",
+      "sub_format": "racial",
+      "race": "samurai",
+      "starting_gold": "myl_id",  # opcional
+      "entries": [{"myl_id": "...", "name": "...", "quantity": 3}],
+      "sideboard": [{"myl_id": "...", "quantity": 1}]
+    }
+    """
+    from cards.models import Card
+
+    payload = request.data
+    if not isinstance(payload, dict):
+        return Response({"error": "JSON invalido"}, status=status.HTTP_400_BAD_REQUEST)
+
+    name = (payload.get("name") or "Mazo importado").strip()[:200]
+    description = (payload.get("description") or "")[:5000]
+    fmt = (payload.get("format") or "imp")[:20]
+    sub_format = (payload.get("sub_format") or "racial")[:20]
+    race = (payload.get("race") or "")[:50]
+    entries = payload.get("entries") or []
+    sideboard = payload.get("sideboard") or []
+
+    if not isinstance(entries, list):
+        return Response({"error": "entries debe ser una lista"}, status=status.HTTP_400_BAD_REQUEST)
+    if len(entries) + len(sideboard) > 200:
+        return Response({"error": "Demasiadas cartas (max. 200)"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Resolver myl_ids -> Card.id en una sola query
+    all_myl_ids = {e.get("myl_id") for e in (entries + sideboard) if e.get("myl_id")}
+    cards_by_myl = {c.myl_id: c for c in Card.objects.filter(myl_id__in=all_myl_ids)}
+
+    missing = [e.get("myl_id") for e in (entries + sideboard) if e.get("myl_id") and e["myl_id"] not in cards_by_myl]
+
+    starting_gold_id = None
+    sg_myl = payload.get("starting_gold")
+    if sg_myl and sg_myl in cards_by_myl:
+        starting_gold_id = cards_by_myl[sg_myl].id
+
+    deck = Deck.objects.create(
+        owner=request.user,
+        name=name,
+        description=description,
+        format=fmt,
+        sub_format=sub_format,
+        race=race,
+        is_public=False,
+        starting_gold_id=starting_gold_id,
+    )
+
+    created_entries = 0
+    for raw in entries:
+        myl_id = raw.get("myl_id")
+        qty = max(1, min(int(raw.get("quantity", 1) or 1), 10))
+        card = cards_by_myl.get(myl_id)
+        if not card:
+            continue
+        DeckEntry.objects.create(deck=deck, card=card, quantity=qty, is_sideboard=False)
+        created_entries += 1
+
+    for raw in sideboard:
+        myl_id = raw.get("myl_id")
+        qty = max(1, min(int(raw.get("quantity", 1) or 1), 10))
+        card = cards_by_myl.get(myl_id)
+        if not card:
+            continue
+        DeckEntry.objects.create(deck=deck, card=card, quantity=qty, is_sideboard=True)
+        created_entries += 1
+
+    return Response({
+        "id": deck.id,
+        "name": deck.name,
+        "imported_entries": created_entries,
+        "missing_myl_ids": missing,
+    }, status=status.HTTP_201_CREATED)

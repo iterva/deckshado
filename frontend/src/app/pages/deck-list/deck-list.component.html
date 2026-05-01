@@ -154,8 +154,16 @@
       <span class="results-count">
         @if (mineTotal > 0) { {{ mineTotal }} mazo{{ mineTotal === 1 ? '' : 's' }} }
       </span>
+      <input #importInput type="file" accept="application/json,.json" (change)="onImportFile($event)" hidden />
+      <button type="button" class="btn btn-secondary" (click)="triggerImport(importInput)" [disabled]="importing" title="Importar mazo desde un archivo .deck.json">
+        <i class="bi bi-upload" aria-hidden="true"></i>
+        {{ importing ? 'Importando…' : 'Importar JSON' }}
+      </button>
       <a routerLink="/builder" class="btn btn-gold">+ Crear Mazo</a>
     </div>
+    @if (importMsg) {
+      <p class="import-msg" role="status">{{ importMsg }}</p>
+    }
 
     @if (loadingMine && myDecks.length === 0) {
       <div class="deck-grid">

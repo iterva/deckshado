@@ -251,11 +251,61 @@ export class DeckListComponent implements OnInit {
     }
   }
 
-  // â”€â”€ Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Actions ──
   deleteDeck(id: number) {
     if (confirm('¿Estás seguro de eliminar este mazo?')) {
       this.deckService.deleteDeck(id).subscribe(() => this.loadMyDecks());
     }
+  }
+
+  // ── Importar JSON ──
+  importing = false;
+  importMsg = '';
+
+  triggerImport(input: HTMLInputElement) {
+    input.value = '';
+    input.click();
+  }
+
+  onImportFile(ev: Event) {
+    const input = ev.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (file.size > 1_000_000) {
+      this.importMsg = 'Archivo muy grande (máx. 1 MB).';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      let payload: any;
+      try {
+        payload = JSON.parse(String(reader.result));
+      } catch {
+        this.importMsg = 'JSON inválido.';
+        this.cdr.detectChanges();
+        return;
+      }
+      this.importing = true;
+      this.importMsg = '';
+      this.deckService.importDeck(payload).subscribe({
+        next: (res) => {
+          this.importing = false;
+          const msg = res.missing_myl_ids?.length
+            ? `Importado con ${res.missing_myl_ids.length} carta(s) no encontrada(s).`
+            : 'Mazo importado correctamente.';
+          this.importMsg = msg;
+          this.loadMyDecks();
+          this.cdr.detectChanges();
+          this.router.navigate(['/builder', res.id]);
+        },
+        error: (err) => {
+          this.importing = false;
+          this.importMsg = err?.error?.error || 'Error al importar el mazo.';
+          this.cdr.detectChanges();
+        },
+      });
+    };
+    reader.readAsText(file);
   }
 
   // â”€â”€ Comparar mazos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

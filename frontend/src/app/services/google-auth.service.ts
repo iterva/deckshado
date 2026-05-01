@@ -16,9 +16,33 @@ export class GoogleAuthService {
   private initialized = false;
   private callback: ((cred: string) => void) | null = null;
 
+  /** Inyecta el script de GSI bajo demanda (no se carga en el index.html). */
+  private loadSdk(): Promise<void> {
+    if (typeof google !== 'undefined' && google.accounts?.id) return Promise.resolve();
+    if (this._sdkPromise) return this._sdkPromise;
+    this._sdkPromise = new Promise<void>((resolve, reject) => {
+      const existing = document.querySelector<HTMLScriptElement>('script[data-gsi]');
+      if (existing) {
+        existing.addEventListener('load', () => resolve(), { once: true });
+        existing.addEventListener('error', () => reject(new Error('GSI load error')), { once: true });
+        return;
+      }
+      const s = document.createElement('script');
+      s.src = 'https://accounts.google.com/gsi/client';
+      s.async = true;
+      s.defer = true;
+      s.dataset['gsi'] = '1';
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('GSI load error'));
+      document.head.appendChild(s);
+    });
+    return this._sdkPromise;
+  }
+  private _sdkPromise: Promise<void> | null = null;
+
   /** Espera a que el SDK de Google esté disponible. */
   private waitForSdk(): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return this.loadSdk().then(() => new Promise((resolve, reject) => {
       if (typeof google !== 'undefined' && google.accounts?.id) {
         resolve();
         return;
@@ -34,7 +58,7 @@ export class GoogleAuthService {
           reject(new Error('No se pudo cargar Google Identity Services'));
         }
       }, 100);
-    });
+    }));
   }
 
   private init() {

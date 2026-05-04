@@ -5,7 +5,7 @@ export const routes: Routes = [
   {
     path: '',
     title: 'ShadowForge — Constructor de mazos Mitos y Leyendas (MYL)',
-    data: { description: 'Arma, comparte y descubre mazos de Mitos y Leyendas. Banlist oficial, formatos VCR, Primer Era y Racial, validador de decks y colección personal.' },
+    data: { description: 'Arma, comparte y descubre mazos de Mitos y Leyendas. Banlist oficial, formatos Imperio, Escuelas Elementales y VCR, validador de decks y colección personal.' },
     loadComponent: () => import('./pages/home/home.component').then(m => m.HomeComponent)
   },
   {
@@ -35,7 +35,7 @@ export const routes: Routes = [
   {
     path: 'decks',
     title: 'Mazos de Mitos y Leyendas — Comunidad ShadowForge',
-    data: { description: 'Descubre mazos de Mitos y Leyendas creados por la comunidad. Primer Era, Racial, VCR y más. Filtra por formato, raza y popularidad.' },
+    data: { description: 'Descubre mazos de Mitos y Leyendas creados por la comunidad. Imperio, Escuelas Elementales, VCR y más. Filtra por formato, raza y popularidad.' },
     loadComponent: () => import('./pages/deck-list/deck-list.component').then(m => m.DeckListComponent)
   },
   {
@@ -51,7 +51,7 @@ export const routes: Routes = [
   {
     path: 'builder',
     title: 'Elegir formato — Constructor de mazos MYL | ShadowForge',
-    data: { description: 'Elige formato (Primer Era, Racial, VCR) y empieza a armar tu mazo de Mitos y Leyendas con validación de banlist en tiempo real.' },
+    data: { description: 'Elige formato (Imperio, Escuelas Elementales, VCR) y empieza a armar tu mazo de Mitos y Leyendas con validación de banlist en tiempo real.' },
     loadComponent: () => import('./pages/format-select/format-select.component').then(m => m.FormatSelectComponent)
   },
   {

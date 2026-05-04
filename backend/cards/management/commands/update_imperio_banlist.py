@@ -101,7 +101,7 @@ VCR_BANNED = [
     ("Furia Berserker", 1328),
     ("Alka", 1172),
     # Carry-over de Imperio (banned en racial → banned en vcr)
-    ("Anillo del Vacío", 1013),
+    # Nota: Anillo del Vacío es Única Racial, no se juega en VCR → no se incluye.
     ("Kokudaka", 1733),
     ("Maho no Meiso", 1556),
 ]

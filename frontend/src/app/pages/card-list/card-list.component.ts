@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChild, HostListener } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
+import { ActivatedRoute } from '@angular/router';
 import { CardService } from '../../services/card.service';
 import { Card, Edition, CardType, Race, Rarity } from '../../models';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
@@ -33,7 +34,7 @@ export class CardListComponent implements OnInit {
 
   @ViewChild('searchInput') searchInput?: ElementRef<HTMLInputElement>;
 
-  constructor(private cardService: CardService, private cdr: ChangeDetectorRef, private titleService: Title) {}
+  constructor(private cardService: CardService, private cdr: ChangeDetectorRef, private titleService: Title, private route: ActivatedRoute) {}
 
   /** Atajo: "/" enfoca el buscador (ignora si ya estás tipeando en otro input). */
   @HostListener('document:keydown', ['$event'])
@@ -55,7 +56,12 @@ export class CardListComponent implements OnInit {
   ngOnInit() {
     this.titleService.setTitle('Colección de Cartas — ShadowForge');
     this.loadFilters();
-    this.loadCards();
+    this.route.queryParamMap.subscribe(params => {
+      const q = params.get('search') ?? '';
+      this.search = q;
+      this.currentPage = 1;
+      this.loadCards();
+    });
   }
 
   loadFilters() {

@@ -49,11 +49,25 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
 
         <div class="browser-filters">
           <div class="search-row">
+            <div class="search-modes" role="tablist" aria-label="Modo de búsqueda">
+              <button type="button" role="tab"
+                      [class.active]="searchMode === 'name'"
+                      (click)="setMode('name')"
+                      title="Buscar por nombre o número">Nombre</button>
+              <button type="button" role="tab"
+                      [class.active]="searchMode === 'ability'"
+                      (click)="setMode('ability')"
+                      title="Buscar dentro del texto de habilidad">Habilidad</button>
+              <button type="button" role="tab"
+                      [class.active]="searchMode === 'all'"
+                      (click)="setMode('all')"
+                      title="Buscar en nombre y habilidad">Todo</button>
+            </div>
             <input
               type="search"
               [(ngModel)]="searchQuery"
               (ngModelChange)="onSearchInput()"
-              placeholder="Buscar nombre, número o texto..." />
+              [placeholder]="searchMode === 'ability' ? 'Buscar habilidad…' : (searchMode === 'all' ? 'Buscar nombre o habilidad…' : 'Buscar nombre o número…')" />
             <button class="search-btn" (click)="reload()" title="Buscar">🔍</button>
           </div>
 
@@ -145,6 +159,9 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
                   @if (card.might !== null && card.might !== undefined) { · ⚔️{{ card.might }} }
                 </span>
                 <span class="mini-num">{{ card.card_number }}</span>
+                @if (card.description) {
+                  <p class="mini-ability">{{ card.description }}</p>
+                }
               </div>
               <div class="actions-column">
                 <!-- M (main) -->
@@ -173,20 +190,18 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
                           [disabled]="zoneCount('side') >= rules.side || getNameCount(card.name) >= getMaxCopies(card)">+</button>
                 </div>
 
-                <!-- Otra zona (rune/champion/bg) -->
-                @if (autoZoneOf(card); as z) {
-                  @if (z !== 'main' && z !== 'side') {
-                    <div class="mini-actions auto-actions">
-                      <span class="zone-label auto-label">{{ zoneLetter(z) }}</span>
-                      @if (getQuantityInZone(card.id, z) > 0) {
-                        <button class="circle-btn remove" (click)="decZone(card, z)">−</button>
-                        <span class="mini-qty">{{ getQuantityInZone(card.id, z) }}</span>
-                      }
-                      <button class="circle-btn add"
-                              (click)="addToZone(card, z)"
-                              [disabled]="!canAddToAuto(card, z)">+</button>
-                    </div>
-                  }
+                <!-- Otras zonas (rune/champion/bg) -->
+                @for (z of extraZonesFor(card); track z) {
+                  <div class="mini-actions auto-actions">
+                    <span class="zone-label auto-label">{{ zoneLetter(z) }}</span>
+                    @if (getQuantityInZone(card.id, z) > 0) {
+                      <button class="circle-btn remove" (click)="decZone(card, z)">−</button>
+                      <span class="mini-qty">{{ getQuantityInZone(card.id, z) }}</span>
+                    }
+                    <button class="circle-btn add"
+                            (click)="addToZone(card, z)"
+                            [disabled]="!canAddToAuto(card, z)">+</button>
+                  </div>
                 }
               </div>
             </div>
@@ -356,7 +371,10 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
 
     /* Browser */
     .card-browser { padding: 1.25rem; border-right: 1px solid #1e3a4a; min-width: 0; }
-    .card-browser h2 { font-size: 1.2rem; color: #f0e6d2; margin: 0 0 1rem; }
+    .card-browser h2 {
+      font-size: 1.5rem; font-weight: 700; color: #f0e6d2; margin: 0 0 1rem;
+      letter-spacing: -.01em;
+    }
     .muted { opacity: .65; }
     .center { text-align: center; }
 
@@ -364,25 +382,39 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
 
     .search-row { display: flex; gap: .5rem; align-items: stretch; }
     .search-row input {
-      flex: 1; min-width: 0; padding: .5rem .8rem;
+      flex: 1; min-width: 0; padding: .55rem .85rem;
       border: 1px solid #2a3a4a; border-radius: 6px;
       background: #0a1428; color: #e0e0e0; outline: none;
+      font-size: .95rem;
     }
-    .search-row input:focus { border-color: #c89b3c; }
+    .search-row input:focus { border-color: #e94560; }
+    .search-modes {
+      display: inline-flex; background: #16213e; border: 1px solid #2a2a4a;
+      border-radius: 6px; padding: 2px; gap: 2px;
+    }
+    .search-modes button {
+      padding: .35rem .7rem; border: none; background: transparent;
+      color: #b0b0c8; border-radius: 4px; font-size: .85rem; cursor: pointer;
+      white-space: nowrap; transition: background .15s, color .15s;
+    }
+    .search-modes button:hover { color: #fff; }
+    .search-modes button.active { background: #e94560; color: #fff; font-weight: 600; }
     .search-btn {
-      padding: .5rem .8rem; border: 1px solid #c89b3c; border-radius: 6px;
-      background: #c89b3c; color: #0a1428; cursor: pointer; font-size: 1rem;
+      padding: .55rem .9rem; border: 1px solid #e94560; border-radius: 6px;
+      background: #e94560; color: #fff; cursor: pointer; font-size: 1rem;
+      transition: background .15s;
     }
-    .search-btn:hover { background: #d4a84b; }
+    .search-btn:hover { background: #c73650; }
+    .search-btn:active { transform: scale(.95); }
 
-    .type-chips { display: flex; flex-wrap: wrap; gap: .35rem; }
+    .type-chips { display: flex; flex-wrap: wrap; gap: .4rem; }
     .type-chip-btn {
       padding: .3rem .75rem; border: 1px solid #2a3a4a; border-radius: 999px;
       background: #0a1428; color: #c8c8da; font-size: .85rem; cursor: pointer;
       transition: all .15s; white-space: nowrap;
     }
-    .type-chip-btn:hover { border-color: #c89b3c; color: #f0e6d2; }
-    .type-chip-btn.active { background: #c89b3c; border-color: #c89b3c; color: #0a1428; font-weight: 600; }
+    .type-chip-btn:hover { border-color: #e94560; color: #fff; }
+    .type-chip-btn.active { background: #ffbd39; border-color: #ffbd39; color: #1a1a2e; font-weight: 700; }
 
     .filter-row {
       display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem;
@@ -410,27 +442,27 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
 
     /* Cards grid */
     .available-cards {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: .5rem; margin-top: 1rem;
     }
     @media (max-width: 600px) { .available-cards { grid-template-columns: 1fr; } }
 
     .mini-card {
       display: flex; align-items: center; gap: .5rem;
-      background: #0a1428; border: 1px solid #1e3a4a; border-radius: 6px;
+      background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 6px;
       padding: .4rem; transition: all .15s; position: relative;
     }
-    .mini-card:hover { border-color: #c89b3c; background: #0e1c34; }
-    .mini-card.in-deck { border-color: #c89b3c; background: rgba(200,155,60,.06); }
+    .mini-card:hover { border-color: #e94560; background: #1e1e3a; }
+    .mini-card.in-deck { border-color: #ffbd39; background: rgba(255,189,57,.05); }
     .mini-card.maxed .actions-column .add { opacity: .35; cursor: not-allowed; }
 
     .img-wrapper { position: relative; flex-shrink: 0; cursor: zoom-in; }
     .img-wrapper img {
-      width: 60px; height: 84px; object-fit: cover; border-radius: 4px;
+      width: 68px; height: 95px; object-fit: cover; border-radius: 4px;
       background: #16213e;
     }
     .img-placeholder {
-      width: 60px; height: 84px; display: grid; place-items: center;
+      width: 68px; height: 95px; display: grid; place-items: center;
       background: #16213e; border-radius: 4px; font-size: .65rem; text-align: center;
     }
     .eye-icon {
@@ -444,27 +476,32 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
     .mini-name { font-size: .85rem; color: #f0e6d2; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .mini-type { font-size: .7rem; color: #98a2a8; }
     .mini-num { font-size: .65rem; color: #6a7a88; }
+    .mini-ability {
+      margin: .25rem 0 0; font-size: .68rem; color: #aaa; line-height: 1.35;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
 
     .actions-column { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
     .mini-actions { display: flex; align-items: center; gap: .25rem; min-width: 88px; justify-content: flex-end; }
     .mini-actions.hidden { display: none; }
     .zone-label { font-size: .65rem; font-weight: 700; width: 12px; text-align: right; }
-    .main-label { color: #c89b3c; }
+    .main-label { color: #ffbd39; }
     .side-label { color: #2ac5c5; }
     .auto-label { color: #f0e6d2; }
-    .side-actions { border-top: 1px solid #1e3a4a; padding-top: 2px; }
+    .side-actions { border-top: 1px solid #333; padding-top: 2px; }
 
     .circle-btn {
-      width: 26px; height: 26px; border-radius: 50%;
-      border: 1px solid #2a3a4a; background: #0a1428; color: #c8c8da;
-      font-size: 1rem; line-height: 1; display: flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 1px solid #444; background: #1a1a2e; color: #ccc;
+      font-size: 1.1rem; line-height: 1; display: flex; align-items: center; justify-content: center;
       cursor: pointer; transition: all .15s;
     }
     .circle-btn.add:hover:not(:disabled) { border-color: #4caf50; color: #4caf50; background: rgba(76,175,80,.1); }
     .circle-btn.remove:hover { border-color: #e94560; color: #e94560; background: rgba(233,69,96,.1); }
     .circle-btn:disabled { opacity: .3; cursor: not-allowed; }
 
-    .mini-qty { font-weight: 700; font-size: .8rem; color: #c89b3c; width: 16px; text-align: center; }
+    .mini-qty { font-weight: 700; font-size: .8rem; color: #ffbd39; width: 16px; text-align: center; }
 
     .pagination { display: flex; gap: 1rem; align-items: center; justify-content: center; margin: 1.25rem 0; color: #98a2a8; }
     .page-btn { padding: .35rem .9rem; border: 1px solid #2a3a4a; background: transparent; color: #c8c8da; border-radius: 4px; cursor: pointer; }
@@ -660,6 +697,7 @@ export class RiftboundBuilderComponent implements OnInit {
 
   // Browser state
   searchQuery = '';
+  searchMode: 'name' | 'ability' | 'all' = 'name';
   typeFilter = '';
   setFilter = '';
   rarityFilter = '';
@@ -728,6 +766,12 @@ export class RiftboundBuilderComponent implements OnInit {
     this.reload();
   }
 
+  setMode(m: 'name' | 'ability' | 'all') {
+    if (this.searchMode === m) return;
+    this.searchMode = m;
+    if (this.searchQuery) { this.page.set(1); this.reload(); }
+  }
+
   toggleColor(c: RiftboundColor) {
     const set = new Set(this.selectedColors());
     if (set.has(c)) set.delete(c); else set.add(c);
@@ -746,6 +790,7 @@ export class RiftboundBuilderComponent implements OnInit {
     this.loading.set(true);
     this.rb.listCards({
       search: this.searchQuery || undefined,
+      searchMode: this.searchMode,
       type: this.typeFilter || undefined,
       set: this.setFilter || undefined,
       rarity: this.rarityFilter || undefined,
@@ -811,8 +856,23 @@ export class RiftboundBuilderComponent implements OnInit {
     return 'main';
   }
 
+  /**
+   * Zonas extra (más allá de Main/Side) que se muestran como botones en la
+   * mini-card. Para tipos conocidos derivamos de `autoZoneOf`. Para `other`
+   * (data del scraper sin clasificar bien) ofrecemos las 3 zonas especiales
+   * para que el usuario pueda colocar manualmente Champion Legend / Battlefield / Runa.
+   */
+  extraZonesFor(c: RiftboundCardLite): RiftboundZone[] {
+    if (c.card_type === 'other') return ['champion', 'bg', 'rune'];
+    const z = this.autoZoneOf(c);
+    return (z === 'main' || z === 'side') ? [] : [z];
+  }
+
   canShowMainSide(c: RiftboundCardLite): boolean {
-    return ['unit', 'spell', 'gear', 'champion'].includes(c.card_type);
+    // Cualquier carta que NO tenga zona dedicada (runa/battlefield/legend)
+    // puede ir al main o sideboard. Eso incluye unit/spell/gear/champion y
+    // cualquier tipo no reconocido (`other`, etc.).
+    return !['rune', 'battlefield', 'legend'].includes(c.card_type);
   }
 
   // ── Conteos de copias ──
@@ -864,7 +924,8 @@ export class RiftboundBuilderComponent implements OnInit {
   addToZone(c: RiftboundCardLite, z: RiftboundZone) {
     const list = [...this.entries()[z]];
     const existing = list.find(e => e.card.id === c.id);
-    const max = this.getMaxCopies(c);
+    // Máximo por zona (champion/bg = 1), si no aplica límite por carta.
+    const max = (z === 'champion' || z === 'bg') ? 1 : this.getMaxCopies(c);
     if (existing) {
       if (existing.quantity >= max) return;
       existing.quantity += 1;

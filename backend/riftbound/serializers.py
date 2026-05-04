@@ -52,6 +52,7 @@ class RiftboundCardLiteSerializer(serializers.ModelSerializer):
         fields = [
             "id", "card_number", "name", "card_type", "rarity",
             "colors", "energy", "power", "might", "image",
+            "description", "subtypes",
         ]
 
     def get_image(self, obj):

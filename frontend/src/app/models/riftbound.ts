@@ -51,6 +51,8 @@ export interface RiftboundCardLite {
   power: number | null;
   might: number | null;
   image: string;
+  description?: string;
+  subtypes?: string[];
 }
 
 export interface RiftboundDeckEntry {

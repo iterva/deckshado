@@ -26,6 +26,7 @@ export class RiftboundService {
   // ── Cartas ──
   listCards(opts: {
     search?: string;
+    searchMode?: 'name' | 'ability' | 'all';
     type?: string;
     rarity?: string;
     colors?: string[];
@@ -35,7 +36,12 @@ export class RiftboundService {
     lite?: boolean;
   } = {}): Observable<PaginatedResponse<RiftboundCard | RiftboundCardLite>> {
     let params = new HttpParams();
-    if (opts.search) params = params.set('search', opts.search);
+    if (opts.search) {
+      const mode = opts.searchMode ?? 'all';
+      if (mode === 'name') params = params.set('name_search', opts.search);
+      else if (mode === 'ability') params = params.set('ability_search', opts.search);
+      else params = params.set('search', opts.search);
+    }
     if (opts.type) params = params.set('type', opts.type);
     if (opts.rarity) params = params.set('rarity', opts.rarity);
     if (opts.colors?.length) params = params.set('colors', opts.colors.join(','));

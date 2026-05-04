@@ -33,6 +33,14 @@ class RiftboundCardViewSet(viewsets.ReadOnlyModelViewSet):
         qs = super().get_queryset()
         params = self.request.query_params
 
+        # Búsquedas dirigidas (no usan SearchFilter):
+        # ?name_search=foo  → solo nombre / número
+        # ?ability_search=foo  → solo descripción / texto de habilidad
+        if (ns := (params.get("name_search") or "").strip()):
+            qs = qs.filter(Q(name__icontains=ns) | Q(card_number__icontains=ns))
+        if (asx := (params.get("ability_search") or "").strip()):
+            qs = qs.filter(description__icontains=asx)
+
         if (set_code := params.get("set")):
             qs = qs.filter(set__code__iexact=set_code)
 

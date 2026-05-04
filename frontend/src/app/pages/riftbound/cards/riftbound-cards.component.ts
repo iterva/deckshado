@@ -47,10 +47,24 @@ const RARITIES = [
 
       <div class="filters">
         <div class="search-row">
+          <div class="search-modes" role="tablist" aria-label="Modo de búsqueda">
+            <button type="button" role="tab"
+                    [class.active]="searchMode === 'name'"
+                    (click)="setMode('name')"
+                    title="Buscar por nombre o número">Nombre</button>
+            <button type="button" role="tab"
+                    [class.active]="searchMode === 'ability'"
+                    (click)="setMode('ability')"
+                    title="Buscar dentro del texto de habilidad">Habilidad</button>
+            <button type="button" role="tab"
+                    [class.active]="searchMode === 'all'"
+                    (click)="setMode('all')"
+                    title="Buscar en nombre y habilidad">Todo</button>
+          </div>
           <input type="search"
                  [(ngModel)]="searchQuery"
                  (ngModelChange)="onSearchInput()"
-                 placeholder="Buscar por nombre, número o texto…" />
+                 [placeholder]="searchMode === 'ability' ? 'Buscar habilidad…' : (searchMode === 'all' ? 'Buscar nombre o habilidad…' : 'Buscar nombre o número…')" />
           <button class="search-btn" (click)="reload()" title="Buscar">🔍</button>
           @if (hasActiveFilter()) {
             <button class="clear-all" (click)="clearAll()" title="Limpiar filtros">Limpiar</button>
@@ -124,6 +138,9 @@ const RARITIES = [
             <div class="rb-card-meta">
               <strong>{{ card.name }}</strong>
               <small>{{ card.card_number }}</small>
+              @if (card.description) {
+                <p class="rb-card-ability">{{ card.description }}</p>
+              }
             </div>
           </a>
         }
@@ -144,7 +161,11 @@ const RARITIES = [
   `,
   styles: [`
     .rb-cards-page { max-width: 1400px; margin: 0 auto; padding: 1.5rem 1rem; }
-    .page-head h1 { margin: 0; background: linear-gradient(90deg, #c89b3c, #f0e6d2); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .page-head h1 {
+      margin: 0; font-size: 1.6rem; font-weight: 700;
+      background: linear-gradient(90deg, #c89b3c, #f0e6d2);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
     .muted { opacity: .65; }
     .center { text-align: center; }
     .empty { padding: 2rem 1rem; }
@@ -155,26 +176,30 @@ const RARITIES = [
       flex: 1; min-width: 0; padding: .55rem .85rem;
       border: 1px solid #2a3a4a; border-radius: 6px;
       background: #0a1428; color: #e0e0e0; outline: none;
+      font-size: .95rem;
     }
-    .search-row input:focus { border-color: #c89b3c; }
+    .search-row input:focus { border-color: #e94560; }
     .search-btn {
-      padding: .55rem .9rem; border: 1px solid #c89b3c; background: #c89b3c;
-      color: #0a1428; border-radius: 6px; cursor: pointer; font-size: 1rem;
+      padding: .55rem .9rem; border: 1px solid #e94560; background: #e94560;
+      color: #fff; border-radius: 6px; cursor: pointer; font-size: 1rem;
+      transition: background .15s;
     }
+    .search-btn:hover { background: #c73650; }
+    .search-btn:active { transform: scale(.95); }
     .clear-all {
       padding: .55rem .9rem; border: 1px solid #2a3a4a; background: transparent;
       color: #c8c8da; border-radius: 6px; cursor: pointer;
     }
     .clear-all:hover { border-color: #e94560; color: #e94560; }
 
-    .type-chips { display: flex; flex-wrap: wrap; gap: .35rem; }
+    .type-chips { display: flex; flex-wrap: wrap; gap: .4rem; }
     .chip {
       padding: .3rem .8rem; border: 1px solid #2a3a4a; border-radius: 999px;
       background: #0a1428; color: #c8c8da; font-size: .85rem; cursor: pointer;
       transition: all .15s; white-space: nowrap;
     }
-    .chip:hover { border-color: #c89b3c; color: #f0e6d2; }
-    .chip.active { background: #c89b3c; border-color: #c89b3c; color: #0a1428; font-weight: 600; }
+    .chip:hover { border-color: #e94560; color: #fff; }
+    .chip.active { background: #ffbd39; border-color: #ffbd39; color: #1a1a2e; font-weight: 700; }
 
     .filter-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
     @media (max-width: 600px) { .filter-row { grid-template-columns: 1fr 1fr; } }
@@ -209,6 +234,23 @@ const RARITIES = [
     .rb-card-meta { display: flex; flex-direction: column; }
     .rb-card-meta strong { color: #f0e6d2; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .rb-card-meta small { opacity: .6; font-size: .75rem; }
+    .rb-card-ability {
+      margin: .25rem 0 0; font-size: .72rem; color: #aaa; line-height: 1.35;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .search-modes {
+      display: inline-flex; background: #16213e; border: 1px solid #2a2a4a;
+      border-radius: 6px; padding: 2px; gap: 2px;
+    }
+    .search-modes button {
+      padding: .35rem .7rem; border: none; background: transparent;
+      color: #b0b0c8; border-radius: 4px; font-size: .85rem; cursor: pointer;
+      white-space: nowrap; transition: background .15s, color .15s;
+    }
+    .search-modes button:hover { color: #fff; }
+    .search-modes button.active { background: #e94560; color: #fff; font-weight: 600; }
 
     .pager { display: flex; gap: 1rem; align-items: center; justify-content: center; margin: 2rem 0; color: #98a2a8; }
     .pager button { padding: .45rem 1rem; border: 1px solid #2a3a4a; background: transparent; color: #c8c8da; border-radius: 6px; cursor: pointer; }
@@ -231,6 +273,7 @@ export class RiftboundCardsComponent implements OnInit {
   readonly pageSize = 30;
 
   searchQuery = '';
+  searchMode: 'name' | 'ability' | 'all' = 'name';
   typeFilter = '';
   setFilter = '';
   rarityFilter = '';
@@ -261,6 +304,12 @@ export class RiftboundCardsComponent implements OnInit {
   }
 
   setType(t: string) { this.typeFilter = t; this.reset(); }
+
+  setMode(m: 'name' | 'ability' | 'all') {
+    if (this.searchMode === m) return;
+    this.searchMode = m;
+    if (this.searchQuery) this.reset();
+  }
 
   toggleColor(c: RiftboundColor) {
     const set = new Set(this.selectedColors());
@@ -293,6 +342,7 @@ export class RiftboundCardsComponent implements OnInit {
     this.loading.set(true);
     this.rb.listCards({
       search: this.searchQuery || undefined,
+      searchMode: this.searchMode,
       type: this.typeFilter || undefined,
       set: this.setFilter || undefined,
       rarity: this.rarityFilter || undefined,

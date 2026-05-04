@@ -40,6 +40,41 @@
     }
   }
 
+  .edition-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    align-items: center;
+    margin: 0.6rem 0 1rem;
+    font-size: 0.9rem;
+
+    .nav-label { color: #888; }
+
+    a {
+      background: rgba(255, 189, 57, 0.1);
+      border: 1px solid rgba(255, 189, 57, 0.4);
+      color: #ffbd39;
+      padding: 0.2rem 0.7rem;
+      border-radius: 12px;
+      text-decoration: none;
+      text-transform: capitalize;
+
+      &:hover { background: rgba(255, 189, 57, 0.2); }
+    }
+  }
+
+  .badge-current {
+    background: rgba(76, 175, 80, 0.18);
+    color: #6abf6e;
+    border: 1px solid rgba(76, 175, 80, 0.5);
+    padding: 0.15rem 0.55rem;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
   h2 {
     color: #fff;
     font-size: 1.5rem;

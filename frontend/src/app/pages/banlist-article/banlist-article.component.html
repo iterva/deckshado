@@ -2,21 +2,35 @@
   <header class="article-header">
     <p class="breadcrumb">
       <a routerLink="/">ShadowForge</a> ›
-      <span>Banlist {{ month }} {{ year }}</span>
+      <span>Banlist {{ edition().month }} {{ edition().year }}</span>
     </p>
-    <h1>Banlist Mitos y Leyendas {{ month }} {{ year }}: cartas baneadas y restringidas</h1>
+    <h1>Banlist Mitos y Leyendas {{ edition().month }} {{ edition().year }}: cartas baneadas y restringidas</h1>
     <p class="article-meta">
-      Publicado el <time [attr.datetime]="publishedDate">3 de mayo de 2026</time>
+      Publicado el <time [attr.datetime]="edition().publishedDate">{{ edition().publishedDate }}</time>
       · Por <strong>ShadowForge</strong>
+      @if (edition().current) { · <span class="badge-current">Vigente</span> }
     </p>
+
+    @if (allEditions.length > 1) {
+      <nav class="edition-nav" aria-label="Otras ediciones">
+        <span class="nav-label">Otras ediciones:</span>
+        @for (e of allEditions; track e.slug) {
+          @if (e.slug !== edition().slug) {
+            <a [routerLink]="['/banlist', e.slug]">{{ e.month }} {{ e.year }}</a>
+          }
+        }
+      </nav>
+    }
+
     <p class="lead">
-      Esta es la <strong>banlist oficial actualizada</strong> de
+      Esta es la <strong>banlist oficial</strong> de
       <strong>Mitos y Leyendas (MYL)</strong>, el TCG chileno, vigente para
-      {{ month }} de {{ year }}. Incluye las restricciones de los formatos
-      <strong>Imperio</strong>, <strong>Escuelas Elementales</strong> y
-      <strong>VCR</strong>. Toda la información se sincroniza con la base de
-      datos de ShadowForge y es la misma que usa el
-      <a routerLink="/builder">constructor de mazos</a> al validar tu deck.
+      {{ edition().month }} de {{ edition().year }}. Incluye las restricciones
+      de los formatos <strong>Escuelas Elementales</strong>,
+      <strong>Imperio</strong> y <strong>VCR Imperio</strong>. Toda la
+      información se sincroniza con la base de datos de ShadowForge y es la
+      misma que usa el <a routerLink="/builder">constructor de mazos</a> al
+      validar tu deck.
     </p>
   </header>
 
@@ -154,7 +168,7 @@
 
   <footer class="article-footer">
     <p>
-      Última actualización: <time [attr.datetime]="modifiedDate">3 de mayo de 2026</time>.
+      Última actualización: <time [attr.datetime]="edition().modifiedDate">{{ edition().modifiedDate }}</time>.
       Esta página se mantiene siempre alineada con los datos del backend de
       ShadowForge.
     </p>

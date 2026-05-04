@@ -102,8 +102,19 @@ export const routes: Routes = [
   },
   {
     path: 'banlist-mayo-2026',
-    title: 'Banlist Mitos y Leyendas mayo 2026 — cartas baneadas y restringidas | ShadowForge',
-    data: { description: 'Banlist oficial actualizada de Mitos y Leyendas (MYL) para mayo 2026. Cartas baneadas y restringidas en Escuelas Elementales, Imperio y VCR Imperio.' },
+    redirectTo: 'banlist/mayo-2026',
+    pathMatch: 'full'
+  },
+  {
+    path: 'banlist',
+    title: 'Banlist Mitos y Leyendas — cartas baneadas y restringidas | ShadowForge',
+    data: { description: 'Banlist oficial actualizada de Mitos y Leyendas (MYL). Cartas baneadas y restringidas en Escuelas Elementales, Imperio y VCR Imperio.' },
+    loadComponent: () => import('./pages/banlist-article/banlist-article.component').then(m => m.BanlistArticleComponent)
+  },
+  {
+    path: 'banlist/:slug',
+    title: 'Banlist Mitos y Leyendas | ShadowForge',
+    data: { description: 'Banlist oficial actualizada de Mitos y Leyendas (MYL). Cartas baneadas y restringidas en Escuelas Elementales, Imperio y VCR Imperio.' },
     loadComponent: () => import('./pages/banlist-article/banlist-article.component').then(m => m.BanlistArticleComponent)
   },
   {

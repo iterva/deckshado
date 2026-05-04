@@ -69,6 +69,16 @@
       box-shadow: 0 8px 25px rgba(233, 69, 96, 0.2);
     }
 
+    &.highlight {
+      border-color: rgba(255, 189, 57, 0.5);
+      background: linear-gradient(135deg, #1a1a2e 0%, #2a1f3a 100%);
+
+      &:hover {
+        border-color: #ffbd39;
+        box-shadow: 0 8px 25px rgba(255, 189, 57, 0.25);
+      }
+    }
+
     .feature-icon {
       font-size: 2.5rem;
       margin-bottom: 1rem;

@@ -357,14 +357,18 @@
   color: #fff;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.3);
   z-index: 100;
-  padding: 0.5rem;
+  padding: 0.4rem 0.25rem;
+  padding-bottom: calc(0.4rem + env(safe-area-inset-bottom, 0));
   justify-content: space-around;
-  align-items: center;
+  align-items: stretch;
 
   a, button {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
+    flex: 1 1 0;
+    min-width: 0;
     text-decoration: none;
     color: #ccc;
     font-size: 0.75rem;
@@ -372,31 +376,79 @@
     background: none;
     border: none;
     cursor: pointer;
+    padding: 0.25rem 0.1rem;
 
     &:hover, &.active {
       color: #ffbd39;
     }
 
     .icon {
-      font-size: 1.5rem;
-      margin-bottom: 0.2rem;
+      font-size: 1.3rem;
+      margin-bottom: 0.15rem;
+      line-height: 1;
     }
 
     .label {
-      font-size: 0.7rem;
+      font-size: 0.65rem;
+      white-space: nowrap;
     }
   }
 
-  .btn-logout-mobile {
-    &:hover {
-      color: #e94560;
-    }
+  .more-btn {
+    font-family: inherit;
   }
 }
 
 @media (max-width: 768px) {
   .navbar {
-    display: none;
+    padding: 0 0.75rem;
+    height: 56px;
+
+    // En móvil mostramos solo logo + acciones rápidas (search, notif, avatar, theme).
+    // Los links de navegación se ocultan y se acceden vía botón "Más" de la bottom-nav.
+    .navbar-links { display: none; }
+
+    .navbar-brand .logo {
+      font-size: 1.1rem;
+      .logo-icon { font-size: 1.3rem; }
+    }
+
+    .navbar-actions {
+      gap: 0.4rem;
+
+      .btn-login {
+        padding: 0.3rem 0.8rem;
+        font-size: 0.85rem;
+      }
+
+      .search-wrapper {
+        position: fixed;
+        top: 56px;
+        left: 0;
+        right: 0;
+        width: 100%;
+        padding: 0.5rem;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border-bottom: 1px solid #333;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      }
+
+      .notif-dropdown {
+        position: fixed;
+        top: 56px;
+        right: 0;
+        left: 0;
+        width: 100%;
+        max-height: calc(100vh - 56px);
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+      }
+
+      .avatar-dropdown {
+        right: 0;
+      }
+    }
   }
 
   .bottom-nav {
@@ -405,10 +457,160 @@
 
   .content {
     padding-bottom: 80px; /* Espacio para la barra inferior */
-    padding: 0.5rem; /* Menos padding en móviles */
+    padding: 0.5rem 0.5rem 80px; /* Menos padding en móviles */
   }
 
   .footer {
     padding-bottom: 5rem; /* Más espacio en móviles */
+  }
+}
+
+/* ───── Mobile drawer (botón "Más") ───── */
+.mobile-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 200;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.mobile-menu {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(86vw, 340px);
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+  color: #e0e0e0;
+  z-index: 201;
+  overflow-y: auto;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.5);
+  animation: slideInRight 0.2s ease-out;
+  padding: 0 0 1rem;
+
+  .mm-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    border-bottom: 1px solid #2a2a4a;
+    position: sticky;
+    top: 0;
+    background: inherit;
+    z-index: 1;
+
+    strong {
+      font-size: 1.05rem;
+      letter-spacing: 0.04em;
+    }
+
+    .mm-close {
+      background: transparent;
+      border: none;
+      color: #ccc;
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      &:hover { color: #ffbd39; }
+    }
+  }
+
+  .mm-user {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    text-decoration: none;
+    color: inherit;
+    border-bottom: 1px solid #2a2a4a;
+
+    .mm-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+
+    .mm-name { font-weight: 600; }
+    small { color: #888; font-size: 0.75rem; }
+
+    &:hover { background: rgba(255, 255, 255, 0.04); }
+  }
+
+  .mm-login {
+    display: block;
+    text-align: center;
+    margin: 0.75rem 1rem 0;
+    padding: 0.6rem 1rem;
+    background: #e94560;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 600;
+
+    &.secondary {
+      background: transparent;
+      border: 1px solid #444;
+      margin-top: 0.5rem;
+    }
+  }
+
+  .mm-section {
+    padding: 0.75rem 0 0.5rem;
+    border-bottom: 1px solid #2a2a4a;
+
+    h3 {
+      margin: 0 1rem 0.4rem;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #888;
+      font-weight: 600;
+    }
+
+    a, .mm-pref, .mm-logout {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      width: 100%;
+      padding: 0.7rem 1rem;
+      color: #e0e0e0;
+      text-decoration: none;
+      background: none;
+      border: none;
+      text-align: left;
+      font-family: inherit;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+
+      &:hover { background: rgba(255, 255, 255, 0.06); color: #ffbd39; }
+      &.active { color: #ffbd39; background: rgba(255, 189, 57, 0.08); }
+    }
+
+    .mm-logout:hover { color: #e94560; }
+
+    &:last-child { border-bottom: none; }
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@media (max-width: 480px) {
+  .navbar .navbar-brand .logo .logo-text {
+    font-size: 1rem;
   }
 }

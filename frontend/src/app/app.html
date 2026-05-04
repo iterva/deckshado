@@ -119,7 +119,7 @@
   <router-outlet />
 </main>
 <nav class="bottom-nav" aria-label="Navegación inferior">
-  <a routerLink="/" routerLinkActive="active">
+  <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">
     <span class="icon">🏠</span>
     <span class="label">Inicio</span>
   </a>
@@ -135,32 +135,71 @@
     <span class="icon">🔤</span>
     <span class="label">Wordle</span>
   </a>
-  <a routerLink="/team" routerLinkActive="active">
-    <span class="icon">👥</span>
-    <span class="label">Equipo</span>
-  </a>
-  @if (auth.isAuthenticated()) {
-    <a routerLink="/carpeta" routerLinkActive="active">
-      <span class="icon">📁</span>
-      <span class="label">Carpeta</span>
-    </a>
-    <a routerLink="/builder" routerLinkActive="active">
-      <span class="icon">🔨</span>
-      <span class="label">Constructor</span>
-    </a>
-  }
-  @if (!auth.isAuthenticated()) {
-    <a routerLink="/login" routerLinkActive="active">
-      <span class="icon">👤</span>
-      <span class="label">Ingresar</span>
-    </a>
-  } @else {
-    <a routerLink="/profile" routerLinkActive="active">
-      <span class="icon">👤</span>
-      <span class="label">Perfil</span>
-    </a>
-  }
+  <button type="button" class="more-btn" (click)="toggleMobileMenu()" [class.active]="showMobileMenu()" aria-label="Más opciones">
+    <span class="icon">☰</span>
+    <span class="label">Más</span>
+  </button>
 </nav>
+
+@if (showMobileMenu()) {
+  <div class="mobile-menu-backdrop" (click)="closeMobileMenu()"></div>
+  <aside class="mobile-menu" role="dialog" aria-label="Menú">
+    <header class="mm-header">
+      <strong>Menú</strong>
+      <button class="mm-close" (click)="closeMobileMenu()" aria-label="Cerrar">✕</button>
+    </header>
+
+    @if (auth.isAuthenticated()) {
+      <a routerLink="/profile" class="mm-user" (click)="closeMobileMenu()">
+        @if (auth.user()?.avatar_url) {
+          <img [src]="auth.user()!.avatar_url! | thumb:64" alt="" class="mm-avatar" width="44" height="44" />
+        } @else {
+          <span class="mm-avatar mm-avatar-placeholder">👤</span>
+        }
+        <div>
+          <div class="mm-name">{{ auth.user()?.username }}</div>
+          <small>Ver perfil</small>
+        </div>
+      </a>
+    } @else {
+      <a routerLink="/login" class="mm-login" (click)="closeMobileMenu()">Iniciar sesión</a>
+      <a routerLink="/register" class="mm-login secondary" (click)="closeMobileMenu()">Crear cuenta</a>
+    }
+
+    <div class="mm-section">
+      <h3>Navegación</h3>
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="closeMobileMenu()">🏠 Inicio</a>
+      <a routerLink="/cards" routerLinkActive="active" (click)="closeMobileMenu()">🃏 Cartas</a>
+      <a routerLink="/decks" routerLinkActive="active" (click)="closeMobileMenu()">📚 Mazos</a>
+      <a routerLink="/wordle" routerLinkActive="active" (click)="closeMobileMenu()">🔤 Wordle del día</a>
+      <a routerLink="/banlist" routerLinkActive="active" (click)="closeMobileMenu()">🚫 Banlist</a>
+      <a routerLink="/tiendas" routerLinkActive="active" (click)="closeMobileMenu()">🏪 Tiendas</a>
+      <a routerLink="/team" routerLinkActive="active" (click)="closeMobileMenu()">👥 Equipos</a>
+      @if (auth.isAuthenticated()) {
+        <a routerLink="/carpeta" routerLinkActive="active" (click)="closeMobileMenu()">📁 Mi carpeta</a>
+        <a routerLink="/builder" routerLinkActive="active" (click)="closeMobileMenu()">🔨 Constructor</a>
+      }
+    </div>
+
+    @if (auth.isAuthenticated()) {
+      <div class="mm-section">
+        <h3>Cuenta</h3>
+        <a routerLink="/profile/edit" (click)="closeMobileMenu()">✏️ Editar perfil</a>
+        @if (auth.user()?.is_admin) {
+          <a routerLink="/admin" (click)="closeMobileMenu()">🛡️ Admin</a>
+        }
+        <button type="button" class="mm-logout" (click)="auth.logout(); closeMobileMenu()">🚪 Cerrar sesión</button>
+      </div>
+    }
+
+    <div class="mm-section">
+      <h3>Preferencias</h3>
+      <button type="button" class="mm-pref" (click)="theme.toggle()">
+        {{ theme.isDark() ? '☀️ Modo claro' : '🌙 Modo oscuro' }}
+      </button>
+    </div>
+  </aside>
+}
 <footer class="footer">
   <p>ShadowForge &mdash; Deckbuilder no oficial de Mitos y Leyendas. Hecho por fans para fans.</p>
   <p class="disclaimer">Mitos y Leyendas y sus respectivas artes de cartas son propiedad de sus creadores.</p>

@@ -22,6 +22,7 @@ export class App implements OnInit {
   showDropdown = signal(false);
   showNotifs = signal(false);
   showSearch = signal(false);
+  showMobileMenu = signal(false);
   searchQuery = '';
   searchResults: any = null;
 
@@ -55,6 +56,14 @@ export class App implements OnInit {
     this.showSearch.update(v => !v);
     this.searchResults = null;
     this.searchQuery = '';
+  }
+
+  toggleMobileMenu() {
+    this.showMobileMenu.update(v => !v);
+  }
+
+  closeMobileMenu() {
+    this.showMobileMenu.set(false);
   }
 
   onSearch() {

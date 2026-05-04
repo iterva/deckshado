@@ -22,7 +22,7 @@ from riftbound.models import RiftboundCard
 
 
 def classify(c: RiftboundCard) -> str:
-    if c.card_type in ("rune", "battlefield", "legend"):
+    if c.card_type in ("rune", "battlefield"):
         return c.card_type
 
     desc = (c.description or "")
@@ -34,15 +34,12 @@ def classify(c: RiftboundCard) -> str:
     has_action = "[action]" in desc_lower or "[reaction]" in desc_lower
     has_tap = "[tap]" in desc_lower
 
-    # LEGEND: nombre "X, Titulo" con X en subtypes (LEGEND • X) y SIN ningún stat > 0.
-    # (en la BD los stats de legend pueden venir como None o como 0)
+    # LEGEND: champion-pattern con los 3 stats EXPLÍCITAMENTE en 0
+    # (las cartas LEGEND reales tienen might=0, power=0, energy=0; las de stats=None
+    #  son datos faltantes del scraper y deben tratarse como units).
     if is_champion:
-        m = c.might or 0
-        p = c.power or 0
-        e = c.energy or 0
-        if m == 0 and p == 0 and e == 0:
+        if c.might == 0 and c.power == 0 and c.energy == 0:
             return "legend"
-        # Champion-unit (Jinx Rebel, Tryndamere Barbarian, etc.) → unit
         return "unit"
 
     # Marcador explícito de spell

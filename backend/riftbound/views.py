@@ -107,7 +107,9 @@ class RiftboundBanlistViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        fmt = self.request.query_params.get("format", "standard")
+        # NOTA: usamos `fmt` y NO `format` porque DRF reserva ?format= para
+        # negociacion de renderer (json/api).
+        fmt = self.request.query_params.get("fmt") or self.request.query_params.get("format_code") or "standard"
         return qs.filter(format__code=fmt)
 
 

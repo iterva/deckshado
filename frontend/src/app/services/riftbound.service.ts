@@ -91,8 +91,9 @@ export class RiftboundService {
 
   // ── Banlist ──
   listBanlist(format: string = 'standard'): Observable<PaginatedResponse<RiftboundBanlistEntry>> {
+    // 'format' es reservado por DRF, usar 'fmt'
     return this.http.get<PaginatedResponse<RiftboundBanlistEntry>>(
-      `${this.base}/banlist/`, { params: new HttpParams().set('format', format) },
+      `${this.base}/banlist/`, { params: new HttpParams().set('fmt', format) },
     );
   }
 

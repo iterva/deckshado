@@ -142,7 +142,9 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
           @for (card of results(); track card.id) {
             <div class="mini-card"
                  [class.in-deck]="getQuantityInDeck(card.id) > 0"
-                 [class.maxed]="getQuantityInDeck(card.id) >= getMaxCopies(card)">
+                 [class.maxed]="getQuantityInDeck(card.id) >= getMaxCopies(card)"
+                 [class.banned]="isBanned(card)"
+                 [class.limited]="banStatus(card) === 'limited' || banStatus(card) === 'restricted'">
               <div class="img-wrapper" (click)="openPreview(card)">
                 @if (card.image) {
                   <img [src]="card.image" [alt]="card.name" loading="lazy" decoding="async" />
@@ -150,6 +152,11 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
                   <div class="img-placeholder">{{ card.card_number }}</div>
                 }
                 <span class="eye-icon">👁</span>
+                @if (isBanned(card)) {
+                  <span class="ban-badge ban-badge-banned" title="Prohibida en Standard">🚫</span>
+                } @else if (banStatus(card)) {
+                  <span class="ban-badge ban-badge-limited" title="Limitada en Standard">⚠</span>
+                }
               </div>
               <div class="mini-info">
                 <span class="mini-name">{{ card.name }}</span>
@@ -457,6 +464,19 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
     .mini-card:hover { border-color: #e94560; background: #1e1e3a; }
     .mini-card.in-deck { border-color: #ffbd39; background: rgba(255,189,57,.05); }
     .mini-card.maxed .actions-column .add { opacity: .35; cursor: not-allowed; }
+    .mini-card.banned { border-color: #e94560; background: rgba(233,69,96,.07); }
+    .mini-card.banned .actions-column .add { opacity: .25; cursor: not-allowed; }
+    .mini-card.banned .img-wrapper img { filter: grayscale(.6) brightness(.7); }
+    .mini-card.limited { border-color: #ff8c42; }
+    .ban-badge {
+      position: absolute; top: 2px; right: 2px;
+      width: 18px; height: 18px; border-radius: 50%;
+      display: grid; place-items: center;
+      font-size: .7rem; font-weight: 700;
+      pointer-events: none;
+    }
+    .ban-badge-banned { background: #e94560; color: #fff; }
+    .ban-badge-limited { background: #ff8c42; color: #fff; }
 
     .img-wrapper { position: relative; flex-shrink: 0; cursor: zoom-in; }
     .img-wrapper img {
@@ -716,6 +736,9 @@ export class RiftboundBuilderComponent implements OnInit {
 
   sets = signal<{ code: string; name: string }[]>([]);
 
+  // Banlist (formato Standard)
+  banlist = signal<Map<string, { status: string; max_copies: number }>>(new Map());
+
   // Deck entries
   entries = signal<Record<RiftboundZone, BuilderEntry[]>>({
     main: [], side: [], rune: [], champion: [], bg: [],
@@ -737,6 +760,18 @@ export class RiftboundBuilderComponent implements OnInit {
       next: (sets: any) => {
         const arr = Array.isArray(sets) ? sets : (sets?.results ?? []);
         this.sets.set(arr.map((s: any) => ({ code: s.code, name: s.name })));
+      },
+    });
+    // Cargar banlist Standard
+    this.rb.listBanlist('standard').subscribe({
+      next: (resp: any) => {
+        const map = new Map<string, { status: string; max_copies: number }>();
+        for (const e of (resp?.results ?? [])) {
+          if (e.card_number) {
+            map.set(e.card_number, { status: e.status, max_copies: e.max_copies ?? 0 });
+          }
+        }
+        this.banlist.set(map);
       },
     });
     this.reload();
@@ -899,10 +934,25 @@ export class RiftboundBuilderComponent implements OnInit {
   }
 
   getMaxCopies(c: RiftboundCardLite): number {
-    // Max 3 copias por carta. Battlefields: 1 copia (3 distintas).
+    // Banlist: 'banned' = 0 copias, 'limited' = max_copies (típicamente 1)
+    const ban = c.card_number ? this.banlist().get(c.card_number) : undefined;
+    if (ban) {
+      if (ban.status === 'banned') return 0;
+      if (ban.status === 'limited' || ban.status === 'restricted') return ban.max_copies ?? 1;
+    }
     if (c.card_type === 'battlefield') return 1;
     if (c.card_type === 'legend') return 1;
     return 3;
+  }
+
+  isBanned(c: RiftboundCardLite): boolean {
+    const ban = c.card_number ? this.banlist().get(c.card_number) : undefined;
+    return ban?.status === 'banned';
+  }
+
+  banStatus(c: RiftboundCardLite): string | null {
+    const ban = c.card_number ? this.banlist().get(c.card_number) : undefined;
+    return ban?.status ?? null;
   }
 
   maxCopiesForEntry(e: BuilderEntry): number {

@@ -106,6 +106,12 @@ export const routes: Routes = [
     pathMatch: 'full'
   },
   {
+    path: 'wordle',
+    title: 'La palabra del día — Wordle MYL | ShadowForge',
+    data: { description: 'Adivina la carta del día de Mitos y Leyendas en este Wordle diario. Compite por el mejor puntaje del mes.' },
+    loadComponent: () => import('./pages/wordle/wordle.component').then(m => m.WordleComponent)
+  },
+  {
     path: 'banlist',
     title: 'Banlist Mitos y Leyendas — cartas baneadas y restringidas | ShadowForge',
     data: { description: 'Banlist oficial actualizada de Mitos y Leyendas (MYL). Cartas baneadas y restringidas en Escuelas Elementales, Imperio y VCR Imperio.' },

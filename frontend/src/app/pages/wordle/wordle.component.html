@@ -1,0 +1,97 @@
+<div class="wordle-page">
+  <header class="wordle-header">
+    <h1>LA PALABRA DEL DÍA</h1>
+    <div class="meta">
+      @if (state(); as s) {
+        <span class="length-badge" title="Cantidad de letras">{{ s.length }} letras</span>
+        <span class="attempts-badge">Intento {{ s.attempts_used }}/{{ s.max_attempts }}</span>
+        <button
+          class="hint-btn"
+          (click)="revealHint()"
+          [class.revealed]="s.hint_revealed"
+          title="Pista">?</button>
+      }
+    </div>
+  </header>
+
+  @if (winner()?.winner) {
+    <div class="winner-banner">
+      🏆 Ganador de {{ monthName(winner()!.month) }} {{ winner()!.year }}:
+      <strong>{{ winner()!.winner!.username }}</strong>
+      <span class="winner-score">({{ winner()!.winner!.score }} pts)</span>
+    </div>
+  }
+
+  @if (loading() && !state()) {
+    <p class="status">Cargando…</p>
+  }
+
+  @if (state(); as s) {
+    @if (s.hint_revealed && s.hint) {
+      <div class="hint-box">💡 {{ s.hint }}</div>
+    }
+
+    <div class="board" [style.--cols]="s.length">
+      @for (row of display(); track $index) {
+        <div class="row">
+          @for (cell of row; track $index) {
+            <div class="tile" [class]="'tile-' + cell.status">{{ cell.letter }}</div>
+          }
+        </div>
+      }
+    </div>
+
+    @if (s.finished) {
+      <div class="result-box" [class.won]="s.won">
+        @if (s.won) {
+          <p>¡Correcto! Sumaste <strong>{{ s.score }}</strong> puntos.</p>
+        } @else {
+          <p>Sin más intentos. La palabra era <strong>{{ s.answer }}</strong>.</p>
+        }
+        <a routerLink="/cards" [queryParams]="{ search: s.answer }" class="see-card">Ver carta</a>
+      </div>
+    }
+
+    <div class="keyboard">
+      @for (kbrow of rows; track $index) {
+        <div class="kb-row">
+          @for (k of kbrow; track $index) {
+            <button
+              class="kb-key"
+              [class.kb-special]="k === 'ENTER' || k === 'BACK'"
+              [class]="(keyStatus()[k] ? 'kb-' + keyStatus()[k] : '') + (k === 'ENTER' || k === 'BACK' ? ' kb-special' : '')"
+              (click)="press(k)"
+              [disabled]="s.finished">
+              @if (k === 'ENTER') { ✓ }
+              @else if (k === 'BACK') { ⌫ }
+              @else { {{ k }} }
+            </button>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  @if (toast(); as t) {
+    <div class="toast">{{ t }}</div>
+  }
+
+  <section class="leaderboard">
+    <h2>Ranking del mes</h2>
+    @if (leaderboard(); as lb) {
+      @if (lb.leaderboard.length) {
+        <ol>
+          @for (e of lb.leaderboard; track e.user_id) {
+            <li>
+              <span class="lb-name">{{ e.username }}</span>
+              <span class="lb-score">{{ e.score }} pts</span>
+              <span class="lb-meta">{{ e.wins }} W · {{ e.played }} jugados</span>
+            </li>
+          }
+        </ol>
+      } @else {
+        <p class="empty">Aún sin puntajes este mes.</p>
+      }
+    }
+  </section>
+</div>

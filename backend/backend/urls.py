@@ -43,6 +43,7 @@ urlpatterns = [
     path("api/decks/", include("decks.urls")),
     path("api/teams/", include("teams.urls")),
     path("api/carpeta/", include("carpeta.urls")),
+    path("api/wordle/", include("wordle.urls")),
     path("api/search/", global_search, name="global-search"),
 ]
 

@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "users",
     "teams",
     "carpeta",
+    "wordle",
 ]
 
 MIDDLEWARE = [

@@ -68,15 +68,21 @@ class RiftboundFormatSerializer(serializers.ModelSerializer):
 class RiftboundBanlistEntrySerializer(serializers.ModelSerializer):
     card_name = serializers.CharField(source="card.name", read_only=True)
     card_number = serializers.CharField(source="card.card_number", read_only=True)
+    card_type = serializers.CharField(source="card.card_type", read_only=True)
+    card_image = serializers.SerializerMethodField()
     format_code = serializers.CharField(source="format.code", read_only=True)
 
     class Meta:
         model = RiftboundBanlistEntry
         fields = [
-            "id", "card", "card_name", "card_number",
+            "id", "card", "card_name", "card_number", "card_type", "card_image",
             "format", "format_code",
             "status", "max_copies", "note", "effective_from",
         ]
+
+    def get_card_image(self, obj):
+        c = obj.card
+        return c.cdn_image_url or c.image_url or c.image_url_small or ""
 
 
 # ───────────── Decks ─────────────

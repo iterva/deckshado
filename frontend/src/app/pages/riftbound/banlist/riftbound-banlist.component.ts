@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RiftboundService } from '../../../services/riftbound.service';
 import { RiftboundBanlistEntry } from '../../../models/riftbound';
@@ -8,51 +8,133 @@ import { RiftboundBanlistEntry } from '../../../models/riftbound';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <header class="rb-page-head">
-      <h1>Banlist Riftbound — Standard</h1>
-      <p class="muted">Cartas prohibidas y limitadas en formato Standard.</p>
-    </header>
+    <div class="rb-banlist-page">
+      <header class="rb-page-head">
+        <h1>Banlist Riftbound · Standard</h1>
+        <p class="muted">
+          Cartas prohibidas y limitadas en formato <strong>Standard Constructed</strong>.
+          Vigente desde el 31 de marzo de 2026.
+        </p>
+      </header>
 
-    @if (loading()) { <p>Cargando…</p> }
+      @if (loading()) { <p class="center muted">Cargando…</p> }
 
-    <table class="rb-banlist">
-      <thead>
-        <tr>
-          <th>Carta</th>
-          <th>Número</th>
-          <th>Estado</th>
-          <th>Copias máx.</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (e of entries(); track e.id) {
-          <tr [class]="'status-' + e.status">
-            <td>{{ e.card_name }}</td>
-            <td><code>{{ e.card_number }}</code></td>
-            <td>{{ statusLabel(e.status) }}</td>
-            <td>{{ e.max_copies }}</td>
-          </tr>
-        }
-        @if (!loading() && entries().length === 0) {
-          <tr><td colspan="4" class="muted center">Banlist vacía actualmente.</td></tr>
-        }
-      </tbody>
-    </table>
+      @if (!loading() && entries().length === 0) {
+        <p class="center muted">Banlist vacía actualmente.</p>
+      }
+
+      @if (banned().length) {
+        <section class="ban-section">
+          <h2 class="ban-title">
+            <span class="dot dot-banned"></span> Prohibidas
+            <small>({{ banned().length }})</small>
+          </h2>
+          <div class="ban-grid">
+            @for (e of banned(); track e.id) {
+              <article class="ban-card">
+                @if (e.card_image) {
+                  <img [src]="e.card_image" [alt]="e.card_name" loading="lazy" />
+                } @else {
+                  <div class="img-fallback">{{ e.card_number }}</div>
+                }
+                <div class="ban-info">
+                  <strong>{{ e.card_name }}</strong>
+                  <small><code>{{ e.card_number }}</code></small>
+                  <span class="ban-tag">PROHIBIDA</span>
+                </div>
+              </article>
+            }
+          </div>
+        </section>
+      }
+
+      @if (limited().length) {
+        <section class="ban-section">
+          <h2 class="ban-title">
+            <span class="dot dot-limited"></span> Limitadas
+            <small>({{ limited().length }})</small>
+          </h2>
+          <div class="ban-grid">
+            @for (e of limited(); track e.id) {
+              <article class="ban-card">
+                @if (e.card_image) {
+                  <img [src]="e.card_image" [alt]="e.card_name" loading="lazy" />
+                } @else {
+                  <div class="img-fallback">{{ e.card_number }}</div>
+                }
+                <div class="ban-info">
+                  <strong>{{ e.card_name }}</strong>
+                  <small><code>{{ e.card_number }}</code></small>
+                  <span class="ban-tag tag-limited">{{ statusLabel(e.status) }}</span>
+                </div>
+              </article>
+            }
+          </div>
+        </section>
+      }
+    </div>
   `,
   styles: [`
+    .rb-banlist-page { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1rem; }
+    .rb-page-head h1 {
+      margin: 0; font-size: 1.7rem; font-weight: 700;
+      background: linear-gradient(90deg, #c89b3c, #f0e6d2);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
     .muted { opacity: .65; }
     .center { text-align: center; }
-    .rb-banlist { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-    .rb-banlist th, .rb-banlist td { padding: .5rem .75rem; border-bottom: 1px solid var(--border-color, #333); text-align: left; }
-    .status-banned { color: #ff6b6b; }
-    .status-limited_1 { color: #f0a830; }
-    .status-limited_2 { color: #f0d030; }
+
+    .ban-section { margin: 1.75rem 0; }
+    .ban-title {
+      display: flex; align-items: center; gap: .5rem;
+      font-size: 1.15rem; color: #f0e6d2; margin: 0 0 1rem;
+      padding-bottom: .5rem; border-bottom: 1px solid #1e3a4a;
+    }
+    .ban-title small { color: #98a2a8; font-weight: 400; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-banned { background: #e94560; box-shadow: 0 0 8px #e94560; }
+    .dot-limited { background: #f0a830; box-shadow: 0 0 8px #f0a830; }
+
+    .ban-grid {
+      display: grid; gap: 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+    .ban-card {
+      background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 10px;
+      overflow: hidden; display: flex; flex-direction: column;
+      transition: all .15s; position: relative;
+    }
+    .ban-card:hover { border-color: #e94560; transform: translateY(-2px); }
+    .ban-card img { width: 100%; aspect-ratio: 63/88; object-fit: cover; background: #16213e; }
+    .img-fallback {
+      width: 100%; aspect-ratio: 63/88; background: #16213e;
+      display: grid; place-items: center; color: #c8c8da;
+    }
+    .ban-info { padding: .65rem .75rem; display: flex; flex-direction: column; gap: .15rem; }
+    .ban-info strong { color: #f0e6d2; font-size: .95rem; }
+    .ban-info small { color: #98a2a8; font-size: .75rem; }
+    .ban-info code { color: #c89b3c; font-family: 'Courier New', monospace; }
+
+    .ban-tag {
+      display: inline-block; align-self: flex-start; margin-top: .35rem;
+      padding: .15rem .55rem; border-radius: 999px;
+      background: #e94560; color: #fff; font-size: .65rem; font-weight: 700;
+      letter-spacing: .05em; text-transform: uppercase;
+    }
+    .tag-limited { background: #f0a830; color: #1a1a2e; }
+
+    :host-context(body.light-theme) .ban-card { background: #fbf6e9; border-color: #d4c489; }
+    :host-context(body.light-theme) .ban-info strong { color: #463714; }
+    :host-context(body.light-theme) .ban-title { color: #463714; }
   `],
 })
 export class RiftboundBanlistComponent implements OnInit {
   private rb = inject(RiftboundService);
   entries = signal<RiftboundBanlistEntry[]>([]);
   loading = signal(true);
+
+  banned = computed(() => this.entries().filter(e => e.status === 'banned'));
+  limited = computed(() => this.entries().filter(e => e.status !== 'banned'));
 
   ngOnInit() {
     this.rb.listBanlist('standard').subscribe({
@@ -62,6 +144,6 @@ export class RiftboundBanlistComponent implements OnInit {
   }
 
   statusLabel(s: string) {
-    return s === 'banned' ? 'Prohibida' : s === 'limited_1' ? 'Limitada a 1' : 'Limitada a 2';
+    return s === 'limited_1' ? 'Limitada a 1' : 'Limitada a 2';
   }
 }

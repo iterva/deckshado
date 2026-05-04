@@ -100,6 +100,8 @@ export interface RiftboundBanlistEntry {
   card: number;
   card_name: string;
   card_number: string;
+  card_type?: RiftboundCardType;
+  card_image?: string;
   format: number;
   format_code: string;
   status: 'banned' | 'limited_1' | 'limited_2';

@@ -34,8 +34,8 @@ export const routes: Routes = [
   },
   {
     path: 'decks',
-    title: 'Mazos de Mitos y Leyendas — Comunidad ShadowForge',
-    data: { description: 'Descubre mazos de Mitos y Leyendas creados por la comunidad. Escuelas Elementales, Imperio y VCR Imperio. Filtra por formato, raza y popularidad.' },
+    title: 'Mazos públicos | ShadowForge',
+    data: { description: 'Descubre mazos públicos de Mitos y Leyendas creados por la comunidad. Escuelas Elementales, Imperio y VCR Imperio. Filtra por formato, raza y popularidad.' },
     loadComponent: () => import('./pages/deck-list/deck-list.component').then(m => m.DeckListComponent)
   },
   {

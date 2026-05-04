@@ -101,6 +101,12 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/stores-index/stores-index.component').then(m => m.StoresIndexComponent)
   },
   {
+    path: 'banlist-mayo-2026',
+    title: 'Banlist Mitos y Leyendas mayo 2026 — cartas baneadas y restringidas | ShadowForge',
+    data: { description: 'Banlist oficial actualizada de Mitos y Leyendas (MYL) para mayo 2026. Cartas baneadas y restringidas en Imperio, Escuelas Elementales y VCR.' },
+    loadComponent: () => import('./pages/banlist-article/banlist-article.component').then(m => m.BanlistArticleComponent)
+  },
+  {
     path: 'admin',
     title: 'Admin | ShadowForge',
     data: { description: 'Panel de administración.' },

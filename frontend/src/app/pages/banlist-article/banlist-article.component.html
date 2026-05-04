@@ -1,0 +1,162 @@
+<article class="banlist-article container">
+  <header class="article-header">
+    <p class="breadcrumb">
+      <a routerLink="/">ShadowForge</a> ›
+      <span>Banlist {{ month }} {{ year }}</span>
+    </p>
+    <h1>Banlist Mitos y Leyendas {{ month }} {{ year }}: cartas baneadas y restringidas</h1>
+    <p class="article-meta">
+      Publicado el <time [attr.datetime]="publishedDate">3 de mayo de 2026</time>
+      · Por <strong>ShadowForge</strong>
+    </p>
+    <p class="lead">
+      Esta es la <strong>banlist oficial actualizada</strong> de
+      <strong>Mitos y Leyendas (MYL)</strong>, el TCG chileno, vigente para
+      {{ month }} de {{ year }}. Incluye las restricciones de los formatos
+      <strong>Imperio</strong>, <strong>Escuelas Elementales</strong> y
+      <strong>VCR</strong>. Toda la información se sincroniza con la base de
+      datos de ShadowForge y es la misma que usa el
+      <a routerLink="/builder">constructor de mazos</a> al validar tu deck.
+    </p>
+  </header>
+
+  <section class="summary">
+    <div class="stat-box">
+      <span class="num">{{ totalBanned() }}</span>
+      <span class="lbl">Cartas baneadas</span>
+    </div>
+    <div class="stat-box">
+      <span class="num">{{ totalLimited() }}</span>
+      <span class="lbl">Cartas restringidas</span>
+    </div>
+    <div class="stat-box">
+      <span class="num">{{ formats().length }}</span>
+      <span class="lbl">Formatos cubiertos</span>
+    </div>
+  </section>
+
+  <section class="intro">
+    <h2>¿Qué es la banlist en Mitos y Leyendas?</h2>
+    <p>
+      La <strong>banlist</strong> (o lista de cartas restringidas) es un
+      conjunto de reglas oficiales que limitan qué cartas se pueden incluir en
+      un mazo de torneo. El objetivo es mantener el <strong>meta</strong>
+      equilibrado y evitar combos abusivos. Cada formato de Mitos y Leyendas
+      tiene su propia banlist y suele actualizarse cada pocos meses.
+    </p>
+    <ul>
+      <li><strong>Baneada</strong>: la carta no se puede usar (0 copias permitidas).</li>
+      <li><strong>Restringida 1</strong>: solo se permite 1 copia en el mazo.</li>
+      <li><strong>Restringida 2</strong>: solo se permiten 2 copias en el mazo.</li>
+    </ul>
+  </section>
+
+  @for (fmt of formats(); track fmt.code + fmt.sub) {
+    <section class="format-section">
+      <h2>{{ fmt.label }}</h2>
+      <p class="fmt-desc">{{ fmt.description }}</p>
+
+      @if (fmt.loading) {
+        <p class="loading">Cargando banlist…</p>
+      } @else if (fmt.banned.length === 0 && fmt.limited1.length === 0 && fmt.limited2.length === 0) {
+        <p class="empty">No hay cartas restringidas en este formato actualmente.</p>
+      } @else {
+        @if (fmt.banned.length) {
+          <h3 class="status-h banned">
+            <span class="badge banned">Baneadas</span>
+            <span class="count">{{ fmt.banned.length }}</span>
+          </h3>
+          <ul class="card-list">
+            @for (e of fmt.banned; track e.id) {
+              <li>
+                @if (e.card_id) {
+                  <a [routerLink]="['/cards']" [queryParams]="{ search: e.card_name }">{{ e.card_name }}</a>
+                } @else {
+                  {{ e.card_name }}
+                }
+              </li>
+            }
+          </ul>
+        }
+
+        @if (fmt.limited1.length) {
+          <h3 class="status-h limited">
+            <span class="badge limited">Restringida (1 copia)</span>
+            <span class="count">{{ fmt.limited1.length }}</span>
+          </h3>
+          <ul class="card-list">
+            @for (e of fmt.limited1; track e.id) {
+              <li>
+                @if (e.card_id) {
+                  <a [routerLink]="['/cards']" [queryParams]="{ search: e.card_name }">{{ e.card_name }}</a>
+                } @else {
+                  {{ e.card_name }}
+                }
+              </li>
+            }
+          </ul>
+        }
+
+        @if (fmt.limited2.length) {
+          <h3 class="status-h limited">
+            <span class="badge limited">Restringida (2 copias)</span>
+            <span class="count">{{ fmt.limited2.length }}</span>
+          </h3>
+          <ul class="card-list">
+            @for (e of fmt.limited2; track e.id) {
+              <li>
+                @if (e.card_id) {
+                  <a [routerLink]="['/cards']" [queryParams]="{ search: e.card_name }">{{ e.card_name }}</a>
+                } @else {
+                  {{ e.card_name }}
+                }
+              </li>
+            }
+          </ul>
+        }
+      }
+    </section>
+  }
+
+  <section class="cta">
+    <h2>Arma un mazo legal en segundos</h2>
+    <p>
+      Con ShadowForge no tienes que memorizar la banlist: el constructor avisa
+      automáticamente si una carta está baneada o si superaste el límite de
+      copias permitidas.
+    </p>
+    <div class="cta-actions">
+      <a routerLink="/builder" class="btn btn-primary">Crear un mazo</a>
+      <a routerLink="/cards" class="btn btn-secondary">Buscar cartas</a>
+      <a routerLink="/decks" class="btn btn-secondary">Ver mazos de la comunidad</a>
+    </div>
+  </section>
+
+  <section class="faq">
+    <h2>Preguntas frecuentes</h2>
+    <details>
+      <summary>¿Cuándo se actualiza la banlist?</summary>
+      <p>La organización oficial publica revisiones cada cierto tiempo. ShadowForge sincroniza la banlist en cuanto se anuncia.</p>
+    </details>
+    <details>
+      <summary>¿La banlist aplica solo en torneos?</summary>
+      <p>En partidas casuales puedes acordar con tu rival ignorar la banlist, pero en torneos oficiales y ligas se aplica siempre.</p>
+    </details>
+    <details>
+      <summary>¿Qué pasa si juego una carta baneada por error?</summary>
+      <p>El árbitro pedirá que retires el mazo. Por eso conviene validarlo antes con el <a routerLink="/builder">constructor</a>.</p>
+    </details>
+    <details>
+      <summary>¿Hay diferencia entre Imperio Racial y VCR?</summary>
+      <p>Sí. Imperio Racial usa la banlist clásica del formato Imperio. VCR (Vasallo, Cortesano, Real) tiene una banlist propia más estricta y orientada al juego competitivo.</p>
+    </details>
+  </section>
+
+  <footer class="article-footer">
+    <p>
+      Última actualización: <time [attr.datetime]="modifiedDate">3 de mayo de 2026</time>.
+      Esta página se mantiene siempre alineada con los datos del backend de
+      ShadowForge.
+    </p>
+  </footer>
+</article>

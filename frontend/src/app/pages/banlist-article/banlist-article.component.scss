@@ -1,0 +1,217 @@
+.banlist-article {
+  max-width: 900px;
+  padding: 2rem 1rem 4rem;
+  color: #c8c8d0;
+  line-height: 1.7;
+
+  .breadcrumb {
+    color: #888;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+
+    a { color: #ffbd39; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  }
+
+  .article-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #2a2a4a;
+
+    h1 {
+      color: #fff;
+      font-size: 2rem;
+      line-height: 1.2;
+      margin: 0.5rem 0;
+      background: linear-gradient(90deg, #e94560, #ffbd39);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .article-meta {
+      color: #888;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    .lead {
+      font-size: 1.05rem;
+      color: #d8d8e0;
+    }
+  }
+
+  h2 {
+    color: #fff;
+    font-size: 1.5rem;
+    margin: 2rem 0 0.75rem;
+    border-left: 3px solid #e94560;
+    padding-left: 0.75rem;
+  }
+
+  strong { color: #ffbd39; font-weight: 600; }
+  a { color: #ffbd39; }
+
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+
+    .stat-box {
+      background: #1a1a2e;
+      border: 1px solid #2a2a4a;
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+
+      .num {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: #ffbd39;
+        line-height: 1;
+      }
+      .lbl {
+        color: #888;
+        font-size: 0.85rem;
+        margin-top: 0.4rem;
+      }
+    }
+  }
+
+  .format-section {
+    background: #1a1a2e;
+    border: 1px solid #2a2a4a;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+
+    h2 { margin-top: 0; }
+
+    .fmt-desc {
+      color: #888;
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+    }
+
+    .status-h {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin: 1.25rem 0 0.6rem;
+      font-size: 1.05rem;
+
+      .count {
+        color: #888;
+        font-size: 0.9rem;
+        font-weight: 400;
+      }
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.6rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+
+      &.banned {
+        background: rgba(233, 69, 96, 0.18);
+        color: #ff6b85;
+        border: 1px solid rgba(233, 69, 96, 0.5);
+      }
+      &.limited {
+        background: rgba(255, 189, 57, 0.18);
+        color: #ffbd39;
+        border: 1px solid rgba(255, 189, 57, 0.5);
+      }
+    }
+
+    .card-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 0.4rem 1rem;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+
+      li {
+        padding: 0.3rem 0;
+        border-bottom: 1px solid #2a2a4a55;
+      }
+
+      a {
+        text-decoration: none;
+        &:hover { text-decoration: underline; }
+      }
+    }
+
+    .empty, .loading {
+      color: #888;
+      font-style: italic;
+    }
+  }
+
+  .cta {
+    background: linear-gradient(135deg, #16213e 0%, #0f3460 100%);
+    border: 1px solid #2a2a4a;
+    border-radius: 12px;
+    padding: 1.75rem;
+    margin: 2rem 0;
+    text-align: center;
+
+    h2 { border: none; padding: 0; margin-top: 0; }
+
+    .cta-actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 1rem;
+
+      .btn {
+        padding: 0.6rem 1.4rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .btn-primary { background: #e94560; color: white; }
+      .btn-primary:hover { background: #ff5775; }
+      .btn-secondary { background: transparent; color: #ffbd39; border: 1px solid #ffbd39; }
+      .btn-secondary:hover { background: rgba(255, 189, 57, 0.1); }
+    }
+  }
+
+  .faq {
+    details {
+      background: #1a1a2e;
+      border: 1px solid #2a2a4a;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem;
+
+      summary {
+        cursor: pointer;
+        color: #fff;
+        font-weight: 600;
+        list-style: none;
+
+        &::before { content: "+ "; color: #e94560; }
+      }
+      &[open] summary::before { content: "− "; }
+
+      p { margin: 0.6rem 0 0; color: #aaa; }
+    }
+  }
+
+  .article-footer {
+    margin-top: 2.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid #2a2a4a;
+    color: #888;
+    font-size: 0.9rem;
+  }
+}

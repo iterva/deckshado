@@ -132,28 +132,58 @@
   }
 
   .see-card {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
     color: var(--accent, #b59f3b);
     text-decoration: none;
     border: 1px solid currentColor;
-    padding: 0.35rem 0.85rem;
-    border-radius: 4px;
+    padding: 0.45rem 0.95rem;
+    border-radius: 6px;
+    font-weight: 600;
 
     &:hover { background: rgba(181, 159, 59, 0.15); }
   }
 
+  .share-btn,
+  .copy-btn {
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #fff;
+
+    &:hover { transform: translateY(-1px); }
+    &:active { transform: translateY(0); }
+  }
+
   .share-btn {
     background: #538d4e;
-    color: #fff;
-    border: none;
-    padding: 0.4rem 0.95rem;
-    border-radius: 4px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s, transform 0.15s;
+    &:hover { background: #6aa363; }
+  }
 
-    &:hover { background: #6aa363; transform: translateY(-1px); }
-    &:active { transform: translateY(0); }
+  .copy-btn {
+    background: #4a6fa5;
+    &:hover { background: #5a83bd; }
+  }
+}
+
+@media (max-width: 480px) {
+  .result-box .result-actions {
+    flex-direction: column;
+    align-items: stretch;
+
+    .see-card,
+    .share-btn,
+    .copy-btn {
+      width: 100%;
+      justify-content: center;
+    }
   }
 }
 

@@ -254,8 +254,26 @@ export class WordleComponent implements OnInit, OnDestroy {
     } catch {
       // usuario canceló o falló; caemos a copiar
     }
+    await this.copy();
+  }
+
+  async copy() {
+    const text = this.buildShareText();
+    if (!text) return;
     try {
-      await navigator.clipboard.writeText(text);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Fallback para contextos sin Clipboard API
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
       this.toast.set('¡Resultado copiado al portapapeles!');
       setTimeout(() => this.toast.set(null), 2500);
     } catch {

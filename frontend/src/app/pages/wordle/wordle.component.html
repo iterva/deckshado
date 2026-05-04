@@ -51,7 +51,10 @@
         <div class="result-actions">
           <a routerLink="/cards" [queryParams]="{ search: s.answer }" class="see-card">Ver carta</a>
           <button type="button" class="share-btn" (click)="share()">
-            📤 Compartir resultado
+            📤 Compartir
+          </button>
+          <button type="button" class="copy-btn" (click)="copy()">
+            📋 Copiar
           </button>
         </div>
       </div>

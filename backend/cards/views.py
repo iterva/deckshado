@@ -1,6 +1,6 @@
 from rest_framework import generics, permissions
 from rest_framework.pagination import PageNumberPagination
-from django.db.models import Q, Value, Case, When, BooleanField, TextField, IntegerField, Exists, OuterRef
+from django.db.models import Q, Value, Case, When, BooleanField, TextField, Exists, OuterRef
 from django.db.models.functions import Concat, Lower, Coalesce
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -48,22 +48,6 @@ _ACCENT_MAP = {
     'o': '[oóòôõö]', 'u': '[uúùûü]', 'n': '[nñ]',
 }
 
-# Default rarity display order (lower = shown first)
-RARITY_ORDER = {
-    "milenaria": 1,
-    "secreta": 2,
-    "legendaria": 3,
-    "promo": 4,
-    "ultra-real": 5,
-    "mega-real": 6,
-    "real": 7,
-    "vasallo": 8,
-    "cortesano": 9,
-    "oro": 10,
-    "ficha": 11,
-    "set_paralelo": 12,
-}
-
 
 def _accent_insensitive(text: str) -> str:
     """Convert search text to a regex pattern that matches with or without accents."""
@@ -75,13 +59,6 @@ def _accent_insensitive(text: str) -> str:
 
 class CardPagination(PageNumberPagination):
     page_size = 20
-
-    def paginate_queryset(self, queryset, request, view=None):
-        # Caché el count para querysets con filtros idénticos
-        if not hasattr(queryset, "_cached_count"):
-            queryset._cached_count = queryset.count()
-        self.total = queryset._cached_count
-        return super().paginate_queryset(queryset, request, view)
 
 
 class CardListView(generics.ListAPIView):
@@ -217,15 +194,8 @@ class CardListView(generics.ListAPIView):
                     | Q(race__slug="noraza")
                 )
 
-        # Default ordering: rarity priority, then edition, then edid
-        rarity_whens = [When(rarity__slug=slug, then=Value(order)) for slug, order in RARITY_ORDER.items()]
-        qs = qs.annotate(
-            rarity_order=Case(
-                *rarity_whens,
-                default=Value(99),
-                output_field=IntegerField(),
-            ),
-        ).order_by("rarity_order", "edition", "edid")
+        # Default ordering: rarity priority (precomputed in DB), then edition, then edid
+        qs = qs.order_by("rarity__display_order", "edition", "edid")
 
         return qs
 

@@ -27,6 +27,18 @@
           "/*.(svg|cur|jpg|jpeg|png|apng|webp|avif|gif|otf|ttf|woff|woff2)"
         ]
       }
+    },
+    {
+      "name": "card-images",
+      "installMode": "lazy",
+      "updateMode": "lazy",
+      "resources": {
+        "urls": [
+          "https://wsrv.nl/**",
+          "https://api.myl.cl/static/**",
+          "https://res.cloudinary.com/**"
+        ]
+      }
     }
   ],
   "dataGroups": [
@@ -41,7 +53,7 @@
         "strategy": "freshness",
         "maxSize": 200,
         "maxAge": "1d",
-        "timeout": "5s"
+        "timeout": "15s"
       }
     },
     {
@@ -54,20 +66,7 @@
         "strategy": "freshness",
         "maxSize": 100,
         "maxAge": "7d",
-        "timeout": "5s"
-      }
-    },
-    {
-      "name": "card-images",
-      "urls": [
-        "https://wsrv.nl/**",
-        "https://api.myl.cl/static/**",
-        "https://res.cloudinary.com/**"
-      ],
-      "cacheConfig": {
-        "strategy": "performance",
-        "maxSize": 500,
-        "maxAge": "30d"
+        "timeout": "15s"
       }
     }
   ]

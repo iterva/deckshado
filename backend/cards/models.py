@@ -14,7 +14,7 @@ class Format(models.Model):
 
 class Edition(models.Model):
     myl_id = models.CharField(max_length=20, unique=True)
-    slug = models.CharField(max_length=100, unique=True)
+    slug = models.CharField(max_length=100, unique=True, db_index=True)
     title = models.CharField(max_length=255)
     image = models.URLField(blank=True, null=True)
     date_release = models.DateField(blank=True, null=True)
@@ -31,7 +31,7 @@ class Edition(models.Model):
 
 class Race(models.Model):
     myl_id = models.CharField(max_length=10, unique=True)
-    slug = models.CharField(max_length=100)
+    slug = models.CharField(max_length=100, db_index=True)
     name = models.CharField(max_length=100)
 
     def __str__(self):
@@ -40,7 +40,7 @@ class Race(models.Model):
 
 class CardType(models.Model):
     myl_id = models.CharField(max_length=10, unique=True)
-    slug = models.CharField(max_length=50)
+    slug = models.CharField(max_length=50, db_index=True)
     name = models.CharField(max_length=50)
 
     def __str__(self):
@@ -49,11 +49,13 @@ class CardType(models.Model):
 
 class Rarity(models.Model):
     myl_id = models.CharField(max_length=10, unique=True)
-    slug = models.CharField(max_length=50)
+    slug = models.CharField(max_length=50, db_index=True)
     name = models.CharField(max_length=50)
+    display_order = models.PositiveSmallIntegerField(default=99, db_index=True, help_text="Orden de visualización (menor = primero)")
 
     class Meta:
         verbose_name_plural = "rarities"
+        ordering = ["display_order"]
 
     def __str__(self):
         return self.name
@@ -93,6 +95,7 @@ class Card(models.Model):
             models.Index(fields=["card_type"]),
             models.Index(fields=["race"]),
             models.Index(fields=["rarity"]),
+            models.Index(fields=["rarity", "edition", "edid"]),
         ]
 
     def __str__(self):

@@ -38,9 +38,15 @@ interface BuilderEntry {
       </div>
     </header>
 
-    <div class="rb-builder">
-      <aside class="rb-search">
-        <h3>Buscar cartas</h3>
+    <div class="rb-builder" [class.drawer-open]="showSearch()">
+      @if (showSearch()) {
+        <div class="rb-drawer-backdrop" (click)="showSearch.set(false)"></div>
+      }
+      <aside class="rb-search" [class.is-open]="showSearch()">
+        <div class="rb-search-head">
+          <h3>Buscar cartas</h3>
+          <button type="button" class="rb-search-close" (click)="showSearch.set(false)" aria-label="Cerrar buscador">✕</button>
+        </div>
         <input [(ngModel)]="search" (ngModelChange)="onSearch()" placeholder="Nombre o texto…" />
         <select [(ngModel)]="typeFilter" (ngModelChange)="reloadCards()">
           <option value="">Todos los tipos</option>
@@ -88,6 +94,10 @@ interface BuilderEntry {
         }
       </section>
     </div>
+
+    <button type="button" class="rb-fab" (click)="showSearch.set(true)" aria-label="Buscar cartas">
+      <span aria-hidden="true">+</span>
+    </button>
   `,
   styles: [`
     .rb-page-head { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; padding: 1rem 0; }
@@ -101,15 +111,68 @@ interface BuilderEntry {
     .errors { color: #ff6b6b; padding-left: 1.25rem; margin: .5rem 0; }
 
     .rb-builder { display: grid; grid-template-columns: 320px 1fr; gap: 1.5rem; align-items: start; }
-    @media (max-width: 900px) { .rb-builder { grid-template-columns: 1fr; } }
 
     .rb-search { position: sticky; top: 1rem; }
+    .rb-search-head { display: flex; align-items: center; justify-content: space-between; }
+    .rb-search-head h3 { margin: 0 0 .5rem; }
+    .rb-search-close { display: none; background: transparent; border: none; color: inherit; font-size: 1.4rem; cursor: pointer; padding: .25rem .5rem; }
     .rb-search input, .rb-search select { width: 100%; padding: .5rem; margin-bottom: .5rem; border-radius: .35rem; border: 1px solid var(--border-color, #444); background: transparent; color: inherit; }
     .results { max-height: 70vh; overflow-y: auto; display: flex; flex-direction: column; gap: .35rem; }
     .result { display: flex; gap: .5rem; align-items: center; padding: .35rem; border-radius: .35rem; border: 1px solid transparent; background: transparent; color: inherit; cursor: pointer; text-align: left; }
     .result:hover { border-color: var(--border-color, #555); background: #ffffff08; }
     .result img { width: 32px; height: 45px; object-fit: cover; border-radius: .25rem; }
     .result small { display: block; opacity: .65; font-size: .75rem; }
+
+    /* FAB y drawer sólo en pantallas pequeñas */
+    .rb-fab { display: none; }
+    .rb-drawer-backdrop { display: none; }
+
+    @media (max-width: 900px) {
+      .rb-builder { grid-template-columns: 1fr; }
+
+      .rb-search {
+        position: fixed;
+        top: 0; right: 0;
+        width: min(360px, 92vw);
+        height: 100dvh;
+        background: var(--bg-card, #16213e);
+        border-left: 1px solid var(--border-color, #333);
+        padding: 1rem;
+        overflow-y: auto;
+        z-index: 950;
+        transform: translateX(100%);
+        transition: transform .25s ease;
+        box-shadow: -8px 0 24px rgba(0,0,0,.3);
+      }
+      .rb-search.is-open { transform: translateX(0); }
+      .rb-search-close { display: inline-block; }
+      .rb-drawer-backdrop {
+        display: block;
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,.5);
+        z-index: 940;
+      }
+      .results { max-height: calc(100dvh - 180px); }
+
+      .rb-fab {
+        display: flex;
+        position: fixed;
+        right: 1rem;
+        bottom: 5.5rem;            /* sobre la bottom-nav */
+        width: 56px; height: 56px;
+        border-radius: 50%;
+        border: none;
+        background: #c89b3c;
+        color: #1a1a1a;
+        font-size: 2rem;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 14px rgba(0,0,0,.35);
+        cursor: pointer;
+        z-index: 920;
+      }
+      .rb-fab:active { transform: scale(.95); }
+    }
 
     .zone { padding: .75rem; border: 1px solid var(--border-color, #333); border-radius: .5rem; margin-bottom: 1rem; }
     .zone h2 { margin: 0 0 .5rem; font-size: 1rem; }
@@ -138,6 +201,7 @@ export class RiftboundBuilderComponent implements OnInit {
   description = '';
   saving = signal(false);
   errors = signal<string[]>([]);
+  showSearch = signal(false);
 
   search = '';
   typeFilter = '';

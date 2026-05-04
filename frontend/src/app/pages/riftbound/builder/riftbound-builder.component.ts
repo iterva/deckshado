@@ -442,15 +442,17 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
 
     /* Cards grid */
     .available-cards {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      display: grid; grid-template-columns: repeat(3, 1fr);
       gap: .5rem; margin-top: 1rem;
     }
+    @media (max-width: 1100px) { .available-cards { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 600px) { .available-cards { grid-template-columns: 1fr; } }
 
     .mini-card {
       display: flex; align-items: center; gap: .5rem;
       background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 6px;
-      padding: .4rem; transition: all .15s; position: relative;
+      padding: .35rem; transition: all .15s; position: relative;
+      min-width: 0;
     }
     .mini-card:hover { border-color: #e94560; background: #1e1e3a; }
     .mini-card.in-deck { border-color: #ffbd39; background: rgba(255,189,57,.05); }
@@ -458,11 +460,11 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
 
     .img-wrapper { position: relative; flex-shrink: 0; cursor: zoom-in; }
     .img-wrapper img {
-      width: 68px; height: 95px; object-fit: cover; border-radius: 4px;
+      width: 56px; height: 78px; object-fit: cover; border-radius: 4px;
       background: #16213e;
     }
     .img-placeholder {
-      width: 68px; height: 95px; display: grid; place-items: center;
+      width: 56px; height: 78px; display: grid; place-items: center;
       background: #16213e; border-radius: 4px; font-size: .65rem; text-align: center;
     }
     .eye-icon {
@@ -481,9 +483,10 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
       overflow: hidden;
     }
+    @media (max-width: 1400px) { .mini-ability { display: none; } }
 
     .actions-column { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
-    .mini-actions { display: flex; align-items: center; gap: .25rem; min-width: 88px; justify-content: flex-end; }
+    .mini-actions { display: flex; align-items: center; gap: .25rem; min-width: 72px; justify-content: flex-end; }
     .mini-actions.hidden { display: none; }
     .zone-label { font-size: .65rem; font-weight: 700; width: 12px; text-align: right; }
     .main-label { color: #ffbd39; }
@@ -492,9 +495,9 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
     .side-actions { border-top: 1px solid #333; padding-top: 2px; }
 
     .circle-btn {
-      width: 28px; height: 28px; border-radius: 50%;
+      width: 24px; height: 24px; border-radius: 50%;
       border: 1px solid #444; background: #1a1a2e; color: #ccc;
-      font-size: 1.1rem; line-height: 1; display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; line-height: 1; display: flex; align-items: center; justify-content: center;
       cursor: pointer; transition: all .15s;
     }
     .circle-btn.add:hover:not(:disabled) { border-color: #4caf50; color: #4caf50; background: rgba(76,175,80,.1); }

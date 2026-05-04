@@ -5,6 +5,7 @@ import { DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from './services/auth.service';
 import { ThemeService } from './services/theme.service';
+import { GameModeService } from './services/game-mode.service';
 import { NotificationService } from './services/notification.service';
 import { IosInstallHintComponent } from './components/ios-install-hint/ios-install-hint.component';
 import { PwaInstallHintComponent } from './components/pwa-install-hint/pwa-install-hint.component';
@@ -29,6 +30,7 @@ export class App implements OnInit {
   constructor(
     public auth: AuthService,
     public theme: ThemeService,
+    public gameMode: GameModeService,
     public notifs: NotificationService,
     private router: Router,
     private http: HttpClient,

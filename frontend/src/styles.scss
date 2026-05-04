@@ -472,3 +472,51 @@ input, select, textarea {
 .export-card img {
   transition: opacity 0.2s;
 }
+
+// ─────────────────────── Modo Riftbound ───────────────────────
+// Cuando el usuario cambia al "modo Riftbound" se aplica `body.mode-riftbound`.
+// Solo retoca acentos visuales (logo, navbar, hover, footer) para que la
+// estética se sienta como un sub-portal dorado/azul de Riot, sin tocar la
+// estructura ni los componentes existentes.
+body.mode-riftbound {
+  .navbar {
+    background: linear-gradient(135deg, #0a1428 0%, #091428 60%, #0a323c 100%) !important;
+    box-shadow: 0 2px 12px rgba(200, 155, 60, 0.25) !important;
+
+    .logo-text {
+      background: linear-gradient(120deg, #c89b3c, #f0e6d2) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+    }
+
+    .navbar-links a {
+      &:hover, &.active { color: #c89b3c !important; }
+      &.nav-riftbound { display: none !important; }   // ya estamos dentro
+    }
+  }
+
+  .bottom-nav {
+    background: linear-gradient(135deg, #0a1428 0%, #0a323c 100%) !important;
+    box-shadow: 0 -2px 12px rgba(200, 155, 60, 0.2) !important;
+    a, button {
+      &:hover, &.active { color: #c89b3c !important; }
+    }
+  }
+
+  .footer { color: #aaa !important; }
+
+  // Acento dorado para botones primarios y enlaces dentro de /riftbound/*
+  a.rb-btn-primary, .rb-btn-primary { background: #c89b3c !important; color: #0a1428 !important; }
+}
+
+body.mode-riftbound.light-theme {
+  .navbar {
+    background: linear-gradient(135deg, #f0e6d2 0%, #e8d8a8 100%) !important;
+    .logo-text { -webkit-text-fill-color: transparent !important; }
+    .navbar-links a { color: #555 !important; &:hover, &.active { color: #785a28 !important; } }
+  }
+  .bottom-nav {
+    background: linear-gradient(135deg, #f0e6d2 0%, #e8d8a8 100%) !important;
+    a, button { color: #555 !important; &:hover, &.active { color: #785a28 !important; } }
+  }
+}

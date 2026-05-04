@@ -1,21 +1,37 @@
 <a class="skip-link" href="#main-content">Saltar al contenido</a>
 <nav class="navbar" aria-label="Navegación principal">
   <div class="navbar-brand">
-    <a routerLink="/" class="logo">
-      <span class="logo-icon">⚔️</span>
-      <span class="logo-text">ShadowForge</span>
-    </a>
+    @if (gameMode.isRiftbound()) {
+      <a routerLink="/riftbound" class="logo logo-riftbound">
+        <span class="logo-icon">✨</span>
+        <span class="logo-text">Riftbound</span>
+      </a>
+    } @else {
+      <a routerLink="/" class="logo">
+        <span class="logo-icon">⚔️</span>
+        <span class="logo-text">ShadowForge</span>
+      </a>
+    }
   </div>
   <div class="navbar-links">
-    <a routerLink="/cards" routerLinkActive="active">Cartas</a>
-    <a routerLink="/decks" routerLinkActive="active">Mazos</a>
-    <a routerLink="/riftbound" routerLinkActive="active" class="nav-riftbound">Riftbound</a>
-    <a routerLink="/tiendas" routerLinkActive="active">Tiendas</a>
-    <a routerLink="/wordle" routerLinkActive="active">Wordle</a>
-    <a routerLink="/team" routerLinkActive="active">Equipo</a>
-    @if (auth.isAuthenticated()) {
-      <a routerLink="/carpeta" routerLinkActive="active">Carpeta</a>
-      <a routerLink="/builder" routerLinkActive="active">Constructor</a>
+    @if (gameMode.isRiftbound()) {
+      <a routerLink="/riftbound/cards" routerLinkActive="active">Cartas</a>
+      <a routerLink="/riftbound/decks" routerLinkActive="active">Mazos</a>
+      <a routerLink="/riftbound/builder" routerLinkActive="active">Constructor</a>
+      <a routerLink="/riftbound/banlist" routerLinkActive="active">Banlist</a>
+      @if (auth.isAuthenticated()) {
+        <a routerLink="/riftbound/carpeta" routerLinkActive="active">Carpeta</a>
+      }
+    } @else {
+      <a routerLink="/cards" routerLinkActive="active">Cartas</a>
+      <a routerLink="/decks" routerLinkActive="active">Mazos</a>
+      <a routerLink="/tiendas" routerLinkActive="active">Tiendas</a>
+      <a routerLink="/wordle" routerLinkActive="active">Wordle</a>
+      <a routerLink="/team" routerLinkActive="active">Equipo</a>
+      @if (auth.isAuthenticated()) {
+        <a routerLink="/carpeta" routerLinkActive="active">Carpeta</a>
+        <a routerLink="/builder" routerLinkActive="active">Constructor</a>
+      }
     }
   </div>
   <div class="navbar-actions">
@@ -114,28 +130,50 @@
     <button class="theme-toggle" (click)="theme.toggle()" [title]="theme.isDark() ? 'Modo claro' : 'Modo oscuro'" [attr.aria-label]="theme.isDark() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'">
       <span aria-hidden="true">{{ theme.isDark() ? '☀️' : '🌙' }}</span>
     </button>
+    <button class="game-toggle" (click)="gameMode.toggle()" [class.is-riftbound]="gameMode.isRiftbound()" [title]="gameMode.isRiftbound() ? 'Cambiar a Mitos y Leyendas' : 'Cambiar a Riftbound'" [attr.aria-label]="gameMode.isRiftbound() ? 'Cambiar a Mitos y Leyendas' : 'Cambiar a Riftbound'">
+      <span aria-hidden="true">{{ gameMode.isRiftbound() ? '⚔️' : '✨' }}</span>
+    </button>
   </div>
 </nav>
 <main class="content" id="main-content" tabindex="-1">
   <router-outlet />
 </main>
 <nav class="bottom-nav" aria-label="Navegación inferior">
-  <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">
-    <span class="icon">🏠</span>
-    <span class="label">Inicio</span>
-  </a>
-  <a routerLink="/cards" routerLinkActive="active">
-    <span class="icon">🃏</span>
-    <span class="label">Cartas</span>
-  </a>
-  <a routerLink="/decks" routerLinkActive="active">
-    <span class="icon">📚</span>
-    <span class="label">Mazos</span>
-  </a>
-  <a routerLink="/wordle" routerLinkActive="active">
-    <span class="icon">🔤</span>
-    <span class="label">Wordle</span>
-  </a>
+  @if (gameMode.isRiftbound()) {
+    <a routerLink="/riftbound" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">
+      <span class="icon">✨</span>
+      <span class="label">Inicio</span>
+    </a>
+    <a routerLink="/riftbound/cards" routerLinkActive="active">
+      <span class="icon">🃏</span>
+      <span class="label">Cartas</span>
+    </a>
+    <a routerLink="/riftbound/decks" routerLinkActive="active">
+      <span class="icon">📚</span>
+      <span class="label">Mazos</span>
+    </a>
+    <a routerLink="/riftbound/builder" routerLinkActive="active">
+      <span class="icon">🔨</span>
+      <span class="label">Build</span>
+    </a>
+  } @else {
+    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">
+      <span class="icon">🏠</span>
+      <span class="label">Inicio</span>
+    </a>
+    <a routerLink="/cards" routerLinkActive="active">
+      <span class="icon">🃏</span>
+      <span class="label">Cartas</span>
+    </a>
+    <a routerLink="/decks" routerLinkActive="active">
+      <span class="icon">📚</span>
+      <span class="label">Mazos</span>
+    </a>
+    <a routerLink="/wordle" routerLinkActive="active">
+      <span class="icon">🔤</span>
+      <span class="label">Wordle</span>
+    </a>
+  }
   <button type="button" class="more-btn" (click)="toggleMobileMenu()" [class.active]="showMobileMenu()" aria-label="Más opciones">
     <span class="icon">☰</span>
     <span class="label">Más</span>
@@ -169,17 +207,27 @@
 
     <div class="mm-section">
       <h3>Navegación</h3>
-      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="closeMobileMenu()">🏠 Inicio</a>
-      <a routerLink="/cards" routerLinkActive="active" (click)="closeMobileMenu()">🃏 Cartas</a>
-      <a routerLink="/decks" routerLinkActive="active" (click)="closeMobileMenu()">📚 Mazos</a>
-      <a routerLink="/riftbound" routerLinkActive="active" (click)="closeMobileMenu()">✨ Riftbound</a>
-      <a routerLink="/wordle" routerLinkActive="active" (click)="closeMobileMenu()">🔤 Wordle del día</a>
-      <a routerLink="/banlist" routerLinkActive="active" (click)="closeMobileMenu()">🚫 Banlist</a>
-      <a routerLink="/tiendas" routerLinkActive="active" (click)="closeMobileMenu()">🏪 Tiendas</a>
-      <a routerLink="/team" routerLinkActive="active" (click)="closeMobileMenu()">👥 Equipos</a>
-      @if (auth.isAuthenticated()) {
-        <a routerLink="/carpeta" routerLinkActive="active" (click)="closeMobileMenu()">📁 Mi carpeta</a>
-        <a routerLink="/builder" routerLinkActive="active" (click)="closeMobileMenu()">🔨 Constructor</a>
+      @if (gameMode.isRiftbound()) {
+        <a routerLink="/riftbound" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="closeMobileMenu()">✨ Inicio Riftbound</a>
+        <a routerLink="/riftbound/cards" routerLinkActive="active" (click)="closeMobileMenu()">🃏 Cartas</a>
+        <a routerLink="/riftbound/decks" routerLinkActive="active" (click)="closeMobileMenu()">📚 Mazos</a>
+        <a routerLink="/riftbound/builder" routerLinkActive="active" (click)="closeMobileMenu()">🔨 Constructor</a>
+        <a routerLink="/riftbound/banlist" routerLinkActive="active" (click)="closeMobileMenu()">🚫 Banlist</a>
+        @if (auth.isAuthenticated()) {
+          <a routerLink="/riftbound/carpeta" routerLinkActive="active" (click)="closeMobileMenu()">📁 Carpeta</a>
+        }
+      } @else {
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="closeMobileMenu()">🏠 Inicio</a>
+        <a routerLink="/cards" routerLinkActive="active" (click)="closeMobileMenu()">🃏 Cartas</a>
+        <a routerLink="/decks" routerLinkActive="active" (click)="closeMobileMenu()">📚 Mazos</a>
+        <a routerLink="/wordle" routerLinkActive="active" (click)="closeMobileMenu()">🔤 Wordle del día</a>
+        <a routerLink="/banlist" routerLinkActive="active" (click)="closeMobileMenu()">🚫 Banlist</a>
+        <a routerLink="/tiendas" routerLinkActive="active" (click)="closeMobileMenu()">🏪 Tiendas</a>
+        <a routerLink="/team" routerLinkActive="active" (click)="closeMobileMenu()">👥 Equipos</a>
+        @if (auth.isAuthenticated()) {
+          <a routerLink="/carpeta" routerLinkActive="active" (click)="closeMobileMenu()">📁 Mi carpeta</a>
+          <a routerLink="/builder" routerLinkActive="active" (click)="closeMobileMenu()">🔨 Constructor</a>
+        }
       }
     </div>
 
@@ -199,12 +247,20 @@
       <button type="button" class="mm-pref" (click)="theme.toggle()">
         {{ theme.isDark() ? '☀️ Modo claro' : '🌙 Modo oscuro' }}
       </button>
+      <button type="button" class="mm-pref" (click)="gameMode.toggle(); closeMobileMenu()">
+        {{ gameMode.isRiftbound() ? '⚔️ Mitos y Leyendas' : '✨ Riftbound' }}
+      </button>
     </div>
   </aside>
 }
 <footer class="footer">
-  <p>ShadowForge &mdash; Deckbuilder no oficial de Mitos y Leyendas. Hecho por fans para fans.</p>
-  <p class="disclaimer">Mitos y Leyendas y sus respectivas artes de cartas son propiedad de sus creadores.</p>
+  @if (gameMode.isRiftbound()) {
+    <p>ShadowForge &mdash; Modo Riftbound. Riftbound es un juego de Riot Games. Hecho por fans para fans.</p>
+    <p class="disclaimer">Riftbound y sus respectivas artes de cartas son propiedad de Riot Games.</p>
+  } @else {
+    <p>ShadowForge &mdash; Deckbuilder no oficial de Mitos y Leyendas. Hecho por fans para fans.</p>
+    <p class="disclaimer">Mitos y Leyendas y sus respectivas artes de cartas son propiedad de sus creadores.</p>
+  }
 </footer>
 <app-ios-install-hint></app-ios-install-hint>
 <app-pwa-install-hint></app-pwa-install-hint>

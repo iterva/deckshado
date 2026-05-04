@@ -5,7 +5,7 @@ import { RouterStateSnapshot, TitleStrategy } from '@angular/router';
 
 const SITE_URL = 'https://shadow-forge-deck.vercel.app';
 const DEFAULT_TITLE = 'ShadowForge — Constructor de mazos Mitos y Leyendas (MYL)';
-const DEFAULT_DESC = 'ShadowForge: constructor y editor de mazos de Mitos y Leyendas (MYL). Banlist oficial, formatos Imperio, Escuelas Elementales y VCR, colección y comparador de decks.';
+const DEFAULT_DESC = 'ShadowForge: constructor y editor de mazos de Mitos y Leyendas (MYL). Banlist oficial, formatos Escuelas Elementales, Imperio y VCR Imperio, colección y comparador de decks.';
 
 /**
  * TitleStrategy custom que sincroniza <title>, meta description, OG y <link rel=canonical>

@@ -34,9 +34,9 @@ export class BanlistArticleComponent implements OnInit {
   readonly modifiedDate = '2026-05-03';
 
   formats = signal<FormatBanlist[]>([
-    { code: 'imp', sub: 'racial', label: 'Imperio · Racial', description: 'Mazo racial clásico de Imperio.', banned: [], limited1: [], limited2: [], loading: true },
-    { code: 'imp', sub: 'vcr', label: 'Imperio · VCR', description: 'Vasallo, Cortesano y Real (formato competitivo).', banned: [], limited1: [], limited2: [], loading: true },
-    { code: 'esc', sub: 'racial', label: 'Escuelas Elementales', description: 'Mazos raciales del bloque Escuelas Elementales.', banned: [], limited1: [], limited2: [], loading: true },
+    { code: 'imp', sub: 'racial', label: 'Imperio', description: 'Banlist clásica del formato Imperio.', banned: [], limited1: [], limited2: [], loading: true },
+    { code: 'imp', sub: 'vcr', label: 'VCR Imperio', description: 'Vasallo, Cortesano y Real — formato competitivo de Imperio.', banned: [], limited1: [], limited2: [], loading: true },
+    { code: 'esc', sub: 'racial', label: 'Escuelas Elementales', description: 'Banlist del bloque Escuelas Elementales.', banned: [], limited1: [], limited2: [], loading: true },
   ]);
 
   totalBanned = signal(0);
@@ -89,7 +89,7 @@ export class BanlistArticleComponent implements OnInit {
         '@id': `https://shadow-forge-deck.vercel.app/banlist-${this.month}-${this.year}`,
       },
       image: 'https://shadow-forge-deck.vercel.app/og-image.png',
-      description: `Banlist oficial de Mitos y Leyendas para ${this.month} ${this.year}. Lista de cartas baneadas y restringidas en los formatos Imperio, Escuelas Elementales y VCR.`,
+      description: `Banlist oficial de Mitos y Leyendas para ${this.month} ${this.year}. Lista de cartas baneadas y restringidas en los formatos Escuelas Elementales, Imperio y VCR Imperio.`,
       inLanguage: 'es-CL',
       keywords: 'banlist mitos y leyendas, MYL banlist, cartas baneadas mitos y leyendas, cartas restringidas MYL, imperio banlist, escuelas elementales banlist, VCR banlist',
     };

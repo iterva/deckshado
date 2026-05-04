@@ -70,7 +70,7 @@ export class RiftboundService {
     if (!this.formats$) {
       this.formats$ = this.http
         .get<PaginatedResponse<RiftboundFormat> | RiftboundFormat[]>(`${this.base}/formats/`)
-        .pipe(shareReplay({ bufferSize: 1, refCount: false })) as Observable<RiftboundFormat[]>;
+        .pipe(shareReplay({ bufferSize: 1, refCount: false })) as unknown as Observable<RiftboundFormat[]>;
     }
     return this.formats$;
   }

@@ -53,22 +53,28 @@ def _candidate_cards() -> list[Card]:
     return out
 
 
-def _build_hint(card: Card) -> str:
-    parts = []
+def _build_hint(card: Card, seed: int) -> str:
+    """Devuelve máximo 2 atributos al azar (determinístico por seed) entre los disponibles."""
+    options: list[tuple[str, str]] = []
     if card.card_type and card.card_type.name:
-        parts.append(f"Tipo: {card.card_type.name}")
+        options.append(("Tipo", card.card_type.name))
     if card.race and card.race.name:
-        parts.append(f"Raza: {card.race.name}")
+        options.append(("Raza", card.race.name))
     if card.edition and card.edition.title:
-        parts.append(f"Edición: {card.edition.title}")
-    if card.cost:
-        parts.append(f"Costo: {card.cost}")
-    if card.damage:
-        parts.append(f"Daño: {card.damage}")
-    initial = normalize(card.name)[:1].upper()
-    if initial:
-        parts.append(f"Empieza con: {initial}")
-    return " · ".join(parts)
+        options.append(("Edición", card.edition.title))
+    if card.cost not in (None, ""):
+        options.append(("Costo", str(card.cost)))
+    if card.damage not in (None, ""):
+        options.append(("Daño", str(card.damage)))
+    if not options:
+        return ""
+    # Selección determinista basada en el seed del día
+    import random as _random
+
+    rng = _random.Random(seed)
+    rng.shuffle(options)
+    chosen = options[: min(2, len(options))]
+    return " · ".join(f"{k}: {v}" for k, v in chosen)
 
 
 def get_or_create_today(today: _date | None = None) -> DailyWord:
@@ -96,7 +102,7 @@ def get_or_create_today(today: _date | None = None) -> DailyWord:
             word=norm,
             display_word=chosen.name,
             length=len(norm),
-            hint=_build_hint(chosen),
+            hint=_build_hint(chosen, seed),
         )
 
 

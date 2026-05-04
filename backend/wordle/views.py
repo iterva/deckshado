@@ -1,7 +1,8 @@
 from datetime import date as _date
 
 from django.contrib.auth import get_user_model
-from django.db.models import Sum
+from django.db.models import IntegerField, Sum
+from django.db.models.functions import Cast
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -126,8 +127,8 @@ def leaderboard_view(request):
         .values("user_id", "user__username")
         .annotate(
             total_score=Sum("score"),
-            wins=Sum("won"),
-            played=Sum("finished"),
+            wins=Sum(Cast("won", IntegerField())),
+            played=Sum(Cast("finished", IntegerField())),
         )
         .order_by("-total_score", "-wins")
     )
@@ -136,8 +137,8 @@ def leaderboard_view(request):
             "user_id": r["user_id"],
             "username": r["user__username"],
             "score": r["total_score"] or 0,
-            "wins": r["wins"] or 0,
-            "played": r["played"] or 0,
+            "wins": int(r["wins"] or 0),
+            "played": int(r["played"] or 0),
         }
         for r in qs
     ]

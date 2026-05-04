@@ -225,4 +225,42 @@ export class WordleComponent implements OnInit, OnDestroy {
     ];
     return names[m - 1] ?? '';
   }
+
+  buildShareText(): string {
+    const s = this.state();
+    if (!s) return '';
+    const result = s.won ? `${s.attempts_used}/${s.max_attempts}` : `X/${s.max_attempts}`;
+    const grid = s.guesses
+      .map((g) =>
+        g.statuses
+          .map((st) => (st === 'correct' ? '🟩' : st === 'present' ? '🟨' : '⬛'))
+          .join('')
+      )
+      .join('\n');
+    const date = s.date;
+    const score = s.won ? ` · ${s.score} pts` : '';
+    return `ShadowForge Wordle ${date} — ${result}${score}\n\n${grid}\n\nhttps://shadow-forge-deck.vercel.app/wordle`;
+  }
+
+  async share() {
+    const text = this.buildShareText();
+    if (!text) return;
+    const shareData = { title: 'ShadowForge Wordle', text };
+    try {
+      if (navigator.share && navigator.canShare?.(shareData)) {
+        await navigator.share(shareData);
+        return;
+      }
+    } catch {
+      // usuario canceló o falló; caemos a copiar
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      this.toast.set('¡Resultado copiado al portapapeles!');
+      setTimeout(() => this.toast.set(null), 2500);
+    } catch {
+      this.toast.set('No se pudo copiar.');
+      setTimeout(() => this.toast.set(null), 2500);
+    }
+  }
 }

@@ -123,16 +123,37 @@
 
   &.won { border-color: #538d4e; background: rgba(83, 141, 78, 0.15); }
 
+  .result-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+  }
+
   .see-card {
     display: inline-block;
-    margin-top: 0.5rem;
     color: var(--accent, #b59f3b);
     text-decoration: none;
     border: 1px solid currentColor;
-    padding: 0.25rem 0.75rem;
+    padding: 0.35rem 0.85rem;
     border-radius: 4px;
 
     &:hover { background: rgba(181, 159, 59, 0.15); }
+  }
+
+  .share-btn {
+    background: #538d4e;
+    color: #fff;
+    border: none;
+    padding: 0.4rem 0.95rem;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+
+    &:hover { background: #6aa363; transform: translateY(-1px); }
+    &:active { transform: translateY(0); }
   }
 }
 

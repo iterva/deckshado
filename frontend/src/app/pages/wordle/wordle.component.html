@@ -48,7 +48,12 @@
         } @else {
           <p>Sin más intentos. La palabra era <strong>{{ s.answer }}</strong>.</p>
         }
-        <a routerLink="/cards" [queryParams]="{ search: s.answer }" class="see-card">Ver carta</a>
+        <div class="result-actions">
+          <a routerLink="/cards" [queryParams]="{ search: s.answer }" class="see-card">Ver carta</a>
+          <button type="button" class="share-btn" (click)="share()">
+            📤 Compartir resultado
+          </button>
+        </div>
       </div>
     }
 

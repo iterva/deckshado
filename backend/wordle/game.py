@@ -21,14 +21,17 @@ MAX_LEN = 12
 
 
 def normalize(text: str) -> str:
-    """Quita tildes, pasa a minúsculas y deja sólo letras a-zñ."""
+    """Quita tildes (preservando ñ), pasa a minúsculas y deja sólo letras a-zñ."""
     if not text:
         return ""
-    # NFD para separar diacríticos, luego quita combining marks
-    nf = unicodedata.normalize("NFD", text)
+    # Preservar ñ/Ñ antes de NFD (que las descompone en n + tilde combinante)
+    placeholder_lower = "\x00"
+    placeholder_upper = "\x01"
+    safe = text.replace("ñ", placeholder_lower).replace("Ñ", placeholder_upper)
+    nf = unicodedata.normalize("NFD", safe)
     no_diac = "".join(c for c in nf if unicodedata.category(c) != "Mn")
-    lower = no_diac.lower()
-    # Permitimos a-z y ñ
+    restored = no_diac.replace(placeholder_lower, "ñ").replace(placeholder_upper, "Ñ")
+    lower = restored.lower()
     return re.sub(r"[^a-zñ]", "", lower)
 
 
@@ -38,15 +41,14 @@ def _seed_for_date(d: _date) -> int:
 
 
 def _candidate_cards() -> list[Card]:
-    """Cartas elegibles: nombre de UNA palabra (sin espacios) y largo válido."""
+    """Cartas elegibles: nombre con largo válido (espacios se concatenan al normalizar)."""
     cards = list(
-        Card.objects.exclude(name__contains=" ")
-        .select_related("card_type", "race", "edition")
+        Card.objects.all().select_related("card_type", "race", "edition")
     )
     out = []
     for c in cards:
         norm = normalize(c.name)
-        if MIN_LEN <= len(norm) <= MAX_LEN and norm.isalpha():
+        if MIN_LEN <= len(norm) <= MAX_LEN:
             out.append(c)
     return out
 

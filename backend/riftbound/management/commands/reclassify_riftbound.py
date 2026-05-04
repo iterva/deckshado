@@ -34,11 +34,9 @@ def classify(c: RiftboundCard) -> str:
     has_action = "[action]" in desc_lower or "[reaction]" in desc_lower
     has_tap = "[tap]" in desc_lower
 
-    # Champion con stats → unit (tiene prioridad)
-    if is_champion and (
-        c.might is not None or c.power is not None or c.energy is not None
-    ):
-        return "unit"
+    # Champion-unit: nombre "X, Y" con X en subtypes (LEGEND • X). Tiene prioridad.
+    if is_champion:
+        return "champion"
 
     # Marcador explícito de spell
     if has_action:

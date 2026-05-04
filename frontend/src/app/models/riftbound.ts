@@ -125,6 +125,10 @@ export interface RiftboundCollectionEntry {
   notes: string;
 }
 
+/** Cantidad esperada por zona (Standard).
+ *  Para `main` es el MÍNIMO (puedes ir a más); para el resto es exacta.
+ *  `side` sólo aplica en juego de torneo.
+ */
 export const RIFTBOUND_ZONE_RULES: Record<RiftboundZone, number> = {
   main: 40,
   side: 8,
@@ -137,6 +141,6 @@ export const RIFTBOUND_ZONE_LABELS: Record<RiftboundZone, string> = {
   main: 'Mazo principal',
   side: 'Sideboard',
   rune: 'Runas',
-  champion: 'Campeón',
-  bg: 'Battlegrounds',
+  champion: 'Champion Legend',
+  bg: 'Battlefields',
 };

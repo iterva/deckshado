@@ -1,4 +1,13 @@
-"""Validador de mazos Riftbound (formato Standard)."""
+"""Validador de mazos Riftbound (formato Standard).
+
+Reglas oficiales (fuente: Deckbuilding Primer + Core Rules de Riot):
+- Main Deck: mínimo 40 cartas (puedes ir a más). Recomendado: 40 exactas.
+- Rune Deck: 12 runas exactas.
+- Champion Legend: 1 carta exacta.
+- Battlefields: 3 cartas DISTINTAS (no se permiten duplicados).
+- Sideboard: 8 cartas exactas, sólo en juego de torneo (opcional).
+- Máximo 3 copias de cualquier carta (incluida la copia inicial del Chosen Champion).
+"""
 from __future__ import annotations
 
 from collections import defaultdict
@@ -12,14 +21,22 @@ if TYPE_CHECKING:
     from .models import RiftboundDeck
 
 
-# Reglas Standard
-RULES = {
-    ZONE_MAIN: 40,
-    ZONE_SIDE: 8,
+# Reglas exactas (zonas con tamaño fijo)
+RULES_EXACT = {
     ZONE_RUNE: 12,
     ZONE_CHAMPION: 1,
     ZONE_BATTLEFIELD: 3,
 }
+# Mínimos (zona puede tener más)
+RULES_MIN = {
+    ZONE_MAIN: 40,
+}
+# Reglas opcionales (sólo torneo, se valida si hay cartas)
+RULES_OPTIONAL_EXACT = {
+    ZONE_SIDE: 8,
+}
+# Vista combinada para el frontend (compatibilidad con `rules`)
+RULES = {**RULES_MIN, **RULES_EXACT, ZONE_SIDE: 8}
 MAX_COPIES_DEFAULT = 3
 
 
@@ -27,8 +44,9 @@ def validate_riftbound_deck(deck: "RiftboundDeck") -> dict:
     """Devuelve un dict con conteos por zona, errores y warnings."""
     errors: list[str] = []
     warnings: list[str] = []
-    counts = defaultdict(int)
-    copies = defaultdict(int)  # (card_id, zone) ignored — copias se cuentan globalmente
+    counts: dict[str, int] = defaultdict(int)
+    copies: dict[int, int] = defaultdict(int)
+    bg_card_ids: list[int] = []
 
     # Pre-cargar banlist
     banlist = {}
@@ -40,16 +58,39 @@ def validate_riftbound_deck(deck: "RiftboundDeck") -> dict:
     for entry in deck.entries.all():
         counts[entry.zone] += entry.quantity
         copies[entry.card_id] += entry.quantity
+        if entry.zone == ZONE_BATTLEFIELD:
+            # registrar tantas instancias como quantity para chequear duplicados
+            bg_card_ids.extend([entry.card_id] * entry.quantity)
 
-    # Conteos esperados
-    for zone, expected in RULES.items():
+    # Mínimos (main deck)
+    for zone, minimum in RULES_MIN.items():
+        actual = counts.get(zone, 0)
+        if actual < minimum:
+            errors.append(
+                f"Zona '{zone}' tiene {actual} cartas, se requieren al menos {minimum}."
+            )
+
+    # Exactos obligatorios (runas, champion legend, battlefields)
+    for zone, expected in RULES_EXACT.items():
         actual = counts.get(zone, 0)
         if actual != expected:
             errors.append(
                 f"Zona '{zone}' tiene {actual} cartas, se requieren exactamente {expected}."
             )
 
-    # Copias máximas
+    # Battlefields deben ser distintos
+    if len(bg_card_ids) != len(set(bg_card_ids)):
+        errors.append("Los 3 battlefields deben ser cartas distintas (no se permiten duplicados).")
+
+    # Sideboard: opcional, pero si hay alguna debe ser exactamente 8 (formato torneo)
+    side_count = counts.get(ZONE_SIDE, 0)
+    if side_count > 0 and side_count != RULES_OPTIONAL_EXACT[ZONE_SIDE]:
+        warnings.append(
+            f"El sideboard de torneo requiere exactamente {RULES_OPTIONAL_EXACT[ZONE_SIDE]} cartas "
+            f"(tienes {side_count}). En juego casual el sideboard no es obligatorio."
+        )
+
+    # Copias máximas (la copia inicial del Chosen Champion ya está representada en sus entries)
     for card_id, qty in copies.items():
         be = banlist.get(card_id)
         if be:

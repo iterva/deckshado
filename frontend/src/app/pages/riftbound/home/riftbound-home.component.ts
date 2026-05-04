@@ -38,7 +38,7 @@ import { RiftboundService } from '../../../services/riftbound.service';
       <div class="feature-card" routerLink="/riftbound/builder">
         <div class="feature-icon">🔨</div>
         <h3>Constructor de mazos</h3>
-        <p>Arma tus mazos con validación de zonas: principal, runas, sideboard, campeón y battlegrounds.</p>
+        <p>Arma tus mazos con validación de zonas: main, runas, sideboard (torneo), champion legend y battlefields.</p>
       </div>
 
       <div class="feature-card" routerLink="/riftbound/decks">
@@ -62,15 +62,17 @@ import { RiftboundService } from '../../../services/riftbound.service';
 
     <section class="seo-content container">
       <div class="seo-block">
-        <h2>Reglas de construcción (Standard)</h2>
+        <h2>Reglas oficiales de construcción</h2>
         <ul class="seo-list">
-          <li><strong>Mazo principal:</strong> 40 cartas exactas.</li>
-          <li><strong>Sideboard:</strong> 8 cartas exactas.</li>
-          <li><strong>Mazo de runas:</strong> 12 runas exactas.</li>
-          <li><strong>Campeón:</strong> 1 carta obligatoria (no cuenta en las 40).</li>
-          <li><strong>Battlegrounds:</strong> 3 cartas en mazo aparte.</li>
-          <li><strong>Máximo 3 copias</strong> de la misma carta.</li>
+          <li><strong>Main Deck:</strong> mínimo 40 cartas (recomendado exactamente 40 para maximizar consistencia).</li>
+          <li><strong>Rune Deck:</strong> 12 runas exactas, en una pila aparte.</li>
+          <li><strong>Champion Legend:</strong> 1 carta Legend (define los dominios/colores de tu mazo).</li>
+          <li><strong>Chosen Champion:</strong> 1 unidad campeón asignada (cuenta como parte de las 40 del main deck y empieza en juego).</li>
+          <li><strong>Battlefields:</strong> 3 cartas <em>distintas</em> (no se pueden repetir).</li>
+          <li><strong>Sideboard:</strong> 8 cartas exactas, sólo en juego de torneo (opcional en casual).</li>
+          <li><strong>Máximo 3 copias</strong> por carta. La copia inicial del Chosen Champion cuenta hacia ese límite.</li>
         </ul>
+        <p style="margin-top:.75rem; opacity:.8; font-size:.9rem;">Fuente: <a href="https://riftbound.leagueoflegends.com/en-us/news/rules-and-releases/deckbuilding-primer/" target="_blank" rel="noopener">Deckbuilding Primer oficial</a> y Riftbound Core Rules.</p>
       </div>
 
       <div class="seo-block">
@@ -100,7 +102,7 @@ import { RiftboundService } from '../../../services/riftbound.service';
         </details>
         <details>
           <summary>¿Cuántas cartas se permiten por mazo?</summary>
-          <p>El formato Standard exige exactamente 40 cartas en el mazo principal, 8 en el sideboard, 12 runas, 1 campeón y 3 battlegrounds.</p>
+          <p>El formato Standard exige al menos 40 cartas en el main deck, 12 runas, 1 Champion Legend, 3 battlefields distintos y 8 cartas en sideboard (sólo torneo). Máximo 3 copias por carta.</p>
         </details>
       </div>
     </section>

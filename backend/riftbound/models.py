@@ -4,13 +4,15 @@ Modelos del juego Riftbound (Riot Games / League of Legends TCG).
 Mantenidos completamente separados de los modelos `cards` / `decks` (Mitos y Leyendas)
 para no acoplar dos juegos con reglas distintas.
 
-Reglas de construcción de mazo (formato Standard):
-- Mazo principal: 40 cartas exactas.
-- Sideboard: 8 cartas exactas.
+Reglas oficiales de construcción de mazo (Riftbound Standard, fuente: Riot Core Rules + Deckbuilding Primer):
+- Mazo principal: mínimo 40 cartas (puedes ir a más; recomendado 40).
 - Mazo de runas: 12 runas exactas.
-- 1 campeón obligatorio (no cuenta en las 40).
-- 3 battlegrounds obligatorios (mazo aparte).
-- Máximo 3 copias de la misma carta.
+- Champion Legend: 1 carta (define los dominios del mazo, va aparte del main).
+- Chosen Champion: 1 unidad campeón designada (cuenta dentro del Main Deck;
+  la copia que parte en juego cuenta hacia el límite de 3 copias).
+- Battlefields: 3 cartas distintas (no se permiten duplicados).
+- Sideboard: 8 cartas exactas (sólo en juego de torneo, opcional en casual).
+- Máximo 3 copias de cualquier carta no-banlist.
 """
 from __future__ import annotations
 
@@ -190,18 +192,18 @@ class RiftboundBanlistEntry(models.Model):
 
 
 # Zonas del mazo en Riftbound
-ZONE_MAIN = "main"          # 40 cartas
-ZONE_SIDE = "side"          # 8 cartas
-ZONE_RUNE = "rune"          # 12 runas
-ZONE_CHAMPION = "champion"  # 1 campeón
-ZONE_BATTLEFIELD = "bg"     # 3 battlegrounds
+ZONE_MAIN = "main"          # mínimo 40 cartas
+ZONE_SIDE = "side"          # 8 cartas (sólo torneo)
+ZONE_RUNE = "rune"          # 12 runas exactas
+ZONE_CHAMPION = "champion"  # 1 Champion Legend
+ZONE_BATTLEFIELD = "bg"     # 3 Battlefields distintos
 
 ZONE_CHOICES = [
     (ZONE_MAIN, "Main Deck"),
     (ZONE_SIDE, "Sideboard"),
     (ZONE_RUNE, "Runas"),
-    (ZONE_CHAMPION, "Campeón"),
-    (ZONE_BATTLEFIELD, "Battlegrounds"),
+    (ZONE_CHAMPION, "Champion Legend"),
+    (ZONE_BATTLEFIELD, "Battlefields"),
 ]
 
 

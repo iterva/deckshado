@@ -69,6 +69,8 @@ RACIAL_LIMITED_1 = [
     ("León Indiferente", 238),
     ("Lucerna", 409),
     ("Manuel Bulnes", 382),
+    # Únicas por habilidad de carta
+    ("Torii", 940),
 ]
 
 RACIAL_LIMITED_2 = [
@@ -101,6 +103,7 @@ VCR_BANNED = [
     # Carry-over de Imperio (banned en racial → banned en vcr)
     ("Anillo del Vacío", 1013),
     ("Kokudaka", 1733),
+    ("Maho no Meiso", 1556),
 ]
 
 VCR_LIMITED_1 = [
@@ -132,6 +135,8 @@ VCR_LIMITED_1 = [
     ("Muro de los Caídos", 97),
     ("Tanuki", 1537),
     ("Lupus B7", 106),
+    # Únicas por habilidad de carta
+    ("Torii", 940),
 ]
 
 VCR_LIMITED_2 = [

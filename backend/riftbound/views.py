@@ -45,7 +45,11 @@ class RiftboundCardViewSet(viewsets.ReadOnlyModelViewSet):
             qs = qs.filter(set__code__iexact=set_code)
 
         if (ctype := params.get("type")):
-            qs = qs.filter(card_type=ctype)
+            if ctype == "champion":
+                # Champion-units: card_type=unit cuyo nombre "X, Titulo" tiene X en subtypes.
+                qs = qs.filter(card_type="unit", name__contains=", ")
+            else:
+                qs = qs.filter(card_type=ctype)
 
         if (rarity := params.get("rarity")):
             qs = qs.filter(rarity=rarity)
@@ -66,6 +70,13 @@ class RiftboundCardViewSet(viewsets.ReadOnlyModelViewSet):
                     qs = qs.filter(**{field: int(v)})
                 except ValueError:
                     pass
+
+        # Filtro champion: requiere comprobar nombre vs subtypes en Python (JSONField)
+        if params.get("type") == "champion":
+            ids = [pk for pk, name, subs in qs.values_list("id", "name", "subtypes")
+                   if name and "," in name
+                   and name.split(",")[0].strip() in (subs or [])]
+            qs = qs.filter(id__in=ids)
 
         return qs
 

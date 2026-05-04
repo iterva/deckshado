@@ -129,5 +129,50 @@ export const routes: Routes = [
     data: { description: 'Panel de administración.' },
     loadComponent: () => import('./pages/admin/admin.component').then(m => m.AdminComponent)
   },
+  // ─────────── Riftbound ───────────
+  {
+    path: 'riftbound',
+    title: 'Riftbound — Constructor de mazos LoL TCG | ShadowForge',
+    data: { description: 'Explorador de cartas, constructor de mazos y carpeta para Riftbound (League of Legends TCG). Reglas Standard.' },
+    loadComponent: () => import('./pages/riftbound/home/riftbound-home.component').then(m => m.RiftboundHomeComponent),
+  },
+  {
+    path: 'riftbound/cards',
+    title: 'Cartas Riftbound | ShadowForge',
+    loadComponent: () => import('./pages/riftbound/cards/riftbound-cards.component').then(m => m.RiftboundCardsComponent),
+  },
+  {
+    path: 'riftbound/cards/:cardNumber',
+    loadComponent: () => import('./pages/riftbound/card-detail/riftbound-card-detail.component').then(m => m.RiftboundCardDetailComponent),
+  },
+  {
+    path: 'riftbound/builder',
+    title: 'Nuevo mazo Riftbound | ShadowForge',
+    loadComponent: () => import('./pages/riftbound/builder/riftbound-builder.component').then(m => m.RiftboundBuilderComponent),
+  },
+  {
+    path: 'riftbound/builder/:id',
+    title: 'Editar mazo Riftbound | ShadowForge',
+    loadComponent: () => import('./pages/riftbound/builder/riftbound-builder.component').then(m => m.RiftboundBuilderComponent),
+  },
+  {
+    path: 'riftbound/decks',
+    title: 'Mazos Riftbound | ShadowForge',
+    loadComponent: () => import('./pages/riftbound/decks/riftbound-decks.component').then(m => m.RiftboundDecksComponent),
+  },
+  {
+    path: 'riftbound/decks/:id',
+    loadComponent: () => import('./pages/riftbound/deck-view/riftbound-deck-view.component').then(m => m.RiftboundDeckViewComponent),
+  },
+  {
+    path: 'riftbound/carpeta',
+    title: 'Carpeta Riftbound | ShadowForge',
+    loadComponent: () => import('./pages/riftbound/carpeta/riftbound-carpeta.component').then(m => m.RiftboundCarpetaComponent),
+  },
+  {
+    path: 'riftbound/banlist',
+    title: 'Banlist Riftbound | ShadowForge',
+    loadComponent: () => import('./pages/riftbound/banlist/riftbound-banlist.component').then(m => m.RiftboundBanlistComponent),
+  },
   { path: '**', redirectTo: '' },
 ];

@@ -32,3 +32,11 @@ Escuelas Elementales/
 
 # Media subida (imágenes extra, logos) — no trackear en git
 backend/media/
+
+# Volcados de scrapers (regenerables)
+riftbound_cards.json
+riftbound_icons.json
+backend/cards_data.json
+cloudinary_mapping.json
+myl_cloudinary_mapping.json
+cost_damage_mismatches.json

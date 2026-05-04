@@ -1,0 +1,320 @@
+"""
+Modelos del juego Riftbound (Riot Games / League of Legends TCG).
+
+Mantenidos completamente separados de los modelos `cards` / `decks` (Mitos y Leyendas)
+para no acoplar dos juegos con reglas distintas.
+
+Reglas de construcción de mazo (formato Standard):
+- Mazo principal: 40 cartas exactas.
+- Sideboard: 8 cartas exactas.
+- Mazo de runas: 12 runas exactas.
+- 1 campeón obligatorio (no cuenta en las 40).
+- 3 battlegrounds obligatorios (mazo aparte).
+- Máximo 3 copias de la misma carta.
+"""
+from __future__ import annotations
+
+import uuid
+
+from django.conf import settings
+from django.db import models
+
+
+# ───────────────────────── Catálogo ──────────────────────────
+
+
+class RiftboundSet(models.Model):
+    """Expansión / set (ej: OGN, ARC)."""
+    code = models.CharField(max_length=10, unique=True, db_index=True)
+    name = models.CharField(max_length=120)
+    release_date = models.DateField(blank=True, null=True)
+
+    class Meta:
+        ordering = ["code"]
+
+    def __str__(self):
+        return f"{self.code} — {self.name}"
+
+
+# Colores oficiales: Fury, Calm, Mind, Body, Chaos, Order
+COLOR_CHOICES = [
+    ("fury", "Fury"),
+    ("calm", "Calm"),
+    ("mind", "Mind"),
+    ("body", "Body"),
+    ("chaos", "Chaos"),
+    ("order", "Order"),
+    ("neutral", "Neutral"),
+]
+
+
+# Tipos principales: Champion, Legend, Unit, Spell, Gear, Battlefield, Rune
+TYPE_CHOICES = [
+    ("champion", "Champion"),
+    ("legend", "Legend"),
+    ("unit", "Unit"),
+    ("spell", "Spell"),
+    ("gear", "Gear"),
+    ("battlefield", "Battlefield"),
+    ("rune", "Rune"),
+    ("other", "Other"),
+]
+
+
+RARITY_CHOICES = [
+    ("common", "Common"),
+    ("uncommon", "Uncommon"),
+    ("rare", "Rare"),
+    ("epic", "Epic"),
+    ("legendary", "Legendary"),
+    ("champion", "Champion"),
+    ("promo", "Promo"),
+    ("other", "Other"),
+]
+
+
+class RiftboundCard(models.Model):
+    """
+    Una carta de Riftbound. Identificador estable: número de carta (`SET-NNN[+suffix]`).
+    También guardamos el UUID del Piltover Archive para idempotencia del scraper.
+    """
+    # Identidad
+    card_number = models.CharField(
+        max_length=20, unique=True, db_index=True,
+        help_text="Ej: OGN-001, OGN-007a",
+    )
+    external_id = models.UUIDField(
+        unique=True, default=uuid.uuid4,
+        help_text="UUID en Piltover Archive (o generado si no se conoce)",
+    )
+    name = models.CharField(max_length=200, db_index=True)
+    slug = models.SlugField(max_length=220, db_index=True)
+
+    # Clasificación
+    set = models.ForeignKey(
+        RiftboundSet, on_delete=models.PROTECT, related_name="cards", null=True, blank=True,
+    )
+    card_type = models.CharField(max_length=20, choices=TYPE_CHOICES, db_index=True, default="unit")
+    supertype = models.CharField(max_length=50, blank=True, default="")
+    subtypes = models.JSONField(default=list, blank=True, help_text="Lista de subtipos/tags")
+    rarity = models.CharField(max_length=20, choices=RARITY_CHOICES, default="common", db_index=True)
+    variant = models.CharField(
+        max_length=40, blank=True, default="",
+        help_text="Promo, Alt-art, Foil, etc.",
+    )
+    colors = models.JSONField(
+        default=list, blank=True,
+        help_text="Lista de colores: ['fury','calm',...]",
+    )
+
+    # Stats
+    energy = models.SmallIntegerField(blank=True, null=True, help_text="Coste de energía")
+    power = models.SmallIntegerField(blank=True, null=True)
+    might = models.SmallIntegerField(blank=True, null=True)
+
+    # Texto
+    description = models.TextField(blank=True, default="", help_text="Texto de la carta (con keywords)")
+    flavor = models.TextField(blank=True, default="")
+
+    # Recursos
+    image_url = models.URLField(max_length=500, blank=True, default="")
+    image_url_small = models.URLField(max_length=500, blank=True, default="")
+    cdn_image_url = models.URLField(
+        max_length=500, blank=True, default="",
+        help_text="URL en Cloudinary u otro CDN propio (opcional)",
+    )
+
+    # Origen / metadata
+    source_url = models.URLField(max_length=500, blank=True, default="")
+    raw = models.JSONField(default=dict, blank=True, help_text="Datos brutos del scraper")
+    is_active = models.BooleanField(default=True, help_text="Visible en el catálogo")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["card_number"]
+        indexes = [
+            models.Index(fields=["card_type"]),
+            models.Index(fields=["rarity"]),
+            models.Index(fields=["set", "card_number"]),
+        ]
+
+    def __str__(self):
+        return f"{self.name} [{self.card_number}]"
+
+
+# ───────────────────────── Banlist ──────────────────────────
+
+
+class RiftboundFormat(models.Model):
+    """Por ahora solo `standard`, pero dejamos extensible."""
+    code = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=80)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
+
+
+class RiftboundBanlistEntry(models.Model):
+    BANNED = "banned"
+    LIMITED_1 = "limited_1"
+    LIMITED_2 = "limited_2"
+    STATUS_CHOICES = [
+        (BANNED, "Prohibida"),
+        (LIMITED_1, "Limitada a 1 copia"),
+        (LIMITED_2, "Limitada a 2 copias"),
+    ]
+
+    format = models.ForeignKey(
+        RiftboundFormat, on_delete=models.CASCADE, related_name="banlist_entries",
+    )
+    card = models.ForeignKey(
+        RiftboundCard, on_delete=models.CASCADE, related_name="banlist_entries",
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES)
+    max_copies = models.PositiveSmallIntegerField(default=0)
+    note = models.CharField(max_length=200, blank=True, default="")
+    effective_from = models.DateField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ("format", "card")
+        ordering = ["format", "status", "card__name"]
+
+    def __str__(self):
+        return f"{self.card.name} — {self.get_status_display()} ({self.format.code})"
+
+
+# ───────────────────────── Mazos ──────────────────────────
+
+
+# Zonas del mazo en Riftbound
+ZONE_MAIN = "main"          # 40 cartas
+ZONE_SIDE = "side"          # 8 cartas
+ZONE_RUNE = "rune"          # 12 runas
+ZONE_CHAMPION = "champion"  # 1 campeón
+ZONE_BATTLEFIELD = "bg"     # 3 battlegrounds
+
+ZONE_CHOICES = [
+    (ZONE_MAIN, "Main Deck"),
+    (ZONE_SIDE, "Sideboard"),
+    (ZONE_RUNE, "Runas"),
+    (ZONE_CHAMPION, "Campeón"),
+    (ZONE_BATTLEFIELD, "Battlegrounds"),
+]
+
+
+class RiftboundDeck(models.Model):
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="riftbound_decks",
+    )
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True, default="")
+    format = models.ForeignKey(
+        RiftboundFormat, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="decks",
+    )
+    is_public = models.BooleanField(default=True)
+    cover_card = models.ForeignKey(
+        RiftboundCard, on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+    )
+    primary_colors = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+
+    def __str__(self):
+        return f"{self.name} ({self.owner.username})"
+
+
+class RiftboundDeckEntry(models.Model):
+    deck = models.ForeignKey(RiftboundDeck, on_delete=models.CASCADE, related_name="entries")
+    card = models.ForeignKey(RiftboundCard, on_delete=models.PROTECT)
+    quantity = models.PositiveSmallIntegerField(default=1)
+    zone = models.CharField(max_length=12, choices=ZONE_CHOICES, default=ZONE_MAIN, db_index=True)
+
+    class Meta:
+        unique_together = ("deck", "card", "zone")
+
+    def __str__(self):
+        return f"{self.quantity}x {self.card.name} [{self.zone}]"
+
+
+# ───────────────────────── Carpeta / Colección ──────────────────────────
+
+
+class RiftboundCollectionEntry(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name="riftbound_collection",
+    )
+    card = models.ForeignKey(
+        RiftboundCard, on_delete=models.CASCADE, related_name="collection_entries",
+    )
+    quantity = models.PositiveIntegerField(default=1)
+    is_foil = models.BooleanField(default=False)
+    notes = models.CharField(max_length=200, blank=True, default="")
+
+    class Meta:
+        unique_together = ("user", "card", "is_foil")
+        ordering = ["-id"]
+
+    def __str__(self):
+        return f"{self.user.username}: {self.quantity}x {self.card.name}"
+
+
+class RiftboundWishlistEntry(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name="riftbound_wishlist",
+    )
+    card = models.ForeignKey(
+        RiftboundCard, on_delete=models.CASCADE, related_name="wishlist_entries",
+    )
+    desired_quantity = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        unique_together = ("user", "card")
+        ordering = ["-id"]
+
+    def __str__(self):
+        return f"{self.user.username} quiere {self.desired_quantity}x {self.card.name}"
+
+
+# ───────────────────────── Iconografía ──────────────────────────
+
+
+class RiftboundIcon(models.Model):
+    """
+    Recursos gráficos auxiliares: iconos de coste, colores, keywords, supertipos, etc.
+    Nos permite mapear nombres de keyword (ej: 'GANKING') a una URL de Cloudinary
+    sin acoplar el frontend a piltoverarchive.com.
+    """
+    KIND_COLOR = "color"
+    KIND_KEYWORD = "keyword"
+    KIND_STAT = "stat"
+    KIND_TYPE = "type"
+    KIND_OTHER = "other"
+    KIND_CHOICES = [
+        (KIND_COLOR, "Color"),
+        (KIND_KEYWORD, "Keyword"),
+        (KIND_STAT, "Stat"),
+        (KIND_TYPE, "Type"),
+        (KIND_OTHER, "Other"),
+    ]
+
+    kind = models.CharField(max_length=20, choices=KIND_CHOICES, db_index=True)
+    code = models.CharField(max_length=80, db_index=True, help_text="Ej: GANKING, fury, might")
+    label = models.CharField(max_length=120, blank=True, default="")
+    image_url = models.URLField(max_length=500)
+    cdn_image_url = models.URLField(max_length=500, blank=True, default="")
+
+    class Meta:
+        unique_together = ("kind", "code")
+        ordering = ["kind", "code"]
+
+    def __str__(self):
+        return f"[{self.kind}] {self.code}"

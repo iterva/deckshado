@@ -146,8 +146,7 @@ class RiftboundDeckViewSet(viewsets.ModelViewSet):
             mine = self.request.query_params.get("mine") == "1"
             if mine and user.is_authenticated:
                 return qs.filter(owner=user)
-            if user.is_authenticated:
-                return qs.filter(Q(is_public=True) | Q(owner=user))
+            # Listado publico: solo mazos publicos (los privados solo aparecen en mine=1)
             return qs.filter(is_public=True)
         if user.is_authenticated:
             return qs.filter(Q(is_public=True) | Q(owner=user))

@@ -1,9 +1,8 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { RiftboundService } from '../../../services/riftbound.service';
-import { RiftboundCardLite, RiftboundColor } from '../../../models/riftbound';
+import { RiftboundCard, RiftboundCardLite, RiftboundColor } from '../../../models/riftbound';
 
 const COLORS: { code: RiftboundColor; label: string; hex: string }[] = [
   { code: 'fury',  label: 'Fury',  hex: '#e94560' },
@@ -37,7 +36,7 @@ const RARITIES = [
 @Component({
   selector: 'app-riftbound-cards',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="rb-cards-page">
       <header class="page-head">
@@ -129,7 +128,7 @@ const RARITIES = [
 
       <div class="card-grid">
         @for (card of cards(); track card.id) {
-          <a class="rb-card" [routerLink]="['/riftbound/cards', card.card_number]">
+          <button type="button" class="rb-card" (click)="openCard(card.card_number)">
             @if (card.image) {
               <img [src]="card.image" [alt]="card.name" loading="lazy" decoding="async" />
             } @else {
@@ -142,9 +141,48 @@ const RARITIES = [
                 <p class="rb-card-ability">{{ card.description }}</p>
               }
             </div>
-          </a>
+          </button>
         }
       </div>
+
+      @if (modalOpen()) {
+        <div class="rb-modal-overlay" (click)="closeCard()">
+          <div class="rb-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+            <button class="rb-modal-close" (click)="closeCard()" aria-label="Cerrar">✕</button>
+            @if (modalLoading()) {
+              <p class="muted center" style="padding:3rem">Cargando…</p>
+            } @else if (selectedCard(); as c) {
+              <div class="rb-modal-layout">
+                @if (c.image) {
+                  <img class="rb-modal-img" [src]="c.image" [alt]="c.name" />
+                }
+                <div class="rb-modal-info">
+                  <h2>{{ c.name }}</h2>
+                  <p class="muted">{{ c.card_number }} · {{ c.set?.name || c.set?.code || '—' }}</p>
+                  <div class="badges">
+                    @if (c.card_type) { <span class="badge">{{ c.card_type }}</span> }
+                    @if (c.rarity) { <span class="badge">{{ c.rarity }}</span> }
+                    @if (c.variant) { <span class="badge">{{ c.variant }}</span> }
+                    @for (col of c.colors; track col) { <span class="badge color">{{ col }}</span> }
+                    @for (st of c.subtypes; track st) { <span class="badge">{{ st }}</span> }
+                  </div>
+                  <div class="stats">
+                    @if (c.energy != null) { <div><span>Energy</span><strong>{{ c.energy }}</strong></div> }
+                    @if (c.power != null) { <div><span>Power</span><strong>{{ c.power }}</strong></div> }
+                    @if (c.might != null) { <div><span>Might</span><strong>{{ c.might }}</strong></div> }
+                  </div>
+                  @if (c.description) {
+                    <h3>Descripción</h3>
+                    <pre class="desc">{{ c.description }}</pre>
+                  }
+                </div>
+              </div>
+            } @else {
+              <p class="muted center" style="padding:3rem">Carta no encontrada.</p>
+            }
+          </div>
+        </div>
+      }
 
       @if (!loading() && cards().length === 0) {
         <p class="muted center empty">Sin resultados con los filtros actuales.</p>
@@ -227,6 +265,8 @@ const RARITIES = [
     .rb-card {
       text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: .35rem;
       transition: transform .15s;
+      background: transparent; border: none; padding: 0; cursor: pointer;
+      font: inherit; text-align: left;
     }
     .rb-card:hover { transform: translateY(-3px); }
     .rb-card img { width: 100%; aspect-ratio: 63/88; object-fit: cover; border-radius: .5rem; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
@@ -256,6 +296,46 @@ const RARITIES = [
     .pager button { padding: .45rem 1rem; border: 1px solid #2a3a4a; background: transparent; color: #c8c8da; border-radius: 6px; cursor: pointer; }
     .pager button:disabled { opacity: .35; cursor: not-allowed; }
 
+    /* Modal */
+    .rb-modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.78);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; padding: 1rem; backdrop-filter: blur(3px);
+      animation: fadeIn .15s ease-out;
+    }
+    @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+    .rb-modal {
+      position: relative; max-width: 1000px; width: 100%; max-height: 92vh; overflow: auto;
+      background: #0a1428; border: 1px solid #2a3a4a; border-radius: 12px;
+      padding: 1.5rem; color: #e0e0e0; box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    }
+    .rb-modal-close {
+      position: absolute; top: .6rem; right: .6rem;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #16213e; border: 1px solid #2a3a4a; color: #c8c8da;
+      cursor: pointer; font-size: 1rem; display: grid; place-items: center;
+      transition: all .15s; z-index: 2;
+    }
+    .rb-modal-close:hover { background: #e94560; border-color: #e94560; color: #fff; }
+    .rb-modal-layout {
+      display: grid; gap: 1.5rem; grid-template-columns: minmax(220px, 360px) 1fr;
+    }
+    .rb-modal-img { width: 100%; border-radius: .75rem; align-self: start; }
+    .rb-modal-info h2 { margin: 0 0 .25rem; font-size: 1.6rem; color: #f0e6d2; }
+    .rb-modal-info h3 { margin: 1rem 0 .25rem; color: #f0e6d2; font-size: 1.05rem; }
+    .badges { display: flex; gap: .35rem; flex-wrap: wrap; margin: .75rem 0; }
+    .badge { padding: .25rem .55rem; border-radius: .35rem; border: 1px solid #2a3a4a; font-size: .8rem; background: #16213e; }
+    .badge.color { background: #c89b3c20; border-color: #c89b3c50; }
+    .stats { display: flex; gap: .65rem; margin: 1rem 0; flex-wrap: wrap; }
+    .stats > div { display: flex; flex-direction: column; align-items: center; padding: .5rem 1rem; border: 1px solid #2a3a4a; border-radius: .5rem; min-width: 70px; background: #16213e; }
+    .stats span { opacity: .7; font-size: .8rem; }
+    .stats strong { font-size: 1.4rem; color: #f0e6d2; }
+    .desc { white-space: pre-wrap; font-family: inherit; line-height: 1.55; margin: 0; font-size: .92rem; }
+    @media (max-width: 720px) {
+      .rb-modal-layout { grid-template-columns: 1fr; }
+      .rb-modal { padding: 1rem; }
+    }
+
     /* Light theme */
     :host-context(body.light-theme) .search-row input,
     :host-context(body.light-theme) .filter-group select,
@@ -283,6 +363,9 @@ export class RiftboundCardsComponent implements OnInit {
   cards = signal<RiftboundCardLite[]>([]);
   sets = signal<{ code: string; name: string }[]>([]);
   loading = signal(false);
+  modalOpen = signal(false);
+  modalLoading = signal(false);
+  selectedCard = signal<RiftboundCard | null>(null);
   page = signal(1);
   totalCount = signal(0);
   totalPages = computed(() => Math.max(1, Math.ceil(this.totalCount() / this.pageSize)));
@@ -362,4 +445,24 @@ export class RiftboundCardsComponent implements OnInit {
 
   prev() { if (this.page() > 1) { this.page.update(p => p - 1); this.reload(); } }
   next() { if (this.page() < this.totalPages()) { this.page.update(p => p + 1); this.reload(); } }
+
+  openCard(cardNumber: string) {
+    this.modalOpen.set(true);
+    this.modalLoading.set(true);
+    this.selectedCard.set(null);
+    document.body.style.overflow = 'hidden';
+    this.rb.getCard(cardNumber).subscribe({
+      next: (c) => { this.selectedCard.set(c); this.modalLoading.set(false); },
+      error: () => this.modalLoading.set(false),
+    });
+  }
+
+  closeCard() {
+    this.modalOpen.set(false);
+    this.selectedCard.set(null);
+    document.body.style.overflow = '';
+  }
+
+  @HostListener('document:keydown.escape')
+  onEsc() { if (this.modalOpen()) this.closeCard(); }
 }

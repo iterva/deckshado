@@ -386,12 +386,40 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
     <!-- Modal preview -->
     @if (previewCard(); as pc) {
       <div class="preview-overlay" (click)="closePreview()">
-        <div class="preview-box" (click)="$event.stopPropagation()">
-          @if (pc.image) {
-            <img [src]="pc.image" [alt]="pc.name" />
+        <div class="preview-box" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+          <button class="preview-close" (click)="closePreview()" aria-label="Cerrar">✕</button>
+          @if (previewLoading()) {
+            <p class="muted" style="padding:3rem;text-align:center">Cargando…</p>
+          } @else if (previewDetail(); as c) {
+            <div class="preview-layout">
+              @if (c.image) {
+                <img class="preview-img" [src]="c.image" [alt]="c.name" />
+              }
+              <div class="preview-info">
+                <h2>{{ c.name }}</h2>
+                <p class="muted">{{ c.card_number }} · {{ c.set?.name || c.set?.code || '—' }}</p>
+                <div class="preview-badges">
+                  @if (c.card_type) { <span class="pv-badge">{{ c.card_type }}</span> }
+                  @if (c.rarity) { <span class="pv-badge">{{ c.rarity }}</span> }
+                  @if (c.variant) { <span class="pv-badge">{{ c.variant }}</span> }
+                  @for (col of c.colors; track col) { <span class="pv-badge color">{{ col }}</span> }
+                  @for (st of c.subtypes; track st) { <span class="pv-badge">{{ st }}</span> }
+                </div>
+                <div class="preview-stats">
+                  @if (c.energy != null) { <div><span>Energy</span><strong>{{ c.energy }}</strong></div> }
+                  @if (c.power != null) { <div><span>Power</span><strong>{{ c.power }}</strong></div> }
+                  @if (c.might != null) { <div><span>Might</span><strong>{{ c.might }}</strong></div> }
+                </div>
+                @if (c.description) {
+                  <h3>Descripción</h3>
+                  <pre class="preview-desc">{{ c.description }}</pre>
+                }
+              </div>
+            </div>
+          } @else {
+            @if (pc.image) { <img class="preview-img" [src]="pc.image" [alt]="pc.name" /> }
+            <h3>{{ pc.name }} <small>{{ pc.card_number }}</small></h3>
           }
-          <h3>{{ pc.name }} <small>{{ pc.card_number }}</small></h3>
-          <button class="preview-close" (click)="closePreview()">✕</button>
         </div>
       </div>
     }
@@ -725,20 +753,42 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
     /* Preview modal */
     .preview-overlay {
       position: fixed; inset: 0; z-index: 1000;
-      background: rgba(0,0,0,.75); display: grid; place-items: center;
-      padding: 1rem;
+      background: rgba(0,0,0,.78); display: grid; place-items: center;
+      padding: 1rem; backdrop-filter: blur(3px);
     }
     .preview-box {
-      position: relative; max-width: 360px; background: #0a1428;
-      border: 1px solid #c89b3c; border-radius: 10px; padding: 1rem; text-align: center;
+      position: relative; max-width: 1000px; width: 100%; max-height: 92vh; overflow: auto;
+      background: #0a1428; border: 1px solid #c89b3c; border-radius: 12px;
+      padding: 1.5rem; color: #e0e0e0; box-shadow: 0 20px 60px rgba(0,0,0,.5);
     }
     .preview-box img { max-width: 100%; border-radius: 6px; }
     .preview-box h3 { color: #f0e6d2; margin: .5rem 0 0; font-size: 1rem; }
     .preview-box small { color: #98a2a8; font-weight: 400; }
     .preview-close {
-      position: absolute; top: .35rem; right: .35rem;
-      width: 28px; height: 28px; border-radius: 50%; border: none;
-      background: #1e3a4a; color: #c8c8da; cursor: pointer;
+      position: absolute; top: .6rem; right: .6rem;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #16213e; border: 1px solid #2a3a4a; color: #c8c8da;
+      cursor: pointer; font-size: 1rem; display: grid; place-items: center;
+      transition: all .15s; z-index: 2;
+    }
+    .preview-close:hover { background: #e94560; border-color: #e94560; color: #fff; }
+    .preview-layout {
+      display: grid; gap: 1.5rem; grid-template-columns: minmax(220px, 360px) 1fr;
+    }
+    .preview-img { width: 100%; border-radius: .75rem; align-self: start; }
+    .preview-info h2 { margin: 0 0 .25rem; font-size: 1.6rem; color: #f0e6d2; }
+    .preview-info h3 { margin: 1rem 0 .25rem; color: #f0e6d2; font-size: 1.05rem; text-align: left; }
+    .preview-badges { display: flex; gap: .35rem; flex-wrap: wrap; margin: .75rem 0; }
+    .pv-badge { padding: .25rem .55rem; border-radius: .35rem; border: 1px solid #2a3a4a; font-size: .8rem; background: #16213e; }
+    .pv-badge.color { background: #c89b3c20; border-color: #c89b3c50; }
+    .preview-stats { display: flex; gap: .65rem; margin: 1rem 0; flex-wrap: wrap; }
+    .preview-stats > div { display: flex; flex-direction: column; align-items: center; padding: .5rem 1rem; border: 1px solid #2a3a4a; border-radius: .5rem; min-width: 70px; background: #16213e; }
+    .preview-stats span { opacity: .7; font-size: .8rem; }
+    .preview-stats strong { font-size: 1.4rem; color: #f0e6d2; }
+    .preview-desc { white-space: pre-wrap; font-family: inherit; line-height: 1.55; margin: 0; font-size: .92rem; text-align: left; }
+    @media (max-width: 720px) {
+      .preview-layout { grid-template-columns: 1fr; }
+      .preview-box { padding: 1rem; }
     }
 
     /* Legend banner (en deck-panel) */
@@ -918,6 +968,8 @@ export class RiftboundBuilderComponent implements OnInit {
   // UI state
   showDeckPanel = signal(false);
   previewCard = signal<RiftboundCardLite | null>(null);
+  previewDetail = signal<RiftboundCard | null>(null);
+  previewLoading = signal(false);
 
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -1135,6 +1187,7 @@ export class RiftboundBuilderComponent implements OnInit {
     }
     if (c.card_type === 'battlefield') return 1;
     if (c.card_type === 'legend') return 1;
+    if (c.card_type === 'rune') return this.rules.rune;
     return 3;
   }
 
@@ -1151,6 +1204,7 @@ export class RiftboundBuilderComponent implements OnInit {
   maxCopiesForEntry(e: BuilderEntry): number {
     if (e.zone === 'bg') return 1;
     if (e.zone === 'champion') return 1;
+    if (e.zone === 'rune') return this.rules.rune;
     return 3;
   }
 
@@ -1241,8 +1295,21 @@ export class RiftboundBuilderComponent implements OnInit {
   });
 
   // ── Preview ──
-  openPreview(c: RiftboundCardLite) { this.previewCard.set(c); }
-  closePreview() { this.previewCard.set(null); }
+  openPreview(c: RiftboundCardLite) {
+    this.previewCard.set(c);
+    this.previewDetail.set(null);
+    if (!c.card_number) return;
+    this.previewLoading.set(true);
+    this.rb.getCard(c.card_number).subscribe({
+      next: (full) => { this.previewDetail.set(full); this.previewLoading.set(false); },
+      error: () => this.previewLoading.set(false),
+    });
+  }
+  closePreview() {
+    this.previewCard.set(null);
+    this.previewDetail.set(null);
+    this.previewLoading.set(false);
+  }
 
   // ── Champion-first wizard ──
   /** Legend actualmente seleccionado (o null si no hay). */

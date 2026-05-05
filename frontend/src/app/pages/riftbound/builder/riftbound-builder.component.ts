@@ -235,6 +235,35 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
           <button class="mobile-close-btn" (click)="showDeckPanel.set(false)">✕</button>
         </div>
 
+        <!-- Champion Legend del mazo -->
+        <div class="legend-banner" [class.empty]="!chosenLegend()">
+          @if (chosenLegend(); as L) {
+            <img [src]="L.image" [alt]="L.name" class="legend-img" />
+            <div class="legend-info">
+              <span class="legend-tag">CHAMPION LEGEND</span>
+              <strong>{{ L.name }}</strong>
+              <div class="legend-colors">
+                @for (c of (L.colors || []); track c) {
+                  <span class="color-dot" [style.background]="colorHex(c)" [title]="c"></span>
+                }
+              </div>
+            </div>
+            <div class="legend-actions">
+              <button class="legend-btn" (click)="changeLegend()">Cambiar</button>
+              <button class="legend-btn"
+                      [class.locked]="lockColorsToLegend()"
+                      (click)="toggleLockColors()"
+                      [title]="lockColorsToLegend() ? 'Filtros bloqueados a colores del legend' : 'Filtros libres'">
+                {{ lockColorsToLegend() ? '🔒 Colores' : '🔓 Colores' }}
+              </button>
+            </div>
+          } @else {
+            <button class="choose-legend-btn" (click)="openLegendPicker()">
+              👑 Elige tu Champion Legend
+            </button>
+          }
+        </div>
+
         <div class="form-group">
           <label>Nombre del mazo</label>
           <input type="text" [(ngModel)]="deckName" placeholder="Mi mazo Riftbound" />
@@ -363,6 +392,43 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
           }
           <h3>{{ pc.name }} <small>{{ pc.card_number }}</small></h3>
           <button class="preview-close" (click)="closePreview()">✕</button>
+        </div>
+      </div>
+    }
+
+    <!-- Modal Legend Picker -->
+    @if (showLegendPicker()) {
+      <div class="legend-picker-overlay" (click)="closeLegendPicker()">
+        <div class="legend-picker-box" (click)="$event.stopPropagation()">
+          <div class="lp-head">
+            <h3>👑 Elige tu Champion Legend</h3>
+            <p class="muted">Las cartas se filtrarán automáticamente por los colores del legend.</p>
+            <input type="search" [(ngModel)]="legendPickerSearch"
+                   placeholder="Buscar por nombre…" class="lp-search" />
+            @if (chosenLegend()) {
+              <button class="lp-skip" (click)="closeLegendPicker()">Mantener actual</button>
+            }
+          </div>
+          <div class="lp-grid">
+            @for (L of filteredLegends(); track L.id) {
+              <button type="button" class="lp-card" (click)="chooseLegend(L)">
+                @if (L.image) {
+                  <img [src]="L.image" [alt]="L.name" />
+                } @else {
+                  <div class="lp-img-fallback">{{ L.card_number }}</div>
+                }
+                <div class="lp-name">{{ L.name }}</div>
+                <div class="lp-colors">
+                  @for (c of (L.colors || []); track c) {
+                    <span class="color-dot" [style.background]="colorHex(c)"></span>
+                  }
+                </div>
+              </button>
+            }
+            @if (filteredLegends().length === 0) {
+              <p class="muted center">Sin resultados.</p>
+            }
+          </div>
         </div>
       </div>
     }
@@ -675,6 +741,104 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
       background: #1e3a4a; color: #c8c8da; cursor: pointer;
     }
 
+    /* Legend banner (en deck-panel) */
+    .legend-banner {
+      display: flex; align-items: center; gap: .65rem;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border: 1px solid #c89b3c; border-radius: 8px;
+      padding: .5rem .65rem; margin: 0 0 1rem;
+    }
+    .legend-banner.empty {
+      background: rgba(200, 155, 60, .08);
+      border-style: dashed;
+      padding: 0;
+    }
+    .choose-legend-btn {
+      width: 100%; padding: .85rem 1rem;
+      background: linear-gradient(135deg, #c89b3c 0%, #ffd23c 100%);
+      color: #0a1428; border: none; border-radius: 8px;
+      font-weight: 700; font-size: 1rem; cursor: pointer;
+      letter-spacing: .02em;
+      transition: filter .15s, transform .15s;
+    }
+    .choose-legend-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .legend-img {
+      width: 52px; height: 72px; object-fit: cover; border-radius: 4px;
+      flex-shrink: 0; background: #16213e;
+    }
+    .legend-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .legend-tag {
+      font-size: .6rem; letter-spacing: .08em;
+      color: #c89b3c; font-weight: 700;
+    }
+    .legend-info strong {
+      color: #f0e6d2; font-size: .9rem; line-height: 1.1;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .legend-colors { display: flex; gap: 4px; margin-top: 2px; }
+    .color-dot {
+      display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.3);
+    }
+    .legend-actions { display: flex; flex-direction: column; gap: 4px; }
+    .legend-btn {
+      background: #1e3a4a; color: #c8c8da;
+      border: 1px solid #2a4a5a; border-radius: 4px;
+      padding: .25rem .55rem; font-size: .7rem; cursor: pointer;
+      white-space: nowrap;
+    }
+    .legend-btn:hover { background: #2a4a5a; }
+    .legend-btn.locked { background: #c89b3c; color: #0a1428; border-color: #c89b3c; }
+
+    /* Legend Picker modal */
+    .legend-picker-overlay {
+      position: fixed; inset: 0; z-index: 1100;
+      background: rgba(0,0,0,.85); display: grid; place-items: center;
+      padding: 1rem; overflow-y: auto;
+    }
+    .legend-picker-box {
+      width: min(900px, 100%); max-height: 90vh; overflow-y: auto;
+      background: #0a1428; border: 1px solid #c89b3c;
+      border-radius: 10px; padding: 1.25rem;
+    }
+    .lp-head { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1rem; }
+    .lp-head h3 { color: #f0e6d2; margin: 0; font-size: 1.3rem; }
+    .lp-head .muted { color: #98a2a8; font-size: .85rem; margin: 0; }
+    .lp-search {
+      padding: .55rem .85rem; background: #16213e;
+      border: 1px solid #2a3a4a; border-radius: 6px; color: #e0e0e0;
+      font-size: .95rem; outline: none;
+    }
+    .lp-search:focus { border-color: #c89b3c; }
+    .lp-skip {
+      align-self: flex-start; background: transparent; color: #98a2a8;
+      border: 1px solid #2a3a4a; border-radius: 6px;
+      padding: .35rem .75rem; font-size: .8rem; cursor: pointer;
+    }
+    .lp-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: .65rem;
+    }
+    .lp-card {
+      display: flex; flex-direction: column; align-items: center;
+      gap: .35rem; padding: .5rem;
+      background: #16213e; border: 1px solid #2a3a4a; border-radius: 8px;
+      cursor: pointer; color: inherit; text-align: center;
+      transition: border-color .15s, transform .15s;
+    }
+    .lp-card:hover { border-color: #c89b3c; transform: translateY(-2px); }
+    .lp-card img {
+      width: 100%; aspect-ratio: 0.72; object-fit: cover; border-radius: 4px;
+    }
+    .lp-img-fallback {
+      width: 100%; aspect-ratio: 0.72; display: grid; place-items: center;
+      background: #1e3a4a; border-radius: 4px; color: #98a2a8; font-size: .8rem;
+    }
+    .lp-name {
+      font-size: .8rem; color: #f0e6d2; font-weight: 600; line-height: 1.15;
+    }
+    .lp-colors { display: flex; gap: 3px; }
+
     /* Light theme */
     :host-context(body.light-theme) .card-browser h2,
     :host-context(body.light-theme) .deck-header h2,
@@ -739,6 +903,13 @@ export class RiftboundBuilderComponent implements OnInit {
   // Banlist (formato Standard)
   banlist = signal<Map<string, { status: string; max_copies: number }>>(new Map());
 
+  // Champion-first wizard
+  legendOptions = signal<RiftboundCardLite[]>([]);
+  showLegendPicker = signal(false);
+  legendPickerSearch = '';
+  /** Si está activo, los filtros de colores quedan bloqueados a los del legend. */
+  lockColorsToLegend = signal(true);
+
   // Deck entries
   entries = signal<Record<RiftboundZone, BuilderEntry[]>>({
     main: [], side: [], rune: [], champion: [], bg: [],
@@ -772,6 +943,28 @@ export class RiftboundBuilderComponent implements OnInit {
           }
         }
         this.banlist.set(map);
+      },
+    });
+    // Cargar todos los Champion Legends para el wizard
+    this.rb.listCards({ type: 'legend', lite: true, page: 1 }).subscribe({
+      next: (resp) => {
+        // Cargar todas las páginas (hay ~66 legends)
+        const all = (resp.results as RiftboundCardLite[]).slice();
+        const total = resp.count;
+        const fetchPage = (p: number) => {
+          if (all.length >= total) {
+            this.legendOptions.set(all);
+            // Si entras a un mazo nuevo y no hay legend en zona champion, abrir picker
+            if (!this.deckId() && this.entries().champion.length === 0) {
+              this.showLegendPicker.set(true);
+            }
+            return;
+          }
+          this.rb.listCards({ type: 'legend', lite: true, page: p }).subscribe({
+            next: (r) => { all.push(...(r.results as RiftboundCardLite[])); fetchPage(p + 1); },
+          });
+        };
+        fetchPage(2);
       },
     });
     this.reload();
@@ -1050,6 +1243,62 @@ export class RiftboundBuilderComponent implements OnInit {
   // ── Preview ──
   openPreview(c: RiftboundCardLite) { this.previewCard.set(c); }
   closePreview() { this.previewCard.set(null); }
+
+  // ── Champion-first wizard ──
+  /** Legend actualmente seleccionado (o null si no hay). */
+  chosenLegend = computed<RiftboundCardLite | null>(() => {
+    return this.entries().champion[0]?.card ?? null;
+  });
+
+  /** Filtra los legends por búsqueda. */
+  filteredLegends = computed(() => {
+    const q = this.legendPickerSearch.trim().toLowerCase();
+    const list = this.legendOptions();
+    if (!q) return list;
+    return list.filter(l =>
+      l.name.toLowerCase().includes(q) ||
+      l.card_number.toLowerCase().includes(q),
+    );
+  });
+
+  openLegendPicker() {
+    this.legendPickerSearch = '';
+    this.showLegendPicker.set(true);
+  }
+  closeLegendPicker() { this.showLegendPicker.set(false); }
+
+  chooseLegend(legend: RiftboundCardLite) {
+    // Vacía la zona champion y coloca el nuevo legend
+    this.entries.set({ ...this.entries(), champion: [{ card: legend, quantity: 1, zone: 'champion' }] });
+    // Auto-aplica colores del legend como filtro (si está bloqueado)
+    if (this.lockColorsToLegend()) {
+      const cs = (legend as any).colors as RiftboundColor[] | undefined;
+      this.selectedColors.set(new Set(cs ?? []));
+    }
+    this.showLegendPicker.set(false);
+    this.page.set(1);
+    this.reload();
+  }
+
+  changeLegend() {
+    this.openLegendPicker();
+  }
+
+  toggleLockColors() {
+    this.lockColorsToLegend.update(v => !v);
+    if (this.lockColorsToLegend()) {
+      const legend = this.chosenLegend();
+      if (legend) {
+        const cs = (legend as any).colors as RiftboundColor[] | undefined;
+        this.selectedColors.set(new Set(cs ?? []));
+        this.reload();
+      }
+    }
+  }
+
+  colorHex(code: string): string {
+    return this.colors.find(c => c.code === code)?.hex ?? '#888';
+  }
 
   // ── Save ──
   save() {

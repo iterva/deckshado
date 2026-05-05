@@ -47,6 +47,7 @@ def validate_riftbound_deck(deck: "RiftboundDeck") -> dict:
     counts: dict[str, int] = defaultdict(int)
     copies: dict[int, int] = defaultdict(int)
     bg_card_ids: list[int] = []
+    rune_card_ids: set[int] = set()
 
     # Pre-cargar banlist
     banlist = {}
@@ -61,6 +62,8 @@ def validate_riftbound_deck(deck: "RiftboundDeck") -> dict:
         if entry.zone == ZONE_BATTLEFIELD:
             # registrar tantas instancias como quantity para chequear duplicados
             bg_card_ids.extend([entry.card_id] * entry.quantity)
+        if entry.zone == ZONE_RUNE:
+            rune_card_ids.add(entry.card_id)
 
     # Mínimos (main deck)
     for zone, minimum in RULES_MIN.items():
@@ -90,8 +93,11 @@ def validate_riftbound_deck(deck: "RiftboundDeck") -> dict:
             f"(tienes {side_count}). En juego casual el sideboard no es obligatorio."
         )
 
-    # Copias máximas (la copia inicial del Chosen Champion ya está representada en sus entries)
+    # Copias maximas (la copia inicial del Chosen Champion ya esta representada en sus entries).
+    # Las runas estan exentas: pueden repetirse hasta llenar la zona de runas.
     for card_id, qty in copies.items():
+        if card_id in rune_card_ids:
+            continue
         be = banlist.get(card_id)
         if be:
             if be.status == "banned" or be.max_copies == 0:

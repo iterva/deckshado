@@ -54,14 +54,11 @@ class RiftboundCardViewSet(viewsets.ReadOnlyModelViewSet):
         if (rarity := params.get("rarity")):
             qs = qs.filter(rarity=rarity)
 
-        # ?colors=fury,calm  (cualquiera)
+        # ?colors=fury,calm  (cualquiera). En SQLite el lookup `__contains` sobre
+        # JSONField no esta soportado; filtramos en Python.
+        color_list: list[str] = []
         if (colors := params.get("colors")):
             color_list = [c.strip() for c in colors.split(",") if c.strip()]
-            if color_list:
-                q = Q()
-                for c in color_list:
-                    q |= Q(colors__contains=[c])
-                qs = qs.filter(q)
 
         for field in ("energy", "power", "might"):
             v = params.get(field)
@@ -76,6 +73,13 @@ class RiftboundCardViewSet(viewsets.ReadOnlyModelViewSet):
             ids = [pk for pk, name, subs in qs.values_list("id", "name", "subtypes")
                    if name and "," in name
                    and name.split(",")[0].strip() in (subs or [])]
+            qs = qs.filter(id__in=ids)
+
+        # Filtro de colores en Python (compatible con SQLite). OR entre colores.
+        if color_list:
+            color_set = set(color_list)
+            ids = [pk for pk, cs in qs.values_list("id", "colors")
+                   if cs and any(c in color_set for c in cs)]
             qs = qs.filter(id__in=ids)
 
         return qs

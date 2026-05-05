@@ -1415,11 +1415,12 @@ export class RiftboundBuilderComponent implements OnInit {
         this.saving.set(false);
         if (deck.validation && !deck.validation.valid) {
           this.errors.set(deck.validation.errors);
+          // No redirigir si hay errores de validacion: el mazo no se guardo bien
+          if (!this.deckId() && deck.id) this.deckId.set(deck.id);
+          return;
         }
-        if (!this.deckId()) {
-          this.deckId.set(deck.id);
-          this.router.navigate(['/riftbound/builder', deck.id]);
-        }
+        // Guardado correcto -> ir a la vista del mazo
+        this.router.navigate(['/riftbound/decks', deck.id]);
       },
       error: (err) => {
         this.saving.set(false);

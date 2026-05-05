@@ -337,7 +337,14 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
               <p class="zone-empty">Vacío. Añade cartas desde el catálogo.</p>
             }
             @for (e of entries()[z]; track e.card.id) {
-              <div class="deck-entry">
+              <div class="deck-entry" [class.is-cover]="coverCardId() === e.card.id">
+                <button type="button"
+                        class="cover-star"
+                        [class.active]="coverCardId() === e.card.id"
+                        (click)="toggleCover(e.card.id)"
+                        [title]="coverCardId() === e.card.id ? 'Portada actual (clic para quitar)' : 'Marcar como portada del mazo'">
+                  {{ coverCardId() === e.card.id ? '★' : '☆' }}
+                </button>
                 @if (e.card.image) {
                   <img [src]="e.card.image" [alt]="e.card.name" />
                 } @else {
@@ -699,6 +706,16 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
     .zone-empty { font-size: .75rem; color: #6a7a88; margin: 0; }
 
     .deck-entry { display: flex; align-items: center; gap: .5rem; padding: .35rem 0; border-bottom: 1px solid #1a2a3a; }
+    .deck-entry.is-cover { background: linear-gradient(90deg, rgba(200,155,60,.12), transparent); border-radius: 6px; }
+    .cover-star {
+      flex-shrink: 0; width: 24px; height: 24px; padding: 0;
+      background: transparent; border: none; cursor: pointer;
+      color: #555; font-size: 1.05rem; line-height: 1;
+      display: grid; place-items: center; border-radius: 4px;
+      transition: color .15s, background .15s, transform .15s;
+    }
+    .cover-star:hover { color: #ffd23c; background: rgba(255,210,60,.08); transform: scale(1.15); }
+    .cover-star.active { color: #ffd23c; text-shadow: 0 0 8px rgba(255,210,60,.6); }
     .deck-entry:last-child { border-bottom: none; }
     .deck-entry img, .entry-img-fallback {
       width: 38px; height: 53px; object-fit: cover; border-radius: 3px; background: #16213e;
@@ -929,6 +946,7 @@ export class RiftboundBuilderComponent implements OnInit {
   deckName = 'Nuevo mazo Riftbound';
   description = '';
   isPublic = true;
+  coverCardId = signal<number | null>(null);
   saving = signal(false);
   errors = signal<string[]>([]);
 
@@ -1026,6 +1044,7 @@ export class RiftboundBuilderComponent implements OnInit {
     this.deckName = deck.name;
     this.description = deck.description ?? '';
     this.isPublic = deck.is_public ?? true;
+    this.coverCardId.set(deck.cover_card ?? null);
     const map: Record<RiftboundZone, BuilderEntry[]> = {
       main: [], side: [], rune: [], champion: [], bg: [],
     };
@@ -1311,6 +1330,10 @@ export class RiftboundBuilderComponent implements OnInit {
     this.previewLoading.set(false);
   }
 
+  toggleCover(cardId: number) {
+    this.coverCardId.set(this.coverCardId() === cardId ? null : cardId);
+  }
+
   // ── Champion-first wizard ──
   /** Legend actualmente seleccionado (o null si no hay). */
   chosenLegend = computed<RiftboundCardLite | null>(() => {
@@ -1381,6 +1404,7 @@ export class RiftboundBuilderComponent implements OnInit {
       name: this.deckName,
       description: this.description,
       is_public: this.isPublic,
+      cover_card: this.coverCardId() as any,
       entries: flat as RiftboundDeckEntry[],
     };
     const obs = this.deckId()

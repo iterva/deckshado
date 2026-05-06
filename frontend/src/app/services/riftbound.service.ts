@@ -119,6 +119,10 @@ export class RiftboundService {
     return this.http.put<RiftboundDeck>(`${this.base}/decks/${id}/`, data);
   }
 
+  patchDeck(id: number, data: Partial<RiftboundDeck>): Observable<RiftboundDeck> {
+    return this.http.patch<RiftboundDeck>(`${this.base}/decks/${id}/`, data);
+  }
+
   deleteDeck(id: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/decks/${id}/`);
   }

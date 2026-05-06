@@ -68,6 +68,9 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
         <div class="action-bar">
           <div class="action-spacer"></div>
           @if (isOwner()) {
+            <button class="action-btn" (click)="toggleVisibility()" [disabled]="togglingVisibility()">
+              {{ d.is_public ? '🔓 Hacer privado' : '🌐 Hacer público' }}
+            </button>
             <button class="action-btn accent" (click)="editDeck()">✏️ Editar</button>
             <button class="action-btn danger" (click)="deleteDeck()">🗑 Eliminar</button>
           }
@@ -357,6 +360,7 @@ export class RiftboundDeckViewComponent implements OnInit {
 
   deck = signal<RiftboundDeck | null>(null);
   loading = signal(true);
+  togglingVisibility = signal(false);
   previewEntry = signal<RiftboundDeckEntry | null>(null);
   previewDetail = signal<RiftboundCard | null>(null);
   previewLoading = signal(false);
@@ -409,6 +413,16 @@ export class RiftboundDeckViewComponent implements OnInit {
   editDeck() {
     const d = this.deck();
     if (d) this.router.navigate(['/riftbound/builder', d.id]);
+  }
+
+  toggleVisibility() {
+    const d = this.deck();
+    if (!d || this.togglingVisibility()) return;
+    this.togglingVisibility.set(true);
+    this.rb.patchDeck(d.id, { is_public: !d.is_public }).subscribe({
+      next: (updated) => { this.deck.set(updated); this.togglingVisibility.set(false); },
+      error: () => this.togglingVisibility.set(false),
+    });
   }
 
   deleteDeck() {

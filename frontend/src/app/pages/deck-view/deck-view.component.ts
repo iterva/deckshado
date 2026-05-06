@@ -101,6 +101,24 @@ export class DeckViewComponent implements OnInit {
     }
   }
 
+  togglingVisibility = false;
+  toggleVisibility() {
+    if (!this.deck || this.togglingVisibility) return;
+    this.togglingVisibility = true;
+    const newVal = !this.deck.is_public;
+    this.deckService.updateDeck(this.deck.id, { is_public: newVal }).subscribe({
+      next: (updated: any) => {
+        if (this.deck) this.deck.is_public = updated.is_public ?? newVal;
+        this.togglingVisibility = false;
+        this.cdr.markForCheck();
+      },
+      error: (err: any) => {
+        console.error('Error cambiando visibilidad:', err);
+        this.togglingVisibility = false;
+      },
+    });
+  }
+
   deleteDeck() {
     if (!this.deck) return;
     if (!confirm('¿Estás seguro de que quieres eliminar este mazo?')) return;

@@ -82,6 +82,10 @@
       </button>
 
       @if (isOwner) {
+        <button class="action-btn" (click)="toggleVisibility()" [disabled]="togglingVisibility" [title]="deck.is_public ? 'Hacer privado' : 'Hacer público'">
+          <i class="bi" [class.bi-globe]="deck.is_public" [class.bi-lock-fill]="!deck.is_public"></i>
+          <span>{{ deck.is_public ? 'Hacer privado' : 'Hacer público' }}</span>
+        </button>
         <button class="action-btn accent" (click)="editDeck()" title="Editar mazo">
           <i class="bi bi-pencil-square"></i><span>Editar</span>
         </button>

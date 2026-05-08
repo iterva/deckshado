@@ -5,7 +5,7 @@ Card data extracted manually from card images.
 from django.core.management.base import BaseCommand
 from cards.models import Card, Edition, Format, Race, CardType, Rarity
 
-MEDIA_BASE = "https://iterva.pythonanywhere.com/media/extra_cards"
+MEDIA_BASE = "https://res.cloudinary.com/dmvu6tuee/image/upload/deckshado/extra_cards"
 
 TOOLKIT_26_IMP_CARDS = [
     {

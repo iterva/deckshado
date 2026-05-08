@@ -36,7 +36,7 @@ TOOLKIT_26_IMP_CARDS = [
         "slug": "papa-legba-tk26i",
         "name": "Papa Legba",
         "type_slug": "aliado",
-        "race_slug": "guerrero",
+        "race_slug": None,
         "cost": "1",
         "damage": "4",
         "ability": (

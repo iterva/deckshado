@@ -14,6 +14,7 @@ import {
 } from '../../../models/riftbound';
 
 type ViewMode = 'grid' | 'list' | 'stats';
+type Orientation = 'vertical' | 'horizontal';
 
 const COLOR_HEX: Record<RiftboundColor, string> = {
   fury: '#e94560', calm: '#4caf50', mind: '#3aa6ff',
@@ -106,6 +107,14 @@ const TYPE_COLOR: Record<string, string> = {
                 <button role="menuitem" (click)="exportJson(); showMoreMenu.set(false)">💾 Exportar JSON</button>
                 <button role="menuitem" (click)="exportImage(); showMoreMenu.set(false)">🖼 Descargar imagen</button>
                 <button role="menuitem" (click)="copyImageToClipboard(); showMoreMenu.set(false)">📋 Copiar imagen</button>
+                <div class="more-divider"></div>
+                <label class="more-select" (click)="$event.stopPropagation()">
+                  <span>Orientación:</span>
+                  <select [ngModel]="orientation()" (ngModelChange)="setOrientation($event)">
+                    <option value="vertical">Vertical</option>
+                    <option value="horizontal">Horizontal</option>
+                  </select>
+                </label>
               </div>
             }
           </div>
@@ -130,7 +139,7 @@ const TYPE_COLOR: Record<string, string> = {
         }
 
         <!-- Área exportable -->
-        <div #deckContent class="deck-export-area" [attr.data-orientation]="'vertical'">
+        <div #deckContent class="deck-export-area" [class.export-horizontal]="orientation() === 'horizontal'" [attr.data-orientation]="orientation()">
 
           @switch (viewMode()) {
 
@@ -322,6 +331,20 @@ const TYPE_COLOR: Record<string, string> = {
                                     [class.ban-limited]="bs.status !== 'banned'"
                                     [title]="banTooltip(bs)">{{ banShort(bs) }}</span>
                             }
+                            @if (isOwner() && e.card_data?.id) {
+                              <span class="cover-star"
+                                    [class.is-cover]="d.cover_card === e.card_data?.id"
+                                    role="button"
+                                    tabindex="0"
+                                    (click)="toggleCover($event, e)"
+                                    (keydown.enter)="toggleCover($event, e)"
+                                    [title]="d.cover_card === e.card_data?.id ? 'Portada actual (clic para quitar)' : 'Fijar como portada del mazo'">
+                                {{ d.cover_card === e.card_data?.id ? '★' : '☆' }}
+                              </span>
+                            }
+                            @if (d.cover_card === e.card_data?.id) {
+                              <span class="cover-badge" title="Portada del mazo">★</span>
+                            }
                             <span class="card-name">{{ e.card_data?.name }}</span>
                           </button>
                         }
@@ -354,7 +377,18 @@ const TYPE_COLOR: Record<string, string> = {
                 @if (c.image) { <img class="preview-img" [src]="c.image" [alt]="c.name" /> }
                 <div class="preview-info">
                   <h2>{{ c.name }}</h2>
-                  <p class="muted">{{ c.card_number }} · {{ c.set?.name || c.set?.code || '—' }}</p>
+                  <p class="muted">
+                    <button type="button" class="copy-cn" (click)="copyText(c.card_number, 'Código copiado')" title="Copiar código">{{ c.card_number }}</button>
+                    · {{ c.set?.name || c.set?.code || '—' }}
+                  </p>
+                  @let pbs = getBanStatusByCardId(c.id);
+                  @if (pbs) {
+                    <div class="preview-ban" [class.ban-banned]="pbs.status === 'banned'"
+                                              [class.ban-limited]="pbs.status !== 'banned'">
+                      @if (pbs.status === 'banned') { ⛔ Baneada en Standard }
+                      @else { ⚠️ Limitada a {{ pbs.max_copies ?? 1 }} copia(s) }
+                    </div>
+                  }
                   <div class="preview-badges">
                     @if (c.card_type) { <span class="pv-badge">{{ typeLabel(c.card_type) }}</span> }
                     @if (c.rarity) { <span class="pv-badge">{{ c.rarity }}</span> }
@@ -373,7 +407,13 @@ const TYPE_COLOR: Record<string, string> = {
                   @if (c.description) {
                     <h3>Descripción</h3>
                     <pre class="preview-desc">{{ c.description }}</pre>
+                  } @else {
+                    <p class="muted" style="margin-top:1rem">Esta carta no tiene texto.</p>
                   }
+                  <div class="preview-actions">
+                    <a class="action-btn" [routerLink]="['/riftbound/cards', c.card_number]" (click)="closePreview()">🔎 Ver en explorador</a>
+                    <button class="action-btn" (click)="copyText(deepLinkUrl(c.id), 'Enlace de la carta copiado')">🔗 Copiar enlace</button>
+                  </div>
                 </div>
               </div>
             } @else {
@@ -743,6 +783,56 @@ const TYPE_COLOR: Record<string, string> = {
       transition: all .15s;
     }
     .exit-presentation-fab:hover { background: #c89b3c; color: #0a1428; }
+
+    /* Cover star (owner) */
+    .cover-star {
+      position: absolute; top: 6px; left: 6px; z-index: 3;
+      width: 28px; height: 28px; display: grid; place-items: center;
+      background: rgba(0,0,0,.55); border: 1px solid rgba(200,155,60,.55);
+      color: #c8c8da; border-radius: 50%; font-size: 1rem; line-height: 1;
+      cursor: pointer; transition: all .15s; opacity: 0;
+    }
+    .card-stack:hover .cover-star,
+    .cover-star.is-cover { opacity: 1; }
+    .cover-star:hover { background: #c89b3c; color: #0a1428; }
+    .cover-star.is-cover { background: linear-gradient(135deg, #c89b3c, #ffd23c); color: #0a1428; border-color: #ffd23c; }
+    .cover-badge {
+      position: absolute; top: 6px; right: 6px; z-index: 3;
+      width: 22px; height: 22px; display: grid; place-items: center;
+      background: linear-gradient(135deg, #c89b3c, #ffd23c);
+      color: #0a1428; border-radius: 50%; font-size: .85rem; font-weight: 700;
+      box-shadow: 0 2px 8px rgba(200,155,60,.5);
+    }
+
+    /* Preview extras */
+    .preview-ban {
+      margin: .25rem 0 .5rem; padding: .4rem .65rem; border-radius: 6px;
+      font-size: .85rem; font-weight: 600; border: 1px solid;
+    }
+    .preview-ban.ban-banned { background: rgba(220,53,69,.15); color: #ff8a8a; border-color: #5a2230; }
+    .preview-ban.ban-limited { background: rgba(255,189,57,.12); color: #ffd070; border-color: #6b5b2a; }
+    .preview-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: 1rem; }
+    .copy-cn {
+      background: none; border: none; padding: 0; color: inherit;
+      font: inherit; cursor: pointer; text-decoration: underline dotted;
+    }
+    .copy-cn:hover { color: #c89b3c; }
+
+    /* More menu select */
+    .more-divider { height: 1px; background: #2a3a4a; margin: .35rem 0; }
+    .more-select {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: .5rem; padding: .45rem .75rem; color: #c8c8da; font-size: .88rem;
+    }
+    .more-select select {
+      background: #16213e; color: #f0e6d2; border: 1px solid #2a3a4a;
+      border-radius: 6px; padding: .25rem .45rem; font-family: inherit;
+    }
+
+    /* Horizontal export orientation: cards in tighter rows */
+    #deckContent.export-horizontal .card-grid {
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
   `],
 })
 export class RiftboundDeckViewComponent implements OnInit {
@@ -770,6 +860,8 @@ export class RiftboundDeckViewComponent implements OnInit {
   exporting = signal(false);
   shareToast = signal(false);
   toastMsg = signal('Enlace copiado');
+  orientation = signal<Orientation>('vertical');
+  settingCover = signal(false);
 
   /** Banlist indexada por id de carta. */
   private banlistByCardId = new Map<number, RiftboundBanlistEntry>();
@@ -797,6 +889,8 @@ export class RiftboundDeckViewComponent implements OnInit {
     try {
       const saved = localStorage.getItem('rb-deck-view:mode') as ViewMode | null;
       if (saved === 'grid' || saved === 'list' || saved === 'stats') this.viewMode.set(saved);
+      const so = localStorage.getItem('rb-deck-view:orientation') as Orientation | null;
+      if (so === 'vertical' || so === 'horizontal') this.orientation.set(so);
     } catch { /* noop */ }
 
     const id = +this.route.snapshot.paramMap.get('id')!;
@@ -860,6 +954,51 @@ export class RiftboundDeckViewComponent implements OnInit {
   setViewMode(m: ViewMode) {
     this.viewMode.set(m);
     try { localStorage.setItem('rb-deck-view:mode', m); } catch { /* noop */ }
+  }
+
+  setOrientation(o: Orientation) {
+    this.orientation.set(o);
+    try { localStorage.setItem('rb-deck-view:orientation', o); } catch { /* noop */ }
+  }
+
+  // ── Cover card (owner) ──
+  toggleCover(ev: Event, e: RiftboundDeckEntry) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const d = this.deck();
+    const cardId = e.card_data?.id;
+    if (!d || !this.isOwner() || !cardId || this.settingCover()) return;
+    const isCurrent = d.cover_card === cardId;
+    const newCover = isCurrent ? null : cardId;
+    this.settingCover.set(true);
+    this.rb.patchDeck(d.id, { cover_card: newCover } as Partial<RiftboundDeck>).subscribe({
+      next: (updated) => {
+        this.deck.set(updated);
+        this.settingCover.set(false);
+        this.fireToast(isCurrent ? 'Portada quitada' : 'Portada actualizada');
+      },
+      error: () => {
+        this.settingCover.set(false);
+        this.fireToast('No se pudo actualizar la portada');
+      },
+    });
+  }
+
+  // ── Helpers preview ──
+  getBanStatusByCardId(cid: number): RiftboundBanlistEntry | null {
+    return this.banlistByCardId.get(cid) ?? null;
+  }
+
+  deepLinkUrl(cardId: number): string {
+    const url = new URL(window.location.href);
+    url.searchParams.set('card', String(cardId));
+    return url.toString();
+  }
+
+  copyText(text: string, msg = 'Copiado') {
+    try {
+      navigator.clipboard.writeText(text).then(() => this.fireToast(msg));
+    } catch { /* noop */ }
   }
 
   // ── Banlist ──

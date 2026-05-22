@@ -1,12 +1,19 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  Component, OnInit, computed, inject, signal,
+  HostListener, ElementRef, ViewChild, ChangeDetectorRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Title, Meta } from '@angular/platform-browser';
 import { RiftboundService } from '../../../services/riftbound.service';
 import { AuthService } from '../../../services/auth.service';
 import {
-  RiftboundDeck, RiftboundDeckEntry,
+  RiftboundDeck, RiftboundDeckEntry, RiftboundBanlistEntry,
   RIFTBOUND_ZONE_LABELS, RiftboundZone, RiftboundColor, RiftboundCard,
 } from '../../../models/riftbound';
+
+type ViewMode = 'grid' | 'list' | 'stats';
 
 const COLOR_HEX: Record<RiftboundColor, string> = {
   fury: '#e94560', calm: '#4caf50', mind: '#3aa6ff',
@@ -16,16 +23,24 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
   fury: 'Fury', calm: 'Calm', mind: 'Mind',
   body: 'Body', chaos: 'Chaos', order: 'Order', neutral: 'Neutral',
 };
+const TYPE_LABEL: Record<string, string> = {
+  unit: 'Unidad', spell: 'Hechizo', gear: 'Equipo', legend: 'Legend',
+  rune: 'Runa', battlefield: 'Battlefield', champion: 'Champion', other: 'Otro',
+};
+const TYPE_COLOR: Record<string, string> = {
+  unit: '#4ade80', spell: '#60a5fa', gear: '#fbbf24', legend: '#c89b3c',
+  rune: '#c084fc', battlefield: '#fb7185', champion: '#ffbd39', other: '#888',
+};
 
 @Component({
   selector: 'app-riftbound-deck-view',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink],
   template: `
     @if (loading()) {
       <p class="loading">Cargando mazo…</p>
     } @else if (deck(); as d) {
-      <div class="container">
+      <div class="container" [class.is-presentation]="presentationMode()">
         <a routerLink="/riftbound/decks" class="back-link">← Volver a mazos</a>
 
         <!-- Hero -->
@@ -66,54 +81,45 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
 
         <!-- Action bar -->
         <div class="action-bar">
+          <div class="seg-control" role="tablist" aria-label="Modo de visualización">
+            <button type="button" class="seg-btn" [class.active]="viewMode() === 'grid'"
+                    (click)="setViewMode('grid')" role="tab">🃏 Cartas</button>
+            <button type="button" class="seg-btn" [class.active]="viewMode() === 'list'"
+                    (click)="setViewMode('list')" role="tab">📋 Lista</button>
+            <button type="button" class="seg-btn" [class.active]="viewMode() === 'stats'"
+                    (click)="setViewMode('stats')" role="tab">📊 Stats</button>
+          </div>
+
           <div class="action-spacer"></div>
+
+          <button class="action-btn" (click)="shareDeck()" title="Copiar enlace">📤 Compartir</button>
+          <button class="action-btn" (click)="togglePresentation()" title="Presentación (F)">
+            {{ presentationMode() ? '✕ Salir' : '🔍 Presentación' }}
+          </button>
+
+          <div class="more-menu-wrap">
+            <button class="action-btn" (click)="toggleMoreMenu($event)" aria-haspopup="menu"
+                    [attr.aria-expanded]="showMoreMenu()">⋯ Más</button>
+            @if (showMoreMenu()) {
+              <div class="more-menu" role="menu" (click)="$event.stopPropagation()">
+                <button role="menuitem" (click)="exportText(); showMoreMenu.set(false)">📝 Copiar texto</button>
+                <button role="menuitem" (click)="exportJson(); showMoreMenu.set(false)">💾 Exportar JSON</button>
+                <button role="menuitem" (click)="exportImage(); showMoreMenu.set(false)">🖼 Descargar imagen</button>
+                <button role="menuitem" (click)="copyImageToClipboard(); showMoreMenu.set(false)">📋 Copiar imagen</button>
+              </div>
+            }
+          </div>
+
           @if (isOwner()) {
             <button class="action-btn" (click)="toggleVisibility()" [disabled]="togglingVisibility()">
-              {{ d.is_public ? '🔓 Hacer privado' : '🌐 Hacer público' }}
+              {{ d.is_public ? '🔓 Privado' : '🌐 Público' }}
             </button>
             <button class="action-btn accent" (click)="editDeck()">✏️ Editar</button>
             <button class="action-btn danger" (click)="deleteDeck()">🗑 Eliminar</button>
           }
         </div>
 
-        <!-- Secciones por zona -->
-        @for (z of zones; track z) {
-          @if (entriesByZone(z).length) {
-            <section class="zone-section">
-              <h2 class="zone-title">
-                <span class="zone-name">{{ labels[z] }}</span>
-                <span class="zone-count">{{ countZone(z) }}</span>
-              </h2>
-              <div class="card-grid">
-                @for (e of entriesByZone(z); track e.id || e.card) {
-                  <button type="button"
-                          class="card-stack"
-                          [class.qty-2]="e.quantity === 2"
-                          [class.qty-3]="e.quantity >= 3"
-                          (click)="openPreview(e)"
-                          [title]="e.card_data?.name || ''">
-                    @if (e.quantity >= 3 && e.card_data?.image) {
-                      <img class="shadow s3" [src]="e.card_data?.image" aria-hidden="true" />
-                    }
-                    @if (e.quantity >= 2 && e.card_data?.image) {
-                      <img class="shadow s2" [src]="e.card_data?.image" aria-hidden="true" />
-                    }
-                    @if (e.card_data?.image) {
-                      <img class="top" [src]="e.card_data?.image" [alt]="e.card_data?.name || ''" />
-                    } @else {
-                      <div class="top placeholder">{{ e.card_data?.card_number }}</div>
-                    }
-                    @if (e.quantity > 1) {
-                      <span class="qty-badge">×{{ e.quantity }}</span>
-                    }
-                    <span class="card-name">{{ e.card_data?.name }}</span>
-                  </button>
-                }
-              </div>
-            </section>
-          }
-        }
-
+        <!-- Errores de validación arriba -->
         @if (validationErrors().length) {
           <div class="errors-box">
             <strong>⚠ Mazo inválido:</strong>
@@ -122,7 +128,219 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
             </ul>
           </div>
         }
+
+        <!-- Área exportable -->
+        <div #deckContent class="deck-export-area" [attr.data-orientation]="'vertical'">
+
+          @switch (viewMode()) {
+
+            @case ('stats') {
+              <section class="stats-view">
+
+                <!-- Curva de energía -->
+                <div class="stats-card">
+                  <h3>⚡ Curva de Energía</h3>
+                  @if (hasAnyCost()) {
+                    <div class="cost-curve">
+                      @for (b of costCurve(); track b.label) {
+                        <div class="cc-col" [class.is-avg]="b.label === avgCostBucket()">
+                          <span class="cc-count">{{ b.count }}</span>
+                          <div class="cc-bar-wrap">
+                            <div class="cc-bar" [style.height.%]="b.pct"></div>
+                          </div>
+                          <span class="cc-label">{{ b.label }}</span>
+                        </div>
+                      }
+                    </div>
+                    <p class="muted small">Promedio (excluye runas/legend/BF): <strong>{{ avgCost() }}</strong></p>
+                  } @else {
+                    <p class="muted">Sin cartas con coste de energía.</p>
+                  }
+                </div>
+
+                <!-- Distribución de tipos -->
+                <div class="stats-card">
+                  <h3>🧩 Distribución por tipo</h3>
+                  @if (typeDistribution().length) {
+                    <div class="dist-list">
+                      @for (t of typeDistribution(); track t.type) {
+                        <div class="dist-row">
+                          <span class="dist-name">{{ t.label }}</span>
+                          <div class="dist-bar-wrap">
+                            <div class="dist-bar" [style.width.%]="t.pct" [style.background]="t.color"></div>
+                          </div>
+                          <span class="dist-num">{{ t.count }} ({{ t.pct }}%)</span>
+                        </div>
+                      }
+                    </div>
+                  } @else { <p class="muted">Sin datos.</p> }
+                </div>
+
+                <!-- Distribución de colores -->
+                <div class="stats-card">
+                  <h3>🎨 Distribución por color (Main + Side)</h3>
+                  @if (colorDistribution().length) {
+                    <div class="dist-list">
+                      @for (c of colorDistribution(); track c.code) {
+                        <div class="dist-row">
+                          <span class="dist-name" [style.color]="c.hex">
+                            <span class="dot" [style.background]="c.hex"></span>{{ c.label }}
+                          </span>
+                          <div class="dist-bar-wrap">
+                            <div class="dist-bar" [style.width.%]="c.pct" [style.background]="c.hex"></div>
+                          </div>
+                          <span class="dist-num">{{ c.count }} ({{ c.pct }}%)</span>
+                        </div>
+                      }
+                    </div>
+                  } @else { <p class="muted">Sin datos.</p> }
+                </div>
+
+                <!-- Probabilidades de robo -->
+                <div class="stats-card">
+                  <h3>🎲 Probabilidad en mano inicial (4 cartas, mazo principal)</h3>
+                  @if (drawProbabilities().length) {
+                    <table class="prob-table">
+                      <thead>
+                        <tr><th>Carta</th><th>Copias</th><th>P(≥1)</th></tr>
+                      </thead>
+                      <tbody>
+                        @for (p of drawProbabilities(); track p.name) {
+                          <tr>
+                            <td>{{ p.name }}</td>
+                            <td class="num">×{{ p.qty }}</td>
+                            <td class="num">
+                              <span class="prob-pill" [style.--p]="p.pct + '%'">{{ p.pct }}%</span>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  } @else { <p class="muted">Mazo principal vacío.</p> }
+                </div>
+
+              </section>
+            }
+
+            @case ('list') {
+              <section class="list-view">
+                @for (z of zones; track z) {
+                  @let isSide = z === 'side';
+                  @let entries = entriesByZone(z);
+                  @if (entries.length) {
+                    <div class="list-zone" [class.collapsed]="isSide && !sideOpen()">
+                      <h2 class="zone-title"
+                          [class.is-toggle]="isSide"
+                          (click)="isSide && sideOpen.set(!sideOpen())">
+                        <span class="zone-name">{{ labels[z] }}</span>
+                        <span class="zone-count">{{ countZone(z) }}</span>
+                        @if (isSide) {
+                          <span class="side-caret">{{ sideOpen() ? '▾' : '▸' }}</span>
+                        }
+                      </h2>
+                      @if (!isSide || sideOpen()) {
+                        <table class="entries-table">
+                          <thead>
+                            <tr><th class="w-qty">#</th><th>Carta</th><th>Tipo</th><th class="num">⚡</th><th class="num">⚔️</th><th></th></tr>
+                          </thead>
+                          <tbody>
+                            @for (e of entries; track e.id || e.card) {
+                              @let bs = getBanStatus(e);
+                              <tr class="entry-row" (click)="openPreview(e)" [class.banned]="bs?.status === 'banned'">
+                                <td class="w-qty">×{{ e.quantity }}</td>
+                                <td>
+                                  <div class="entry-name">
+                                    @if (e.card_data?.image) {
+                                      <img class="entry-thumb" [src]="e.card_data?.image" [alt]="e.card_data?.name || ''" />
+                                    }
+                                    <span>{{ e.card_data?.name }}</span>
+                                    @if (bs) {
+                                      <span class="ban-badge" [class.ban-banned]="bs.status === 'banned'"
+                                            [class.ban-limited]="bs.status !== 'banned'"
+                                            [title]="banTooltip(bs)">{{ banShort(bs) }}</span>
+                                    }
+                                  </div>
+                                </td>
+                                <td>{{ typeLabel(e.card_data?.card_type) }}</td>
+                                <td class="num">{{ e.card_data?.energy ?? '—' }}</td>
+                                <td class="num">{{ e.card_data?.might ?? '—' }}</td>
+                                <td class="num muted small">{{ e.card_data?.card_number }}</td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      }
+                    </div>
+                  }
+                }
+              </section>
+            }
+
+            @default {
+              <!-- Grid (default) -->
+              @for (z of zones; track z) {
+                @let isSide = z === 'side';
+                @let entries = entriesByZone(z);
+                @if (entries.length) {
+                  <section class="zone-section" [class.collapsed]="isSide && !sideOpen()">
+                    <h2 class="zone-title"
+                        [class.is-toggle]="isSide"
+                        (click)="isSide && sideOpen.set(!sideOpen())">
+                      <span class="zone-name">{{ labels[z] }}</span>
+                      <span class="zone-count">{{ countZone(z) }}</span>
+                      @if (isSide) {
+                        <span class="side-caret">{{ sideOpen() ? '▾' : '▸' }}</span>
+                      }
+                    </h2>
+                    @if (!isSide || sideOpen()) {
+                      <div class="card-grid">
+                        @for (e of entries; track e.id || e.card) {
+                          @let bs = getBanStatus(e);
+                          <button type="button"
+                                  class="card-stack"
+                                  [class.qty-2]="e.quantity === 2"
+                                  [class.qty-3]="e.quantity >= 3"
+                                  [class.banned]="bs?.status === 'banned'"
+                                  (click)="openPreview(e)"
+                                  [title]="e.card_data?.name || ''">
+                            @if (e.quantity >= 3 && e.card_data?.image) {
+                              <img class="shadow s3" [src]="e.card_data?.image" aria-hidden="true" />
+                            }
+                            @if (e.quantity >= 2 && e.card_data?.image) {
+                              <img class="shadow s2" [src]="e.card_data?.image" aria-hidden="true" />
+                            }
+                            @if (e.card_data?.image) {
+                              <img class="top" [src]="e.card_data?.image" [alt]="e.card_data?.name || ''" />
+                            } @else {
+                              <div class="top placeholder">{{ e.card_data?.card_number }}</div>
+                            }
+                            @if (e.quantity > 1) {
+                              <span class="qty-badge">×{{ e.quantity }}</span>
+                            }
+                            @if (bs) {
+                              <span class="ban-overlay" [class.ban-banned]="bs.status === 'banned'"
+                                    [class.ban-limited]="bs.status !== 'banned'"
+                                    [title]="banTooltip(bs)">{{ banShort(bs) }}</span>
+                            }
+                            <span class="card-name">{{ e.card_data?.name }}</span>
+                          </button>
+                        }
+                      </div>
+                    }
+                  </section>
+                }
+              }
+            }
+
+          }
+
+        </div>
       </div>
+
+      <!-- FAB salir presentación -->
+      @if (presentationMode()) {
+        <button class="exit-presentation-fab" (click)="togglePresentation()" title="Salir (Esc)">✕</button>
+      }
 
       <!-- Modal preview -->
       @if (previewEntry(); as pe) {
@@ -138,9 +356,13 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
                   <h2>{{ c.name }}</h2>
                   <p class="muted">{{ c.card_number }} · {{ c.set?.name || c.set?.code || '—' }}</p>
                   <div class="preview-badges">
-                    @if (c.card_type) { <span class="pv-badge">{{ c.card_type }}</span> }
+                    @if (c.card_type) { <span class="pv-badge">{{ typeLabel(c.card_type) }}</span> }
                     @if (c.rarity) { <span class="pv-badge">{{ c.rarity }}</span> }
-                    @for (col of c.colors; track col) { <span class="pv-badge color">{{ col }}</span> }
+                    @for (col of c.colors; track col) {
+                      <span class="pv-badge color" [style.background]="hex(col) + '20'" [style.borderColor]="hex(col) + '80'">
+                        {{ label(col) }}
+                      </span>
+                    }
                     @for (st of c.subtypes; track st) { <span class="pv-badge">{{ st }}</span> }
                   </div>
                   <div class="preview-stats">
@@ -163,6 +385,21 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
           </div>
         </div>
       }
+
+      <!-- Toast de compartir / copiar -->
+      @if (shareToast()) {
+        <div class="share-toast" role="status">✓ {{ toastMsg() }}</div>
+      }
+
+      <!-- Overlay de exportación -->
+      @if (exporting()) {
+        <div class="exporting-overlay">
+          <div class="exporting-box">
+            <div class="spinner"></div>
+            <p>Generando imagen…</p>
+          </div>
+        </div>
+      }
     } @else {
       <p class="loading">Mazo no encontrado.</p>
     }
@@ -173,6 +410,8 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
     .back-link { display: inline-block; opacity: .8; margin-bottom: 1rem; text-decoration: none; color: #c8c8da; }
     .back-link:hover { opacity: 1; color: #c89b3c; }
     .muted { opacity: .65; }
+    .small { font-size: .8rem; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
 
     /* Hero */
     .deck-hero {
@@ -238,7 +477,7 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
 
     /* Action bar */
     .action-bar {
-      display: flex; gap: .5rem; align-items: center;
+      display: flex; gap: .5rem; align-items: center; flex-wrap: wrap;
       padding: .65rem .75rem; margin-bottom: 1.25rem;
       background: #15152a; border: 1px solid #2a2a4a; border-radius: 10px;
     }
@@ -259,6 +498,45 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
     .action-btn.danger { color: #d97a7a; border-color: #4a2a2a; }
     .action-btn.danger:hover { background: rgba(220,53,69,.18); border-color: #dc3545; color: #fff; }
 
+    /* Seg control */
+    .seg-control {
+      display: inline-flex; padding: 3px; border-radius: 10px;
+      background: #1a1a2e; border: 1px solid #2a3a4a;
+    }
+    .seg-btn {
+      padding: .42rem .8rem; border-radius: 8px; cursor: pointer;
+      background: transparent; border: none; color: #c8c8da;
+      font-family: inherit; font-size: .85rem; transition: all .15s;
+    }
+    .seg-btn:hover { color: #fff; }
+    .seg-btn.active {
+      background: linear-gradient(135deg, #c89b3c 0%, #ffd23c 100%);
+      color: #0a1428; font-weight: 700;
+    }
+
+    /* More menu */
+    .more-menu-wrap { position: relative; }
+    .more-menu {
+      position: absolute; top: calc(100% + 6px); right: 0; z-index: 50;
+      min-width: 200px; background: #1a1a2e; border: 1px solid #2a3a4a;
+      border-radius: 10px; padding: .35rem; box-shadow: 0 12px 30px rgba(0,0,0,.5);
+      display: flex; flex-direction: column;
+    }
+    .more-menu button {
+      text-align: left; padding: .55rem .8rem; background: transparent;
+      border: none; color: #e0e0e0; font-family: inherit; font-size: .85rem;
+      border-radius: 6px; cursor: pointer;
+    }
+    .more-menu button:hover { background: #2a2a4a; color: #fff; }
+
+    /* Errors */
+    .errors-box {
+      margin: 1.25rem 0; padding: .85rem 1rem;
+      background: rgba(233,69,96,.1); border: 1px solid #e9456066;
+      border-radius: 8px; color: #ffb8c1;
+    }
+    .errors-box ul { margin: .35rem 0 0; padding-left: 1.25rem; }
+
     /* Zona */
     .zone-section { margin-bottom: 1.75rem; }
     .zone-title {
@@ -266,11 +544,14 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
       padding-bottom: .4rem; border-bottom: 1px solid #2a2a4a;
       color: #f0e6d2; font-size: 1.15rem;
     }
+    .zone-title.is-toggle { cursor: pointer; user-select: none; }
+    .zone-title.is-toggle:hover { color: #ffd23c; }
     .zone-name { font-weight: 700; }
     .zone-count {
       background: #16213e; color: #ffbd39; padding: .12rem .55rem;
       border-radius: 999px; font-size: .8rem; font-weight: 600;
     }
+    .side-caret { margin-left: auto; opacity: .7; }
 
     /* Card grid (stacks) */
     .card-grid {
@@ -289,6 +570,7 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
       object-fit: cover; border-radius: 6px;
       box-shadow: 0 4px 14px rgba(0,0,0,.4);
     }
+    .card-stack.banned .top { filter: grayscale(.8) brightness(.6); }
     .card-stack .placeholder {
       display: grid; place-items: center;
       background: #16213e; color: #c8c8da; padding: 1rem; text-align: center;
@@ -303,6 +585,14 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
       padding: .15rem .5rem; border-radius: 999px;
       box-shadow: 0 2px 8px rgba(0,0,0,.5);
     }
+    .ban-overlay {
+      position: absolute; top: 6px; right: 6px; z-index: 3;
+      padding: .15rem .5rem; border-radius: 999px;
+      font-weight: 800; font-size: .72rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,.5);
+    }
+    .ban-overlay.ban-banned { background: #dc3545; color: #fff; }
+    .ban-overlay.ban-limited { background: #f59e0b; color: #1a1a2e; }
     .card-name {
       position: absolute; left: 0; right: 0; bottom: -1.35rem;
       text-align: center; font-size: .75rem; color: #c8c8da;
@@ -310,13 +600,72 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
     }
     .card-stack.qty-2, .card-stack.qty-3 { margin-right: 14px; margin-bottom: 14px; }
 
-    /* Errors */
-    .errors-box {
-      margin: 1.25rem 0; padding: .85rem 1rem;
-      background: rgba(233,69,96,.1); border: 1px solid #e9456066;
-      border-radius: 8px; color: #ffb8c1;
+    /* List view */
+    .list-view .list-zone { margin-bottom: 1.5rem; }
+    .entries-table {
+      width: 100%; border-collapse: collapse; font-size: .9rem;
+      background: #15152a; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden;
     }
-    .errors-box ul { margin: .35rem 0 0; padding-left: 1.25rem; }
+    .entries-table th, .entries-table td { padding: .55rem .75rem; text-align: left; }
+    .entries-table thead th {
+      background: #1a1a2e; color: #c89b3c; font-weight: 700;
+      border-bottom: 1px solid #2a2a4a;
+    }
+    .entries-table .w-qty { width: 64px; text-align: center; font-weight: 700; color: #ffbd39; }
+    .entries-table tbody tr { border-top: 1px solid #1f1f3a; cursor: pointer; transition: background .12s; }
+    .entries-table tbody tr:hover { background: #1a1a2e; }
+    .entries-table tr.banned { opacity: .55; }
+    .entry-name { display: flex; align-items: center; gap: .55rem; }
+    .entry-thumb { width: 32px; height: 44px; object-fit: cover; border-radius: 3px; flex-shrink: 0; }
+    .ban-badge {
+      padding: .1rem .45rem; border-radius: 999px; font-size: .7rem; font-weight: 700;
+    }
+    .ban-badge.ban-banned { background: #dc3545; color: #fff; }
+    .ban-badge.ban-limited { background: #f59e0b; color: #1a1a2e; }
+
+    /* Stats */
+    .stats-view { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 820px) { .stats-view { grid-template-columns: 1fr; } }
+    .stats-card {
+      background: #15152a; border: 1px solid #2a2a4a; border-radius: 12px;
+      padding: 1rem 1.1rem;
+    }
+    .stats-card h3 { margin: 0 0 .85rem; color: #f0e6d2; font-size: 1.05rem; }
+    .cost-curve {
+      display: grid; grid-template-columns: repeat(8, 1fr); gap: .35rem; align-items: end;
+      height: 180px;
+    }
+    .cc-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: .25rem; height: 100%; }
+    .cc-count { font-size: .75rem; color: #ffbd39; font-weight: 700; min-height: 1rem; }
+    .cc-bar-wrap { width: 100%; height: 100%; display: flex; align-items: flex-end; background: rgba(40,40,80,.25); border-radius: 4px; overflow: hidden; }
+    .cc-bar {
+      width: 100%; min-height: 2px;
+      background: linear-gradient(180deg, #ffd23c 0%, #c89b3c 100%);
+      border-radius: 4px 4px 0 0; transition: height .25s;
+    }
+    .cc-col.is-avg .cc-bar { background: linear-gradient(180deg, #e94560 0%, #9c5dff 100%); }
+    .cc-label { font-size: .78rem; color: #c8c8da; font-weight: 600; }
+
+    .dist-list { display: flex; flex-direction: column; gap: .45rem; }
+    .dist-row {
+      display: grid; grid-template-columns: 110px 1fr 80px;
+      gap: .65rem; align-items: center; font-size: .85rem;
+    }
+    .dist-name { color: #c8c8da; display: inline-flex; align-items: center; gap: .35rem; }
+    .dist-name .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .dist-bar-wrap { background: rgba(40,40,80,.35); border-radius: 4px; height: 12px; overflow: hidden; }
+    .dist-bar { height: 100%; transition: width .25s; }
+    .dist-num { color: #f0e6d2; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+
+    .prob-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    .prob-table th, .prob-table td { padding: .35rem .45rem; border-bottom: 1px solid #1f1f3a; }
+    .prob-table th { color: #c89b3c; text-align: left; }
+    .prob-table .num { text-align: right; }
+    .prob-pill {
+      display: inline-block; padding: .15rem .55rem; border-radius: 999px;
+      background: linear-gradient(90deg, rgba(74,222,128,.25) var(--p), rgba(40,40,80,.35) var(--p));
+      color: #f0e6d2; font-weight: 700; font-size: .78rem;
+    }
 
     /* Modal */
     .preview-overlay {
@@ -350,6 +699,50 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
     .preview-stats strong { font-size: 1.4rem; color: #f0e6d2; }
     .preview-desc { white-space: pre-wrap; font-family: inherit; line-height: 1.55; margin: 0; font-size: .92rem; }
     @media (max-width: 720px) { .preview-layout { grid-template-columns: 1fr; } .preview-box { padding: 1rem; } }
+
+    /* Share toast */
+    .share-toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+      color: #0a1428; font-weight: 700; padding: .7rem 1.2rem;
+      border-radius: 999px; box-shadow: 0 10px 28px rgba(0,0,0,.45);
+      z-index: 1100; animation: fadeUp .25s ease-out;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translate(-50%, 12px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+
+    /* Exporting overlay */
+    .exporting-overlay {
+      position: fixed; inset: 0; z-index: 1200;
+      background: rgba(0,0,0,.7); display: grid; place-items: center;
+    }
+    .exporting-box {
+      background: #15152a; border: 1px solid #c89b3c; border-radius: 10px;
+      padding: 1.5rem 2rem; text-align: center; color: #f0e6d2;
+    }
+    .spinner {
+      width: 36px; height: 36px; margin: 0 auto .75rem;
+      border: 3px solid #2a2a4a; border-top-color: #c89b3c;
+      border-radius: 50%; animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Presentation mode */
+    .container.is-presentation .back-link,
+    .container.is-presentation .action-bar { display: none !important; }
+    .container.is-presentation { max-width: none; padding-top: .5rem; }
+
+    .exit-presentation-fab {
+      position: fixed; top: 14px; right: 14px; z-index: 1100;
+      width: 42px; height: 42px; border-radius: 50%;
+      background: #15152a; border: 1px solid #c89b3c; color: #ffd23c;
+      font-size: 1.1rem; cursor: pointer;
+      box-shadow: 0 6px 20px rgba(0,0,0,.5);
+      transition: all .15s;
+    }
+    .exit-presentation-fab:hover { background: #c89b3c; color: #0a1428; }
   `],
 })
 export class RiftboundDeckViewComponent implements OnInit {
@@ -357,6 +750,11 @@ export class RiftboundDeckViewComponent implements OnInit {
   private router = inject(Router);
   private rb = inject(RiftboundService);
   private auth = inject(AuthService);
+  private titleSvc = inject(Title);
+  private metaSvc = inject(Meta);
+  private cdr = inject(ChangeDetectorRef);
+
+  @ViewChild('deckContent') deckContent?: ElementRef<HTMLElement>;
 
   deck = signal<RiftboundDeck | null>(null);
   loading = signal(true);
@@ -364,6 +762,17 @@ export class RiftboundDeckViewComponent implements OnInit {
   previewEntry = signal<RiftboundDeckEntry | null>(null);
   previewDetail = signal<RiftboundCard | null>(null);
   previewLoading = signal(false);
+
+  viewMode = signal<ViewMode>('grid');
+  sideOpen = signal(true);
+  presentationMode = signal(false);
+  showMoreMenu = signal(false);
+  exporting = signal(false);
+  shareToast = signal(false);
+  toastMsg = signal('Enlace copiado');
+
+  /** Banlist indexada por id de carta. */
+  private banlistByCardId = new Map<number, RiftboundBanlistEntry>();
 
   readonly zones: RiftboundZone[] = ['champion', 'main', 'side', 'rune', 'bg'];
   readonly labels = RIFTBOUND_ZONE_LABELS;
@@ -381,13 +790,50 @@ export class RiftboundDeckViewComponent implements OnInit {
 
   hex(c: RiftboundColor): string { return COLOR_HEX[c] ?? '#888'; }
   label(c: RiftboundColor): string { return COLOR_LABEL[c] ?? c; }
+  typeLabel(t?: string): string { return TYPE_LABEL[t ?? ''] ?? (t ?? '—'); }
 
   ngOnInit() {
+    // Restaurar viewMode
+    try {
+      const saved = localStorage.getItem('rb-deck-view:mode') as ViewMode | null;
+      if (saved === 'grid' || saved === 'list' || saved === 'stats') this.viewMode.set(saved);
+    } catch { /* noop */ }
+
     const id = +this.route.snapshot.paramMap.get('id')!;
     if (!id) { this.loading.set(false); return; }
     this.rb.getDeck(id).subscribe({
-      next: (d) => { this.deck.set(d); this.loading.set(false); },
+      next: (d) => {
+        this.deck.set(d);
+        this.loading.set(false);
+        // SEO
+        this.titleSvc.setTitle(`${d.name} — Riftbound · ShadowForge`);
+        this.metaSvc.updateTag({
+          name: 'description',
+          content: `Mazo Riftbound «${d.name}» por ${d.owner_username} · ${this.totalCards()} cartas`,
+        });
+        this.loadBanlist();
+        // Deep-link ?card=ID
+        const cardParam = this.route.snapshot.queryParamMap.get('card');
+        if (cardParam) {
+          const cid = Number(cardParam);
+          const target = d.entries.find(e => (e.card_data?.id ?? e.card) === cid);
+          if (target) this.openPreview(target, /*skipNav*/ true);
+        }
+      },
       error: () => this.loading.set(false),
+    });
+  }
+
+  private loadBanlist() {
+    this.rb.listBanlist('standard').subscribe({
+      next: (resp) => {
+        this.banlistByCardId.clear();
+        for (const e of (resp.results ?? [])) {
+          if (e.card) this.banlistByCardId.set(e.card, e);
+        }
+        this.cdr.detectChanges();
+      },
+      error: () => { /* sin banlist, sin badges */ },
     });
   }
 
@@ -410,6 +856,27 @@ export class RiftboundDeckViewComponent implements OnInit {
     return d.toLocaleDateString('es-CL');
   }
 
+  // ── View mode persistido ──
+  setViewMode(m: ViewMode) {
+    this.viewMode.set(m);
+    try { localStorage.setItem('rb-deck-view:mode', m); } catch { /* noop */ }
+  }
+
+  // ── Banlist ──
+  getBanStatus(e: RiftboundDeckEntry): RiftboundBanlistEntry | null {
+    const cid = e.card_data?.id ?? e.card;
+    return this.banlistByCardId.get(cid) ?? null;
+  }
+  banShort(b: RiftboundBanlistEntry): string {
+    if (b.status === 'banned') return 'BAN';
+    return `×${b.max_copies ?? 1}`;
+  }
+  banTooltip(b: RiftboundBanlistEntry): string {
+    if (b.status === 'banned') return 'Baneada';
+    return `Limitada a ${b.max_copies ?? 1} copia(s)`;
+  }
+
+  // ── Acciones owner ──
   editDeck() {
     const d = this.deck();
     if (d) this.router.navigate(['/riftbound/builder', d.id]);
@@ -434,9 +901,185 @@ export class RiftboundDeckViewComponent implements OnInit {
     });
   }
 
-  openPreview(e: RiftboundDeckEntry) {
+  // ── Compartir ──
+  shareDeck() {
+    const url = window.location.href;
+    const d = this.deck();
+    const title = d ? `${d.name} · Riftbound · ShadowForge` : 'Riftbound · ShadowForge';
+    const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> };
+    if (nav.share) {
+      nav.share({ title, text: title, url }).catch(() => { /* user cancel */ });
+      return;
+    }
+    navigator.clipboard.writeText(url).then(() => this.fireToast('Enlace copiado'));
+  }
+
+  private fireToast(msg: string, ms = 2000) {
+    this.toastMsg.set(msg);
+    this.shareToast.set(true);
+    setTimeout(() => this.shareToast.set(false), ms);
+  }
+
+  // ── More menu ──
+  toggleMoreMenu(e?: Event) {
+    e?.stopPropagation();
+    this.showMoreMenu.set(!this.showMoreMenu());
+  }
+
+  // ── Exportaciones ──
+  exportText() {
+    const d = this.deck();
+    if (!d) return;
+    let txt = `// ${d.name}\n// Riftbound\n\n`;
+    for (const z of this.zones) {
+      const entries = this.entriesByZone(z);
+      if (!entries.length) continue;
+      txt += `// ${this.labels[z]} (${this.countZone(z)})\n`;
+      for (const e of entries) {
+        txt += `${e.quantity}x ${e.card_data?.name ?? e.card_data?.card_number ?? ''}\n`;
+      }
+      txt += '\n';
+    }
+    navigator.clipboard.writeText(txt.trim()).then(() => this.fireToast('Texto copiado'));
+  }
+
+  exportJson() {
+    const d = this.deck();
+    if (!d) return;
+    const payload = {
+      version: 1,
+      app: 'shadowforge-riftbound',
+      name: d.name,
+      description: d.description,
+      cover_card: d.cover_card_data?.card_number ?? null,
+      primary_colors: d.primary_colors,
+      entries: d.entries.map(e => ({
+        card_number: e.card_data?.card_number,
+        name: e.card_data?.name,
+        zone: e.zone,
+        quantity: e.quantity,
+      })),
+      exported_at: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const safe = d.name.replace(/[^\w\-]+/g, '_').slice(0, 60) || 'mazo';
+    a.download = `${safe}.riftbound.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  async exportImage() {
+    const el = this.deckContent?.nativeElement;
+    if (!el || this.exporting()) return;
+    this.exporting.set(true);
+    try {
+      await this.waitForImages(el);
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(el, {
+        backgroundColor: '#0a0a1e',
+        useCORS: true, allowTaint: true, scale: 2,
+        windowWidth: el.scrollWidth, windowHeight: el.scrollHeight,
+      });
+      const link = document.createElement('a');
+      link.download = `${this.deck()?.name || 'mazo'}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (e) {
+      console.error('Error exportando imagen:', e);
+    } finally {
+      this.exporting.set(false);
+    }
+  }
+
+  async copyImageToClipboard() {
+    const el = this.deckContent?.nativeElement;
+    if (!el || this.exporting()) return;
+    const navAny = navigator as Navigator & { clipboard?: { write?: (items: ClipboardItem[]) => Promise<void> } };
+    if (!navAny.clipboard?.write || typeof (window as Window & typeof globalThis & { ClipboardItem?: typeof ClipboardItem }).ClipboardItem === 'undefined') {
+      return this.exportImage();
+    }
+    this.exporting.set(true);
+    try {
+      await this.waitForImages(el);
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(el, {
+        backgroundColor: '#0a0a1e',
+        useCORS: true, allowTaint: true, scale: 2,
+        windowWidth: el.scrollWidth, windowHeight: el.scrollHeight,
+      });
+      const blob: Blob | null = await new Promise(res => canvas.toBlob(b => res(b), 'image/png'));
+      if (blob) {
+        await navAny.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        this.fireToast('Imagen copiada');
+      }
+    } catch (e) {
+      console.error('Error copiando imagen:', e);
+    } finally {
+      this.exporting.set(false);
+    }
+  }
+
+  private waitForImages(el: HTMLElement): Promise<void[]> {
+    const imgs = Array.from(el.querySelectorAll('img')) as HTMLImageElement[];
+    return Promise.all(imgs.map(img => {
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      return new Promise<void>(resolve => {
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+        img.loading = 'eager';
+        const src = img.src; img.src = ''; img.src = src;
+      });
+    }));
+  }
+
+  // ── Presentación ──
+  togglePresentation() {
+    this.presentationMode.set(!this.presentationMode());
+    document.body.classList.toggle('riftbound-deck-presentation', this.presentationMode());
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onKeydown(ev: KeyboardEvent) {
+    if (ev.key === 'Escape') {
+      if (this.previewEntry()) { this.closePreview(); return; }
+      if (this.showMoreMenu()) { this.showMoreMenu.set(false); return; }
+      if (this.presentationMode()) { this.togglePresentation(); return; }
+    }
+    if ((ev.key === 'f' || ev.key === 'F') && !this.previewEntry() && !this.isTyping(ev.target)) {
+      this.togglePresentation();
+    }
+  }
+
+  @HostListener('document:click')
+  onDocClick() {
+    if (this.showMoreMenu()) this.showMoreMenu.set(false);
+  }
+
+  private isTyping(t: EventTarget | null): boolean {
+    if (!t) return false;
+    const el = t as HTMLElement;
+    const tag = (el.tagName || '').toLowerCase();
+    return tag === 'input' || tag === 'textarea' || el.isContentEditable;
+  }
+
+  // ── Preview (con deep-link) ──
+  openPreview(e: RiftboundDeckEntry, skipNav = false) {
     this.previewEntry.set(e);
     this.previewDetail.set(null);
+    if (!skipNav) {
+      const cid = e.card_data?.id ?? e.card;
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { card: cid },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }
     const cn = e.card_data?.card_number;
     if (!cn) return;
     this.previewLoading.set(true);
@@ -450,5 +1093,110 @@ export class RiftboundDeckViewComponent implements OnInit {
     this.previewEntry.set(null);
     this.previewDetail.set(null);
     this.previewLoading.set(false);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { card: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
+
+  // ── Stats ──
+  /** Buckets 0..6, 7+ de energía sobre el mazo principal (excluye runas/legend/BF). */
+  costCurve = computed(() => {
+    const buckets = [0, 0, 0, 0, 0, 0, 0, 0];
+    for (const e of this.entriesByZone('main')) {
+      const en = e.card_data?.energy;
+      if (en == null || !Number.isFinite(en)) continue;
+      const idx = en >= 7 ? 7 : Math.max(0, Math.min(7, Math.floor(en)));
+      buckets[idx] += e.quantity;
+    }
+    const max = Math.max(1, ...buckets);
+    return buckets.map((count, i) => ({
+      label: i === 7 ? '7+' : String(i),
+      count,
+      pct: Math.round((count / max) * 100),
+    }));
+  });
+
+  hasAnyCost = computed(() => this.costCurve().some(b => b.count > 0));
+
+  avgCost = computed(() => {
+    let sum = 0, n = 0;
+    for (const e of this.entriesByZone('main')) {
+      const en = e.card_data?.energy;
+      if (en == null || !Number.isFinite(en)) continue;
+      sum += en * e.quantity;
+      n += e.quantity;
+    }
+    return n === 0 ? 0 : Math.round((sum / n) * 10) / 10;
+  });
+
+  avgCostBucket = computed(() => {
+    const a = this.avgCost();
+    if (!Number.isFinite(a) || a <= 0) return '';
+    const idx = a >= 7 ? 7 : Math.max(0, Math.min(7, Math.round(a)));
+    return idx === 7 ? '7+' : String(idx);
+  });
+
+  /** Distribución por tipo (todas las zonas) */
+  typeDistribution = computed(() => {
+    const map = new Map<string, number>();
+    for (const e of (this.deck()?.entries ?? [])) {
+      const t = e.card_data?.card_type ?? 'other';
+      map.set(t, (map.get(t) ?? 0) + e.quantity);
+    }
+    const total = [...map.values()].reduce((s, x) => s + x, 0);
+    if (total === 0) return [];
+    return [...map.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([type, count]) => ({
+        type,
+        label: TYPE_LABEL[type] ?? type,
+        count,
+        pct: Math.round((count / total) * 100),
+        color: TYPE_COLOR[type] ?? '#888',
+      }));
+  });
+
+  /** Distribución por color de cartas de main + side. */
+  colorDistribution = computed(() => {
+    const counts: Partial<Record<RiftboundColor, number>> = {};
+    let total = 0;
+    for (const e of (this.deck()?.entries ?? [])) {
+      if (e.zone !== 'main' && e.zone !== 'side') continue;
+      for (const c of (e.card_data?.colors ?? [])) {
+        counts[c] = (counts[c] ?? 0) + e.quantity;
+        total += e.quantity;
+      }
+    }
+    if (total === 0) return [];
+    return (Object.keys(counts) as RiftboundColor[])
+      .sort((a, b) => (counts[b] ?? 0) - (counts[a] ?? 0))
+      .map(c => ({
+        code: c,
+        label: COLOR_LABEL[c],
+        hex: COLOR_HEX[c],
+        count: counts[c] ?? 0,
+        pct: Math.round(((counts[c] ?? 0) / total) * 100),
+      }));
+  });
+
+  /** Probabilidad hipergeométrica de robar ≥1 copia en mano inicial (4) del main. */
+  drawProbabilities = computed(() => {
+    const main = this.entriesByZone('main');
+    const N = main.reduce((s, e) => s + e.quantity, 0);
+    const n = Math.min(4, N);
+    if (N === 0 || n === 0) return [];
+    return main.map(e => {
+      const K = e.quantity;
+      let p0 = 1;
+      for (let i = 0; i < n; i++) p0 *= (N - K - i) / (N - i);
+      return {
+        name: e.card_data?.name ?? e.card_data?.card_number ?? '?',
+        qty: K,
+        pct: Math.round((1 - Math.max(0, p0)) * 100),
+      };
+    }).sort((a, b) => b.pct - a.pct);
+  });
 }

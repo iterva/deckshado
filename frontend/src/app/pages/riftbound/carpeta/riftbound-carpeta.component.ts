@@ -1,435 +1,960 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {
+  Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, inject, signal, computed,
+} from '@angular/core';
+import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+
 import { RiftboundService } from '../../../services/riftbound.service';
 import { AuthService } from '../../../services/auth.service';
-import { RiftboundCardLite, RiftboundCollectionEntry } from '../../../models/riftbound';
+import {
+  RiftboundCard, RiftboundCardLite, RiftboundCollectionEntry, RiftboundWishlistEntry,
+  RiftboundSet, RiftboundCollectionStats,
+} from '../../../models/riftbound';
+
+type Tab = 'carpeta' | 'codex' | 'wishlist' | 'stats';
+
+interface DirtyPatch {
+  quantity?: number;
+  is_foil?: boolean;
+  notes?: string;
+}
 
 @Component({
   selector: 'app-riftbound-carpeta',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DecimalPipe],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="carpeta-container">
-      <div class="carpeta-header">
-        <div class="binder-avatar-placeholder">📁</div>
-        <div class="binder-info">
-          <h1>Mi Carpeta · Riftbound</h1>
-          <p class="binder-user">{{ auth.user()?.username || 'Invitado' }}</p>
-        </div>
+  <div class="carpeta-container">
+    <!-- Header -->
+    <div class="carpeta-header">
+      <div class="binder-avatar-placeholder">📁</div>
+      <div class="binder-info">
+        <h1>Mi Carpeta · Riftbound</h1>
+        <p class="binder-user">{{ auth.user()?.username || 'Invitado' }}</p>
       </div>
+    </div>
 
-      <div class="tabs">
-        <button class="tab" [class.active]="activeTab() === 'collection'" (click)="activeTab.set('collection')">
-          📁 COLECCIÓN
-        </button>
-        <button class="tab" [class.active]="activeTab() === 'add'" (click)="activeTab.set('add')">
-          ➕ AÑADIR
-        </button>
-        <button class="tab" [class.active]="activeTab() === 'stats'" (click)="activeTab.set('stats')">
-          📊 STATS
-        </button>
-      </div>
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab" [class.active]="activeTab() === 'carpeta'" (click)="switchTab('carpeta')">
+        <i class="bi bi-folder-fill"></i> CARPETA
+      </button>
+      <button class="tab" [class.active]="activeTab() === 'codex'" (click)="switchTab('codex')">
+        <i class="bi bi-collection"></i> COLECCIÓN
+      </button>
+      <button class="tab" [class.active]="activeTab() === 'wishlist'" (click)="switchTab('wishlist')">
+        <i class="bi bi-heart-fill"></i> WISHLIST
+      </button>
+      <button class="tab" [class.active]="activeTab() === 'stats'" (click)="switchTab('stats')">
+        <i class="bi bi-bar-chart-fill"></i> STATS
+      </button>
+    </div>
 
-      <!-- ═══ COLLECTION ═══ -->
-      @if (activeTab() === 'collection') {
-        <div class="tab-content">
-          <div class="tab-toolbar">
-            <input type="search" class="search-input"
-                   placeholder="Filtrar tu colección…"
-                   [(ngModel)]="filterText" />
+    <!-- ═══ TAB: CARPETA ═══ -->
+    @if (activeTab() === 'carpeta') {
+      <div class="tab-content">
+        <div class="tab-toolbar">
+          <div class="search-bar">
+            <input type="text" placeholder="Buscar en tu colección..."
+                   [(ngModel)]="collectionSearch" (keyup.enter)="onCollectionSearch()" />
+            <button class="btn btn-primary btn-sm" (click)="onCollectionSearch()">Buscar</button>
           </div>
-
-          @if (loading()) {
-            <p class="muted">Cargando…</p>
+          @if (dirtyEntries.size > 0) {
+            <button class="btn btn-sm btn-primary" (click)="saveAllChanges()" [disabled]="batchSaving()">
+              {{ batchSaving() ? '⏳ Guardando...' : '💾 Guardar Cambios (' + dirtyEntries.size + ')' }}
+            </button>
           }
+        </div>
 
-          <p class="results-count">{{ filtered().length }} cartas en tu colección · {{ totalCopies() }} copias</p>
+        <p class="results-count">{{ collectionTotal() }} cartas únicas · {{ collectionCopies() }} copias totales</p>
 
-          <div class="card-grid">
-            @for (e of filtered(); track e.id) {
-              <div class="entry-card">
-                @if (e.card_data?.image) {
-                  <img [src]="e.card_data!.image" [alt]="e.card_data!.name" loading="lazy" />
+        @if (collectionLoading()) { <div class="loading">Cargando...</div> }
+
+        @if (!collectionLoading() && collectionEntries().length === 0) {
+          <div class="empty-state">
+            <p>Tu carpeta está vacía. Ve a <strong>Colección</strong> para añadir cartas.</p>
+          </div>
+        }
+
+        <div class="collection-grid">
+          @for (entry of collectionEntries(); track entry.id) {
+            <div class="collection-card">
+              <div class="card-image" (click)="previewCard.set(entry.card_data)">
+                @if (entry.card_data?.image) {
+                  <img [src]="entry.card_data.image" [alt]="entry.card_data.name" loading="lazy" />
                 } @else {
-                  <div class="img-fallback">{{ e.card_data?.card_number }}</div>
+                  <div class="img-fallback">{{ entry.card_data?.card_number }}</div>
                 }
-                <div class="entry-meta">
-                  <strong>{{ e.card_data?.name }}</strong>
-                  <small>{{ e.card_data?.card_number }}</small>
-                  <div class="qty-controls">
-                    <button class="ctrl" (click)="changeQty(e, -1)">−</button>
-                    <input type="number" min="0" [ngModel]="e.quantity" (ngModelChange)="setQty(e, $event)" />
-                    <button class="ctrl" (click)="changeQty(e, 1)">+</button>
-                    <button class="ctrl remove" (click)="remove(e)" title="Quitar">✕</button>
-                  </div>
-                </div>
+                <div class="eye-overlay"><i class="bi bi-eye-fill"></i></div>
+                @if (entry.is_foil) { <div class="foil-badge">✨ FOIL</div> }
               </div>
-            }
-          </div>
-
-          @if (!loading() && entries().length === 0) {
-            <div class="empty-state">
-              <p>Tu carpeta está vacía. Pulsa <strong>➕ AÑADIR</strong> para empezar.</p>
-            </div>
-          }
-        </div>
-      }
-
-      <!-- ═══ ADD ═══ -->
-      @if (activeTab() === 'add') {
-        <div class="tab-content">
-          <div class="tab-toolbar">
-            <input type="search" class="search-input"
-                   placeholder="Buscar carta por nombre, número o texto…"
-                   [(ngModel)]="addSearch"
-                   (ngModelChange)="onAddSearch()" />
-            <select [(ngModel)]="addType" (ngModelChange)="searchToAdd()">
-              <option value="">Todos los tipos</option>
-              <option value="unit">Unidad</option>
-              <option value="spell">Hechizo</option>
-              <option value="champion">Champion</option>
-              <option value="legend">Legend</option>
-              <option value="gear">Gear</option>
-              <option value="battlefield">Battlefield</option>
-              <option value="rune">Runa</option>
-            </select>
-          </div>
-
-          @if (addLoading()) { <p class="muted">Buscando…</p> }
-
-          <div class="card-grid">
-            @for (c of addResults(); track c.id) {
-              <div class="entry-card add-card">
-                @if (c.image) {
-                  <img [src]="c.image" [alt]="c.name" loading="lazy" />
-                } @else {
-                  <div class="img-fallback">{{ c.card_number }}</div>
-                }
-                <div class="entry-meta">
-                  <strong>{{ c.name }}</strong>
-                  <small>{{ c.card_number }}</small>
-                  <button class="add-btn" (click)="add(c)">
-                    + Añadir @if (currentQty(c.id); as q) { ({{ q }} en carpeta) }
+              <div class="card-body">
+                <h4>{{ entry.card_data?.name }}</h4>
+                <span class="card-meta">{{ typeLabel(entry.card_data?.card_type) }} · {{ entry.card_data?.card_number }}</span>
+                <div class="inline-fields">
+                  <div class="field">
+                    <label>Tengo</label>
+                    <input type="number" [value]="entry.quantity" min="0"
+                      (input)="onFieldChange(entry, 'quantity', $any($event.target).valueAsNumber)" />
+                  </div>
+                  <label class="foil-toggle">
+                    <input type="checkbox" [checked]="entry.is_foil"
+                      (change)="onFieldChange(entry, 'is_foil', $any($event.target).checked)" />
+                    ✨ Foil
+                  </label>
+                </div>
+                <div class="field full">
+                  <label>Notas</label>
+                  <input type="text" [value]="entry.notes" maxlength="200" placeholder="—"
+                    (input)="onFieldChange(entry, 'notes', $any($event.target).value)" />
+                </div>
+                <div class="card-action-row">
+                  @if (dirtyEntries.has(entry.id)) {
+                    <button class="btn btn-xs btn-primary" (click)="saveEntry(entry)">💾 Guardar</button>
+                  }
+                  <button class="btn btn-xs btn-danger" (click)="removeFromCollection(entry)">
+                    <i class="bi bi-trash"></i>
                   </button>
                 </div>
               </div>
-            }
-          </div>
-
-          @if (!addLoading() && addResults().length === 0 && addSearch.length >= 2) {
-            <p class="muted center">Sin resultados.</p>
+            </div>
           }
         </div>
-      }
 
-      <!-- ═══ STATS ═══ -->
-      @if (activeTab() === 'stats') {
-        <div class="tab-content">
-          <div class="stats-grid">
-            <div class="stat-card">
-              <span class="stat-label">Cartas únicas</span>
-              <span class="stat-value">{{ entries().length }}</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-label">Copias totales</span>
-              <span class="stat-value">{{ totalCopies() }}</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-label">Sets distintos</span>
-              <span class="stat-value">{{ uniqueSets().length }}</span>
-            </div>
+        @if (collectionTotalPages() > 1) {
+          <div class="pagination">
+            <button class="btn btn-sm" (click)="collectionPrev()" [disabled]="collectionPage() === 1">← Anterior</button>
+            <span>{{ collectionPage() }} / {{ collectionTotalPages() }}</span>
+            <button class="btn btn-sm" (click)="collectionNext()" [disabled]="collectionPage() >= collectionTotalPages()">Siguiente →</button>
           </div>
+        }
+      </div>
+    }
 
-          <h3>Por tipo</h3>
-          <div class="dist-bars">
-            @for (kv of typeStats(); track kv.key) {
-              <div class="dist-row">
-                <span class="dist-label">{{ kv.key }}</span>
-                <div class="dist-bar">
-                  <div class="dist-fill" [style.width]="(kv.value / totalCopies() * 100) + '%'"></div>
-                </div>
-                <span class="dist-num">{{ kv.value }}</span>
-              </div>
-            }
+    <!-- ═══ TAB: CODEX ═══ -->
+    @if (activeTab() === 'codex') {
+      <div class="tab-content">
+        <div class="tab-toolbar">
+          <div class="search-bar">
+            <input type="text" placeholder="Buscar cartas..."
+                   [(ngModel)]="codexSearch" (keyup.enter)="onCodexSearch()" />
+            <button class="btn btn-primary btn-sm" (click)="onCodexSearch()">Buscar</button>
           </div>
-
-          <h3>Por set</h3>
-          <div class="dist-bars">
-            @for (kv of setStats(); track kv.key) {
-              <div class="dist-row">
-                <span class="dist-label">{{ kv.key }}</span>
-                <div class="dist-bar">
-                  <div class="dist-fill" [style.width]="(kv.value / totalCopies() * 100) + '%'"></div>
-                </div>
-                <span class="dist-num">{{ kv.value }}</span>
-              </div>
+        </div>
+        <div class="filter-row">
+          <select [(ngModel)]="selectedSet" (change)="onCodexFilter()">
+            <option value="">Todos los sets</option>
+            @for (s of sets(); track s.id) { <option [value]="s.code">{{ s.name }} ({{ s.code }})</option> }
+          </select>
+          <select [(ngModel)]="selectedType" (change)="onCodexFilter()">
+            <option value="">Todos los tipos</option>
+            <option value="unit">Unit</option>
+            <option value="spell">Spell</option>
+            <option value="champion">Champion</option>
+            <option value="legend">Legend</option>
+            <option value="gear">Gear</option>
+            <option value="battlefield">Battlefield</option>
+            <option value="rune">Rune</option>
+          </select>
+          <select [(ngModel)]="selectedRarity" (change)="onCodexFilter()">
+            <option value="">Todas las rarezas</option>
+            <option value="common">Common</option>
+            <option value="uncommon">Uncommon</option>
+            <option value="rare">Rare</option>
+            <option value="epic">Epic</option>
+            <option value="legendary">Legendary</option>
+            <option value="champion">Champion</option>
+            <option value="promo">Promo</option>
+          </select>
+          <div class="color-chips">
+            @for (c of COLORS; track c.code) {
+              <button class="chip" [class.active]="selectedColors.has(c.code)"
+                      [style.--c]="c.hex" (click)="toggleColor(c.code)">
+                {{ c.label }}
+              </button>
             }
           </div>
         </div>
-      }
-    </div>
+
+        <p class="results-count">{{ codexCards().length }} de {{ codexTotal() }} cartas</p>
+
+        @if (codexLoading()) { <div class="loading">Cargando...</div> }
+
+        <div class="card-grid">
+          @for (card of codexCards(); track card.id) {
+            <div class="card-item" (click)="selectCodexCard(card)">
+              <div class="card-image">
+                @if (card.image) {
+                  <img [src]="card.image" [alt]="card.name" loading="lazy" />
+                } @else {
+                  <div class="img-fallback">{{ card.card_number }}</div>
+                }
+                @if (isInCollection(card.id)) {
+                  <div class="owned-badge">✓ x{{ collectionQty(card.id) }}</div>
+                }
+              </div>
+              <div class="card-info">
+                <h4>{{ card.name }}</h4>
+                <span class="card-type">{{ typeLabel(card.card_type) }}</span>
+              </div>
+              <div class="card-overlay-actions">
+                <button class="btn-icon btn-add" (click)="quickAddToCollection(card, $event)" title="Añadir a colección">
+                  <i class="bi bi-plus-lg"></i>
+                </button>
+                <button class="btn-icon btn-heart" [class.active]="isInWishlist(card.id)"
+                        (click)="toggleWishlist(card.id, $event)" title="Wishlist">
+                  <i class="bi" [class.bi-heart-fill]="isInWishlist(card.id)" [class.bi-heart]="!isInWishlist(card.id)"></i>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+
+        @if (codexTotalPages() > 1) {
+          <div class="pagination">
+            <button class="btn btn-sm" (click)="codexPrev()" [disabled]="codexPage() === 1">← Anterior</button>
+            <span>{{ codexPage() }} / {{ codexTotalPages() }}</span>
+            <button class="btn btn-sm" (click)="codexNext()" [disabled]="codexPage() >= codexTotalPages()">Siguiente →</button>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ═══ TAB: WISHLIST ═══ -->
+    @if (activeTab() === 'wishlist') {
+      <div class="tab-content">
+        <div class="tab-toolbar">
+          <div class="search-bar">
+            <input type="text" placeholder="Buscar en wishlist..."
+                   [(ngModel)]="wishlistSearch" (keyup.enter)="onWishlistSearch()" />
+            <button class="btn btn-primary btn-sm" (click)="onWishlistSearch()">Buscar</button>
+          </div>
+        </div>
+
+        <p class="results-count">{{ wishlistTotal() }} cartas en tu wishlist</p>
+
+        @if (wishlistLoading()) { <div class="loading">Cargando...</div> }
+
+        @if (!wishlistLoading() && wishlistEntries().length === 0) {
+          <div class="empty-state">
+            <p>Tu wishlist está vacía. Usa el <i class="bi bi-heart"></i> en la <strong>Colección</strong> para añadir cartas.</p>
+          </div>
+        }
+
+        <div class="wishlist-grid">
+          @for (entry of wishlistEntries(); track entry.id) {
+            <div class="wishlist-card">
+              <div class="card-image" (click)="previewCard.set(entry.card_data)">
+                @if (entry.card_data?.image) {
+                  <img [src]="entry.card_data.image" [alt]="entry.card_data.name" loading="lazy" />
+                } @else {
+                  <div class="img-fallback">{{ entry.card_data?.card_number }}</div>
+                }
+                <div class="eye-overlay"><i class="bi bi-eye-fill"></i></div>
+              </div>
+              <div class="card-info">
+                <h4>{{ entry.card_data?.name }}</h4>
+                <span class="card-meta">{{ typeLabel(entry.card_data?.card_type) }} · {{ entry.card_data?.card_number }}</span>
+                <div class="wishlist-qty">
+                  <label>Quiero:</label>
+                  <input type="number" [value]="entry.desired_quantity" min="1"
+                    (change)="updateWishlistQty(entry, $any($event.target).valueAsNumber)" />
+                </div>
+              </div>
+              <div class="card-actions">
+                <button class="btn btn-xs btn-danger" (click)="removeFromWishlist(entry)" title="Quitar de wishlist">
+                  <i class="bi bi-heartbreak"></i>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ═══ TAB: STATS ═══ -->
+    @if (activeTab() === 'stats') {
+      <div class="tab-content">
+        @if (statsLoading()) {
+          <p class="loading">Calculando estadísticas...</p>
+        } @else if (stats()) {
+          <div class="stats-overview">
+            <div class="stat-card-s">
+              <div class="stat-big">{{ stats()!.total_cards | number }}</div>
+              <div class="stat-desc">Cartas totales</div>
+            </div>
+            <div class="stat-card-s">
+              <div class="stat-big">{{ stats()!.unique_cards | number }}</div>
+              <div class="stat-desc">Cartas únicas</div>
+            </div>
+            <div class="stat-card-s">
+              <div class="stat-big">{{ stats()!.set_completeness.length }}</div>
+              <div class="stat-desc">Sets tocados</div>
+            </div>
+          </div>
+
+          @if (stats()!.set_completeness.length) {
+            <h3 class="stats-heading">Completitud por Set</h3>
+            <div class="completeness-grid">
+              @for (ed of stats()!.set_completeness; track ed.set) {
+                <div class="completeness-item">
+                  <div class="completeness-label">{{ ed.name }} <small>({{ ed.set }})</small></div>
+                  <div class="completeness-bar-wrap">
+                    <div class="completeness-bar" [style.width.%]="ed.pct"></div>
+                  </div>
+                  <span class="completeness-pct">{{ ed.owned }}/{{ ed.total }} ({{ ed.pct }}%)</span>
+                </div>
+              }
+            </div>
+          }
+
+          @if (stats()!.by_type.length) {
+            <h3 class="stats-heading">Por Tipo</h3>
+            <div class="stats-dist">
+              @for (r of stats()!.by_type; track r.key) {
+                <div class="dist-row">
+                  <span class="dist-label">{{ typeLabel(r.key) }}</span>
+                  <span class="dist-count">{{ r.count }}</span>
+                </div>
+              }
+            </div>
+          }
+
+          @if (stats()!.by_rarity.length) {
+            <h3 class="stats-heading">Por Rareza</h3>
+            <div class="stats-dist">
+              @for (r of stats()!.by_rarity; track r.key) {
+                <div class="dist-row">
+                  <span class="dist-label">{{ rarityLabel(r.key) }}</span>
+                  <span class="dist-count">{{ r.count }}</span>
+                </div>
+              }
+            </div>
+          }
+
+          @if (stats()!.by_color.length) {
+            <h3 class="stats-heading">Por Color</h3>
+            <div class="stats-dist">
+              @for (r of stats()!.by_color; track r.key) {
+                <div class="dist-row">
+                  <span class="dist-label" [style.color]="colorHex(r.key)">● {{ colorLabel(r.key) }}</span>
+                  <span class="dist-count">{{ r.count }}</span>
+                </div>
+              }
+            </div>
+          }
+        } @else if (statsError()) {
+          <p class="error">{{ statsError() }}</p>
+        }
+      </div>
+    }
+
+    <!-- ═══ MODAL: Preview ═══ -->
+    @if (previewCard(); as pc) {
+      <div class="modal-overlay" (click)="previewCard.set(null)">
+        <div class="modal modal-detail" (click)="$event.stopPropagation()">
+          <button class="close-btn" (click)="previewCard.set(null)">✕</button>
+          @if (pc.image) {
+            <img [src]="pc.image" [alt]="pc.name" class="detail-image" />
+          }
+          <div class="detail-info">
+            <h2>{{ pc.name }}</h2>
+            <div class="detail-meta">
+              <span class="badge">{{ typeLabel(pc.card_type) }}</span>
+              <span class="badge rarity">{{ rarityLabel(pc.rarity) }}</span>
+              @for (c of pc.colors; track c) {
+                <span class="badge color" [style.--c]="colorHex(c)">{{ colorLabel(c) }}</span>
+              }
+            </div>
+            <div class="detail-stats">
+              @if (pc.energy !== null && pc.energy !== undefined) { <span>⚡ Energía: {{ pc.energy }}</span> }
+              @if (pc.power !== null && pc.power !== undefined) { <span>🛡️ Power: {{ pc.power }}</span> }
+              @if (pc.might !== null && pc.might !== undefined) { <span>⚔️ Might: {{ pc.might }}</span> }
+            </div>
+            @if (pc.description) {
+              <div class="detail-ability">
+                <h4>Texto</h4>
+                <p>{{ pc.description }}</p>
+              </div>
+            }
+            <p class="detail-edition">{{ pc.card_number }}</p>
+            <div class="detail-actions">
+              <button class="btn btn-primary" (click)="quickAddToCollection(pc, $event); previewCard.set(null)">
+                <i class="bi bi-plus-lg"></i> Añadir a Carpeta
+              </button>
+              <button class="btn btn-heart-lg" [class.active]="isInWishlist(pc.id)"
+                      (click)="toggleWishlist(pc.id, $event)">
+                <i class="bi" [class.bi-heart-fill]="isInWishlist(pc.id)" [class.bi-heart]="!isInWishlist(pc.id)"></i>
+                {{ isInWishlist(pc.id) ? ' En Wishlist' : ' Wishlist' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
   `,
   styles: [`
-    .carpeta-container { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1rem; }
+    :host { display: block; min-height: 100vh; background: #0f0f23; color: #c8c8da; }
+    .carpeta-container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
 
-    /* Header */
     .carpeta-header {
-      display: flex; align-items: center; gap: 1rem;
-      background: #0f0f23; border: 1px solid #1e3a4a; border-radius: 12px;
-      padding: 1rem 1.25rem; margin-bottom: 1rem;
+      display: flex; align-items: center; gap: 1.2rem;
+      padding: 1.2rem; margin-bottom: 1.5rem;
+      background: linear-gradient(135deg, #16213e, #1a1a2e);
+      border: 1px solid #2a3a4a; border-radius: 12px;
     }
     .binder-avatar-placeholder {
-      width: 80px; height: 80px; border-radius: 50%;
-      background: linear-gradient(135deg, #e94560, #fff);
-      display: grid; place-items: center; font-size: 2.5rem;
+      width: 72px; height: 72px; border-radius: 12px;
+      background: #0f0f23; border: 2px solid #e94560;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem;
     }
-    .binder-info h1 { margin: 0; font-size: 1.6rem;
-      background: linear-gradient(90deg, #e94560, #fff);
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-    }
-    .binder-user { margin: .15rem 0 0; opacity: .65; }
+    .binder-info h1 { margin: 0; font-size: 1.6rem; color: #fff;
+      background: linear-gradient(90deg, #e94560, #fff); -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent; background-clip: text; }
+    .binder-user { margin: .25rem 0 0; color: #9ba3b4; font-size: .95rem; }
 
-    /* Tabs */
     .tabs {
-      display: flex; gap: .35rem; border-bottom: 2px solid #1e3a4a;
-      margin-bottom: 1rem; overflow-x: auto;
+      display: flex; gap: .5rem; flex-wrap: wrap;
+      border-bottom: 2px solid #2a3a4a; margin-bottom: 1.5rem;
     }
     .tab {
-      padding: .65rem 1rem; border: none; background: transparent;
-      color: #98a2a8; font-weight: 700; font-size: .85rem;
-      cursor: pointer; border-bottom: 3px solid transparent;
-      transition: all .15s; white-space: nowrap;
+      padding: .7rem 1.2rem; background: transparent; color: #9ba3b4;
+      border: none; border-bottom: 3px solid transparent;
+      font-weight: 600; cursor: pointer; transition: all .15s;
+      display: inline-flex; align-items: center; gap: .4rem;
     }
     .tab:hover { color: #fff; }
     .tab.active { color: #e94560; border-bottom-color: #e94560; }
 
-    /* Toolbar */
-    .tab-toolbar {
-      display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem;
+    .tab-toolbar { display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+    .search-bar { display: flex; gap: .4rem; flex: 1; min-width: 240px; }
+    .search-bar input {
+      flex: 1; padding: .55rem .8rem; background: #0f0f23;
+      border: 1px solid #2a3a4a; border-radius: 6px; color: #c8c8da;
     }
-    .search-input, select {
-      padding: .55rem .8rem; border: 1px solid #2a3a4a; border-radius: 6px;
-      background: #0f0f23; color: #e0e0e0; outline: none;
-    }
-    .search-input { flex: 1; min-width: 220px; }
-    .search-input:focus, select:focus { border-color: #e94560; }
-    .results-count { color: #98a2a8; font-size: .85rem; margin: 0 0 .75rem; }
+    .search-bar input:focus { outline: none; border-color: #e94560; }
 
-    /* Grid */
+    .filter-row { display: flex; gap: .6rem; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
+    .filter-row select {
+      padding: .5rem .7rem; background: #0f0f23; color: #c8c8da;
+      border: 1px solid #2a3a4a; border-radius: 6px; cursor: pointer;
+    }
+    .filter-row select:focus { outline: none; border-color: #e94560; }
+
+    .color-chips { display: flex; gap: .35rem; flex-wrap: wrap; }
+    .chip {
+      padding: .35rem .7rem; border-radius: 999px; cursor: pointer;
+      border: 1px solid var(--c, #2a3a4a); background: transparent; color: #c8c8da;
+      font-size: .8rem; font-weight: 600; transition: all .15s;
+    }
+    .chip:hover, .chip.active { background: var(--c, #e94560); color: #fff; }
+
+    .results-count { color: #9ba3b4; font-size: .9rem; margin: .5rem 0 1rem; }
+    .loading { color: #9ba3b4; padding: 2rem; text-align: center; }
+    .empty-state { padding: 3rem 1rem; text-align: center; color: #9ba3b4;
+      background: #16213e; border: 1px dashed #2a3a4a; border-radius: 12px; }
+    .error { color: #e94560; padding: 1rem; }
+
+    /* Botones */
+    .btn { padding: .5rem .9rem; border: 1px solid #2a3a4a; background: transparent;
+      color: #c8c8da; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all .15s; }
+    .btn:hover:not(:disabled) { background: #1e2d3d; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-sm { padding: .4rem .75rem; font-size: .85rem; }
+    .btn-xs { padding: .25rem .55rem; font-size: .78rem; }
+    .btn-primary { background: #e94560; border-color: #e94560; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #d63950; border-color: #d63950; }
+    .btn-danger { background: transparent; border-color: #e94560; color: #e94560; }
+    .btn-danger:hover:not(:disabled) { background: #e94560; color: #fff; }
+    .btn-heart-lg.active { background: #e94560; color: #fff; border-color: #e94560; }
+
+    /* Grids */
+    .collection-grid, .wishlist-grid {
+      display: grid; gap: 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
     .card-grid {
-      display: grid; gap: .75rem;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      display: grid; gap: .9rem;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
     }
-    .entry-card {
-      background: #0f0f23; border: 1px solid #1e3a4a; border-radius: 10px;
-      padding: .55rem; display: flex; flex-direction: column; gap: .5rem;
-      transition: all .15s;
+
+    .collection-card, .wishlist-card {
+      background: #16213e; border: 1px solid #2a3a4a; border-radius: 10px;
+      overflow: hidden; display: flex; flex-direction: column;
     }
-    .entry-card:hover { border-color: #e94560; transform: translateY(-2px); }
-    .entry-card img { width: 100%; aspect-ratio: 63/88; object-fit: cover; border-radius: 6px; background: #16213e; }
+    .collection-card .card-image, .wishlist-card .card-image, .card-item .card-image {
+      position: relative; aspect-ratio: 5/7; background: #0f0f23; overflow: hidden; cursor: pointer;
+    }
+    .card-image img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .2s; }
+    .card-image:hover img { transform: scale(1.04); }
     .img-fallback {
-      width: 100%; aspect-ratio: 63/88; background: #16213e; border-radius: 6px;
-      display: grid; place-items: center; font-size: .9rem; color: #c8c8da; text-align: center;
+      width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+      color: #6b7280; font-weight: 700;
     }
-    .entry-meta { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
-    .entry-meta strong {
-      color: #fff; font-size: .85rem;
+    .eye-overlay {
+      position: absolute; top: 8px; right: 8px;
+      background: rgba(0,0,0,.65); color: #fff; padding: .3rem .5rem;
+      border-radius: 6px; font-size: .85rem; opacity: 0; transition: opacity .15s;
+    }
+    .card-image:hover .eye-overlay { opacity: 1; }
+    .foil-badge {
+      position: absolute; bottom: 8px; left: 8px;
+      background: linear-gradient(135deg, #4fc3f7, #e94560);
+      color: #fff; padding: .2rem .5rem; border-radius: 4px;
+      font-size: .7rem; font-weight: 700;
+    }
+    .owned-badge {
+      position: absolute; top: 8px; left: 8px;
+      background: #2a8a8a; color: #fff; padding: .25rem .5rem;
+      border-radius: 6px; font-size: .8rem; font-weight: 700;
+    }
+
+    .card-body, .card-info { padding: .65rem .75rem .8rem; }
+    .card-body h4, .card-info h4 {
+      margin: 0 0 .25rem; font-size: .95rem; color: #fff;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .entry-meta small { color: #6a7a88; font-size: .7rem; }
+    .card-meta, .card-type { color: #9ba3b4; font-size: .78rem; }
 
-    .qty-controls { display: flex; gap: .25rem; align-items: center; margin-top: .35rem; }
-    .qty-controls input {
-      width: 50px; padding: .25rem .35rem; text-align: center;
-      border: 1px solid #2a3a4a; border-radius: 4px; background: #0f0f23; color: #e0e0e0;
+    .inline-fields { display: flex; gap: .5rem; align-items: flex-end; margin-top: .6rem; flex-wrap: wrap; }
+    .field { display: flex; flex-direction: column; gap: .15rem; min-width: 60px; flex: 1; }
+    .field.full { flex-basis: 100%; margin-top: .4rem; }
+    .field label { color: #9ba3b4; font-size: .72rem; text-transform: uppercase; }
+    .field input, .field select {
+      padding: .35rem .5rem; background: #0f0f23; color: #c8c8da;
+      border: 1px solid #2a3a4a; border-radius: 5px; font-size: .85rem; width: 100%;
     }
-    .ctrl {
-      width: 28px; height: 28px; border-radius: 4px;
-      border: 1px solid #2a3a4a; background: #0f0f23; color: #c8c8da;
-      cursor: pointer; font-size: 1rem; line-height: 1;
+    .field input:focus, .field select:focus { outline: none; border-color: #e94560; }
+    .foil-toggle {
+      display: inline-flex; align-items: center; gap: .35rem;
+      font-size: .8rem; color: #c8c8da; cursor: pointer; padding-bottom: .35rem;
     }
-    .ctrl:hover { border-color: #e94560; color: #e94560; }
-    .ctrl.remove:hover { border-color: #e94560; color: #e94560; }
+    .card-action-row { display: flex; gap: .35rem; margin-top: .6rem; justify-content: flex-end; align-items: center; }
 
-    .add-btn {
-      width: 100%; padding: .35rem .5rem; border: 1px solid #e94560;
-      background: transparent; color: #e94560; border-radius: 4px; cursor: pointer;
-      font-size: .8rem; font-weight: 600; margin-top: .35rem;
+    /* Codex card */
+    .card-item {
+      background: #16213e; border: 1px solid #2a3a4a; border-radius: 10px;
+      overflow: hidden; cursor: pointer; position: relative; transition: all .15s;
     }
-    .add-btn:hover { background: #e94560; color: #0f0f23; }
+    .card-item:hover { border-color: #e94560; transform: translateY(-2px); }
+    .card-overlay-actions {
+      position: absolute; bottom: 78px; right: 8px;
+      display: flex; flex-direction: column; gap: .3rem; opacity: 0; transition: opacity .15s;
+    }
+    .card-item:hover .card-overlay-actions { opacity: 1; }
+    .btn-icon {
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 1px solid #2a3a4a; background: rgba(15,15,35,.9); color: #fff;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+    }
+    .btn-icon.btn-add:hover { background: #2a8a8a; border-color: #2a8a8a; }
+    .btn-icon.btn-heart { color: #9ba3b4; }
+    .btn-icon.btn-heart.active, .btn-icon.btn-heart:hover { color: #e94560; border-color: #e94560; }
 
-    /* Empty / center */
-    .empty-state {
-      text-align: center; padding: 3rem 1rem;
-      background: #0f0f23; border: 1px dashed #1e3a4a; border-radius: 10px;
-      color: #98a2a8;
+    /* Wishlist qty */
+    .wishlist-qty { display: flex; align-items: center; gap: .4rem; margin-top: .5rem; }
+    .wishlist-qty label { font-size: .8rem; color: #9ba3b4; }
+    .wishlist-qty input {
+      width: 60px; padding: .3rem .4rem; background: #0f0f23; color: #c8c8da;
+      border: 1px solid #2a3a4a; border-radius: 5px;
     }
-    .muted { opacity: .65; }
-    .center { text-align: center; }
+    .card-actions { padding: .4rem .75rem .75rem; display: flex; justify-content: flex-end; }
+
+    /* Pagination */
+    .pagination {
+      display: flex; align-items: center; justify-content: center;
+      gap: 1rem; margin-top: 1.5rem; color: #9ba3b4;
+    }
 
     /* Stats */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .75rem; margin-bottom: 1.5rem; }
-    .stat-card {
-      background: #0f0f23; border: 1px solid #1e3a4a; border-radius: 10px;
-      padding: 1rem; display: flex; flex-direction: column; align-items: center;
+    .stats-overview {
+      display: grid; gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      margin-bottom: 1.5rem;
     }
-    .stat-label { font-size: .75rem; color: #98a2a8; text-transform: uppercase; letter-spacing: .05em; }
-    .stat-value { font-size: 2rem; font-weight: 700; color: #e94560; }
+    .stat-card-s {
+      background: linear-gradient(135deg, #16213e, #1a1a2e);
+      border: 1px solid #2a3a4a; border-radius: 12px;
+      padding: 1.5rem; text-align: center;
+    }
+    .stat-big { font-size: 2.4rem; font-weight: 800; color: #e94560; }
+    .stat-desc { color: #9ba3b4; font-size: .9rem; margin-top: .3rem; }
+    .stats-heading { color: #fff; margin: 1.5rem 0 .8rem; font-size: 1.1rem; border-left: 3px solid #e94560; padding-left: .6rem; }
+    .completeness-grid { display: grid; gap: .7rem; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    .completeness-item {
+      background: #16213e; border: 1px solid #2a3a4a; border-radius: 8px; padding: .7rem .9rem;
+      display: flex; flex-direction: column; gap: .35rem;
+    }
+    .completeness-label { color: #fff; font-weight: 600; }
+    .completeness-label small { color: #9ba3b4; font-weight: 400; }
+    .completeness-bar-wrap {
+      width: 100%; height: 8px; background: #0f0f23; border-radius: 4px; overflow: hidden;
+    }
+    .completeness-bar {
+      height: 100%; background: linear-gradient(90deg, #2a8a8a, #4fc3f7);
+      border-radius: 4px; transition: width .3s;
+    }
+    .completeness-pct { color: #9ba3b4; font-size: .82rem; }
+    .stats-dist {
+      display: grid; gap: .35rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .dist-row {
+      display: flex; justify-content: space-between; align-items: center;
+      background: #16213e; border: 1px solid #2a3a4a; border-radius: 6px;
+      padding: .5rem .8rem;
+    }
+    .dist-label { color: #c8c8da; }
+    .dist-count { color: #e94560; font-weight: 700; }
 
-    .tab-content h3 { color: #fff; margin: 1.5rem 0 .75rem; font-size: 1.1rem; }
-    .dist-bars { display: flex; flex-direction: column; gap: .35rem; }
-    .dist-row { display: grid; grid-template-columns: 100px 1fr 50px; gap: .5rem; align-items: center; }
-    .dist-label { color: #c8c8da; font-size: .85rem; }
-    .dist-bar { height: 12px; background: rgba(30,58,74,.4); border-radius: 6px; overflow: hidden; }
-    .dist-fill { height: 100%; background: linear-gradient(90deg, #fff, #e94560); transition: width .3s; }
-    .dist-num { color: #e94560; font-weight: 600; font-size: .85rem; text-align: right; }
-
-    /* Light theme */
-    :host-context(body.light-theme) .carpeta-header,
-    :host-context(body.light-theme) .entry-card,
-    :host-context(body.light-theme) .stat-card,
-    :host-context(body.light-theme) .empty-state { background: #fbf6e9; border-color: #d4c489; }
-    :host-context(body.light-theme) .entry-meta strong,
-    :host-context(body.light-theme) .tab-content h3 { color: #463714; }
-    :host-context(body.light-theme) .search-input,
-    :host-context(body.light-theme) select,
-    :host-context(body.light-theme) .qty-controls input,
-    :host-context(body.light-theme) .ctrl { background: #ffffff; border-color: #d4c489; color: #2a1f10; }
+    /* Modal */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.85);
+      display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem;
+    }
+    .modal-detail {
+      background: #16213e; border: 1px solid #2a3a4a; border-radius: 14px;
+      max-width: 760px; width: 100%; max-height: 90vh; overflow-y: auto;
+      display: grid; grid-template-columns: 1fr 1.2fr; gap: 0; position: relative;
+    }
+    @media (max-width: 640px) { .modal-detail { grid-template-columns: 1fr; } }
+    .modal-detail .detail-image { width: 100%; height: auto; border-radius: 14px 0 0 14px; display: block; }
+    .modal-detail .detail-info { padding: 1.4rem; display: flex; flex-direction: column; gap: .8rem; }
+    .modal-detail h2 { margin: 0; color: #fff; }
+    .detail-meta { display: flex; gap: .4rem; flex-wrap: wrap; }
+    .badge {
+      padding: .25rem .55rem; border-radius: 6px; font-size: .8rem;
+      border: 1px solid #2a3a4a; background: #0f0f23;
+    }
+    .badge.rarity { background: #c89b3c30; border-color: #c89b3c; color: #c89b3c; }
+    .badge.color { background: color-mix(in srgb, var(--c) 15%, transparent); border-color: var(--c); color: var(--c); }
+    .detail-stats { display: flex; gap: 1rem; flex-wrap: wrap; color: #c8c8da; font-size: .9rem; }
+    .detail-ability { background: #0f0f23; border-radius: 8px; padding: .75rem 1rem; border-left: 3px solid #e94560; }
+    .detail-ability h4 { margin: 0 0 .35rem; color: #4fc3f7; font-size: .85rem; }
+    .detail-ability p { margin: 0; color: #c8c8da; font-size: .9rem; white-space: pre-wrap; }
+    .detail-edition { color: #9ba3b4; font-size: .85rem; margin: 0; }
+    .detail-actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: auto; }
+    .close-btn {
+      position: absolute; top: .5rem; right: .5rem;
+      background: rgba(15,15,35,.85); border: 1px solid #2a3a4a; color: #fff;
+      width: 32px; height: 32px; border-radius: 50%; cursor: pointer; z-index: 2;
+    }
+    .close-btn:hover { background: #e94560; border-color: #e94560; }
   `],
 })
 export class RiftboundCarpetaComponent implements OnInit {
-  private rb = inject(RiftboundService);
-  auth = inject(AuthService);
+  readonly rb = inject(RiftboundService);
+  readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-  activeTab = signal<'collection' | 'add' | 'stats'>('collection');
+  readonly COLORS = [
+    { code: 'fury',    label: 'Fury',    hex: '#e94560' },
+    { code: 'calm',    label: 'Calm',    hex: '#4fc3f7' },
+    { code: 'mind',    label: 'Mind',    hex: '#9b6ad8' },
+    { code: 'body',    label: 'Body',    hex: '#7cb342' },
+    { code: 'chaos',   label: 'Chaos',   hex: '#c89b3c' },
+    { code: 'order',   label: 'Order',   hex: '#e0e0e0' },
+    { code: 'neutral', label: 'Neutral', hex: '#8896a8' },
+  ] as const;
+
+  // State
+  activeTab = signal<Tab>('carpeta');
 
   // Collection
-  entries = signal<RiftboundCollectionEntry[]>([]);
-  loading = signal(true);
-  filterText = '';
+  collectionEntries = signal<RiftboundCollectionEntry[]>([]);
+  collectionTotal = signal(0);
+  collectionPage = signal(1);
+  collectionSearch = '';
+  collectionLoading = signal(false);
+  dirtyEntries = new Map<number, DirtyPatch>();
+  batchSaving = signal(false);
+  collectionTotalPages = computed(() => Math.max(1, Math.ceil(this.collectionTotal() / 40)));
+  collectionCopies = computed(() => this.collectionEntries().reduce((s, e) => s + (e.quantity || 0), 0));
 
-  // Add tab
-  addSearch = '';
-  addType = '';
-  addResults = signal<RiftboundCardLite[]>([]);
-  addLoading = signal(false);
-  private addTimer: ReturnType<typeof setTimeout> | null = null;
+  // Codex
+  codexCards = signal<RiftboundCardLite[]>([]);
+  codexTotal = signal(0);
+  codexPage = signal(1);
+  codexSearch = '';
+  codexLoading = signal(false);
+  sets = signal<RiftboundSet[]>([]);
+  selectedSet = '';
+  selectedType = '';
+  selectedRarity = '';
+  selectedColors = new Set<string>();
+  codexTotalPages = computed(() => Math.max(1, Math.ceil(this.codexTotal() / 40)));
 
-  filtered = computed(() => {
-    const txt = this.filterText.trim().toLowerCase();
-    if (!txt) return this.entries();
-    return this.entries().filter(e => {
-      const c = e.card_data;
-      return c && (
-        c.name.toLowerCase().includes(txt) ||
-        c.card_number.toLowerCase().includes(txt)
-      );
-    });
-  });
+  // Wishlist
+  wishlistEntries = signal<RiftboundWishlistEntry[]>([]);
+  wishlistTotal = signal(0);
+  wishlistPage = signal(1);
+  wishlistSearch = '';
+  wishlistLoading = signal(false);
 
-  totalCopies = computed(() =>
-    this.entries().reduce((s, e) => s + e.quantity, 0));
+  // Stats
+  stats = signal<RiftboundCollectionStats | null>(null);
+  statsLoading = signal(false);
+  statsError = signal<string | null>(null);
 
-  uniqueSets = computed(() => {
-    const sets = new Set<string>();
-    for (const e of this.entries()) {
-      const code = e.card_data?.card_number?.split('-')[0];
-      if (code) sets.add(code);
-    }
-    return [...sets];
-  });
+  // IDs cache
+  private collectionIds: { [cardId: number]: number } = {};
+  private wishlistIds = new Set<number>();
 
-  typeStats = computed(() => {
-    const m: Record<string, number> = {};
-    for (const e of this.entries()) {
-      const t = e.card_data?.card_type ?? 'other';
-      m[t] = (m[t] ?? 0) + e.quantity;
-    }
-    return Object.entries(m).map(([key, value]) => ({ key, value }))
-      .sort((a, b) => b.value - a.value);
-  });
-
-  setStats = computed(() => {
-    const m: Record<string, number> = {};
-    for (const e of this.entries()) {
-      const code = e.card_data?.card_number?.split('-')[0] ?? '?';
-      m[code] = (m[code] ?? 0) + e.quantity;
-    }
-    return Object.entries(m).map(([key, value]) => ({ key, value }))
-      .sort((a, b) => b.value - a.value);
-  });
+  // Preview
+  previewCard = signal<RiftboundCardLite | null>(null);
 
   ngOnInit() {
-    this.rb.listCollection().subscribe({
-      next: (r) => { this.entries.set(r.results); this.loading.set(false); },
-      error: () => this.loading.set(false),
-    });
-  }
-
-  // ── Add tab ──
-  onAddSearch() {
-    if (this.addTimer) clearTimeout(this.addTimer);
-    this.addTimer = setTimeout(() => this.searchToAdd(), 300);
-  }
-
-  searchToAdd() {
-    if (!this.addSearch.trim() && !this.addType) {
-      this.addResults.set([]);
+    if (!this.auth.isAuthenticated()) {
+      this.router.navigate(['/login'], { queryParams: { returnUrl: '/riftbound/carpeta' } });
       return;
     }
-    this.addLoading.set(true);
+    this.loadIds();
+    this.loadCollection();
+    this.rb.listSets().subscribe(s => {
+      // listSets returns paginated or array depending on backend
+      const arr = Array.isArray(s) ? s : (s as any).results || [];
+      this.sets.set(arr);
+      this.cdr.markForCheck();
+    });
+  }
+
+  // ── Tabs ──
+  switchTab(t: Tab) {
+    this.activeTab.set(t);
+    if (t === 'carpeta') this.loadCollection();
+    if (t === 'codex' && this.codexCards().length === 0) this.loadCodex();
+    if (t === 'wishlist') this.loadWishlist();
+    if (t === 'stats') this.loadStats();
+  }
+
+  // ── IDs ──
+  loadIds() {
+    this.rb.carpetaIds().subscribe(ids => {
+      this.collectionIds = ids.collection || {};
+      this.wishlistIds = new Set(ids.wishlist || []);
+      this.cdr.markForCheck();
+    });
+  }
+  isInCollection(id: number) { return id in this.collectionIds; }
+  collectionQty(id: number) { return this.collectionIds[id] || 0; }
+  isInWishlist(id: number) { return this.wishlistIds.has(id); }
+
+  // ── Collection ──
+  loadCollection() {
+    this.collectionLoading.set(true);
+    this.rb.listCollection({ search: this.collectionSearch || undefined, page: this.collectionPage() }).subscribe({
+      next: res => {
+        this.collectionEntries.set(res.results);
+        this.collectionTotal.set(res.count);
+        this.collectionLoading.set(false);
+        this.cdr.markForCheck();
+      },
+      error: () => { this.collectionLoading.set(false); this.cdr.markForCheck(); },
+    });
+  }
+  onCollectionSearch() { this.collectionPage.set(1); this.loadCollection(); }
+  collectionPrev() { if (this.collectionPage() > 1) { this.collectionPage.update(p => p - 1); this.loadCollection(); } }
+  collectionNext() { if (this.collectionPage() < this.collectionTotalPages()) { this.collectionPage.update(p => p + 1); this.loadCollection(); } }
+
+  onFieldChange(entry: RiftboundCollectionEntry, field: keyof DirtyPatch, value: any) {
+    const pending = this.dirtyEntries.get(entry.id) || {};
+    (pending as any)[field] = value;
+    this.dirtyEntries.set(entry.id, pending);
+    this.cdr.markForCheck();
+  }
+
+  saveEntry(entry: RiftboundCollectionEntry) {
+    const pending = this.dirtyEntries.get(entry.id);
+    if (!pending) return;
+    this.rb.upsertCollection({
+      card: entry.card,
+      quantity: pending.quantity ?? entry.quantity,
+      is_foil: pending.is_foil ?? entry.is_foil,
+      notes: pending.notes ?? entry.notes,
+    }).subscribe(res => {
+      this.dirtyEntries.delete(entry.id);
+      if ((res as any).deleted) {
+        this.collectionEntries.update(arr => arr.filter(e => e.id !== entry.id));
+        this.collectionTotal.update(n => Math.max(0, n - 1));
+        delete this.collectionIds[entry.card];
+      } else {
+        const updated = res as RiftboundCollectionEntry;
+        this.collectionEntries.update(arr => arr.map(e => e.id === entry.id ? updated : e));
+        this.collectionIds[updated.card] = (this.collectionIds[updated.card] || 0) + 0; // refresh
+        this.loadIds();
+      }
+      this.cdr.markForCheck();
+    });
+  }
+
+  saveAllChanges() {
+    if (this.dirtyEntries.size === 0) return;
+    this.batchSaving.set(true);
+    const entries = Array.from(this.dirtyEntries.entries());
+    let remaining = entries.length;
+    if (remaining === 0) { this.batchSaving.set(false); return; }
+    entries.forEach(([id, pending]) => {
+      const entry = this.collectionEntries().find(e => e.id === id);
+      if (!entry) { remaining--; return; }
+      this.rb.upsertCollection({
+        card: entry.card,
+        quantity: pending.quantity ?? entry.quantity,
+        is_foil: pending.is_foil ?? entry.is_foil,
+        notes: pending.notes ?? entry.notes,
+      }).subscribe({
+        next: () => {
+          remaining--;
+          if (remaining === 0) {
+            this.dirtyEntries.clear();
+            this.batchSaving.set(false);
+            this.loadIds();
+            this.loadCollection();
+          }
+        },
+        error: () => {
+          remaining--;
+          if (remaining === 0) {
+            this.batchSaving.set(false);
+            this.cdr.markForCheck();
+          }
+        },
+      });
+    });
+  }
+
+  removeFromCollection(entry: RiftboundCollectionEntry) {
+    if (!confirm(`¿Quitar "${entry.card_data?.name}" de tu carpeta?`)) return;
+    this.rb.deleteCollection(entry.id).subscribe(() => {
+      this.collectionEntries.update(arr => arr.filter(e => e.id !== entry.id));
+      this.collectionTotal.update(n => Math.max(0, n - 1));
+      delete this.collectionIds[entry.card];
+      this.dirtyEntries.delete(entry.id);
+      this.cdr.markForCheck();
+    });
+  }
+
+  // ── Codex ──
+  loadCodex() {
+    this.codexLoading.set(true);
     this.rb.listCards({
-      search: this.addSearch || undefined,
-      type: this.addType || undefined,
+      search: this.codexSearch || undefined,
+      type: this.selectedType || undefined,
+      rarity: this.selectedRarity || undefined,
+      set: this.selectedSet || undefined,
+      colors: this.selectedColors.size ? Array.from(this.selectedColors) : undefined,
+      page: this.codexPage(),
       lite: true,
     }).subscribe({
-      next: (resp) => {
-        this.addResults.set(resp.results.slice(0, 30) as RiftboundCardLite[]);
-        this.addLoading.set(false);
+      next: res => {
+        this.codexCards.set(res.results as RiftboundCardLite[]);
+        this.codexTotal.set(res.count);
+        this.codexLoading.set(false);
+        this.cdr.markForCheck();
       },
-      error: () => this.addLoading.set(false),
+      error: () => { this.codexLoading.set(false); this.cdr.markForCheck(); },
+    });
+  }
+  onCodexSearch() { this.codexPage.set(1); this.loadCodex(); }
+  onCodexFilter() { this.codexPage.set(1); this.loadCodex(); }
+  codexPrev() { if (this.codexPage() > 1) { this.codexPage.update(p => p - 1); this.loadCodex(); } }
+  codexNext() { if (this.codexPage() < this.codexTotalPages()) { this.codexPage.update(p => p + 1); this.loadCodex(); } }
+
+  toggleColor(c: string) {
+    if (this.selectedColors.has(c)) this.selectedColors.delete(c);
+    else this.selectedColors.add(c);
+    this.onCodexFilter();
+  }
+
+  selectCodexCard(card: RiftboundCardLite) { this.previewCard.set(card); }
+
+  quickAddToCollection(card: RiftboundCardLite | RiftboundCard, ev?: MouseEvent) {
+    ev?.stopPropagation();
+    const newQty = (this.collectionIds[card.id] || 0) + 1;
+    this.rb.upsertCollection({ card: card.id, quantity: newQty }).subscribe(res => {
+      if (!(res as any).deleted) {
+        const updated = res as RiftboundCollectionEntry;
+        this.collectionIds[updated.card] = updated.quantity;
+      }
+      this.cdr.markForCheck();
     });
   }
 
-  currentQty(cardId: number): number {
-    return this.entries().find(e => e.card === cardId)?.quantity ?? 0;
+  toggleWishlist(cardId: number, ev?: MouseEvent) {
+    ev?.stopPropagation();
+    this.rb.toggleWishlist(cardId).subscribe(res => {
+      if (res.wishlisted) this.wishlistIds.add(cardId);
+      else this.wishlistIds.delete(cardId);
+      this.cdr.markForCheck();
+    });
   }
 
-  add(c: RiftboundCardLite) {
-    const existing = this.entries().find(e => e.card === c.id);
-    const qty = (existing?.quantity || 0) + 1;
-    this.rb.upsertCollection({ card: c.id, quantity: qty, is_foil: false }).subscribe({
-      next: (entry) => {
-        const list = this.entries().filter(e => e.id !== entry.id);
-        this.entries.set([entry, ...list]);
+  // ── Wishlist ──
+  loadWishlist() {
+    this.wishlistLoading.set(true);
+    this.rb.listWishlist({ search: this.wishlistSearch || undefined, page: this.wishlistPage() }).subscribe({
+      next: res => {
+        this.wishlistEntries.set(res.results);
+        this.wishlistTotal.set(res.count);
+        this.wishlistLoading.set(false);
+        this.cdr.markForCheck();
+      },
+      error: () => { this.wishlistLoading.set(false); this.cdr.markForCheck(); },
+    });
+  }
+  onWishlistSearch() { this.wishlistPage.set(1); this.loadWishlist(); }
+
+  updateWishlistQty(entry: RiftboundWishlistEntry, qty: number) {
+    if (!qty || qty < 1) return;
+    this.rb.updateWishlistQty(entry.card, qty).subscribe(updated => {
+      this.wishlistEntries.update(arr => arr.map(e => e.id === entry.id ? updated : e));
+      this.cdr.markForCheck();
+    });
+  }
+
+  removeFromWishlist(entry: RiftboundWishlistEntry) {
+    this.rb.toggleWishlist(entry.card).subscribe(() => {
+      this.wishlistEntries.update(arr => arr.filter(e => e.id !== entry.id));
+      this.wishlistTotal.update(n => Math.max(0, n - 1));
+      this.wishlistIds.delete(entry.card);
+      this.cdr.markForCheck();
+    });
+  }
+
+  // ── Stats ──
+  loadStats() {
+    this.statsLoading.set(true);
+    this.statsError.set(null);
+    this.rb.collectionStats().subscribe({
+      next: s => { this.stats.set(s); this.statsLoading.set(false); this.cdr.markForCheck(); },
+      error: err => {
+        this.statsLoading.set(false);
+        this.statsError.set(`Error ${err?.status ?? '?'}: ${err?.error?.detail || err?.message || 'sin detalle'}`);
+        this.cdr.markForCheck();
       },
     });
   }
 
-  changeQty(e: RiftboundCollectionEntry, delta: number) {
-    const newQty = Math.max(0, e.quantity + delta);
-    if (newQty === 0) { this.remove(e); return; }
-    this.rb.upsertCollection({ card: e.card, quantity: newQty, is_foil: e.is_foil }).subscribe({
-      next: (updated) => {
-        this.entries.set(this.entries().map(x => x.id === updated.id ? updated : x));
-      },
-    });
+  // ── Helpers ──
+  typeLabel(t: string | undefined | null): string {
+    return ({
+      unit: 'Unit', spell: 'Spell', champion: 'Champion', legend: 'Legend',
+      gear: 'Gear', battlefield: 'Battlefield', rune: 'Rune', other: 'Otro',
+    } as Record<string, string>)[t || ''] || (t || '');
   }
-
-  setQty(e: RiftboundCollectionEntry, qty: number) {
-    const n = Math.max(0, Number(qty) || 0);
-    if (n === 0) { this.remove(e); return; }
-    this.rb.upsertCollection({ card: e.card, quantity: n, is_foil: e.is_foil }).subscribe({
-      next: (updated) => {
-        this.entries.set(this.entries().map(x => x.id === updated.id ? updated : x));
-      },
-    });
+  rarityLabel(r: string | undefined | null): string {
+    return ({
+      common: 'Common', uncommon: 'Uncommon', rare: 'Rare',
+      epic: 'Epic', legendary: 'Legendary', champion: 'Champion', promo: 'Promo',
+    } as Record<string, string>)[r || ''] || (r || '');
   }
-
-  remove(e: RiftboundCollectionEntry) {
-    this.rb.deleteCollection(e.id).subscribe({
-      next: () => this.entries.set(this.entries().filter(x => x.id !== e.id)),
-    });
+  colorLabel(c: string): string {
+    return this.COLORS.find(x => x.code === c)?.label || c;
+  }
+  colorHex(c: string): string {
+    return this.COLORS.find(x => x.code === c)?.hex || '#8896a8';
   }
 }

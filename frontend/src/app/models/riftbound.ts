@@ -129,6 +129,28 @@ export interface RiftboundCollectionEntry {
   notes: string;
 }
 
+export interface RiftboundWishlistEntry {
+  id: number;
+  card: number;
+  card_data: RiftboundCardLite;
+  desired_quantity: number;
+}
+
+export interface RiftboundCarpetaIds {
+  collection: { [cardId: number]: number };
+  wishlist: number[];
+}
+
+export interface RiftboundCollectionStats {
+  total_cards: number;
+  unique_cards: number;
+  by_type: { key: string; count: number }[];
+  by_rarity: { key: string; count: number }[];
+  by_color: { key: string; count: number }[];
+  by_set: { key: string; name: string; count: number }[];
+  set_completeness: { set: string; name: string; owned: number; total: number; pct: number }[];
+}
+
 /** Cantidad esperada por zona (Standard).
  *  Para `main` es el MÍNIMO (puedes ir a más); para el resto es exacta.
  *  `side` sólo aplica en juego de torneo.

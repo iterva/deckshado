@@ -5,6 +5,7 @@ import { environment } from '../../environments/environment';
 import {
   RiftboundCard, RiftboundCardLite, RiftboundDeck, RiftboundFormat,
   RiftboundBanlistEntry, RiftboundIcon, RiftboundSet, RiftboundCollectionEntry,
+  RiftboundWishlistEntry, RiftboundCarpetaIds, RiftboundCollectionStats,
 } from '../models/riftbound';
 
 interface PaginatedResponse<T> {
@@ -132,17 +133,50 @@ export class RiftboundService {
   }
 
   // ── Carpeta ──
-  listCollection(): Observable<PaginatedResponse<RiftboundCollectionEntry>> {
+  listCollection(opts: { search?: string; page?: number } = {}): Observable<PaginatedResponse<RiftboundCollectionEntry>> {
+    let params = new HttpParams();
+    if (opts.search) params = params.set('search', opts.search);
+    if (opts.page) params = params.set('page', String(opts.page));
     return this.http.get<PaginatedResponse<RiftboundCollectionEntry>>(
-      `${this.base}/collection/`,
+      `${this.base}/collection/`, { params },
     );
   }
 
-  upsertCollection(data: Partial<RiftboundCollectionEntry>): Observable<RiftboundCollectionEntry> {
-    return this.http.post<RiftboundCollectionEntry>(`${this.base}/collection/`, data);
+  upsertCollection(data: Partial<RiftboundCollectionEntry>): Observable<RiftboundCollectionEntry | { deleted: true; card: number }> {
+    return this.http.post<any>(`${this.base}/collection/upsert/`, data);
   }
 
   deleteCollection(id: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/collection/${id}/`);
+  }
+
+  carpetaIds(): Observable<RiftboundCarpetaIds> {
+    return this.http.get<RiftboundCarpetaIds>(`${this.base}/collection/ids/`);
+  }
+
+  collectionStats(): Observable<RiftboundCollectionStats> {
+    return this.http.get<RiftboundCollectionStats>(`${this.base}/collection/stats/`);
+  }
+
+  // ── Wishlist ──
+  listWishlist(opts: { search?: string; page?: number } = {}): Observable<PaginatedResponse<RiftboundWishlistEntry>> {
+    let params = new HttpParams();
+    if (opts.search) params = params.set('search', opts.search);
+    if (opts.page) params = params.set('page', String(opts.page));
+    return this.http.get<PaginatedResponse<RiftboundWishlistEntry>>(
+      `${this.base}/wishlist/`, { params },
+    );
+  }
+
+  toggleWishlist(cardId: number): Observable<{ wishlisted: boolean; card: number }> {
+    return this.http.post<{ wishlisted: boolean; card: number }>(
+      `${this.base}/wishlist/toggle/`, { card: cardId },
+    );
+  }
+
+  updateWishlistQty(cardId: number, qty: number): Observable<RiftboundWishlistEntry> {
+    return this.http.post<RiftboundWishlistEntry>(
+      `${this.base}/wishlist/set-quantity/`, { card: cardId, desired_quantity: qty },
+    );
   }
 }

@@ -177,6 +177,8 @@ class RiftboundDeckViewSet(viewsets.ModelViewSet):
 class RiftboundCollectionViewSet(viewsets.ModelViewSet):
     serializer_class = RiftboundCollectionEntrySerializer
     permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["card__name", "card__card_number"]
 
     def get_queryset(self):
         return (
@@ -187,10 +189,124 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    @action(detail=False, methods=["post"], url_path="upsert")
+    def upsert(self, request):
+        """Crea o actualiza una entrada por (user, card, is_foil)."""
+        card_id = request.data.get("card")
+        if not card_id:
+            return Response({"detail": "card requerido"}, status=400)
+        try:
+            card = RiftboundCard.objects.get(pk=card_id)
+        except RiftboundCard.DoesNotExist:
+            return Response({"detail": "carta no existe"}, status=404)
+
+        is_foil = bool(request.data.get("is_foil", False))
+        entry, _ = RiftboundCollectionEntry.objects.get_or_create(
+            user=request.user, card=card, is_foil=is_foil,
+            defaults={"quantity": 0},
+        )
+        if "quantity" in request.data:
+            try:
+                entry.quantity = max(0, int(request.data["quantity"]))
+            except (TypeError, ValueError):
+                pass
+        else:
+            # comportamiento "add 1" si no se pasa quantity explícita
+            entry.quantity += 1
+
+        if "notes" in request.data:
+            entry.notes = str(request.data["notes"])[:200]
+
+        if entry.quantity <= 0:
+            entry.delete()
+            return Response({"deleted": True, "card": card_id})
+
+        entry.save()
+        return Response(self.get_serializer(entry).data)
+
+    @action(detail=False, methods=["get"], url_path="ids")
+    def ids(self, request):
+        """Devuelve {collection: {card_id: qty}, wishlist: [card_id, ...]}."""
+        coll = {}
+        for cid, q in (RiftboundCollectionEntry.objects
+                       .filter(user=request.user)
+                       .values_list("card_id", "quantity")):
+            coll[cid] = coll.get(cid, 0) + q
+        wish = list(RiftboundWishlistEntry.objects
+                    .filter(user=request.user)
+                    .values_list("card_id", flat=True))
+        return Response({"collection": coll, "wishlist": wish})
+
+    @action(detail=False, methods=["get"], url_path="stats")
+    def stats(self, request):
+        """Estadísticas agregadas de la colección."""
+        from collections import Counter
+        entries = list(
+            RiftboundCollectionEntry.objects
+            .filter(user=request.user)
+            .select_related("card", "card__set")
+        )
+        total_cards = sum(e.quantity for e in entries)
+        unique_cards = len({e.card_id for e in entries})
+
+        by_type = Counter()
+        by_rarity = Counter()
+        by_color = Counter()
+        by_set = Counter()
+        set_names = {}
+        for e in entries:
+            by_type[e.card.card_type] += e.quantity
+            by_rarity[e.card.rarity] += e.quantity
+            for c in (e.card.colors or []):
+                by_color[c] += e.quantity
+            if e.card.set:
+                by_set[e.card.set.code] += e.quantity
+                set_names[e.card.set.code] = e.card.set.name
+
+        # Completitud por set
+        from django.db.models import Count
+        set_qs = (RiftboundCard.objects.filter(is_active=True, set__isnull=False)
+                  .values("set__code", "set__name")
+                  .annotate(total=Count("id")))
+        owned_unique_by_set = {}
+        for e in entries:
+            if e.card.set:
+                owned_unique_by_set.setdefault(e.card.set.code, set()).add(e.card_id)
+
+        set_completeness = []
+        for row in set_qs:
+            code = row["set__code"]
+            total = row["total"] or 0
+            owned = len(owned_unique_by_set.get(code, set()))
+            pct = round((owned / total) * 100) if total else 0
+            set_completeness.append({
+                "set": code,
+                "name": row["set__name"],
+                "owned": owned,
+                "total": total,
+                "pct": pct,
+            })
+        set_completeness.sort(key=lambda r: -r["pct"])
+
+        return Response({
+            "total_cards": total_cards,
+            "unique_cards": unique_cards,
+            "by_type": [{"key": k, "count": v} for k, v in by_type.most_common()],
+            "by_rarity": [{"key": k, "count": v} for k, v in by_rarity.most_common()],
+            "by_color": [{"key": k, "count": v} for k, v in by_color.most_common()],
+            "by_set": [
+                {"key": k, "name": set_names.get(k, k), "count": v}
+                for k, v in by_set.most_common()
+            ],
+            "set_completeness": set_completeness,
+        })
+
 
 class RiftboundWishlistViewSet(viewsets.ModelViewSet):
     serializer_class = RiftboundWishlistEntrySerializer
     permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["card__name", "card__card_number"]
 
     def get_queryset(self):
         return (
@@ -200,3 +316,36 @@ class RiftboundWishlistViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=["post"], url_path="toggle")
+    def toggle(self, request):
+        """Agrega o quita una carta del wishlist. Returns {wishlisted: bool}."""
+        card_id = request.data.get("card")
+        if not card_id:
+            return Response({"detail": "card requerido"}, status=400)
+        try:
+            card = RiftboundCard.objects.get(pk=card_id)
+        except RiftboundCard.DoesNotExist:
+            return Response({"detail": "carta no existe"}, status=404)
+
+        existing = RiftboundWishlistEntry.objects.filter(user=request.user, card=card).first()
+        if existing:
+            existing.delete()
+            return Response({"wishlisted": False, "card": card_id})
+        RiftboundWishlistEntry.objects.create(user=request.user, card=card, desired_quantity=1)
+        return Response({"wishlisted": True, "card": card_id})
+
+    @action(detail=False, methods=["post"], url_path="set-quantity")
+    def set_quantity(self, request):
+        card_id = request.data.get("card")
+        try:
+            qty = max(1, int(request.data.get("desired_quantity", 1)))
+        except (TypeError, ValueError):
+            qty = 1
+        try:
+            entry = RiftboundWishlistEntry.objects.get(user=request.user, card_id=card_id)
+        except RiftboundWishlistEntry.DoesNotExist:
+            return Response({"detail": "no existe"}, status=404)
+        entry.desired_quantity = qty
+        entry.save()
+        return Response(self.get_serializer(entry).data)

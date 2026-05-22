@@ -1,7 +1,7 @@
 """Validador de mazos Riftbound (formato Standard).
 
 Reglas oficiales (fuente: Deckbuilding Primer + Core Rules de Riot):
-- Main Deck: mínimo 40 cartas (puedes ir a más). Recomendado: 40 exactas.
+- Main Deck: exactamente 40 cartas.
 - Rune Deck: 12 runas exactas.
 - Champion Legend: 1 carta exacta.
 - Battlefields: 3 cartas DISTINTAS (no se permiten duplicados).
@@ -23,20 +23,19 @@ if TYPE_CHECKING:
 
 # Reglas exactas (zonas con tamaño fijo)
 RULES_EXACT = {
+    ZONE_MAIN: 40,
     ZONE_RUNE: 12,
     ZONE_CHAMPION: 1,
     ZONE_BATTLEFIELD: 3,
 }
 # Mínimos (zona puede tener más)
-RULES_MIN = {
-    ZONE_MAIN: 40,
-}
+RULES_MIN: dict[str, int] = {}
 # Reglas opcionales (sólo torneo, se valida si hay cartas)
 RULES_OPTIONAL_EXACT = {
     ZONE_SIDE: 8,
 }
 # Vista combinada para el frontend (compatibilidad con `rules`)
-RULES = {**RULES_MIN, **RULES_EXACT, ZONE_SIDE: 8}
+RULES = {**RULES_EXACT, ZONE_SIDE: 8}
 MAX_COPIES_DEFAULT = 3
 
 

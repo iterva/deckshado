@@ -181,7 +181,7 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
                   }
                   <button class="circle-btn add"
                           (click)="addToZone(card, 'main')"
-                          [disabled]="getNameCount(card.name) >= getMaxCopies(card)">+</button>
+                          [disabled]="zoneCount('main') >= rules.main || getNameCount(card.name) >= getMaxCopies(card)">+</button>
                 </div>
 
                 <!-- S (side) -->
@@ -284,7 +284,7 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
           @for (z of zones; track z) {
             <div class="zone-pill" [class.ok]="isZoneOk(z)" [class.bad]="!isZoneOk(z) && zoneCount(z) > 0">
               <span class="zp-label">{{ zoneShortLabel(z) }}</span>
-              <span class="zp-count">{{ zoneCount(z) }}/{{ rules[z] }}{{ z === 'main' ? '+' : '' }}</span>
+              <span class="zp-count">{{ zoneCount(z) }}/{{ rules[z] }}</span>
             </div>
           }
         </div>
@@ -330,7 +330,7 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
             <div class="zone-section-head">
               <span class="zs-title">{{ labels[z] }}</span>
               <span class="zs-count" [class.ok]="isZoneOk(z)">
-                {{ zoneCount(z) }}/{{ rules[z] }}{{ z === 'main' ? '+' : '' }}
+                {{ zoneCount(z) }}/{{ rules[z] }}
               </span>
             </div>
             @if (entries()[z].length === 0) {
@@ -1129,7 +1129,7 @@ export class RiftboundBuilderComponent implements OnInit {
   isZoneOk(z: RiftboundZone): boolean {
     const count = this.zoneCount(z);
     const rule = this.rules[z];
-    if (z === 'main') return count >= rule;
+    if (z === 'main') return count === rule;
     if (z === 'side') return count === 0 || count === rule;
     if (z === 'bg') {
       if (count !== rule) return false;
@@ -1241,6 +1241,9 @@ export class RiftboundBuilderComponent implements OnInit {
 
   // ── Mutadores ──
   addToZone(c: RiftboundCardLite, z: RiftboundZone) {
+    // Límite duro de tamaño de zona (main: 40, side: 8, etc.).
+    if (z === 'main' && this.zoneCount('main') >= this.rules.main) return;
+    if (z === 'side' && this.zoneCount('side') >= this.rules.side) return;
     const list = [...this.entries()[z]];
     const existing = list.find(e => e.card.id === c.id);
     // Máximo por zona (champion/bg = 1), si no aplica límite por carta.
@@ -1264,6 +1267,9 @@ export class RiftboundBuilderComponent implements OnInit {
   inc(e: BuilderEntry) {
     const max = this.maxCopiesForEntry(e);
     if (e.quantity >= max) return;
+    // Respeta el tamaño máximo de la zona (main: 40, side: 8, …).
+    if (e.zone === 'main' && this.zoneCount('main') >= this.rules.main) return;
+    if (e.zone === 'side' && this.zoneCount('side') >= this.rules.side) return;
     e.quantity += 1;
     this.entries.set({ ...this.entries() });
   }

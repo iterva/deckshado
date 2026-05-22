@@ -50,7 +50,7 @@ import { RiftboundCard } from '../../../models/riftbound';
     .layout img { width: 100%; border-radius: .75rem; }
     .badges { display: flex; gap: .35rem; flex-wrap: wrap; margin: .75rem 0; }
     .badge { padding: .25rem .55rem; border-radius: .35rem; border: 1px solid var(--border-color, #444); font-size: .85rem; }
-    .badge.color { background: #c89b3c20; }
+    .badge.color { background: #e9456020; }
     .stats { display: flex; gap: 1rem; margin: 1rem 0; }
     .stats div { display: flex; flex-direction: column; align-items: center; padding: .5rem 1rem; border: 1px solid var(--border-color, #444); border-radius: .5rem; }
     .stats span { opacity: .7; font-size: .85rem; }

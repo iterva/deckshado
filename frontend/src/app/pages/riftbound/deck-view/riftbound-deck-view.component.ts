@@ -18,7 +18,7 @@ type Orientation = 'vertical' | 'horizontal';
 
 const COLOR_HEX: Record<RiftboundColor, string> = {
   fury: '#e94560', calm: '#4caf50', mind: '#3aa6ff',
-  body: '#ff9a3c', chaos: '#9c5dff', order: '#ffd23c', neutral: '#888',
+  body: '#ff9a3c', chaos: '#9c5dff', order: '#ff6b7d', neutral: '#888',
 };
 const COLOR_LABEL: Record<RiftboundColor, string> = {
   fury: 'Fury', calm: 'Calm', mind: 'Mind',
@@ -448,7 +448,7 @@ const TYPE_COLOR: Record<string, string> = {
     .container { max-width: 1200px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
     .loading { color: #888; text-align: center; padding: 3rem; }
     .back-link { display: inline-block; opacity: .8; margin-bottom: 1rem; text-decoration: none; color: #c8c8da; }
-    .back-link:hover { opacity: 1; color: #c89b3c; }
+    .back-link:hover { opacity: 1; color: #e94560; }
     .muted { opacity: .65; }
     .small { font-size: .8rem; }
     .num { text-align: right; font-variant-numeric: tabular-nums; }
@@ -456,7 +456,7 @@ const TYPE_COLOR: Record<string, string> = {
     /* Hero */
     .deck-hero {
       position: relative; border-radius: 14px; overflow: hidden;
-      background: linear-gradient(135deg, #15152a 0%, #1a1a2e 100%);
+      background: linear-gradient(135deg, #111827 0%, #1a1a2e 100%);
       border: 1px solid #2a2a4a; min-height: 220px; margin-bottom: 1.25rem;
     }
     .hero-bg {
@@ -474,7 +474,7 @@ const TYPE_COLOR: Record<string, string> = {
     }
     .hero-cover {
       width: 180px; height: 252px; object-fit: cover; object-position: center 25%;
-      border-radius: 10px; border: 1px solid #c89b3c66; flex-shrink: 0;
+      border-radius: 10px; border: 1px solid #e9456066; flex-shrink: 0;
       box-shadow: 0 10px 30px rgba(0,0,0,.5);
     }
     .hero-cover-empty {
@@ -483,10 +483,9 @@ const TYPE_COLOR: Record<string, string> = {
     }
     .hero-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
     .page-title {
-      margin: 0 0 .65rem; font-size: 2rem; line-height: 1.15;
-      background: linear-gradient(90deg, #c89b3c, #f0e6d2);
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-      font-weight: 800;
+      margin: 0 0 .65rem; font-size: 1.9rem; line-height: 1.15;
+      color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.6);
+      font-weight: 700; word-break: break-word;
     }
     .deck-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .6rem; }
     .chip {
@@ -505,8 +504,9 @@ const TYPE_COLOR: Record<string, string> = {
     .chip-private { color: #888; }
     .chip-cards { color: #ffbd39; }
     .hero-description {
-      color: #c8c8da; font-size: .92rem; line-height: 1.5; margin: .25rem 0 0;
-      white-space: pre-wrap;
+      color: #d0d0e0; font-size: .92rem; line-height: 1.5;
+      margin: .3rem 0 0; padding-left: .7rem; border-left: 3px solid #e94560;
+      white-space: pre-wrap; max-height: 6em; overflow: hidden;
     }
 
     @media (max-width: 720px) {
@@ -518,40 +518,38 @@ const TYPE_COLOR: Record<string, string> = {
     /* Action bar */
     .action-bar {
       display: flex; gap: .5rem; align-items: center; flex-wrap: wrap;
-      padding: .65rem .75rem; margin-bottom: 1.25rem;
-      background: #15152a; border: 1px solid #2a2a4a; border-radius: 10px;
+      padding: .45rem .6rem; margin-bottom: 1rem;
+      background: #111827; border: 1px solid #1e3a4a; border-radius: 12px;
     }
     .action-spacer { flex: 1; }
     .action-btn {
-      padding: .5rem .85rem; border-radius: 8px; cursor: pointer;
-      background: #1a1a2e; border: 1px solid #2a3a4a; color: #e0e0e0;
+      padding: .5rem .85rem; border-radius: 9px; cursor: pointer;
+      background: transparent; border: 1px solid #2a3a4a; color: #b0b8c4;
       font-family: inherit; font-size: .88rem;
       display: inline-flex; align-items: center; gap: .35rem;
-      transition: all .15s;
+      transition: all .15s; text-decoration: none;
     }
-    .action-btn:hover { border-color: #c89b3c; color: #fff; }
-    .action-btn.accent {
-      background: linear-gradient(135deg, #c89b3c 0%, #ffd23c 100%);
-      color: #0a1428; border-color: transparent; font-weight: 700;
-    }
-    .action-btn.accent:hover { filter: brightness(1.1); color: #0a1428; }
-    .action-btn.danger { color: #d97a7a; border-color: #4a2a2a; }
-    .action-btn.danger:hover { background: rgba(220,53,69,.18); border-color: #dc3545; color: #fff; }
+    .action-btn:hover:not(:disabled) { background: #1e2d3d; border-color: #3a5a6a; color: #e0e0e0; }
+    .action-btn.accent { color: #4fc3f7; border-color: rgba(79,195,247,0.4); background: transparent; }
+    .action-btn.accent:hover { background: rgba(79,195,247,0.12); border-color: #4fc3f7; color: #4fc3f7; filter: none; }
+    .action-btn.danger { color: #d97a7a; border-color: rgba(220,53,69,.4); }
+    .action-btn.danger:hover { background: rgba(220,53,69,.14); border-color: #dc3545; color: #fff; }
+    .action-btn:disabled { opacity: .5; cursor: not-allowed; }
 
     /* Seg control */
     .seg-control {
-      display: inline-flex; padding: 3px; border-radius: 10px;
-      background: #1a1a2e; border: 1px solid #2a3a4a;
+      display: inline-flex; padding: 2px; border-radius: 10px;
+      background: #0f1923; border: 1px solid #2a3a4a;
     }
     .seg-btn {
-      padding: .42rem .8rem; border-radius: 8px; cursor: pointer;
-      background: transparent; border: none; color: #c8c8da;
+      padding: .38rem .85rem; border-radius: 8px; cursor: pointer;
+      background: transparent; border: none; color: #8899aa;
       font-family: inherit; font-size: .85rem; transition: all .15s;
     }
-    .seg-btn:hover { color: #fff; }
+    .seg-btn:hover { color: #e0e0e0; }
     .seg-btn.active {
-      background: linear-gradient(135deg, #c89b3c 0%, #ffd23c 100%);
-      color: #0a1428; font-weight: 700;
+      background: #2a8a8a; color: #fff; font-weight: 600;
+      box-shadow: 0 1px 3px rgba(0,0,0,.3);
     }
 
     /* More menu */
@@ -582,10 +580,10 @@ const TYPE_COLOR: Record<string, string> = {
     .zone-title {
       display: flex; align-items: center; gap: .65rem; margin: 0 0 .85rem;
       padding-bottom: .4rem; border-bottom: 1px solid #2a2a4a;
-      color: #f0e6d2; font-size: 1.15rem;
+      color: #fff; font-size: 1.15rem;
     }
     .zone-title.is-toggle { cursor: pointer; user-select: none; }
-    .zone-title.is-toggle:hover { color: #ffd23c; }
+    .zone-title.is-toggle:hover { color: #ff6b7d; }
     .zone-name { font-weight: 700; }
     .zone-count {
       background: #16213e; color: #ffbd39; padding: .12rem .55rem;
@@ -604,7 +602,7 @@ const TYPE_COLOR: Record<string, string> = {
       transition: transform .15s; outline: none;
     }
     .card-stack:hover { transform: translateY(-4px); }
-    .card-stack:focus-visible { outline: 2px solid #c89b3c; outline-offset: 4px; border-radius: 6px; }
+    .card-stack:focus-visible { outline: 2px solid #e94560; outline-offset: 4px; border-radius: 6px; }
     .card-stack .top, .card-stack .shadow {
       position: absolute; inset: 0; width: 100%; height: 100%;
       object-fit: cover; border-radius: 6px;
@@ -620,8 +618,8 @@ const TYPE_COLOR: Record<string, string> = {
     .card-stack .top { z-index: 1; }
     .qty-badge {
       position: absolute; top: 6px; left: 6px; z-index: 3;
-      background: linear-gradient(135deg, #c89b3c 0%, #ffd23c 100%);
-      color: #0a1428; font-weight: 800; font-size: .82rem;
+      background: linear-gradient(135deg, #e94560 0%, #ff6b7d 100%);
+      color: #0f0f23; font-weight: 800; font-size: .82rem;
       padding: .15rem .5rem; border-radius: 999px;
       box-shadow: 0 2px 8px rgba(0,0,0,.5);
     }
@@ -644,11 +642,11 @@ const TYPE_COLOR: Record<string, string> = {
     .list-view .list-zone { margin-bottom: 1.5rem; }
     .entries-table {
       width: 100%; border-collapse: collapse; font-size: .9rem;
-      background: #15152a; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden;
+      background: #111827; border: 1px solid #2a2a4a; border-radius: 8px; overflow: hidden;
     }
     .entries-table th, .entries-table td { padding: .55rem .75rem; text-align: left; }
     .entries-table thead th {
-      background: #1a1a2e; color: #c89b3c; font-weight: 700;
+      background: #1a1a2e; color: #e94560; font-weight: 700;
       border-bottom: 1px solid #2a2a4a;
     }
     .entries-table .w-qty { width: 64px; text-align: center; font-weight: 700; color: #ffbd39; }
@@ -667,10 +665,10 @@ const TYPE_COLOR: Record<string, string> = {
     .stats-view { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     @media (max-width: 820px) { .stats-view { grid-template-columns: 1fr; } }
     .stats-card {
-      background: #15152a; border: 1px solid #2a2a4a; border-radius: 12px;
+      background: #111827; border: 1px solid #2a2a4a; border-radius: 12px;
       padding: 1rem 1.1rem;
     }
-    .stats-card h3 { margin: 0 0 .85rem; color: #f0e6d2; font-size: 1.05rem; }
+    .stats-card h3 { margin: 0 0 .85rem; color: #fff; font-size: 1.05rem; }
     .cost-curve {
       display: grid; grid-template-columns: repeat(8, 1fr); gap: .35rem; align-items: end;
       height: 180px;
@@ -680,7 +678,7 @@ const TYPE_COLOR: Record<string, string> = {
     .cc-bar-wrap { width: 100%; height: 100%; display: flex; align-items: flex-end; background: rgba(40,40,80,.25); border-radius: 4px; overflow: hidden; }
     .cc-bar {
       width: 100%; min-height: 2px;
-      background: linear-gradient(180deg, #ffd23c 0%, #c89b3c 100%);
+      background: linear-gradient(180deg, #ff6b7d 0%, #e94560 100%);
       border-radius: 4px 4px 0 0; transition: height .25s;
     }
     .cc-col.is-avg .cc-bar { background: linear-gradient(180deg, #e94560 0%, #9c5dff 100%); }
@@ -695,16 +693,16 @@ const TYPE_COLOR: Record<string, string> = {
     .dist-name .dot { width: 9px; height: 9px; border-radius: 50%; }
     .dist-bar-wrap { background: rgba(40,40,80,.35); border-radius: 4px; height: 12px; overflow: hidden; }
     .dist-bar { height: 100%; transition: width .25s; }
-    .dist-num { color: #f0e6d2; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+    .dist-num { color: #fff; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
 
     .prob-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
     .prob-table th, .prob-table td { padding: .35rem .45rem; border-bottom: 1px solid #1f1f3a; }
-    .prob-table th { color: #c89b3c; text-align: left; }
+    .prob-table th { color: #e94560; text-align: left; }
     .prob-table .num { text-align: right; }
     .prob-pill {
       display: inline-block; padding: .15rem .55rem; border-radius: 999px;
       background: linear-gradient(90deg, rgba(74,222,128,.25) var(--p), rgba(40,40,80,.35) var(--p));
-      color: #f0e6d2; font-weight: 700; font-size: .78rem;
+      color: #fff; font-weight: 700; font-size: .78rem;
     }
 
     /* Modal */
@@ -715,7 +713,7 @@ const TYPE_COLOR: Record<string, string> = {
     }
     .preview-box {
       position: relative; max-width: 1000px; width: 100%; max-height: 92vh; overflow: auto;
-      background: #0a1428; border: 1px solid #c89b3c; border-radius: 12px;
+      background: #0f0f23; border: 1px solid #e94560; border-radius: 12px;
       padding: 1.5rem; color: #e0e0e0; box-shadow: 0 20px 60px rgba(0,0,0,.5);
     }
     .preview-close {
@@ -728,15 +726,15 @@ const TYPE_COLOR: Record<string, string> = {
     .preview-close:hover { background: #e94560; border-color: #e94560; color: #fff; }
     .preview-layout { display: grid; gap: 1.5rem; grid-template-columns: minmax(220px, 360px) 1fr; }
     .preview-img { width: 100%; border-radius: .75rem; align-self: start; }
-    .preview-info h2 { margin: 0 0 .25rem; font-size: 1.6rem; color: #f0e6d2; }
-    .preview-info h3 { margin: 1rem 0 .25rem; color: #f0e6d2; font-size: 1.05rem; }
+    .preview-info h2 { margin: 0 0 .25rem; font-size: 1.6rem; color: #fff; }
+    .preview-info h3 { margin: 1rem 0 .25rem; color: #fff; font-size: 1.05rem; }
     .preview-badges { display: flex; gap: .35rem; flex-wrap: wrap; margin: .75rem 0; }
     .pv-badge { padding: .25rem .55rem; border-radius: .35rem; border: 1px solid #2a3a4a; font-size: .8rem; background: #16213e; }
-    .pv-badge.color { background: #c89b3c20; border-color: #c89b3c50; }
+    .pv-badge.color { background: #e9456020; border-color: #e9456050; }
     .preview-stats { display: flex; gap: .65rem; margin: 1rem 0; flex-wrap: wrap; }
     .preview-stats > div { display: flex; flex-direction: column; align-items: center; padding: .5rem 1rem; border: 1px solid #2a3a4a; border-radius: .5rem; min-width: 70px; background: #16213e; }
     .preview-stats span { opacity: .7; font-size: .8rem; }
-    .preview-stats strong { font-size: 1.4rem; color: #f0e6d2; }
+    .preview-stats strong { font-size: 1.4rem; color: #fff; }
     .preview-desc { white-space: pre-wrap; font-family: inherit; line-height: 1.55; margin: 0; font-size: .92rem; }
     @media (max-width: 720px) { .preview-layout { grid-template-columns: 1fr; } .preview-box { padding: 1rem; } }
 
@@ -744,7 +742,7 @@ const TYPE_COLOR: Record<string, string> = {
     .share-toast {
       position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
       background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
-      color: #0a1428; font-weight: 700; padding: .7rem 1.2rem;
+      color: #0f0f23; font-weight: 700; padding: .7rem 1.2rem;
       border-radius: 999px; box-shadow: 0 10px 28px rgba(0,0,0,.45);
       z-index: 1100; animation: fadeUp .25s ease-out;
     }
@@ -759,12 +757,12 @@ const TYPE_COLOR: Record<string, string> = {
       background: rgba(0,0,0,.7); display: grid; place-items: center;
     }
     .exporting-box {
-      background: #15152a; border: 1px solid #c89b3c; border-radius: 10px;
-      padding: 1.5rem 2rem; text-align: center; color: #f0e6d2;
+      background: #111827; border: 1px solid #e94560; border-radius: 10px;
+      padding: 1.5rem 2rem; text-align: center; color: #fff;
     }
     .spinner {
       width: 36px; height: 36px; margin: 0 auto .75rem;
-      border: 3px solid #2a2a4a; border-top-color: #c89b3c;
+      border: 3px solid #2a2a4a; border-top-color: #e94560;
       border-radius: 50%; animation: spin .8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -777,12 +775,12 @@ const TYPE_COLOR: Record<string, string> = {
     .exit-presentation-fab {
       position: fixed; top: 14px; right: 14px; z-index: 1100;
       width: 42px; height: 42px; border-radius: 50%;
-      background: #15152a; border: 1px solid #c89b3c; color: #ffd23c;
+      background: #111827; border: 1px solid #e94560; color: #ff6b7d;
       font-size: 1.1rem; cursor: pointer;
       box-shadow: 0 6px 20px rgba(0,0,0,.5);
       transition: all .15s;
     }
-    .exit-presentation-fab:hover { background: #c89b3c; color: #0a1428; }
+    .exit-presentation-fab:hover { background: #e94560; color: #0f0f23; }
 
     /* Cover star (owner) */
     .cover-star {
@@ -794,13 +792,13 @@ const TYPE_COLOR: Record<string, string> = {
     }
     .card-stack:hover .cover-star,
     .cover-star.is-cover { opacity: 1; }
-    .cover-star:hover { background: #c89b3c; color: #0a1428; }
-    .cover-star.is-cover { background: linear-gradient(135deg, #c89b3c, #ffd23c); color: #0a1428; border-color: #ffd23c; }
+    .cover-star:hover { background: #e94560; color: #0f0f23; }
+    .cover-star.is-cover { background: linear-gradient(135deg, #e94560, #ff6b7d); color: #0f0f23; border-color: #ff6b7d; }
     .cover-badge {
       position: absolute; top: 6px; right: 6px; z-index: 3;
       width: 22px; height: 22px; display: grid; place-items: center;
-      background: linear-gradient(135deg, #c89b3c, #ffd23c);
-      color: #0a1428; border-radius: 50%; font-size: .85rem; font-weight: 700;
+      background: linear-gradient(135deg, #e94560, #ff6b7d);
+      color: #0f0f23; border-radius: 50%; font-size: .85rem; font-weight: 700;
       box-shadow: 0 2px 8px rgba(200,155,60,.5);
     }
 
@@ -816,7 +814,7 @@ const TYPE_COLOR: Record<string, string> = {
       background: none; border: none; padding: 0; color: inherit;
       font: inherit; cursor: pointer; text-decoration: underline dotted;
     }
-    .copy-cn:hover { color: #c89b3c; }
+    .copy-cn:hover { color: #e94560; }
 
     /* More menu select */
     .more-divider { height: 1px; background: #2a3a4a; margin: .35rem 0; }
@@ -825,7 +823,7 @@ const TYPE_COLOR: Record<string, string> = {
       gap: .5rem; padding: .45rem .75rem; color: #c8c8da; font-size: .88rem;
     }
     .more-select select {
-      background: #16213e; color: #f0e6d2; border: 1px solid #2a3a4a;
+      background: #16213e; color: #fff; border: 1px solid #2a3a4a;
       border-radius: 6px; padding: .25rem .45rem; font-family: inherit;
     }
 

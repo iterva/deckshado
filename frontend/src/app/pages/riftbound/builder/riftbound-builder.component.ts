@@ -20,7 +20,7 @@ const COLORS: { code: RiftboundColor; label: string; hex: string }[] = [
   { code: 'mind',  label: 'Mind',  hex: '#3aa6ff' },
   { code: 'body',  label: 'Body',  hex: '#ff9a3c' },
   { code: 'chaos', label: 'Chaos', hex: '#9c5dff' },
-  { code: 'order', label: 'Order', hex: '#ffd23c' },
+  { code: 'order', label: 'Order', hex: '#ff6b7d' },
 ];
 
 const TYPES = [
@@ -480,7 +480,7 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
     /* Browser */
     .card-browser { padding: 1.25rem; border-right: 1px solid #1e3a4a; min-width: 0; }
     .card-browser h2 {
-      font-size: 1.5rem; font-weight: 700; color: #f0e6d2; margin: 0 0 1rem;
+      font-size: 1.5rem; font-weight: 700; color: #fff; margin: 0 0 1rem;
       letter-spacing: -.01em;
     }
     .muted { opacity: .65; }
@@ -492,7 +492,7 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
     .search-row input {
       flex: 1; min-width: 0; padding: .55rem .85rem;
       border: 1px solid #2a3a4a; border-radius: 6px;
-      background: #0a1428; color: #e0e0e0; outline: none;
+      background: #0f0f23; color: #e0e0e0; outline: none;
       font-size: .95rem;
     }
     .search-row input:focus { border-color: #e94560; }
@@ -518,7 +518,7 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
     .type-chips { display: flex; flex-wrap: wrap; gap: .4rem; }
     .type-chip-btn {
       padding: .3rem .75rem; border: 1px solid #2a3a4a; border-radius: 999px;
-      background: #0a1428; color: #c8c8da; font-size: .85rem; cursor: pointer;
+      background: #0f0f23; color: #c8c8da; font-size: .85rem; cursor: pointer;
       transition: all .15s; white-space: nowrap;
     }
     .type-chip-btn:hover { border-color: #e94560; color: #fff; }
@@ -532,9 +532,9 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
     .filter-row select {
       width: 100%; padding: .4rem .6rem;
       border: 1px solid #2a3a4a; border-radius: 6px;
-      background: #0a1428; color: #e0e0e0; outline: none;
+      background: #0f0f23; color: #e0e0e0; outline: none;
     }
-    .filter-row select:focus { border-color: #c89b3c; }
+    .filter-row select:focus { border-color: #e94560; }
 
     .color-row { display: flex; gap: .35rem; flex-wrap: wrap; align-items: center; }
     .color-chip {
@@ -542,9 +542,9 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
       background: transparent; color: var(--c); cursor: pointer; font-size: .8rem;
       font-weight: 600;
     }
-    .color-chip.active { background: var(--c); color: #0a1428; }
+    .color-chip.active { background: var(--c); color: #0f0f23; }
     .clear-colors {
-      background: transparent; border: none; color: #c89b3c; cursor: pointer;
+      background: transparent; border: none; color: #e94560; cursor: pointer;
       font-size: .8rem; text-decoration: underline;
     }
 
@@ -596,7 +596,7 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
     .img-wrapper:hover .eye-icon { opacity: 1; }
 
     .mini-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-    .mini-name { font-size: .85rem; color: #f0e6d2; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mini-name { font-size: .85rem; color: #fff; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .mini-type { font-size: .7rem; color: #98a2a8; }
     .mini-num { font-size: .65rem; color: #6a7a88; }
     .mini-ability {
@@ -612,7 +612,7 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
     .zone-label { font-size: .65rem; font-weight: 700; width: 12px; text-align: right; }
     .main-label { color: #ffbd39; }
     .side-label { color: #2ac5c5; }
-    .auto-label { color: #f0e6d2; }
+    .auto-label { color: #fff; }
     .side-actions { border-top: 1px solid #333; padding-top: 2px; }
 
     .circle-btn {
@@ -645,10 +645,10 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
       .deck-panel.mobile-visible { transform: translateX(0); }
     }
     .deck-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    .deck-header h2 { margin: 0; font-size: 1.1rem; color: #f0e6d2; }
+    .deck-header h2 { margin: 0; font-size: 1.1rem; color: #fff; }
     .mobile-close-btn {
       display: none; width: 36px; height: 36px; border-radius: 50%;
-      border: 1px solid #2a3a4a; background: #0a1428; color: #c8c8da; cursor: pointer;
+      border: 1px solid #2a3a4a; background: #0f0f23; color: #c8c8da; cursor: pointer;
     }
     @media (max-width: 900px) { .mobile-close-btn { display: block; } }
 
@@ -656,18 +656,18 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
     .form-group label { display: block; font-size: .75rem; color: #98a2a8; margin-bottom: .25rem; text-transform: uppercase; letter-spacing: .04em; }
     .form-group input {
       width: 100%; padding: .5rem .7rem; border: 1px solid #2a3a4a; border-radius: 6px;
-      background: #0a1428; color: #e0e0e0; outline: none;
+      background: #0f0f23; color: #e0e0e0; outline: none;
     }
-    .form-group input:focus { border-color: #c89b3c; }
+    .form-group input:focus { border-color: #e94560; }
 
     .checkbox-label { display: flex; align-items: center; gap: .5rem; color: #c8c8da; font-size: .9rem; margin-bottom: 1rem; cursor: pointer; }
-    .checkbox-label input { accent-color: #c89b3c; }
+    .checkbox-label input { accent-color: #e94560; }
 
     .zones-summary { display: flex; gap: .35rem; flex-wrap: wrap; margin-bottom: .75rem; }
     .zone-pill {
       display: inline-flex; align-items: center; gap: .35rem;
       padding: .25rem .55rem; border-radius: 999px;
-      background: #0a1428; border: 1px solid #2a3a4a;
+      background: #0f0f23; border: 1px solid #2a3a4a;
       font-size: .78rem; color: #c8c8da;
     }
     .zone-pill.ok { border-color: #4caf50; color: #4caf50; }
@@ -675,7 +675,7 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
     .zp-label { font-weight: 700; }
 
     .cost-curve {
-      background: #0a1428; border: 1px solid #1e3a4a; border-radius: 8px;
+      background: #0f0f23; border: 1px solid #1e3a4a; border-radius: 8px;
       padding: .6rem .7rem .5rem; margin-bottom: .9rem;
     }
     .cost-curve-title { display: block; font-size: .7rem; color: #98a2a8; text-transform: uppercase; letter-spacing: .05em; margin-bottom: .4rem; }
@@ -684,9 +684,9 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
       align-items: end; height: 80px;
     }
     .cost-bar { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 2px; }
-    .cost-bar-count { font-size: .7rem; color: #c89b3c; font-weight: 600; min-height: .7rem; }
+    .cost-bar-count { font-size: .7rem; color: #e94560; font-weight: 600; min-height: .7rem; }
     .cost-bar-fill-wrap { width: 100%; flex: 1; display: flex; align-items: flex-end; background: rgba(30,58,74,.4); border-radius: 3px; }
-    .cost-bar-fill { width: 100%; background: linear-gradient(180deg, #f0e6d2 0%, #c89b3c 100%); border-radius: 3px 3px 0 0; transition: height .3s; min-height: 2px; }
+    .cost-bar-fill { width: 100%; background: linear-gradient(180deg, #fff 0%, #e94560 100%); border-radius: 3px 3px 0 0; transition: height .3s; min-height: 2px; }
     .cost-bar-label { font-size: .7rem; color: #6a7a88; }
     .cost-bar.empty .cost-bar-fill { background: #1e3a4a; opacity: .5; }
     .cost-bar.empty .cost-bar-count { color: transparent; }
@@ -695,12 +695,12 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
     .cd-title { display: block; font-size: .7rem; color: #98a2a8; text-transform: uppercase; letter-spacing: .05em; margin-bottom: .35rem; }
     .cd-bars { display: flex; gap: .35rem; flex-wrap: wrap; }
     .cd-pill { font-size: .75rem; padding: .15rem .5rem; border-radius: 999px; border: 1px solid var(--c); color: var(--c); }
-    .cd-pill strong { color: #f0e6d2; }
+    .cd-pill strong { color: #fff; }
 
     .zone-section { margin-bottom: .9rem; padding: .5rem; border: 1px solid #1e3a4a; border-radius: 6px; }
     .zone-section.empty { opacity: .65; }
     .zone-section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .35rem; }
-    .zs-title { font-weight: 700; color: #f0e6d2; font-size: .9rem; }
+    .zs-title { font-weight: 700; color: #fff; font-size: .9rem; }
     .zs-count { font-size: .8rem; color: #98a2a8; }
     .zs-count.ok { color: #4caf50; }
     .zone-empty { font-size: .75rem; color: #6a7a88; margin: 0; }
@@ -714,27 +714,27 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
       display: grid; place-items: center; border-radius: 4px;
       transition: color .15s, background .15s, transform .15s;
     }
-    .cover-star:hover { color: #ffd23c; background: rgba(255,210,60,.08); transform: scale(1.15); }
-    .cover-star.active { color: #ffd23c; text-shadow: 0 0 8px rgba(255,210,60,.6); }
+    .cover-star:hover { color: #ff6b7d; background: rgba(255,210,60,.08); transform: scale(1.15); }
+    .cover-star.active { color: #ff6b7d; text-shadow: 0 0 8px rgba(255,210,60,.6); }
     .deck-entry:last-child { border-bottom: none; }
     .deck-entry img, .entry-img-fallback {
       width: 38px; height: 53px; object-fit: cover; border-radius: 3px; background: #16213e;
       display: grid; place-items: center; font-size: .55rem; text-align: center; color: #c8c8da;
     }
     .entry-info { flex: 1; min-width: 0; }
-    .entry-name { display: block; font-size: .8rem; color: #f0e6d2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .entry-name { display: block; font-size: .8rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .entry-meta { font-size: .7rem; color: #6a7a88; }
     .entry-controls { display: flex; align-items: center; gap: .25rem; }
     .ctrl-btn {
       width: 24px; height: 24px; border-radius: 50%;
-      border: 1px solid #2a3a4a; background: #0a1428; color: #c8c8da;
+      border: 1px solid #2a3a4a; background: #0f0f23; color: #c8c8da;
       font-size: .9rem; line-height: 1; display: flex; align-items: center; justify-content: center;
       cursor: pointer;
     }
-    .ctrl-btn:hover:not(:disabled) { border-color: #c89b3c; color: #c89b3c; }
+    .ctrl-btn:hover:not(:disabled) { border-color: #e94560; color: #e94560; }
     .ctrl-btn.remove:hover { border-color: #e94560; color: #e94560; }
     .ctrl-btn:disabled { opacity: .3; cursor: not-allowed; }
-    .entry-qty { font-weight: 700; color: #c89b3c; min-width: 18px; text-align: center; }
+    .entry-qty { font-weight: 700; color: #e94560; min-width: 18px; text-align: center; }
 
     .errors-box {
       background: rgba(233,69,96,.1); border: 1px solid #e94560; color: #ff8b8b;
@@ -744,7 +744,7 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
 
     .save-btn {
       width: 100%; padding: .65rem 1rem; border: none; border-radius: 6px;
-      background: #c89b3c; color: #0a1428; font-weight: 700; cursor: pointer;
+      background: #e94560; color: #0f0f23; font-weight: 700; cursor: pointer;
       font-size: 1rem;
     }
     .save-btn:hover:not(:disabled) { background: #d4a84b; }
@@ -755,7 +755,7 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
       display: none;
       position: fixed; right: 1rem; bottom: 5.5rem;
       width: 56px; height: 56px; border-radius: 50%;
-      background: #c89b3c; color: #0a1428; border: none;
+      background: #e94560; color: #0f0f23; border: none;
       box-shadow: 0 4px 14px rgba(0,0,0,.35); cursor: pointer; z-index: 920;
       align-items: center; justify-content: center; flex-direction: column;
     }
@@ -775,11 +775,11 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
     }
     .preview-box {
       position: relative; max-width: 1000px; width: 100%; max-height: 92vh; overflow: auto;
-      background: #0a1428; border: 1px solid #c89b3c; border-radius: 12px;
+      background: #0f0f23; border: 1px solid #e94560; border-radius: 12px;
       padding: 1.5rem; color: #e0e0e0; box-shadow: 0 20px 60px rgba(0,0,0,.5);
     }
     .preview-box img { max-width: 100%; border-radius: 6px; }
-    .preview-box h3 { color: #f0e6d2; margin: .5rem 0 0; font-size: 1rem; }
+    .preview-box h3 { color: #fff; margin: .5rem 0 0; font-size: 1rem; }
     .preview-box small { color: #98a2a8; font-weight: 400; }
     .preview-close {
       position: absolute; top: .6rem; right: .6rem;
@@ -793,15 +793,15 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
       display: grid; gap: 1.5rem; grid-template-columns: minmax(220px, 360px) 1fr;
     }
     .preview-img { width: 100%; border-radius: .75rem; align-self: start; }
-    .preview-info h2 { margin: 0 0 .25rem; font-size: 1.6rem; color: #f0e6d2; }
-    .preview-info h3 { margin: 1rem 0 .25rem; color: #f0e6d2; font-size: 1.05rem; text-align: left; }
+    .preview-info h2 { margin: 0 0 .25rem; font-size: 1.6rem; color: #fff; }
+    .preview-info h3 { margin: 1rem 0 .25rem; color: #fff; font-size: 1.05rem; text-align: left; }
     .preview-badges { display: flex; gap: .35rem; flex-wrap: wrap; margin: .75rem 0; }
     .pv-badge { padding: .25rem .55rem; border-radius: .35rem; border: 1px solid #2a3a4a; font-size: .8rem; background: #16213e; }
-    .pv-badge.color { background: #c89b3c20; border-color: #c89b3c50; }
+    .pv-badge.color { background: #e9456020; border-color: #e9456050; }
     .preview-stats { display: flex; gap: .65rem; margin: 1rem 0; flex-wrap: wrap; }
     .preview-stats > div { display: flex; flex-direction: column; align-items: center; padding: .5rem 1rem; border: 1px solid #2a3a4a; border-radius: .5rem; min-width: 70px; background: #16213e; }
     .preview-stats span { opacity: .7; font-size: .8rem; }
-    .preview-stats strong { font-size: 1.4rem; color: #f0e6d2; }
+    .preview-stats strong { font-size: 1.4rem; color: #fff; }
     .preview-desc { white-space: pre-wrap; font-family: inherit; line-height: 1.55; margin: 0; font-size: .92rem; text-align: left; }
     @media (max-width: 720px) {
       .preview-layout { grid-template-columns: 1fr; }
@@ -812,7 +812,7 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
     .legend-banner {
       display: flex; align-items: center; gap: .65rem;
       background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-      border: 1px solid #c89b3c; border-radius: 8px;
+      border: 1px solid #e94560; border-radius: 8px;
       padding: .5rem .65rem; margin: 0 0 1rem;
     }
     .legend-banner.empty {
@@ -822,8 +822,8 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
     }
     .choose-legend-btn {
       width: 100%; padding: .85rem 1rem;
-      background: linear-gradient(135deg, #c89b3c 0%, #ffd23c 100%);
-      color: #0a1428; border: none; border-radius: 8px;
+      background: linear-gradient(135deg, #e94560 0%, #ff6b7d 100%);
+      color: #0f0f23; border: none; border-radius: 8px;
       font-weight: 700; font-size: 1rem; cursor: pointer;
       letter-spacing: .02em;
       transition: filter .15s, transform .15s;
@@ -836,10 +836,10 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
     .legend-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
     .legend-tag {
       font-size: .6rem; letter-spacing: .08em;
-      color: #c89b3c; font-weight: 700;
+      color: #e94560; font-weight: 700;
     }
     .legend-info strong {
-      color: #f0e6d2; font-size: .9rem; line-height: 1.1;
+      color: #fff; font-size: .9rem; line-height: 1.1;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .legend-colors { display: flex; gap: 4px; margin-top: 2px; }
@@ -855,7 +855,7 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
       white-space: nowrap;
     }
     .legend-btn:hover { background: #2a4a5a; }
-    .legend-btn.locked { background: #c89b3c; color: #0a1428; border-color: #c89b3c; }
+    .legend-btn.locked { background: #e94560; color: #0f0f23; border-color: #e94560; }
 
     /* Legend Picker modal */
     .legend-picker-overlay {
@@ -865,18 +865,18 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
     }
     .legend-picker-box {
       width: min(900px, 100%); max-height: 90vh; overflow-y: auto;
-      background: #0a1428; border: 1px solid #c89b3c;
+      background: #0f0f23; border: 1px solid #e94560;
       border-radius: 10px; padding: 1.25rem;
     }
     .lp-head { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1rem; }
-    .lp-head h3 { color: #f0e6d2; margin: 0; font-size: 1.3rem; }
+    .lp-head h3 { color: #fff; margin: 0; font-size: 1.3rem; }
     .lp-head .muted { color: #98a2a8; font-size: .85rem; margin: 0; }
     .lp-search {
       padding: .55rem .85rem; background: #16213e;
       border: 1px solid #2a3a4a; border-radius: 6px; color: #e0e0e0;
       font-size: .95rem; outline: none;
     }
-    .lp-search:focus { border-color: #c89b3c; }
+    .lp-search:focus { border-color: #e94560; }
     .lp-skip {
       align-self: flex-start; background: transparent; color: #98a2a8;
       border: 1px solid #2a3a4a; border-radius: 6px;
@@ -893,7 +893,7 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
       cursor: pointer; color: inherit; text-align: center;
       transition: border-color .15s, transform .15s;
     }
-    .lp-card:hover { border-color: #c89b3c; transform: translateY(-2px); }
+    .lp-card:hover { border-color: #e94560; transform: translateY(-2px); }
     .lp-card img {
       width: 100%; aspect-ratio: 0.72; object-fit: cover; border-radius: 4px;
     }
@@ -902,7 +902,7 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
       background: #1e3a4a; border-radius: 4px; color: #98a2a8; font-size: .8rem;
     }
     .lp-name {
-      font-size: .8rem; color: #f0e6d2; font-weight: 600; line-height: 1.15;
+      font-size: .8rem; color: #fff; font-weight: 600; line-height: 1.15;
     }
     .lp-colors { display: flex; gap: 3px; }
 

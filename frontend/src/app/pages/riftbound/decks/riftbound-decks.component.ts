@@ -15,7 +15,7 @@ const COLOR_HEX: Record<RiftboundColor, string> = {
   mind: '#3aa6ff',
   body: '#ff9a3c',
   chaos: '#9c5dff',
-  order: '#ffd23c',
+  order: '#ff6b7d',
   neutral: '#888',
 };
 
@@ -182,13 +182,13 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
   `,
   styles: [`
     .rb-decks-container { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1rem; }
-    .page-title { font-size: 1.6rem; margin: 0 0 1rem; color: #f0e6d2; font-weight: 700; }
+    .page-title { font-size: 1.6rem; margin: 0 0 1rem; color: #fff; font-weight: 700; }
 
     /* Tabs */
     .toolbar-row { display: flex; gap: .75rem; margin-bottom: 1rem; flex-wrap: wrap; }
     .tabs {
       display: inline-flex; gap: .25rem; padding: .25rem;
-      background: #15152a; border: 1px solid #2a2a4a; border-radius: 10px;
+      background: #111827; border: 1px solid #2a2a4a; border-radius: 10px;
     }
     .tabs button {
       padding: .45rem .95rem; border: 0; background: transparent; color: #aaa;
@@ -196,7 +196,7 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
       transition: all .15s; white-space: nowrap;
       display: inline-flex; align-items: center; gap: .4rem;
     }
-    .tabs button.active { background: #c89b3c; color: #0a1428; font-weight: 600; }
+    .tabs button.active { background: #e94560; color: #0f0f23; font-weight: 600; }
     .tabs button:hover:not(.active) { background: #1f1f3a; color: #fff; }
 
     /* Filtros */
@@ -211,7 +211,7 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
       border: 1px solid #333; border-radius: 8px; background: #1a1a2e;
       color: #e0e0e0; outline: none; font: inherit;
     }
-    .search-bar input:focus { border-color: #c89b3c; }
+    .search-bar input:focus { border-color: #e94560; }
     .search-clear {
       position: absolute; right: 5.6rem; top: 50%; transform: translateY(-50%);
       background: transparent; border: 0; color: #888; cursor: pointer;
@@ -219,7 +219,7 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
     }
     .search-clear:hover { color: #fff; background: #2a2a4a; }
     .btn-search-go {
-      padding: .55rem 1rem; background: #c89b3c; color: #0a1428;
+      padding: .55rem 1rem; background: #e94560; color: #0f0f23;
       border: none; border-radius: 8px; font-weight: 600; cursor: pointer;
     }
     .btn-search-go:hover { filter: brightness(1.1); }
@@ -229,11 +229,11 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
     .color-chip {
       display: inline-flex; align-items: center; gap: .35rem;
       padding: .35rem .65rem; border: 1px solid #2a2a4a; border-radius: 999px;
-      background: #15152a; color: #c8c8da; font-size: .78rem; cursor: pointer;
+      background: #111827; color: #c8c8da; font-size: .78rem; cursor: pointer;
       transition: all .15s; font-family: inherit;
     }
     .color-chip:hover { border-color: var(--c); color: #fff; }
-    .color-chip.active { background: var(--c); color: #0a1428; border-color: var(--c); font-weight: 600; }
+    .color-chip.active { background: var(--c); color: #0f0f23; border-color: var(--c); font-weight: 600; }
     .color-chip .dot {
       width: 10px; height: 10px; border-radius: 50%; background: var(--c);
       border: 1px solid rgba(255,255,255,.25);
@@ -249,23 +249,23 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
 
     .sort-select {
       margin-left: auto; padding: .5rem .8rem; border: 1px solid #2a2a4a;
-      border-radius: 8px; background: #15152a; color: #e0e0e0;
+      border-radius: 8px; background: #111827; color: #e0e0e0;
       font-size: .85rem; cursor: pointer; font-family: inherit; outline: none;
     }
-    .sort-select:focus { border-color: #c89b3c; }
+    .sort-select:focus { border-color: #e94560; }
 
     .my-decks-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
     .results-count { color: #777; font-size: .85rem; }
     .btn-create {
-      padding: .55rem 1rem; background: linear-gradient(135deg, #c89b3c 0%, #ffd23c 100%);
-      color: #0a1428; border-radius: 8px; text-decoration: none; font-weight: 700;
+      padding: .55rem 1rem; background: linear-gradient(135deg, #e94560 0%, #ff6b7d 100%);
+      color: #0f0f23; border-radius: 8px; text-decoration: none; font-weight: 700;
     }
     .btn-create:hover { filter: brightness(1.1); }
 
     /* Grid */
     .deck-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
     .deck-card {
-      --accent: #c89b3c;
+      --accent: #e94560;
       position: relative; background: #1a1a2e; border: 1px solid #2a2a4a;
       border-radius: 12px; overflow: hidden;
       transition: transform .15s, border-color .15s, box-shadow .15s;
@@ -355,10 +355,10 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
     }
 
     .empty { grid-column: 1/-1; text-align: center; color: #777; padding: 3rem 1rem; }
-    .empty a { color: #c89b3c; }
+    .empty a { color: #e94560; }
     .pagination { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1.5rem; color: #aaa; font-size: .9rem; }
     .btn-page { padding: .45rem .85rem; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 6px; color: #e0e0e0; cursor: pointer; font-family: inherit; }
-    .btn-page:hover:not(:disabled) { border-color: #c89b3c; }
+    .btn-page:hover:not(:disabled) { border-color: #e94560; }
     .btn-page:disabled { opacity: .4; cursor: not-allowed; }
   `],
 })
@@ -396,7 +396,7 @@ export class RiftboundDecksComponent implements OnInit {
   label(c: RiftboundColor): string { return COLOR_LABEL[c] ?? c; }
 
   getAccent(deck: RiftboundDeck): string {
-    return deck.primary_colors?.[0] ? COLOR_HEX[deck.primary_colors[0]] : '#c89b3c';
+    return deck.primary_colors?.[0] ? COLOR_HEX[deck.primary_colors[0]] : '#e94560';
   }
 
   countCards(deck: RiftboundDeck): number {

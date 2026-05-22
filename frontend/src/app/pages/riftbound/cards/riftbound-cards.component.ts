@@ -10,7 +10,7 @@ const COLORS: { code: RiftboundColor; label: string; hex: string }[] = [
   { code: 'mind',  label: 'Mind',  hex: '#3aa6ff' },
   { code: 'body',  label: 'Body',  hex: '#ff9a3c' },
   { code: 'chaos', label: 'Chaos', hex: '#9c5dff' },
-  { code: 'order', label: 'Order', hex: '#ffd23c' },
+  { code: 'order', label: 'Order', hex: '#ff6b7d' },
 ];
 
 const TYPES = [
@@ -201,7 +201,7 @@ const RARITIES = [
     .rb-cards-page { max-width: 1400px; margin: 0 auto; padding: 1.5rem 1rem; }
     .page-head h1 {
       margin: 0; font-size: 1.6rem; font-weight: 700;
-      background: linear-gradient(90deg, #c89b3c, #f0e6d2);
+      background: linear-gradient(90deg, #e94560, #fff);
       -webkit-background-clip: text; background-clip: text; color: transparent;
     }
     .muted { opacity: .65; }
@@ -213,7 +213,7 @@ const RARITIES = [
     .search-row input {
       flex: 1; min-width: 0; padding: .55rem .85rem;
       border: 1px solid #2a3a4a; border-radius: 6px;
-      background: #0a1428; color: #e0e0e0; outline: none;
+      background: #0f0f23; color: #e0e0e0; outline: none;
       font-size: .95rem;
     }
     .search-row input:focus { border-color: #e94560; }
@@ -233,7 +233,7 @@ const RARITIES = [
     .type-chips { display: flex; flex-wrap: wrap; gap: .4rem; }
     .chip {
       padding: .3rem .8rem; border: 1px solid #2a3a4a; border-radius: 999px;
-      background: #0a1428; color: #c8c8da; font-size: .85rem; cursor: pointer;
+      background: #0f0f23; color: #c8c8da; font-size: .85rem; cursor: pointer;
       transition: all .15s; white-space: nowrap;
     }
     .chip:hover { border-color: #e94560; color: #fff; }
@@ -245,9 +245,9 @@ const RARITIES = [
     .filter-group select {
       width: 100%; padding: .45rem .65rem;
       border: 1px solid #2a3a4a; border-radius: 6px;
-      background: #0a1428; color: #e0e0e0; outline: none;
+      background: #0f0f23; color: #e0e0e0; outline: none;
     }
-    .filter-group select:focus { border-color: #c89b3c; }
+    .filter-group select:focus { border-color: #e94560; }
 
     .color-row { display: flex; gap: .35rem; flex-wrap: wrap; align-items: center; }
     .color-row-label { color: #98a2a8; font-size: .85rem; margin-right: .35rem; }
@@ -256,7 +256,7 @@ const RARITIES = [
       background: transparent; color: var(--c); cursor: pointer; font-size: .8rem;
       font-weight: 600;
     }
-    .color-chip.active { background: var(--c); color: #0a1428; }
+    .color-chip.active { background: var(--c); color: #0f0f23; }
 
     .card-grid {
       display: grid; gap: 1rem;
@@ -272,7 +272,7 @@ const RARITIES = [
     .rb-card img { width: 100%; aspect-ratio: 63/88; object-fit: cover; border-radius: .5rem; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
     .rb-card-placeholder { aspect-ratio: 63/88; display: grid; place-items: center; padding: 1rem; text-align: center; background: #16213e; border-radius: .5rem; color: #c8c8da; }
     .rb-card-meta { display: flex; flex-direction: column; }
-    .rb-card-meta strong { color: #f0e6d2; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rb-card-meta strong { color: #fff; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .rb-card-meta small { opacity: .6; font-size: .75rem; }
     .rb-card-ability {
       margin: .25rem 0 0; font-size: .72rem; color: #aaa; line-height: 1.35;
@@ -306,7 +306,7 @@ const RARITIES = [
     @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
     .rb-modal {
       position: relative; max-width: 1000px; width: 100%; max-height: 92vh; overflow: auto;
-      background: #0a1428; border: 1px solid #2a3a4a; border-radius: 12px;
+      background: #0f0f23; border: 1px solid #2a3a4a; border-radius: 12px;
       padding: 1.5rem; color: #e0e0e0; box-shadow: 0 20px 60px rgba(0,0,0,.5);
     }
     .rb-modal-close {
@@ -321,15 +321,15 @@ const RARITIES = [
       display: grid; gap: 1.5rem; grid-template-columns: minmax(220px, 360px) 1fr;
     }
     .rb-modal-img { width: 100%; border-radius: .75rem; align-self: start; }
-    .rb-modal-info h2 { margin: 0 0 .25rem; font-size: 1.6rem; color: #f0e6d2; }
-    .rb-modal-info h3 { margin: 1rem 0 .25rem; color: #f0e6d2; font-size: 1.05rem; }
+    .rb-modal-info h2 { margin: 0 0 .25rem; font-size: 1.6rem; color: #fff; }
+    .rb-modal-info h3 { margin: 1rem 0 .25rem; color: #fff; font-size: 1.05rem; }
     .badges { display: flex; gap: .35rem; flex-wrap: wrap; margin: .75rem 0; }
     .badge { padding: .25rem .55rem; border-radius: .35rem; border: 1px solid #2a3a4a; font-size: .8rem; background: #16213e; }
-    .badge.color { background: #c89b3c20; border-color: #c89b3c50; }
+    .badge.color { background: #e9456020; border-color: #e9456050; }
     .stats { display: flex; gap: .65rem; margin: 1rem 0; flex-wrap: wrap; }
     .stats > div { display: flex; flex-direction: column; align-items: center; padding: .5rem 1rem; border: 1px solid #2a3a4a; border-radius: .5rem; min-width: 70px; background: #16213e; }
     .stats span { opacity: .7; font-size: .8rem; }
-    .stats strong { font-size: 1.4rem; color: #f0e6d2; }
+    .stats strong { font-size: 1.4rem; color: #fff; }
     .desc { white-space: pre-wrap; font-family: inherit; line-height: 1.55; margin: 0; font-size: .92rem; }
     @media (max-width: 720px) {
       .rb-modal-layout { grid-template-columns: 1fr; }
@@ -340,7 +340,7 @@ const RARITIES = [
     :host-context(body.light-theme) .search-row input,
     :host-context(body.light-theme) .filter-group select,
     :host-context(body.light-theme) .chip { background: #ffffff; border-color: #d4c489; color: #2a1f10; }
-    :host-context(body.light-theme) .chip.active { background: #785a28; border-color: #785a28; color: #f0e6d2; }
+    :host-context(body.light-theme) .chip.active { background: #785a28; border-color: #785a28; color: #fff; }
     :host-context(body.light-theme) .rb-card-meta strong { color: #463714; }
   `],
 })

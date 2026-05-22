@@ -78,7 +78,7 @@ import { RiftboundBanlistEntry } from '../../../models/riftbound';
     .rb-banlist-page { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1rem; }
     .rb-page-head h1 {
       margin: 0; font-size: 1.7rem; font-weight: 700;
-      background: linear-gradient(90deg, #c89b3c, #f0e6d2);
+      background: linear-gradient(90deg, #e94560, #fff);
       -webkit-background-clip: text; background-clip: text; color: transparent;
     }
     .muted { opacity: .65; }
@@ -87,7 +87,7 @@ import { RiftboundBanlistEntry } from '../../../models/riftbound';
     .ban-section { margin: 1.75rem 0; }
     .ban-title {
       display: flex; align-items: center; gap: .5rem;
-      font-size: 1.15rem; color: #f0e6d2; margin: 0 0 1rem;
+      font-size: 1.15rem; color: #fff; margin: 0 0 1rem;
       padding-bottom: .5rem; border-bottom: 1px solid #1e3a4a;
     }
     .ban-title small { color: #98a2a8; font-weight: 400; }
@@ -111,9 +111,9 @@ import { RiftboundBanlistEntry } from '../../../models/riftbound';
       display: grid; place-items: center; color: #c8c8da;
     }
     .ban-info { padding: .65rem .75rem; display: flex; flex-direction: column; gap: .15rem; }
-    .ban-info strong { color: #f0e6d2; font-size: .95rem; }
+    .ban-info strong { color: #fff; font-size: .95rem; }
     .ban-info small { color: #98a2a8; font-size: .75rem; }
-    .ban-info code { color: #c89b3c; font-family: 'Courier New', monospace; }
+    .ban-info code { color: #e94560; font-family: 'Courier New', monospace; }
 
     .ban-tag {
       display: inline-block; align-self: flex-start; margin-top: .35rem;

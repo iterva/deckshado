@@ -109,16 +109,16 @@ import { RiftboundService } from '../../../services/riftbound.service';
   `,
   styles: [`
     .hero {
-      background: linear-gradient(135deg, #0a1428 0%, #091428 50%, #0a323c 100%);
+      background: linear-gradient(135deg, #0f0f23 0%, #091428 50%, #0a323c 100%);
       padding: 4rem 2rem;
       text-align: center;
-      border-bottom: 2px solid #c89b3c;
+      border-bottom: 2px solid #e94560;
     }
     .hero-title {
       font-size: 3rem;
       font-weight: 700;
       margin-bottom: 0.5rem;
-      background: linear-gradient(90deg, #c89b3c, #f0e6d2);
+      background: linear-gradient(90deg, #e94560, #fff);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -129,7 +129,7 @@ import { RiftboundService } from '../../../services/riftbound.service';
     .hero-subtitle { color: #aaa; font-size: 1.2rem; margin-bottom: 2rem; }
     .hero-stats { display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap; }
     .hero-stats .stat { display: flex; flex-direction: column; }
-    .hero-stats .stat-number { font-size: 2rem; font-weight: 700; color: #f0e6d2; }
+    .hero-stats .stat-number { font-size: 2rem; font-weight: 700; color: #fff; }
     .hero-stats .stat-label { color: #888; font-size: 0.9rem; }
 
     .features {
@@ -144,7 +144,7 @@ import { RiftboundService } from '../../../services/riftbound.service';
     @media (max-width: 520px)  { .features { grid-template-columns: 1fr; } }
 
     .feature-card {
-      background: #0a1428;
+      background: #0f0f23;
       border: 1px solid #1e3a4a;
       border-radius: 12px;
       padding: 2rem 1.25rem;
@@ -153,40 +153,40 @@ import { RiftboundService } from '../../../services/riftbound.service';
       transition: all 0.3s;
     }
     .feature-card:hover {
-      border-color: #c89b3c;
+      border-color: #e94560;
       transform: translateY(-4px);
       box-shadow: 0 8px 25px rgba(200, 155, 60, 0.25);
     }
     .feature-card.highlight {
       border-color: rgba(200, 155, 60, 0.5);
-      background: linear-gradient(135deg, #0a1428 0%, #2a1f10 100%);
+      background: linear-gradient(135deg, #0f0f23 0%, #2a1f10 100%);
     }
     .feature-card.highlight:hover {
-      border-color: #c89b3c;
+      border-color: #e94560;
       box-shadow: 0 8px 25px rgba(200, 155, 60, 0.35);
     }
     .feature-icon { font-size: 2.5rem; margin-bottom: 1rem; }
-    .feature-card h3 { font-size: 1.15rem; margin-bottom: 0.5rem; color: #f0e6d2; }
+    .feature-card h3 { font-size: 1.15rem; margin-bottom: 0.5rem; color: #fff; }
     .feature-card p  { color: #98a2a8; font-size: 0.9rem; line-height: 1.5; margin: 0; }
 
     .seo-content { padding: 1rem 1rem 4rem; max-width: 900px; }
     .seo-content .seo-block { margin-bottom: 2.5rem; }
     .seo-content h2 {
-      color: #f0e6d2;
+      color: #fff;
       font-size: 1.5rem;
       margin-bottom: 0.75rem;
-      border-left: 3px solid #c89b3c;
+      border-left: 3px solid #e94560;
       padding-left: 0.75rem;
     }
     .seo-content p, .seo-content li { color: #c8c8d0; line-height: 1.7; font-size: 1rem; }
-    .seo-content strong { color: #c89b3c; font-weight: 600; }
+    .seo-content strong { color: #e94560; font-weight: 600; }
     .seo-list, .seo-links { margin: 0; padding-left: 1.25rem; }
     .seo-list li, .seo-links li { margin-bottom: 0.4rem; }
-    .seo-links a { color: #c89b3c; text-decoration: none; font-weight: 600; }
+    .seo-links a { color: #e94560; text-decoration: none; font-weight: 600; }
     .seo-links a:hover { text-decoration: underline; }
 
     .seo-content details {
-      background: #0a1428;
+      background: #0f0f23;
       border: 1px solid #1e3a4a;
       border-radius: 8px;
       padding: 0.75rem 1rem;
@@ -194,18 +194,18 @@ import { RiftboundService } from '../../../services/riftbound.service';
     }
     .seo-content summary {
       cursor: pointer;
-      color: #f0e6d2;
+      color: #fff;
       font-weight: 600;
       list-style: none;
       padding: 0.25rem 0;
     }
-    .seo-content summary::before { content: "+ "; color: #c89b3c; }
+    .seo-content summary::before { content: "+ "; color: #e94560; }
     .seo-content details[open] summary::before { content: "− "; }
     .seo-content details p { margin-top: 0.6rem; margin-bottom: 0; color: #98a2a8; }
 
     /* Light theme overrides */
     :host-context(body.light-theme) .hero {
-      background: linear-gradient(135deg, #f0e6d2 0%, #e8d8a8 50%, #d4c489 100%);
+      background: linear-gradient(135deg, #fff 0%, #e8d8a8 50%, #d4c489 100%);
       border-bottom-color: #785a28;
     }
     :host-context(body.light-theme) .hero-title {

@@ -176,16 +176,16 @@ import { RiftboundCardLite, RiftboundCollectionEntry } from '../../../models/rif
     /* Header */
     .carpeta-header {
       display: flex; align-items: center; gap: 1rem;
-      background: #0a1428; border: 1px solid #1e3a4a; border-radius: 12px;
+      background: #0f0f23; border: 1px solid #1e3a4a; border-radius: 12px;
       padding: 1rem 1.25rem; margin-bottom: 1rem;
     }
     .binder-avatar-placeholder {
       width: 80px; height: 80px; border-radius: 50%;
-      background: linear-gradient(135deg, #c89b3c, #f0e6d2);
+      background: linear-gradient(135deg, #e94560, #fff);
       display: grid; place-items: center; font-size: 2.5rem;
     }
     .binder-info h1 { margin: 0; font-size: 1.6rem;
-      background: linear-gradient(90deg, #c89b3c, #f0e6d2);
+      background: linear-gradient(90deg, #e94560, #fff);
       -webkit-background-clip: text; background-clip: text; color: transparent;
     }
     .binder-user { margin: .15rem 0 0; opacity: .65; }
@@ -201,8 +201,8 @@ import { RiftboundCardLite, RiftboundCollectionEntry } from '../../../models/rif
       cursor: pointer; border-bottom: 3px solid transparent;
       transition: all .15s; white-space: nowrap;
     }
-    .tab:hover { color: #f0e6d2; }
-    .tab.active { color: #c89b3c; border-bottom-color: #c89b3c; }
+    .tab:hover { color: #fff; }
+    .tab.active { color: #e94560; border-bottom-color: #e94560; }
 
     /* Toolbar */
     .tab-toolbar {
@@ -210,10 +210,10 @@ import { RiftboundCardLite, RiftboundCollectionEntry } from '../../../models/rif
     }
     .search-input, select {
       padding: .55rem .8rem; border: 1px solid #2a3a4a; border-radius: 6px;
-      background: #0a1428; color: #e0e0e0; outline: none;
+      background: #0f0f23; color: #e0e0e0; outline: none;
     }
     .search-input { flex: 1; min-width: 220px; }
-    .search-input:focus, select:focus { border-color: #c89b3c; }
+    .search-input:focus, select:focus { border-color: #e94560; }
     .results-count { color: #98a2a8; font-size: .85rem; margin: 0 0 .75rem; }
 
     /* Grid */
@@ -222,11 +222,11 @@ import { RiftboundCardLite, RiftboundCollectionEntry } from '../../../models/rif
       grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     }
     .entry-card {
-      background: #0a1428; border: 1px solid #1e3a4a; border-radius: 10px;
+      background: #0f0f23; border: 1px solid #1e3a4a; border-radius: 10px;
       padding: .55rem; display: flex; flex-direction: column; gap: .5rem;
       transition: all .15s;
     }
-    .entry-card:hover { border-color: #c89b3c; transform: translateY(-2px); }
+    .entry-card:hover { border-color: #e94560; transform: translateY(-2px); }
     .entry-card img { width: 100%; aspect-ratio: 63/88; object-fit: cover; border-radius: 6px; background: #16213e; }
     .img-fallback {
       width: 100%; aspect-ratio: 63/88; background: #16213e; border-radius: 6px;
@@ -234,7 +234,7 @@ import { RiftboundCardLite, RiftboundCollectionEntry } from '../../../models/rif
     }
     .entry-meta { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
     .entry-meta strong {
-      color: #f0e6d2; font-size: .85rem;
+      color: #fff; font-size: .85rem;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .entry-meta small { color: #6a7a88; font-size: .7rem; }
@@ -242,27 +242,27 @@ import { RiftboundCardLite, RiftboundCollectionEntry } from '../../../models/rif
     .qty-controls { display: flex; gap: .25rem; align-items: center; margin-top: .35rem; }
     .qty-controls input {
       width: 50px; padding: .25rem .35rem; text-align: center;
-      border: 1px solid #2a3a4a; border-radius: 4px; background: #0a1428; color: #e0e0e0;
+      border: 1px solid #2a3a4a; border-radius: 4px; background: #0f0f23; color: #e0e0e0;
     }
     .ctrl {
       width: 28px; height: 28px; border-radius: 4px;
-      border: 1px solid #2a3a4a; background: #0a1428; color: #c8c8da;
+      border: 1px solid #2a3a4a; background: #0f0f23; color: #c8c8da;
       cursor: pointer; font-size: 1rem; line-height: 1;
     }
-    .ctrl:hover { border-color: #c89b3c; color: #c89b3c; }
+    .ctrl:hover { border-color: #e94560; color: #e94560; }
     .ctrl.remove:hover { border-color: #e94560; color: #e94560; }
 
     .add-btn {
-      width: 100%; padding: .35rem .5rem; border: 1px solid #c89b3c;
-      background: transparent; color: #c89b3c; border-radius: 4px; cursor: pointer;
+      width: 100%; padding: .35rem .5rem; border: 1px solid #e94560;
+      background: transparent; color: #e94560; border-radius: 4px; cursor: pointer;
       font-size: .8rem; font-weight: 600; margin-top: .35rem;
     }
-    .add-btn:hover { background: #c89b3c; color: #0a1428; }
+    .add-btn:hover { background: #e94560; color: #0f0f23; }
 
     /* Empty / center */
     .empty-state {
       text-align: center; padding: 3rem 1rem;
-      background: #0a1428; border: 1px dashed #1e3a4a; border-radius: 10px;
+      background: #0f0f23; border: 1px dashed #1e3a4a; border-radius: 10px;
       color: #98a2a8;
     }
     .muted { opacity: .65; }
@@ -271,19 +271,19 @@ import { RiftboundCardLite, RiftboundCollectionEntry } from '../../../models/rif
     /* Stats */
     .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .75rem; margin-bottom: 1.5rem; }
     .stat-card {
-      background: #0a1428; border: 1px solid #1e3a4a; border-radius: 10px;
+      background: #0f0f23; border: 1px solid #1e3a4a; border-radius: 10px;
       padding: 1rem; display: flex; flex-direction: column; align-items: center;
     }
     .stat-label { font-size: .75rem; color: #98a2a8; text-transform: uppercase; letter-spacing: .05em; }
-    .stat-value { font-size: 2rem; font-weight: 700; color: #c89b3c; }
+    .stat-value { font-size: 2rem; font-weight: 700; color: #e94560; }
 
-    .tab-content h3 { color: #f0e6d2; margin: 1.5rem 0 .75rem; font-size: 1.1rem; }
+    .tab-content h3 { color: #fff; margin: 1.5rem 0 .75rem; font-size: 1.1rem; }
     .dist-bars { display: flex; flex-direction: column; gap: .35rem; }
     .dist-row { display: grid; grid-template-columns: 100px 1fr 50px; gap: .5rem; align-items: center; }
     .dist-label { color: #c8c8da; font-size: .85rem; }
     .dist-bar { height: 12px; background: rgba(30,58,74,.4); border-radius: 6px; overflow: hidden; }
-    .dist-fill { height: 100%; background: linear-gradient(90deg, #f0e6d2, #c89b3c); transition: width .3s; }
-    .dist-num { color: #c89b3c; font-weight: 600; font-size: .85rem; text-align: right; }
+    .dist-fill { height: 100%; background: linear-gradient(90deg, #fff, #e94560); transition: width .3s; }
+    .dist-num { color: #e94560; font-weight: 600; font-size: .85rem; text-align: right; }
 
     /* Light theme */
     :host-context(body.light-theme) .carpeta-header,

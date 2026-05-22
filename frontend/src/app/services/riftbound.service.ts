@@ -6,6 +6,7 @@ import {
   RiftboundCard, RiftboundCardLite, RiftboundDeck, RiftboundFormat,
   RiftboundBanlistEntry, RiftboundIcon, RiftboundSet, RiftboundCollectionEntry,
   RiftboundWishlistEntry, RiftboundCarpetaIds, RiftboundCollectionStats,
+  RiftboundBinderProfile, RiftboundPublicBinderProfile, RiftboundBulkImportResult,
 } from '../models/riftbound';
 
 interface PaginatedResponse<T> {
@@ -133,13 +134,22 @@ export class RiftboundService {
   }
 
   // ── Carpeta ──
-  listCollection(opts: { search?: string; page?: number } = {}): Observable<PaginatedResponse<RiftboundCollectionEntry>> {
+  listCollection(opts: { search?: string; page?: number; selling?: boolean } = {}): Observable<PaginatedResponse<RiftboundCollectionEntry>> {
     let params = new HttpParams();
     if (opts.search) params = params.set('search', opts.search);
     if (opts.page) params = params.set('page', String(opts.page));
+    if (opts.selling) params = params.set('selling', '1');
     return this.http.get<PaginatedResponse<RiftboundCollectionEntry>>(
       `${this.base}/collection/`, { params },
     );
+  }
+
+  batchUpsertCollection(items: Partial<RiftboundCollectionEntry>[]): Observable<{ results: any[] }> {
+    return this.http.post<{ results: any[] }>(`${this.base}/collection/batch-upsert/`, { items });
+  }
+
+  bulkImport(text: string, mode: 'add' | 'set' = 'add'): Observable<RiftboundBulkImportResult> {
+    return this.http.post<RiftboundBulkImportResult>(`${this.base}/collection/bulk-import/`, { text, mode });
   }
 
   upsertCollection(data: Partial<RiftboundCollectionEntry>): Observable<RiftboundCollectionEntry | { deleted: true; card: number }> {
@@ -178,5 +188,50 @@ export class RiftboundService {
     return this.http.post<RiftboundWishlistEntry>(
       `${this.base}/wishlist/set-quantity/`, { card: cardId, desired_quantity: qty },
     );
+  }
+
+  // ── Binder profile / tienda ──
+  getBinderProfile(): Observable<RiftboundBinderProfile> {
+    return this.http.get<RiftboundBinderProfile>(`${this.base}/profile/`);
+  }
+
+  updateBinderProfile(patch: Partial<RiftboundBinderProfile>): Observable<RiftboundBinderProfile> {
+    return this.http.patch<RiftboundBinderProfile>(`${this.base}/profile/`, patch);
+  }
+
+  uploadBinderAvatar(avatarUrl: string): Observable<RiftboundBinderProfile> {
+    return this.http.post<RiftboundBinderProfile>(`${this.base}/profile/avatar/`, { avatar_url: avatarUrl });
+  }
+
+  myShareToken(): Observable<{ share_token: string; store_slug: string; is_store_public: boolean }> {
+    return this.http.get<{ share_token: string; store_slug: string; is_store_public: boolean }>(`${this.base}/share-token/`);
+  }
+
+  regenerateShareToken(): Observable<{ share_token: string }> {
+    return this.http.post<{ share_token: string }>(`${this.base}/share-token/regenerate/`, {});
+  }
+
+  listStores(opts: { search?: string; country?: string; ordering?: string; page?: number } = {}):
+    Observable<PaginatedResponse<RiftboundPublicBinderProfile>> {
+    let params = new HttpParams();
+    if (opts.search) params = params.set('search', opts.search);
+    if (opts.country) params = params.set('country', opts.country);
+    if (opts.ordering) params = params.set('ordering', opts.ordering);
+    if (opts.page) params = params.set('page', String(opts.page));
+    return this.http.get<PaginatedResponse<RiftboundPublicBinderProfile>>(`${this.base}/stores/`, { params });
+  }
+
+  getPublicStore(token: string, opts: {
+    search?: string; set?: string; type?: string; rarity?: string;
+    condition?: string; foil?: '0' | '1'; price_min?: number; price_max?: number;
+    only_priced?: '1'; ordering?: string; page?: number;
+  } = {}): Observable<PaginatedResponse<RiftboundCollectionEntry> & {
+    store: RiftboundPublicBinderProfile; store_owner: string; store_avatar: string; store_binder_avatar: string;
+  }> {
+    let params = new HttpParams();
+    for (const [k, v] of Object.entries(opts)) {
+      if (v !== undefined && v !== null && v !== '') params = params.set(k, String(v));
+    }
+    return this.http.get<any>(`${this.base}/store/${token}/`, { params });
   }
 }

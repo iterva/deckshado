@@ -170,6 +170,16 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/riftbound/carpeta/riftbound-carpeta.component').then(m => m.RiftboundCarpetaComponent),
   },
   {
+    path: 'riftbound/tiendas',
+    title: 'Tiendas Riftbound | ShadowForge',
+    loadComponent: () => import('./pages/riftbound/tiendas/riftbound-stores-index.component').then(m => m.RiftboundStoresIndexComponent),
+  },
+  {
+    path: 'riftbound/tienda/:token',
+    title: 'Tienda Riftbound | ShadowForge',
+    loadComponent: () => import('./pages/riftbound/tienda/riftbound-tienda.component').then(m => m.RiftboundTiendaComponent),
+  },
+  {
     path: 'riftbound/banlist',
     title: 'Banlist Riftbound | ShadowForge',
     loadComponent: () => import('./pages/riftbound/banlist/riftbound-banlist.component').then(m => m.RiftboundBanlistComponent),

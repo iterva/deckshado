@@ -120,13 +120,55 @@ export interface RiftboundIcon {
   image: string;
 }
 
+export type RiftboundCondition = 'NM' | 'LP' | 'MP' | 'HP' | 'DMG';
+export type RiftboundLanguage = 'ES' | 'EN' | 'PT' | 'FR' | 'OT';
+
 export interface RiftboundCollectionEntry {
   id: number;
   card: number;
   card_data: RiftboundCardLite;
   quantity: number;
+  price?: number | null;
+  selling_quantity: number;
+  condition: RiftboundCondition;
+  language: RiftboundLanguage;
   is_foil: boolean;
   notes: string;
+}
+
+export interface RiftboundBinderProfile {
+  username: string;
+  share_token: string;
+  binder_avatar: string;
+  binder_avatar_url: string;
+  user_avatar_url: string;
+  store_slug: string;
+  is_store_public: boolean;
+  display_name: string;
+  bio: string;
+  city: string;
+  country: string;
+  whatsapp: string;
+  instagram: string;
+  discord: string;
+  email_public: string;
+  payment_methods: string;
+  shipping_info: string;
+  accepts_trades: boolean;
+  last_active: string;
+}
+
+export interface RiftboundPublicBinderProfile extends RiftboundBinderProfile {
+  selling_count?: number;
+}
+
+export interface RiftboundBulkImportResult {
+  added: number;
+  updated: number;
+  not_found: number;
+  ambiguous: number;
+  not_found_lines: string[];
+  ambiguous_lines: string[];
 }
 
 export interface RiftboundWishlistEntry {
@@ -144,6 +186,7 @@ export interface RiftboundCarpetaIds {
 export interface RiftboundCollectionStats {
   total_cards: number;
   unique_cards: number;
+  total_value?: number;
   by_type: { key: string; count: number }[];
   by_rarity: { key: string; count: number }[];
   by_color: { key: string; count: number }[];

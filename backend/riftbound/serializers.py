@@ -9,6 +9,7 @@ from .models import (
     RiftboundDeckEntry,
     RiftboundCollectionEntry,
     RiftboundWishlistEntry,
+    RiftboundBinderProfile,
     RiftboundIcon,
     ZONE_CHAMPION,
     ZONE_BATTLEFIELD,
@@ -144,7 +145,47 @@ class RiftboundCollectionEntrySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RiftboundCollectionEntry
-        fields = ["id", "card", "card_data", "quantity", "is_foil", "notes"]
+        fields = [
+            "id", "card", "card_data", "quantity",
+            "price", "selling_quantity", "condition", "language",
+            "is_foil", "notes",
+        ]
+
+
+class RiftboundBinderProfileSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+    share_token = serializers.UUIDField(read_only=True)
+    binder_avatar_url = serializers.CharField(source="binder_avatar", read_only=True)
+    user_avatar_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RiftboundBinderProfile
+        fields = [
+            "username", "share_token", "binder_avatar", "binder_avatar_url",
+            "user_avatar_url",
+            "store_slug", "is_store_public", "display_name", "bio",
+            "city", "country", "whatsapp", "instagram", "discord",
+            "email_public", "payment_methods", "shipping_info",
+            "accepts_trades", "last_active",
+        ]
+        read_only_fields = ["store_slug", "last_active"]
+
+    def get_user_avatar_url(self, obj):
+        # Si el usuario tiene un avatar global, lo devolvemos; si no, vacío.
+        avatar = getattr(obj.user, "avatar", None) or getattr(obj.user, "avatar_url", None)
+        if hasattr(avatar, "url"):
+            try:
+                return avatar.url
+            except Exception:
+                return ""
+        return avatar or ""
+
+
+class RiftboundPublicBinderProfileSerializer(RiftboundBinderProfileSerializer):
+    selling_count = serializers.IntegerField(read_only=True, required=False)
+
+    class Meta(RiftboundBinderProfileSerializer.Meta):
+        fields = RiftboundBinderProfileSerializer.Meta.fields + ["selling_count"]
 
 
 class RiftboundWishlistEntrySerializer(serializers.ModelSerializer):

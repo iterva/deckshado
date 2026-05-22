@@ -80,33 +80,79 @@ const TYPE_COLOR: Record<string, string> = {
           </div>
         </div>
 
+        <!-- Barra social (likes/comentarios/compartir/clonar) -->
+        <div class="social-bar">
+          <button class="social-btn" disabled title="Próximamente: me gusta">
+            <i class="bi bi-heart"></i><span>0</span>
+          </button>
+          <button class="social-btn" disabled title="Próximamente: comentarios">
+            <i class="bi bi-chat-dots"></i><span>0</span>
+          </button>
+          <button class="social-btn" (click)="shareDeck()" title="Copiar enlace">
+            <i class="bi bi-share"></i>
+          </button>
+          <button class="social-btn" (click)="copyDeckJson()" title="Copiar mazo (JSON)">
+            <i class="bi bi-clipboard-plus"></i>
+          </button>
+        </div>
+
         <!-- Action bar -->
         <div class="action-bar">
           <div class="seg-control" role="tablist" aria-label="Modo de visualización">
             <button type="button" class="seg-btn" [class.active]="viewMode() === 'grid'"
-                    (click)="setViewMode('grid')" role="tab">🃏 Cartas</button>
+                    (click)="setViewMode('grid')" role="tab" title="Vista cartas">
+              <i class="bi bi-grid-3x3-gap-fill"></i><span>Cartas</span>
+            </button>
             <button type="button" class="seg-btn" [class.active]="viewMode() === 'list'"
-                    (click)="setViewMode('list')" role="tab">📋 Lista</button>
+                    (click)="setViewMode('list')" role="tab" title="Vista listado">
+              <i class="bi bi-list-ul"></i><span>Lista</span>
+            </button>
             <button type="button" class="seg-btn" [class.active]="viewMode() === 'stats'"
-                    (click)="setViewMode('stats')" role="tab">📊 Stats</button>
+                    (click)="setViewMode('stats')" role="tab" title="Estadísticas">
+              <i class="bi bi-bar-chart-fill"></i><span>Stats</span>
+            </button>
           </div>
 
           <div class="action-spacer"></div>
 
-          <button class="action-btn" (click)="shareDeck()" title="Copiar enlace">📤 Compartir</button>
-          <button class="action-btn" (click)="togglePresentation()" title="Presentación (F)">
-            {{ presentationMode() ? '✕ Salir' : '🔍 Presentación' }}
+          <button class="action-btn" (click)="openHandTest()" title="Probar mano de apertura">
+            <i class="bi bi-hand-index"></i><span>Probar mano</span>
           </button>
 
-          <div class="more-menu-wrap">
+          @if (isOwner()) {
+            <button class="action-btn" (click)="toggleVisibility()" [disabled]="togglingVisibility()"
+                    [title]="d.is_public ? 'Hacer privado' : 'Hacer público'">
+              <i class="bi" [class.bi-globe]="d.is_public" [class.bi-lock-fill]="!d.is_public"></i>
+              <span>{{ d.is_public ? 'Hacer privado' : 'Hacer público' }}</span>
+            </button>
+            <button class="action-btn accent" (click)="editDeck()" title="Editar mazo">
+              <i class="bi bi-pencil-square"></i><span>Editar</span>
+            </button>
+          }
+
+          <button class="action-btn" (click)="togglePresentation()" title="Modo presentación (F)">
+            <i class="bi" [class.bi-fullscreen]="!presentationMode()" [class.bi-fullscreen-exit]="presentationMode()"></i>
+          </button>
+
+          <div class="more-menu-wrap" (click)="$event.stopPropagation()">
             <button class="action-btn" (click)="toggleMoreMenu($event)" aria-haspopup="menu"
-                    [attr.aria-expanded]="showMoreMenu()">⋯ Más</button>
+                    [attr.aria-expanded]="showMoreMenu()" title="Más opciones">
+              <i class="bi bi-three-dots-vertical"></i>
+            </button>
             @if (showMoreMenu()) {
               <div class="more-menu" role="menu" (click)="$event.stopPropagation()">
-                <button role="menuitem" (click)="exportText(); showMoreMenu.set(false)">📝 Copiar texto</button>
-                <button role="menuitem" (click)="exportJson(); showMoreMenu.set(false)">💾 Exportar JSON</button>
-                <button role="menuitem" (click)="exportImage(); showMoreMenu.set(false)">🖼 Descargar imagen</button>
-                <button role="menuitem" (click)="copyImageToClipboard(); showMoreMenu.set(false)">📋 Copiar imagen</button>
+                <button role="menuitem" (click)="exportText(); showMoreMenu.set(false)">
+                  <i class="bi bi-file-text"></i> Copiar como texto
+                </button>
+                <button role="menuitem" (click)="exportImage(); showMoreMenu.set(false)" [disabled]="exporting()">
+                  <i class="bi bi-camera"></i> Descargar imagen
+                </button>
+                <button role="menuitem" (click)="copyImageToClipboard(); showMoreMenu.set(false)" [disabled]="exporting()">
+                  <i class="bi bi-clipboard-check"></i> Imagen al portapapeles
+                </button>
+                <button role="menuitem" (click)="exportJson(); showMoreMenu.set(false)">
+                  <i class="bi bi-filetype-json"></i> Descargar JSON
+                </button>
                 <div class="more-divider"></div>
                 <label class="more-select" (click)="$event.stopPropagation()">
                   <span>Orientación:</span>
@@ -115,17 +161,15 @@ const TYPE_COLOR: Record<string, string> = {
                     <option value="horizontal">Horizontal</option>
                   </select>
                 </label>
+                @if (isOwner()) {
+                  <div class="more-divider"></div>
+                  <button role="menuitem" class="danger" (click)="deleteDeck(); showMoreMenu.set(false)">
+                    <i class="bi bi-trash3"></i> Eliminar mazo
+                  </button>
+                }
               </div>
             }
           </div>
-
-          @if (isOwner()) {
-            <button class="action-btn" (click)="toggleVisibility()" [disabled]="togglingVisibility()">
-              {{ d.is_public ? '🔓 Privado' : '🌐 Público' }}
-            </button>
-            <button class="action-btn accent" (click)="editDeck()">✏️ Editar</button>
-            <button class="action-btn danger" (click)="deleteDeck()">🗑 Eliminar</button>
-          }
         </div>
 
         <!-- Errores de validación arriba -->
@@ -429,6 +473,37 @@ const TYPE_COLOR: Record<string, string> = {
       <!-- Toast de compartir / copiar -->
       @if (shareToast()) {
         <div class="share-toast" role="status">✓ {{ toastMsg() }}</div>
+      }
+
+      <!-- Modal Probar mano -->
+      @if (showHandModal()) {
+        <div class="preview-overlay" (click)="closeHandModal()">
+          <div class="preview-box hand-box" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+            <button class="preview-close" (click)="closeHandModal()" aria-label="Cerrar">✕</button>
+            <h2 style="margin:.25rem 0 1rem">🎴 Mano de apertura ({{ handSize }} cartas)</h2>
+            @if (!handCards().length) {
+              <p class="muted">El mazo principal está vacío.</p>
+            } @else {
+              <div class="hand-grid">
+                @for (e of handCards(); track $index) {
+                  @if (e.card_data?.image) {
+                    <img class="hand-card" [src]="e.card_data?.image" [alt]="e.card_data?.name || ''" [title]="e.card_data?.name || ''" />
+                  } @else {
+                    <div class="hand-card placeholder">{{ e.card_data?.card_number }}</div>
+                  }
+                }
+              </div>
+            }
+            <div class="hand-actions">
+              <button class="action-btn" (click)="drawHand()" [disabled]="!handCards().length">
+                <i class="bi bi-arrow-clockwise"></i><span>Otra mano</span>
+              </button>
+              <button class="action-btn accent" (click)="closeHandModal()">
+                <i class="bi bi-check2"></i><span>Cerrar</span>
+              </button>
+            </div>
+          </div>
+        </div>
       }
 
       <!-- Overlay de exportación -->
@@ -831,6 +906,40 @@ const TYPE_COLOR: Record<string, string> = {
     #deckContent.export-horizontal .card-grid {
       grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     }
+
+    /* Social bar (likes / comentarios / compartir / clonar) */
+    .social-bar {
+      display: flex; gap: .4rem; margin-bottom: .7rem;
+    }
+    .social-btn {
+      display: inline-flex; align-items: center; gap: .4rem;
+      padding: .42rem .85rem; background: #111827; border: 1px solid #2a3a4a;
+      color: #9ba3b4; border-radius: 999px; font-size: .85rem;
+      cursor: pointer; transition: all .15s;
+    }
+    .social-btn i { font-size: .95rem; }
+    .social-btn:hover:not(:disabled) { background: #1e2d3d; color: #e0e0e0; border-color: #3a5a6a; }
+    .social-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .social-btn.liked { color: #e94560; border-color: rgba(233,69,96,.5); background: rgba(233,69,96,.12); }
+    .container.is-presentation .social-bar { display: none !important; }
+
+    /* Hand test modal */
+    .hand-box { max-width: 920px; }
+    .hand-grid {
+      display: grid; gap: .75rem;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      margin-bottom: 1rem;
+    }
+    .hand-card {
+      width: 100%; aspect-ratio: 5/7; object-fit: cover;
+      border-radius: 8px; border: 1px solid #2a3a4a;
+      box-shadow: 0 6px 18px rgba(0,0,0,.4);
+    }
+    .hand-card.placeholder {
+      display: grid; place-items: center; background: #16213e;
+      color: #6b7a8a; font-size: .85rem; text-align: center; padding: .5rem;
+    }
+    .hand-actions { display: flex; gap: .5rem; justify-content: flex-end; flex-wrap: wrap; }
   `],
 })
 export class RiftboundDeckViewComponent implements OnInit {
@@ -860,6 +969,10 @@ export class RiftboundDeckViewComponent implements OnInit {
   toastMsg = signal('Enlace copiado');
   orientation = signal<Orientation>('vertical');
   settingCover = signal(false);
+
+  // Hand test (mulligan)
+  showHandModal = signal(false);
+  handCards = signal<RiftboundDeckEntry[]>([]);
 
   /** Banlist indexada por id de carta. */
   private banlistByCardId = new Map<number, RiftboundBanlistEntry>();
@@ -1063,6 +1176,50 @@ export class RiftboundDeckViewComponent implements OnInit {
     this.showMoreMenu.set(!this.showMoreMenu());
   }
 
+  // ── Probar mano (mulligan) ──
+  /** Tamaño de mano para Riftbound (mano de apertura). */
+  readonly handSize = 5;
+  openHandTest() {
+    this.drawHand();
+    this.showHandModal.set(true);
+  }
+  drawHand() {
+    // Pool: cartas del main deck (no runas, no champion, no battlefield, no side)
+    const pool: RiftboundDeckEntry[] = [];
+    for (const e of this.entriesByZone('main')) {
+      for (let i = 0; i < e.quantity; i++) pool.push(e);
+    }
+    // Shuffle (Fisher-Yates)
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    this.handCards.set(pool.slice(0, this.handSize));
+  }
+  closeHandModal() {
+    this.showHandModal.set(false);
+    this.handCards.set([]);
+  }
+
+  // ── Copiar JSON al portapapeles ──
+  copyDeckJson() {
+    const d = this.deck();
+    if (!d) return;
+    const payload = {
+      version: 1,
+      app: 'shadowforge-riftbound',
+      name: d.name,
+      entries: d.entries.map(e => ({
+        card_number: e.card_data?.card_number,
+        name: e.card_data?.name,
+        zone: e.zone,
+        quantity: e.quantity,
+      })),
+    };
+    navigator.clipboard.writeText(JSON.stringify(payload, null, 2))
+      .then(() => this.fireToast('Mazo copiado (JSON)'));
+  }
+
   // ── Exportaciones ──
   exportText() {
     const d = this.deck();
@@ -1184,6 +1341,7 @@ export class RiftboundDeckViewComponent implements OnInit {
   onKeydown(ev: KeyboardEvent) {
     if (ev.key === 'Escape') {
       if (this.previewEntry()) { this.closePreview(); return; }
+      if (this.showHandModal()) { this.closeHandModal(); return; }
       if (this.showMoreMenu()) { this.showMoreMenu.set(false); return; }
       if (this.presentationMode()) { this.togglePresentation(); return; }
     }

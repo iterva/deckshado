@@ -96,6 +96,8 @@ _cors_extra = os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:4200",
     "http://127.0.0.1:4200",
+    "http://localhost:4300",
+    "http://127.0.0.1:4300",
     "https://shadow-forge-deck.vercel.app",
 ] + [o.strip() for o in _cors_extra if o.strip()]
 CORS_ALLOWED_ORIGIN_REGEXES = [

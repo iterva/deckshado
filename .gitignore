@@ -34,8 +34,7 @@ Escuelas Elementales/
 backend/media/
 
 # Volcados de scrapers (regenerables)
-riftbound_cards.json
-riftbound_icons.json
+# riftbound_cards.json y riftbound_icons.json se trackean para deploy en PythonAnywhere
 backend/cards_data.json
 cloudinary_mapping.json
 myl_cloudinary_mapping.json

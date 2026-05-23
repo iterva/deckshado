@@ -43,6 +43,22 @@ def upload_card(card: RiftboundCard, session: requests.Session) -> tuple[int, st
 
     set_code = (card.set.code if card.set else "UNKNOWN").lower()
     public_id = f"riftbound/cards/{set_code}/{slugify(card.card_number)}"
+    # Fast path: si ya existe en Cloudinary (migraciones previas),
+    # solo registramos la URL sin re-descargar ni re-subir.
+    for ext in ("webp", "png", "jpg"):
+        existing = (
+            f"https://res.cloudinary.com/{cloudinary.config().cloud_name}"
+            f"/image/upload/{public_id}.{ext}"
+        )
+        try:
+            h = session.head(existing, timeout=10)
+            if h.status_code == 200:
+                card.cdn_image_url = existing
+                card.save(update_fields=["cdn_image_url"])
+                return (card.id, "linked", existing)
+        except Exception:
+            pass
+
     try:
         r = session.get(card.image_url, timeout=30)
         r.raise_for_status()
@@ -84,6 +100,7 @@ def main():
     session.headers.update({"User-Agent": "Mozilla/5.0 deckshado-card-migrator/1.0"})
 
     ok = skip = fail = 0
+    linked = 0
     with ThreadPoolExecutor(max_workers=args.workers) as ex:
         futures = {ex.submit(upload_card, c, session): c for c in cards}
         for i, fut in enumerate(as_completed(futures), 1):
@@ -94,6 +111,8 @@ def main():
                 status, msg = "error", str(e)
             if status == "ok":
                 ok += 1
+            elif status == "linked":
+                linked += 1
             elif status == "skip":
                 skip += 1
             else:
@@ -101,7 +120,7 @@ def main():
             if i % 25 == 0 or status == "error":
                 print(f"  [{i}/{total}] {card.card_number} {status} {msg if status != 'ok' else ''}")
 
-    print(f"\n[OK] subidos={ok}  saltados={skip}  errores={fail}")
+    print(f"\n[OK] subidos={ok}  linkeados={linked}  saltados={skip}  errores={fail}")
 
 
 if __name__ == "__main__":

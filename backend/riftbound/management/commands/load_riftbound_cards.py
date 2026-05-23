@@ -84,13 +84,25 @@ class Command(BaseCommand):
                 if (eid := raw.get("external_id")):
                     defaults["external_id"] = eid
 
-                obj, was_created = RiftboundCard.objects.update_or_create(
-                    card_number=number, defaults=defaults,
-                )
-                if was_created:
-                    created += 1
-                else:
+                # Buscar primero por external_id (UUID) para soportar
+                # renombrados de card_number entre deploys del scraper.
+                existing = None
+                if eid:
+                    existing = RiftboundCard.objects.filter(external_id=eid).first()
+                if existing:
+                    # Si el card_number cambió, lo actualizamos también.
+                    for field, val in {**defaults, "card_number": number}.items():
+                        setattr(existing, field, val)
+                    existing.save()
                     updated += 1
+                else:
+                    obj, was_created = RiftboundCard.objects.update_or_create(
+                        card_number=number, defaults=defaults,
+                    )
+                    if was_created:
+                        created += 1
+                    else:
+                        updated += 1
 
         # Iconos opcionales
         if opts["icons"]:

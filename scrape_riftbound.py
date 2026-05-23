@@ -38,7 +38,13 @@ CHUNK_RE = re.compile(
     r'self\.__next_f\.push\(\[1,\s*"((?:[^"\\]|\\.)*)"\]\)', re.DOTALL
 )
 LINE_RE = re.compile(r'^([0-9a-f]+):(.+)$', re.MULTILINE)
-CARD_CELL_RE = re.compile(r'^\["\$","\$L7a","([0-9a-f-]{36})",\{', re.DOTALL)
+# El ID del componente de celda cambia entre deploys de piltoverarchive
+# (antes $L7a, hoy $L46…). Aceptamos cualquier referencia $L<hex> seguida
+# de un UUID y validamos después que la celda contenga una imagen de carta.
+CARD_CELL_RE = re.compile(r'^\["\$","\$L[0-9a-f]+","([0-9a-f-]{36})",\{', re.DOTALL)
+CARD_IMAGE_RE = re.compile(
+    r'(?:cdn\.piltoverarchive\.com/(?:cards|temporary|missing)/|piltoverarchive\.b-cdn\.net/)'
+)
 COLOR_NAMES = ("Fury", "Calm", "Mind", "Body", "Chaos", "Order")
 
 
@@ -90,7 +96,10 @@ def collect_flight_text(html: str) -> str:
                 m.group(1).replace("\\n", "\n").replace('\\"', '"').replace("\\\\", "\\")
             )
         parts.append(decoded)
-    return "\n".join(parts)
+    # Importante: concatenamos SIN separador. Next.js puede partir un mismo
+    # chunk (`<id>:<value>`) entre varios `__next_f.push` y un "\n" extra
+    # cortaría el valor a la mitad para LINE_RE.
+    return "".join(parts)
 
 
 def index_chunks(flight: str) -> dict[str, str]:
@@ -216,15 +225,68 @@ def parse_badges(text: str) -> list[str]:
     return out
 
 
+def _balanced_slice(text: str, start: int) -> str:
+    """Devuelve el slice de `text` desde `start` (que apunta a `[` o `{`)
+    hasta el carácter de cierre balanceado, ignorando corchetes dentro de
+    cadenas JSON. Se usa para extraer el cuerpo completo de una celda de
+    carta que vive inline dentro de otro chunk (sin id propio)."""
+    if start >= len(text) or text[start] not in "[{":
+        return ""
+    open_c = text[start]
+    close_c = "]" if open_c == "[" else "}"
+    depth = 0
+    i = start
+    in_str = False
+    while i < len(text):
+        ch = text[i]
+        if in_str:
+            if ch == "\\":
+                i += 2
+                continue
+            if ch == '"':
+                in_str = False
+        else:
+            if ch == '"':
+                in_str = True
+            elif ch == open_c:
+                depth += 1
+            elif ch == close_c:
+                depth -= 1
+                if depth == 0:
+                    return text[start:i + 1]
+        i += 1
+    return text[start:]
+
+
+CELL_SIGNATURE_RE = re.compile(
+    r'\["\$","\$L[0-9a-f]+","([0-9a-f-]{36})",'
+)
+
+
+def iter_card_cells(flight: str):
+    """Recorre el flight completo y entrega todas las celdas de carta,
+    estén o no en su propio chunk de top-level. Cada celda es una tupla
+    `(external_id, full_cell_value)`."""
+    seen: set[str] = set()
+    for m in CELL_SIGNATURE_RE.finditer(flight):
+        uid = m.group(1)
+        if uid in seen:
+            continue
+        cell = _balanced_slice(flight, m.start())
+        if not cell:
+            continue
+        if not CARD_IMAGE_RE.search(cell):
+            continue
+        seen.add(uid)
+        yield uid, cell
+
+
 def extract_cards(flight: str, source_url: str, verbose: bool = False) -> list[CardData]:
     chunks = index_chunks(flight)
     cards: list[CardData] = []
 
-    for chunk_id, value in chunks.items():
-        m = CARD_CELL_RE.match(value)
-        if not m:
-            continue
-        c = CardData(external_id=m.group(1), source_url=source_url)
+    for uid, value in iter_card_cells(flight):
+        c = CardData(external_id=uid, source_url=source_url)
 
         # Imagen + alt (nombre)
         im = re.search(
@@ -246,7 +308,7 @@ def extract_cards(flight: str, source_url: str, verbose: bool = False) -> list[C
         depth0 = re.findall(r'"\$L([0-9a-f]+)"', value)
         queue = list(depth0)
         depth = 0
-        while queue and depth < 4:
+        while queue and depth < 6:
             next_queue: list[str] = []
             for r in queue:
                 if r in seen:
@@ -314,6 +376,15 @@ def extract_cards(flight: str, source_url: str, verbose: bool = False) -> list[C
                     c.subtypes = list(dict.fromkeys((c.subtypes or []) + badges))
 
         infer_card_type(c)
+
+        # Rarity / colores: vienen inline dentro de la propia celda (badges
+        # del modal) en el deploy actual. Intentamos siempre con `value`.
+        if not c.rarity or not c.colors:
+            cols, rar = parse_color_and_rarity(value)
+            if cols and not c.colors:
+                c.colors = sorted(set(cols))
+            if rar and not c.rarity:
+                c.rarity = rar
 
         # Fallback: algunas celdas tienen el modal inline (sin refs $L
         # para Card Number/Description/Stats). Si todavía no tenemos

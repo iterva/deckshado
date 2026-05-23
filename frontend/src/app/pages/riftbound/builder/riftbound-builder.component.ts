@@ -479,6 +479,7 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
 
     /* Browser */
     .card-browser { padding: 1.25rem; border-right: 1px solid #1e3a4a; min-width: 0; }
+    @media (max-width: 600px) { .card-browser { padding: 0.75rem 0.6rem; } .card-browser h2 { font-size: 1.1rem !important; } .deck-panel { padding: 0.75rem 0.6rem !important; } }
     .card-browser h2 {
       font-size: 1.5rem; font-weight: 700; color: #fff; margin: 0 0 1rem;
       letter-spacing: -.01em;
@@ -554,7 +555,8 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
       gap: .5rem; margin-top: 1rem;
     }
     @media (max-width: 1100px) { .available-cards { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 600px) { .available-cards { grid-template-columns: 1fr; } }
+    @media (max-width: 600px) { .available-cards { grid-template-columns: repeat(2, 1fr); gap: 0.35rem; } .mini-name { font-size: 0.72rem !important; } .mini-type { font-size: 0.6rem !important; } .mini-num { display: none; } .img-wrapper img, .img-placeholder { width: 42px !important; height: 58px !important; } }
+    @media (max-width: 360px) { .available-cards { grid-template-columns: 1fr; } }
 
     .mini-card {
       display: flex; align-items: center; gap: .5rem;

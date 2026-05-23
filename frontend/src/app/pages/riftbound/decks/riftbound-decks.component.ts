@@ -264,6 +264,7 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
 
     /* Grid */
     .deck-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+    @media (max-width: 600px) { .deck-grid { grid-template-columns: 1fr; gap: 0.75rem; } .rb-decks-container { padding: 1rem 0.65rem 2rem; } }
     .deck-card {
       --accent: #e94560;
       position: relative; background: #1a1a2e; border: 1px solid #2a2a4a;

@@ -199,6 +199,7 @@ const RARITIES = [
   `,
   styles: [`
     .rb-cards-page { max-width: 1400px; margin: 0 auto; padding: 1.5rem 1rem; }
+    @media (max-width: 600px) { .rb-cards-page { padding: 1rem 0.65rem 2rem; } .page-head h1 { font-size: 1.3rem !important; } }
     .page-head h1 {
       margin: 0; font-size: 1.6rem; font-weight: 700;
       background: linear-gradient(90deg, #e94560, #fff);
@@ -262,6 +263,8 @@ const RARITIES = [
       display: grid; gap: 1rem;
       grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     }
+    @media (max-width: 600px) { .card-grid { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; } }
+    @media (max-width: 360px) { .card-grid { grid-template-columns: repeat(2, 1fr); gap: 0.4rem; } .rb-card-meta strong { font-size: 0.78rem !important; } .rb-card-meta small { font-size: 0.65rem !important; } }
     .rb-card {
       text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: .35rem;
       transition: transform .15s;
@@ -334,6 +337,9 @@ const RARITIES = [
     @media (max-width: 720px) {
       .rb-modal-layout { grid-template-columns: 1fr; }
       .rb-modal { padding: 1rem; }
+      .rb-modal-info h2 { font-size: 1.25rem !important; }
+      .stats > div { padding: 0.35rem 0.7rem; min-width: 60px; }
+      .stats strong { font-size: 1.1rem; }
     }
 
     /* Light theme */

@@ -76,6 +76,7 @@ import { RiftboundBanlistEntry } from '../../../models/riftbound';
   `,
   styles: [`
     .rb-banlist-page { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1rem; }
+    @media (max-width: 600px) { .rb-banlist-page { padding: 1rem 0.65rem 2rem; } }
     .rb-page-head h1 {
       margin: 0; font-size: 1.7rem; font-weight: 700;
       background: linear-gradient(90deg, #e94560, #fff);

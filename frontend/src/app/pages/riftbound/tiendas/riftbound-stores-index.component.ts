@@ -81,6 +81,7 @@ import { RiftboundPublicBinderProfile } from '../../../models/riftbound';
   styles: [`
     :host { display: block; min-height: 100vh; background: #0f0f23; color: #c8c8da; }
     .stores-container { max-width: 1300px; margin: 0 auto; padding: 1.5rem; }
+    @media (max-width: 600px) { .stores-container { padding: 1rem 0.65rem 2rem; } }
     .hero { text-align: center; margin-bottom: 2rem; padding: 1.5rem 1rem;
       background: linear-gradient(135deg, #16213e, #1a1a2e);
       border: 1px solid #2a3a4a; border-radius: 12px; }

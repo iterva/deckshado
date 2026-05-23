@@ -521,6 +521,7 @@ const TYPE_COLOR: Record<string, string> = {
   `,
   styles: [`
     .container { max-width: 1200px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+    @media (max-width: 600px) { .container { padding: 0.85rem 0.6rem 2rem; } }
     .loading { color: #888; text-align: center; padding: 3rem; }
     .back-link { display: inline-block; opacity: .8; margin-bottom: 1rem; text-decoration: none; color: #c8c8da; }
     .back-link:hover { opacity: 1; color: #e94560; }

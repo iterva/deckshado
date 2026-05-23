@@ -114,6 +114,14 @@ import { RiftboundService } from '../../../services/riftbound.service';
       text-align: center;
       border-bottom: 2px solid #e94560;
     }
+    @media (max-width: 600px) {
+      .hero { padding: 2rem 1rem 1.75rem; }
+      .hero-title { font-size: 1.8rem !important; }
+      .hero-title .icon { font-size: 1.5rem !important; }
+      .hero-subtitle { font-size: 0.95rem !important; margin-bottom: 1.25rem !important; }
+      .hero-stats { gap: 1.5rem !important; }
+      .hero-stats .stat-number { font-size: 1.4rem !important; }
+    }
     .hero-title {
       font-size: 3rem;
       font-weight: 700;
@@ -140,8 +148,8 @@ import { RiftboundService } from '../../../services/riftbound.service';
       padding-bottom: 3rem;
     }
     @media (max-width: 1200px) { .features { grid-template-columns: repeat(3, 1fr); } }
-    @media (max-width: 800px)  { .features { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 520px)  { .features { grid-template-columns: 1fr; } }
+    @media (max-width: 800px)  { .features { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; padding: 1.5rem 1rem; } }
+    @media (max-width: 520px)  { .features { grid-template-columns: 1fr; } .feature-card { padding: 1.25rem 1rem; } .feature-icon { font-size: 2rem; margin-bottom: 0.5rem; } }
 
     .feature-card {
       background: #0f0f23;

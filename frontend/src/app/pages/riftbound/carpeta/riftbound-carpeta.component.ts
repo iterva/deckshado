@@ -631,6 +631,7 @@ interface DirtyPatch {
   styles: [`
     :host { display: block; min-height: 100vh; background: #0f0f23; color: #c8c8da; }
     .carpeta-container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+    @media (max-width: 600px) { .carpeta-container { padding: 1rem 0.65rem 2rem; } }
 
     .carpeta-header {
       display: flex; align-items: center; gap: 1.2rem;

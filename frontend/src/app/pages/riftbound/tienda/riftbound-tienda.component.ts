@@ -131,6 +131,7 @@ import {
   styles: [`
     :host { display: block; min-height: 100vh; background: #0f0f23; color: #c8c8da; }
     .tienda-container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+    @media (max-width: 600px) { .tienda-container { padding: 1rem 0.65rem 2rem; } }
     .loading { padding: 2rem; text-align: center; color: #9ba3b4; }
     .error-state { padding: 3rem 1rem; text-align: center; }
     .error-state h2 { color: #e94560; }

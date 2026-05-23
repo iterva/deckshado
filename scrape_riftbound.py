@@ -470,8 +470,11 @@ TYPE_KEYWORDS = {
 def infer_card_type(c: CardData) -> None:
     if c.card_type:
         return
+    # Las runas reales son exactamente las 6 elementales. "Rune Prison" y otras
+    # cartas que contienen "rune" en el nombre no son del tipo Rune.
     name_lower = (c.name or "").lower()
-    if "rune" in name_lower:
+    rune_names = {"fury rune", "calm rune", "mind rune", "body rune", "chaos rune", "order rune"}
+    if name_lower in rune_names:
         c.card_type = "rune"
         return
     for st in c.subtypes:

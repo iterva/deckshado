@@ -63,12 +63,14 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
                       (click)="setMode('all')"
                       title="Buscar en nombre y habilidad">Todo</button>
             </div>
-            <input
-              type="search"
-              [(ngModel)]="searchQuery"
-              (ngModelChange)="onSearchInput()"
-              [placeholder]="searchMode === 'ability' ? 'Buscar habilidad…' : (searchMode === 'all' ? 'Buscar nombre o habilidad…' : 'Buscar nombre o número…')" />
-            <button class="search-btn" (click)="reload()" title="Buscar">🔍</button>
+            <div class="search-input-row">
+              <input
+                type="search"
+                [(ngModel)]="searchQuery"
+                (ngModelChange)="onSearchInput()"
+                [placeholder]="searchMode === 'ability' ? 'Buscar habilidad…' : (searchMode === 'all' ? 'Buscar nombre o habilidad…' : 'Buscar nombre o número…')" />
+              <button class="search-btn" (click)="reload()" title="Buscar">🔍</button>
+            </div>
           </div>
 
           <div class="type-chips" role="group" aria-label="Filtrar por tipo">
@@ -489,17 +491,18 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
 
     .browser-filters { margin-bottom: 1rem; display: flex; flex-direction: column; gap: .55rem; }
 
-    .search-row { display: flex; gap: .5rem; align-items: stretch; }
+    .search-row { display: flex; flex-direction: column; gap: .5rem; align-items: stretch; }
+    .search-input-row { display: flex; gap: .5rem; width: 100%; }
     .search-row input {
-      flex: 1; min-width: 0; padding: .55rem .85rem;
+      flex: 1; min-width: 0; padding: .65rem 1rem;
       border: 1px solid #2a3a4a; border-radius: 6px;
       background: #0f0f23; color: #e0e0e0; outline: none;
-      font-size: .95rem;
+      font-size: 1rem;
     }
     .search-row input:focus { border-color: #e94560; }
     .search-modes {
-      display: inline-flex; background: #16213e; border: 1px solid #2a2a4a;
-      border-radius: 6px; padding: 2px; gap: 2px;
+      display: flex; background: #16213e; border: 1px solid #2a2a4a;
+      border-radius: 6px; padding: 2px; gap: 2px; align-self: flex-start;
     }
     .search-modes button {
       padding: .35rem .7rem; border: none; background: transparent;

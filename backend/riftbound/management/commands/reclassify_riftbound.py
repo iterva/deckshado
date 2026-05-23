@@ -21,8 +21,19 @@ from django.core.management.base import BaseCommand
 from riftbound.models import RiftboundCard
 
 
+RUNE_NAMES = {
+    "Fury Rune", "Calm Rune", "Mind Rune",
+    "Body Rune", "Chaos Rune", "Order Rune",
+}
+
+
 def classify(c: RiftboundCard) -> str:
-    if c.card_type in ("rune", "battlefield"):
+    # Las runas reales son solo las 6 elementales. Cualquier otra carta
+    # tipada como 'rune' por el scraper (ej. "Rune Prison") se reclasifica
+    # con el resto de la lógica.
+    if c.card_type == "rune" and c.name not in RUNE_NAMES:
+        pass  # caer al resto del flujo
+    elif c.card_type in ("rune", "battlefield"):
         return c.card_type
 
     desc = (c.description or "")

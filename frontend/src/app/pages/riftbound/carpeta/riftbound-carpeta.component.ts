@@ -1,5 +1,6 @@
 import {
-  Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, inject, signal, computed,
+  Component, OnInit, OnDestroy, AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef,
+  ElementRef, ViewChild, inject, signal, computed,
 } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -203,11 +204,13 @@ interface DirtyPatch {
         </div>
 
         @if (collectionTotalPages() > 1) {
-          <div class="pagination">
-            <button class="btn btn-sm" (click)="collectionPrev()" [disabled]="collectionPage() === 1">← Anterior</button>
-            <span>{{ collectionPage() }} / {{ collectionTotalPages() }}</span>
-            <button class="btn btn-sm" (click)="collectionNext()" [disabled]="collectionPage() >= collectionTotalPages()">Siguiente →</button>
-          </div>
+          <div #collectionSentinel class="infinite-sentinel" aria-hidden="true"></div>
+          @if (collectionLoading() && collectionEntries().length > 0) {
+            <div class="loading">Cargando más...</div>
+          }
+          @if (!collectionHasMore() && collectionEntries().length > 0) {
+            <p class="results-count" style="margin-top: 1rem;">— Fin de la carpeta —</p>
+          }
         }
       </div>
     }
@@ -938,7 +941,7 @@ interface DirtyPatch {
     .token-row code { background: #0f0f23; padding: .25rem .5rem; border-radius: 4px; color: #4fc3f7; }
   `],
 })
-export class RiftboundCarpetaComponent implements OnInit {
+export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly rb = inject(RiftboundService);
   readonly auth = inject(AuthService);
   private readonly router = inject(Router);
@@ -963,9 +966,13 @@ export class RiftboundCarpetaComponent implements OnInit {
   collectionPage = signal(1);
   collectionSearch = '';
   collectionLoading = signal(false);
+  collectionHasMore = signal(false);
+  private readonly COLLECTION_PAGE_SIZE = 50;
+  @ViewChild('collectionSentinel') collectionSentinelRef?: ElementRef<HTMLElement>;
+  private collectionObserver?: IntersectionObserver;
   dirtyEntries = new Map<number, DirtyPatch>();
   batchSaving = signal(false);
-  collectionTotalPages = computed(() => Math.max(1, Math.ceil(this.collectionTotal() / 40)));
+  collectionTotalPages = computed(() => Math.max(1, Math.ceil(this.collectionTotal() / this.COLLECTION_PAGE_SIZE)));
   collectionCopies = computed(() => this.collectionEntries().reduce((s, e) => s + (e.quantity || 0), 0));
 
   // Codex
@@ -1033,6 +1040,31 @@ export class RiftboundCarpetaComponent implements OnInit {
     });
   }
 
+  ngAfterViewInit() {
+    this.setupCollectionObserver();
+  }
+
+  ngOnDestroy() {
+    this.collectionObserver?.disconnect();
+  }
+
+  private setupCollectionObserver() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    this.collectionObserver?.disconnect();
+    this.collectionObserver = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting
+            && this.activeTab() === 'carpeta'
+            && this.collectionHasMore()
+            && !this.collectionLoading()) {
+          this.loadMoreCollection();
+        }
+      }
+    }, { rootMargin: '300px' });
+    const el = this.collectionSentinelRef?.nativeElement;
+    if (el) this.collectionObserver.observe(el);
+  }
+
   // ── Tabs ──
   switchTab(t: Tab) {
     this.activeTab.set(t);
@@ -1057,25 +1089,44 @@ export class RiftboundCarpetaComponent implements OnInit {
 
   // ── Collection ──
   loadCollection() {
+    this.collectionPage.set(1);
+    this.collectionEntries.set([]);
+    this.collectionHasMore.set(false);
+    this.fetchCollectionPage();
+  }
+
+  loadMoreCollection() {
+    if (this.collectionLoading() || !this.collectionHasMore()) return;
+    this.collectionPage.update(p => p + 1);
+    this.fetchCollectionPage(true);
+  }
+
+  private fetchCollectionPage(append = false) {
     this.collectionLoading.set(true);
     this.rb.listCollection({
       search: this.collectionSearch || undefined,
       page: this.collectionPage(),
+      page_size: this.COLLECTION_PAGE_SIZE,
       selling: this.onlySelling() || undefined,
     }).subscribe({
       next: res => {
-        this.collectionEntries.set(res.results);
+        if (append) {
+          this.collectionEntries.update(curr => [...curr, ...res.results]);
+        } else {
+          this.collectionEntries.set(res.results);
+        }
         this.collectionTotal.set(res.count);
+        this.collectionHasMore.set(!!res.next);
         this.collectionLoading.set(false);
         this.cdr.markForCheck();
+        // Re-observe sentinel in case DOM cleared it
+        queueMicrotask(() => this.setupCollectionObserver());
       },
       error: () => { this.collectionLoading.set(false); this.cdr.markForCheck(); },
     });
   }
-  onCollectionSearch() { this.collectionPage.set(1); this.loadCollection(); }
-  toggleOnlySelling() { this.onlySelling.update(v => !v); this.collectionPage.set(1); this.loadCollection(); }
-  collectionPrev() { if (this.collectionPage() > 1) { this.collectionPage.update(p => p - 1); this.loadCollection(); } }
-  collectionNext() { if (this.collectionPage() < this.collectionTotalPages()) { this.collectionPage.update(p => p + 1); this.loadCollection(); } }
+  onCollectionSearch() { this.loadCollection(); }
+  toggleOnlySelling() { this.onlySelling.update(v => !v); this.loadCollection(); }
 
   onFieldChange(entry: RiftboundCollectionEntry, field: keyof DirtyPatch, value: any) {
     const pending = this.dirtyEntries.get(entry.id) || {};

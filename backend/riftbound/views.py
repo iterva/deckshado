@@ -1,6 +1,7 @@
 from django.db.models import Q
 from rest_framework import viewsets, permissions, status, filters, generics
 from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
 
@@ -176,11 +177,19 @@ class RiftboundDeckViewSet(viewsets.ModelViewSet):
         return Response(validate_riftbound_deck(deck))
 
 
+class RiftboundCollectionPagination(PageNumberPagination):
+    """Permite al cliente pedir un page_size mayor (hasta 200) en la carpeta."""
+    page_size = 50
+    page_size_query_param = "page_size"
+    max_page_size = 200
+
+
 class RiftboundCollectionViewSet(viewsets.ModelViewSet):
     serializer_class = RiftboundCollectionEntrySerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter]
     search_fields = ["card__name", "card__card_number"]
+    pagination_class = RiftboundCollectionPagination
 
     def get_queryset(self):
         qs = (

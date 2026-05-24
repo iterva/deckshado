@@ -135,11 +135,12 @@ export class RiftboundService {
   }
 
   // ── Carpeta ──
-  listCollection(opts: { search?: string; page?: number; selling?: boolean } = {}): Observable<PaginatedResponse<RiftboundCollectionEntry>> {
+  listCollection(opts: { search?: string; page?: number; selling?: boolean; page_size?: number } = {}): Observable<PaginatedResponse<RiftboundCollectionEntry>> {
     let params = new HttpParams();
     if (opts.search) params = params.set('search', opts.search);
     if (opts.page) params = params.set('page', String(opts.page));
     if (opts.selling) params = params.set('selling', '1');
+    if (opts.page_size) params = params.set('page_size', String(opts.page_size));
     return this.http.get<PaginatedResponse<RiftboundCollectionEntry>>(
       `${this.base}/collection/`, { params },
     );

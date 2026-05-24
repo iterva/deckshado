@@ -3,6 +3,9 @@
   "outputDirectory": "dist/frontend/browser",
   "framework": null,
   "rewrites": [
+    { "source": "/riftbound/tienda/:token", "destination": "/api/og-riftbound?kind=store&token=:token" },
+    { "source": "/riftbound/wishlist/:token", "destination": "/api/og-riftbound?kind=wishlist&token=:token" },
+    { "source": "/riftbound/tiendas", "destination": "/api/og-riftbound?kind=index" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [

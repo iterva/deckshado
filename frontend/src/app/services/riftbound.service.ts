@@ -146,8 +146,9 @@ export class RiftboundService {
     );
   }
 
-  batchUpsertCollection(items: Partial<RiftboundCollectionEntry>[]): Observable<{ results: any[] }> {
-    return this.http.post<{ results: any[] }>(`${this.base}/collection/batch-upsert/`, { items });
+  batchUpsertCollection(items: Partial<RiftboundCollectionEntry>[]): Observable<{ updated: number }> {
+    // El backend espera el array directamente, no envuelto en {items}.
+    return this.http.post<{ updated: number }>(`${this.base}/collection/batch-upsert/`, items);
   }
 
   bulkImport(text: string, mode: 'add' | 'set' = 'add'): Observable<RiftboundBulkImportResult> {

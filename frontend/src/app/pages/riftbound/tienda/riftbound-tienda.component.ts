@@ -404,6 +404,31 @@ interface RiftboundCartItem {
     .cart-total .warn { width: 100%; color: #c89b3c; font-size: .8rem; }
     .cart-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .6rem; }
     .cart-actions .btn-primary { flex: 1 1 100%; }
+
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+      .cards-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .7rem; }
+      .card-body { padding: .55rem .6rem .65rem; }
+      .card-body h4 { font-size: .88rem; }
+      .price { font-size: .95rem; }
+      .btn-add-cart {
+        margin-top: .5rem; padding: .55rem .6rem; font-size: .85rem;
+        background: #e94560; color: #fff; border-color: #e94560; font-weight: 700;
+      }
+      .cart-fab {
+        bottom: calc(4.8rem + env(safe-area-inset-bottom, 0));
+        right: .9rem; padding: .75rem 1.1rem; font-size: .9rem;
+      }
+      .cart-modal { padding: .9rem; max-height: 88vh; }
+      .cart-item { grid-template-columns: 40px 1fr auto; row-gap: .35rem; }
+      .cart-item img { width: 40px; height: 56px; }
+      .cart-item .cart-qty, .cart-item .cart-line-total, .cart-item .btn-icon {
+        grid-column: span 1;
+      }
+    }
+    @media (max-width: 480px) {
+      .cards-grid { grid-template-columns: repeat(2, 1fr); }
+    }
   `],
 })
 export class RiftboundTiendaComponent implements OnInit {

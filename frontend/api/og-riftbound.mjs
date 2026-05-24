@@ -128,11 +128,13 @@ export default async function handler(req, res) {
     let title = 'Tiendas Riftbound · ShadowForge';
     let description =
       'Directorio de tiendas de cartas Riftbound TCG en ShadowForge. Encuentra coleccionistas y vendedores de cartas Riftbound.';
+    let imageStoreName = '';
 
     if (kind === 'store' || kind === 'wishlist') {
       const info = await fetchStore(token);
       const storeName =
         (info && info.store && (info.store.display_name || info.owner)) || 'Tienda Riftbound';
+      imageStoreName = storeName;
       const city = info && info.store && info.store.city;
       const country = info && info.store && info.store.country;
       const bio = info && info.store && info.store.bio;
@@ -160,8 +162,13 @@ export default async function handler(req, res) {
     // Asegurar longitud razonable para previews
     if (description.length > 300) description = description.slice(0, 297) + '...';
 
+    // Imagen OG generada dinámicamente con estética Riftbound
+    const imageQs = new URLSearchParams({ kind });
+    if (imageStoreName) imageQs.set('store', imageStoreName);
+    const image = `${origin}/api/og-image-riftbound?${imageQs.toString()}`;
+
     const indexHtml = await fetchIndexHtml(origin);
-    const meta = buildMeta({ title, description, url: fullUrl });
+    const meta = buildMeta({ title, description, url: fullUrl, image });
     const html = applyMeta(indexHtml, meta);
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');

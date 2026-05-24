@@ -141,6 +141,16 @@ export class CarpetaService {
     return this.http.get<PaginatedResponse<PublicBinderProfile>>(`${this.apiUrl}/stores/`, { params });
   }
 
+  getPublicWishlist(tokenOrSlug: string, filters: { page?: number; search?: string; ordering?: string } = {})
+    : Observable<PaginatedResponse<WishlistEntry> & { store: PublicBinderProfile }> {
+    let params = new HttpParams();
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') params = params.set(k, String(v));
+    });
+    return this.http.get<PaginatedResponse<WishlistEntry> & { store: PublicBinderProfile }>(
+      `${this.apiUrl}/wishlist-public/${tokenOrSlug}/`, { params });
+  }
+
   // ── Stats ──
   getCollectionStats(): Observable<any> {
     return this.http.get(`${this.apiUrl}/stats/`);

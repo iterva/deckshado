@@ -95,6 +95,16 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/tienda/tienda.component').then(m => m.TiendaComponent)
   },
   {
+    path: 'wishlist/:token',
+    data: { defaultTab: 'wishlist' },
+    loadComponent: () => import('./pages/tienda/tienda.component').then(m => m.TiendaComponent)
+  },
+  {
+    path: 'w/:slug',
+    data: { defaultTab: 'wishlist' },
+    loadComponent: () => import('./pages/tienda/tienda.component').then(m => m.TiendaComponent)
+  },
+  {
     path: 'tiendas',
     title: 'Tiendas de Mitos y Leyendas en Chile | ShadowForge',
     data: { description: 'Directorio de tiendas físicas y online donde comprar cartas y sobres de Mitos y Leyendas en Chile.' },
@@ -177,6 +187,12 @@ export const routes: Routes = [
   {
     path: 'riftbound/tienda/:token',
     title: 'Tienda Riftbound | ShadowForge',
+    loadComponent: () => import('./pages/riftbound/tienda/riftbound-tienda.component').then(m => m.RiftboundTiendaComponent),
+  },
+  {
+    path: 'riftbound/wishlist/:token',
+    title: 'Wishlist Riftbound | ShadowForge',
+    data: { defaultTab: 'wishlist' },
     loadComponent: () => import('./pages/riftbound/tienda/riftbound-tienda.component').then(m => m.RiftboundTiendaComponent),
   },
   {

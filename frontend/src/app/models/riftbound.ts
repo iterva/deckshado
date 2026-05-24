@@ -121,7 +121,7 @@ export interface RiftboundIcon {
 }
 
 export type RiftboundCondition = 'NM' | 'LP' | 'MP' | 'HP' | 'DMG';
-export type RiftboundLanguage = 'ES' | 'EN' | 'PT' | 'FR' | 'OT';
+export type RiftboundLanguage = 'EN' | 'ZH';
 
 export interface RiftboundCollectionEntry {
   id: number;
@@ -160,6 +160,9 @@ export interface RiftboundBinderProfile {
 
 export interface RiftboundPublicBinderProfile extends RiftboundBinderProfile {
   selling_count?: number;
+  has_store?: boolean;
+  has_wishlist?: boolean;
+  wishlist_count?: number;
 }
 
 export interface RiftboundBulkImportResult {

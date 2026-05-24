@@ -8,6 +8,7 @@ from .views import (
     riftbound_binder_profile_view, riftbound_upload_binder_avatar,
     riftbound_regenerate_share_token, riftbound_my_share_token,
     RiftboundPublicStoreListView, RiftboundPublicStoreIndexView,
+    RiftboundPublicWishlistListView,
 )
 
 router = DefaultRouter()
@@ -27,4 +28,5 @@ urlpatterns = [
     path("share-token/regenerate/", riftbound_regenerate_share_token, name="riftbound-share-token-regen"),
     path("stores/", RiftboundPublicStoreIndexView.as_view(), name="riftbound-public-stores"),
     path("store/<str:token>/", RiftboundPublicStoreListView.as_view(), name="riftbound-public-store"),
+    path("wishlist-public/<str:token>/", RiftboundPublicWishlistListView.as_view(), name="riftbound-public-wishlist"),
 ] + router.urls

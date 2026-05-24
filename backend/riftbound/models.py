@@ -257,11 +257,8 @@ class RiftboundCollectionEntry(models.Model):
         ("DMG", "Damaged"),
     ]
     LANGUAGE_CHOICES = [
-        ("ES", "Español"),
         ("EN", "English"),
-        ("PT", "Portugués"),
-        ("FR", "Francés"),
-        ("OT", "Otro"),
+        ("ZH", "中文"),
     ]
 
     user = models.ForeignKey(
@@ -275,7 +272,7 @@ class RiftboundCollectionEntry(models.Model):
     price = models.PositiveIntegerField(blank=True, null=True, help_text="Precio asignado por el usuario")
     selling_quantity = models.PositiveIntegerField(default=0, help_text="Copias en venta")
     condition = models.CharField(max_length=4, choices=CONDITION_CHOICES, default="NM")
-    language = models.CharField(max_length=4, choices=LANGUAGE_CHOICES, default="ES")
+    language = models.CharField(max_length=4, choices=LANGUAGE_CHOICES, default="EN")
     is_foil = models.BooleanField(default=False)
     notes = models.CharField(max_length=200, blank=True, default="")
 

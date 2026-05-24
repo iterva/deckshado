@@ -7,7 +7,18 @@ import { RiftboundService } from '../../../services/riftbound.service';
 import { AuthService } from '../../../services/auth.service';
 import {
   RiftboundCollectionEntry, RiftboundCardLite, RiftboundPublicBinderProfile,
+  RiftboundWishlistEntry,
 } from '../../../models/riftbound';
+
+interface RiftboundCartItem {
+  entryId: number;
+  cardId: number;
+  name: string;
+  price: number | null;
+  qty: number;
+  available: number;
+  image: string;
+}
 
 @Component({
   selector: 'app-riftbound-tienda',
@@ -52,6 +63,20 @@ import {
         </div>
       </div>
 
+      <div class="tabs-bar">
+        <button class="tab-btn" [class.active]="activeTab() === 'store'" (click)="switchTab('store')"
+                [disabled]="s.has_store === false">
+          🏪 Tienda
+          @if (s.selling_count) { <span class="tab-count">{{ s.selling_count }}</span> }
+        </button>
+        <button class="tab-btn" [class.active]="activeTab() === 'wishlist'" (click)="switchTab('wishlist')"
+                [disabled]="s.has_wishlist === false">
+          ❤️ Wishlist
+          @if (s.wishlist_count) { <span class="tab-count">{{ s.wishlist_count }}</span> }
+        </button>
+      </div>
+
+      @if (activeTab() === 'store') {
       <div class="filter-row">
         <input type="text" placeholder="Buscar..." [(ngModel)]="search" (keyup.enter)="reload()" />
         <select [(ngModel)]="ftype" (change)="reload()">
@@ -60,11 +85,6 @@ import {
           <option value="champion">Champion</option><option value="legend">Legend</option>
           <option value="gear">Gear</option><option value="battlefield">Battlefield</option>
           <option value="rune">Rune</option>
-        </select>
-        <select [(ngModel)]="fcondition" (change)="reload()">
-          <option value="">Toda condición</option>
-          <option value="NM">NM</option><option value="LP">LP</option>
-          <option value="MP">MP</option><option value="HP">HP</option><option value="DMG">DMG</option>
         </select>
         <select [(ngModel)]="ffoil" (change)="reload()">
           <option value="">Foil/Normal</option>
@@ -94,11 +114,20 @@ import {
             </div>
             <div class="card-body">
               <h4>{{ e.card_data?.name }}</h4>
-              <span class="card-meta">{{ e.card_data?.card_number }} · {{ e.condition }} · {{ e.language }}</span>
+              <span class="card-meta">{{ e.card_data?.card_number }} · {{ e.language }}</span>
               <div class="price-row">
                 <span class="price">{{ e.price != null ? ('$' + (e.price | number)) : 'Consultar' }}</span>
                 <span class="qty">x{{ e.selling_quantity }}</span>
               </div>
+              <button class="btn btn-sm btn-primary btn-add-cart"
+                      (click)="addToCart(e, $event)"
+                      [disabled]="inCart(e.id) >= e.selling_quantity">
+                @if (inCart(e.id)) {
+                  🛒 En carrito ({{ inCart(e.id) }})
+                } @else {
+                  🛒 Añadir
+                }
+              </button>
             </div>
           </div>
         }
@@ -111,6 +140,92 @@ import {
           <button class="btn btn-sm" (click)="next()" [disabled]="page() >= totalPages()">Siguiente →</button>
         </div>
       }
+      } @else if (activeTab() === 'wishlist') {
+        <div class="filter-row">
+          <input type="text" placeholder="Buscar en wishlist..." [(ngModel)]="wishlistSearch" (keyup.enter)="reloadWishlist()" />
+          <button class="btn btn-sm" (click)="reloadWishlist()">Buscar</button>
+          <span style="flex:1"></span>
+          <button class="btn btn-sm" (click)="shareWishlistLink()">🔗 Copiar link wishlist</button>
+          <button class="btn btn-sm" (click)="shareWishlistWhatsApp()">📱 Compartir</button>
+        </div>
+        @if (wishlistLoading()) { <div class="loading">Cargando wishlist...</div> }
+        @if (!wishlistLoading() && wishlist().length === 0) {
+          <div class="empty-state">
+            <p>{{ s.display_name || s.username }} no tiene cartas en su wishlist.</p>
+          </div>
+        }
+        <div class="cards-grid">
+          @for (w of wishlist(); track w.id) {
+            <div class="store-card">
+              <div class="card-image" (click)="preview.set(w.card_data)">
+                @if (w.card_data?.image) {
+                  <img [src]="w.card_data.image" [alt]="w.card_data.name" loading="lazy" />
+                } @else { <div class="img-fallback">{{ w.card_data?.card_number }}</div> }
+              </div>
+              <div class="card-body">
+                <h4>{{ w.card_data?.name }}</h4>
+                <span class="card-meta">{{ w.card_data?.card_number }}</span>
+                <div class="price-row">
+                  <span class="qty wishlist-qty">❤️ Quiere x{{ w.desired_quantity }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    }
+
+    <!-- Floating cart button -->
+    @if (cartCount() > 0) {
+      <button class="cart-fab" (click)="showCart.set(true)">
+        🛒 {{ cartCount() }} · \${{ cartTotal() | number }}
+      </button>
+    }
+
+    <!-- Cart modal -->
+    @if (showCart()) {
+      <div class="modal-overlay" (click)="showCart.set(false)">
+        <div class="cart-modal" (click)="$event.stopPropagation()">
+          <div class="cart-head">
+            <h3>🛒 Tu pedido</h3>
+            <button class="close-btn" (click)="showCart.set(false)">✕</button>
+          </div>
+          @if (cart().length === 0) {
+            <p class="empty-cart">Aún no agregas cartas.</p>
+          } @else {
+            <ul class="cart-list">
+              @for (item of cart(); track item.entryId) {
+                <li class="cart-item">
+                  @if (item.image) { <img [src]="item.image" [alt]="item.name" /> }
+                  <div class="cart-item-info">
+                    <strong>{{ item.name }}</strong>
+                    <small>{{ item.price != null ? ('$' + (item.price | number)) : 'Sin precio' }}</small>
+                  </div>
+                  <div class="cart-qty">
+                    <button (click)="changeCartQty(item, -1)">−</button>
+                    <span>{{ item.qty }}</span>
+                    <button (click)="changeCartQty(item, 1)" [disabled]="item.qty >= item.available">+</button>
+                  </div>
+                  <strong class="cart-line-total">\${{ ((item.price || 0) * item.qty) | number }}</strong>
+                  <button class="btn-icon" (click)="removeFromCart(item)" title="Quitar">🗑️</button>
+                </li>
+              }
+            </ul>
+            <div class="cart-total">
+              <span>Total estimado:</span>
+              <strong>\${{ cartTotal() | number }}</strong>
+              @if (cartHasUnpriced()) { <small class="warn">⚠ Hay cartas sin precio, consulta al vendedor.</small> }
+            </div>
+            <div class="cart-actions">
+              @if (store()?.whatsapp) {
+                <button class="btn btn-primary" (click)="sendWhatsApp()">📱 Enviar pedido por WhatsApp</button>
+              }
+              <button class="btn btn-sm" (click)="copyOrder()">📋 Copiar pedido</button>
+              <button class="btn btn-sm" (click)="clearCart()">🗑️ Vaciar</button>
+            </div>
+          }
+        </div>
+      </div>
     }
 
     @if (preview(); as pc) {
@@ -168,6 +283,23 @@ import {
     .contact-chip.em { color: #4fc3f7; border-color: #4fc3f7; }
     .contact-chip.tr { color: #c89b3c; border-color: #c89b3c; }
     .contact-chip:hover { background: #16213e; }
+
+    .tabs-bar { display: flex; gap: .5rem; margin: 0 0 1rem; border-bottom: 1px solid #2a3a4a; }
+    .tab-btn {
+      background: transparent; border: none; color: #9ba3b4;
+      padding: .65rem 1.1rem; cursor: pointer; font-weight: 600;
+      border-bottom: 2px solid transparent; display: inline-flex; align-items: center; gap: .4rem;
+      font-size: .92rem;
+    }
+    .tab-btn.active { color: #e94560; border-bottom-color: #e94560; }
+    .tab-btn:hover:not(:disabled):not(.active) { color: #fff; }
+    .tab-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .tab-count {
+      background: #0f0f23; border: 1px solid #2a3a4a; color: #c8c8da;
+      padding: .1rem .45rem; border-radius: 10px; font-size: .75rem;
+    }
+    .empty-state { padding: 2rem; text-align: center; color: #9ba3b4; }
+    .wishlist-qty { color: #ff7e7e !important; }
 
     .filter-row { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
     .filter-row input, .filter-row select {
@@ -227,6 +359,51 @@ import {
       background: rgba(15,15,35,.85); border: 1px solid #2a3a4a; color: #fff;
       width: 32px; height: 32px; border-radius: 50%; cursor: pointer; z-index: 2; }
     .close-btn:hover { background: #e94560; border-color: #e94560; }
+
+    /* Cart */
+    .btn-add-cart { width: 100%; margin-top: .55rem; font-size: .82rem; }
+    .cart-fab {
+      position: fixed; bottom: 1.25rem; right: 1.25rem; z-index: 999;
+      padding: .85rem 1.3rem; border-radius: 999px; border: none;
+      background: linear-gradient(135deg, #e94560, #c89b3c); color: #fff;
+      font-weight: 700; cursor: pointer; box-shadow: 0 6px 18px rgba(0,0,0,.4);
+      font-size: .95rem;
+    }
+    .cart-fab:hover { transform: translateY(-2px); }
+    .cart-modal {
+      background: #16213e; border: 1px solid #2a3a4a; border-radius: 14px;
+      max-width: 640px; width: 100%; max-height: 90vh; overflow-y: auto;
+      padding: 1.2rem; position: relative;
+    }
+    .cart-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .8rem; }
+    .cart-head h3 { margin: 0; color: #fff; }
+    .empty-cart { color: #9ba3b4; text-align: center; padding: 1rem; }
+    .cart-list { list-style: none; padding: 0; margin: 0 0 .8rem; display: flex; flex-direction: column; gap: .55rem; }
+    .cart-item {
+      display: grid; grid-template-columns: 48px 1fr auto auto auto; gap: .6rem;
+      align-items: center; padding: .5rem; background: #0f0f23;
+      border: 1px solid #2a3a4a; border-radius: 8px;
+    }
+    .cart-item img { width: 48px; height: 67px; object-fit: cover; border-radius: 4px; }
+    .cart-item-info strong { display: block; color: #fff; font-size: .9rem; }
+    .cart-item-info small { color: #9ba3b4; font-size: .78rem; }
+    .cart-qty { display: flex; align-items: center; gap: .3rem; }
+    .cart-qty button {
+      width: 26px; height: 26px; border-radius: 4px;
+      background: #1e2d3d; color: #fff; border: 1px solid #2a3a4a; cursor: pointer;
+    }
+    .cart-qty button:disabled { opacity: .4; cursor: not-allowed; }
+    .cart-line-total { color: #e94560; font-size: .9rem; }
+    .btn-icon { background: transparent; border: none; cursor: pointer; font-size: 1rem; }
+    .cart-total {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: .4rem; padding: .65rem 0; border-top: 1px dashed #2a3a4a;
+      color: #c8c8da;
+    }
+    .cart-total strong { color: #e94560; font-size: 1.1rem; }
+    .cart-total .warn { width: 100%; color: #c89b3c; font-size: .8rem; }
+    .cart-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .6rem; }
+    .cart-actions .btn-primary { flex: 1 1 100%; }
   `],
 })
 export class RiftboundTiendaComponent implements OnInit {
@@ -244,6 +421,17 @@ export class RiftboundTiendaComponent implements OnInit {
   page = signal(1);
   preview = signal<RiftboundCardLite | null>(null);
 
+  // Cart
+  cart = signal<RiftboundCartItem[]>([]);
+  showCart = signal(false);
+
+  // Tabs / wishlist
+  activeTab = signal<'store' | 'wishlist'>('store');
+  wishlist = signal<RiftboundWishlistEntry[]>([]);
+  wishlistLoading = signal(false);
+  wishlistLoaded = signal(false);
+  wishlistSearch = '';
+
   search = '';
   ftype = '';
   fcondition = '';
@@ -254,9 +442,18 @@ export class RiftboundTiendaComponent implements OnInit {
 
   totalPages() { return Math.max(1, Math.ceil(this.count() / 20)); }
 
+  cartCount() { return this.cart().reduce((s, c) => s + c.qty, 0); }
+  cartTotal() { return this.cart().reduce((s, c) => s + (c.price || 0) * c.qty, 0); }
+  cartHasUnpriced() { return this.cart().some(c => c.price == null); }
+  inCart(entryId: number): number { return this.cart().find(c => c.entryId === entryId)?.qty || 0; }
+
   ngOnInit() {
     this.token = this.route.snapshot.paramMap.get('token') || '';
+    const dt = this.route.snapshot.data?.['defaultTab'];
+    if (dt === 'wishlist') this.activeTab.set('wishlist');
+    this.loadCart();
     this.reload();
+    if (this.activeTab() === 'wishlist') this.reloadWishlist();
   }
 
   reload() {
@@ -277,6 +474,7 @@ export class RiftboundTiendaComponent implements OnInit {
         this.count.set(res.count);
         this.store.set(res.store);
         this.loading.set(false);
+        this.syncCartAvailability();
         this.cdr.markForCheck();
       },
       error: err => {
@@ -292,4 +490,133 @@ export class RiftboundTiendaComponent implements OnInit {
 
   cleanWa(v: string): string { return v.replace(/[^0-9]/g, ''); }
   cleanHandle(v: string): string { return v.replace(/^@/, '').trim(); }
+
+  // ── Cart ──
+  private cartKey(): string { return `riftbound-tienda-cart::${this.token}`; }
+
+  loadCart() {
+    try {
+      const raw = localStorage.getItem(this.cartKey());
+      this.cart.set(raw ? JSON.parse(raw) : []);
+    } catch { this.cart.set([]); }
+  }
+
+  saveCart() {
+    try { localStorage.setItem(this.cartKey(), JSON.stringify(this.cart())); } catch {}
+  }
+
+  syncCartAvailability() {
+    const entries = this.entries();
+    const updated = this.cart().map(ci => {
+      const e = entries.find(x => x.id === ci.entryId);
+      return e ? { ...ci, available: e.selling_quantity } : ci;
+    });
+    this.cart.set(updated);
+    this.saveCart();
+  }
+
+  addToCart(entry: RiftboundCollectionEntry, ev: MouseEvent) {
+    ev.stopPropagation();
+    const list = [...this.cart()];
+    const existing = list.find(c => c.entryId === entry.id);
+    if (existing) {
+      if (existing.qty < entry.selling_quantity) existing.qty++;
+    } else {
+      list.push({
+        entryId: entry.id,
+        cardId: entry.card_data.id,
+        name: entry.card_data.name,
+        price: entry.price ?? null,
+        qty: 1,
+        available: entry.selling_quantity,
+        image: entry.card_data.image || '',
+      });
+    }
+    this.cart.set(list);
+    this.saveCart();
+    this.cdr.markForCheck();
+  }
+
+  removeFromCart(item: RiftboundCartItem) {
+    this.cart.set(this.cart().filter(c => c.entryId !== item.entryId));
+    this.saveCart();
+  }
+
+  changeCartQty(item: RiftboundCartItem, delta: number) {
+    const newQty = item.qty + delta;
+    if (newQty <= 0) { this.removeFromCart(item); return; }
+    if (newQty > item.available) return;
+    this.cart.set(this.cart().map(c => c.entryId === item.entryId ? { ...c, qty: newQty } : c));
+    this.saveCart();
+  }
+
+  clearCart() { this.cart.set([]); this.saveCart(); }
+
+  buildOrderText(): string {
+    const s = this.store();
+    const lines = [`Hola ${s?.display_name || s?.username}! Quiero comprar (Riftbound):`];
+    for (const c of this.cart()) {
+      const priceTxt = c.price != null ? `— $${c.price.toLocaleString('es-CL')} c/u` : '— precio?';
+      lines.push(`• ${c.qty}x ${c.name} ${priceTxt}`);
+    }
+    if (!this.cartHasUnpriced()) {
+      lines.push('');
+      lines.push(`Total: $${this.cartTotal().toLocaleString('es-CL')}`);
+    }
+    lines.push('');
+    lines.push(`(Pedido desde tienda Deckshado · Riftbound)`);
+    return lines.join('\n');
+  }
+
+  sendWhatsApp() {
+    const wa = this.store()?.whatsapp;
+    if (!wa) return;
+    const number = wa.replace(/[^0-9]/g, '');
+    const text = encodeURIComponent(this.buildOrderText());
+    window.open(`https://wa.me/${number}?text=${text}`, '_blank');
+  }
+
+  copyOrder() {
+    navigator.clipboard.writeText(this.buildOrderText());
+  }
+
+  // ── Tabs / Wishlist ──
+  switchTab(tab: 'store' | 'wishlist') {
+    if (this.activeTab() === tab) return;
+    this.activeTab.set(tab);
+    if (tab === 'wishlist' && !this.wishlistLoaded()) this.reloadWishlist();
+  }
+
+  reloadWishlist() {
+    this.wishlistLoading.set(true);
+    this.rb.getPublicWishlist(this.token, {
+      search: this.wishlistSearch || undefined,
+    }).subscribe({
+      next: res => {
+        this.wishlist.set(res.results);
+        if (res.store) {
+          this.store.set({ ...(this.store() || {} as any), ...res.store });
+        }
+        this.wishlistLoading.set(false);
+        this.wishlistLoaded.set(true);
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.wishlistLoading.set(false);
+        this.wishlistLoaded.set(true);
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  shareWishlistLink() {
+    const url = `${window.location.origin}/riftbound/wishlist/${this.token}`;
+    navigator.clipboard.writeText(url);
+  }
+
+  shareWishlistWhatsApp() {
+    const url = `${window.location.origin}/riftbound/wishlist/${this.token}`;
+    const txt = encodeURIComponent(`Mira mi wishlist Riftbound: ${url}`);
+    window.open(`https://wa.me/?text=${txt}`, '_blank');
+  }
 }

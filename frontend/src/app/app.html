@@ -19,6 +19,7 @@
       <a routerLink="/riftbound/decks" routerLinkActive="active">Mazos</a>
       <a routerLink="/riftbound/builder" routerLinkActive="active">Constructor</a>
       <a routerLink="/riftbound/banlist" routerLinkActive="active">Banlist</a>
+      <a routerLink="/riftbound/tiendas" routerLinkActive="active">Mercado</a>
       @if (auth.isAuthenticated()) {
         <a routerLink="/riftbound/carpeta" routerLinkActive="active">Carpeta</a>
       }
@@ -213,6 +214,7 @@
         <a routerLink="/riftbound/decks" routerLinkActive="active" (click)="closeMobileMenu()">📚 Mazos</a>
         <a routerLink="/riftbound/builder" routerLinkActive="active" (click)="closeMobileMenu()">🔨 Constructor</a>
         <a routerLink="/riftbound/banlist" routerLinkActive="active" (click)="closeMobileMenu()">🚫 Banlist</a>
+        <a routerLink="/riftbound/tiendas" routerLinkActive="active" (click)="closeMobileMenu()">🏪 Mercado</a>
         @if (auth.isAuthenticated()) {
           <a routerLink="/riftbound/carpeta" routerLinkActive="active" (click)="closeMobileMenu()">📁 Carpeta</a>
         }

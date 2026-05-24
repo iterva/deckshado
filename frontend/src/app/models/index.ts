@@ -208,6 +208,9 @@ export interface PublicBinderProfile {
   accepts_trades: boolean;
   last_active: string;
   selling_count: number;
+  has_store?: boolean;
+  has_wishlist?: boolean;
+  wishlist_count?: number;
 }
 
 export type CardCondition = 'NM' | 'LP' | 'MP' | 'HP' | 'DMG';

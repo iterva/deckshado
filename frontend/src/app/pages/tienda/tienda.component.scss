@@ -72,6 +72,27 @@
   }
 }
 
+// ── Tabs ──
+.tabs-bar {
+  display: flex; gap: 0.5rem; margin: 0 0 1rem;
+  border-bottom: 1px solid #2a3a4a;
+  .tab-btn {
+    background: transparent; border: none; color: #9aa6b2;
+    padding: 0.65rem 1.1rem; cursor: pointer; font-weight: 600;
+    border-bottom: 2px solid transparent; display: inline-flex; align-items: center; gap: 0.4rem;
+    font-size: 0.92rem;
+    &.active { color: #00d4ff; border-bottom-color: #00d4ff; }
+    &:hover:not(:disabled):not(.active) { color: #e0e0e0; }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+    .tab-count {
+      background: #1e1e3a; border: 1px solid #2a3a4a; color: #e0e0e0;
+      padding: 0.1rem 0.45rem; border-radius: 10px; font-size: 0.75rem;
+    }
+  }
+}
+.flex-spacer { flex: 1; }
+.wishlist-card .qty-tag { background: #c0392b22; color: #ff7e7e; }
+
 // ── Filters bar ──
 .filters-bar {
   display: flex; gap: 0.4rem; flex-wrap: wrap;

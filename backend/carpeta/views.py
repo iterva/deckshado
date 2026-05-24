@@ -365,6 +365,50 @@ def _filter_store_qs(qs, params):
     return qs
 
 
+def _public_profile_payload(profile, request):
+    """Devuelve dict con perfil + flags has_store y has_wishlist (para tabs)."""
+    sel_count = CollectionEntry.objects.filter(
+        user=profile.user, selling_quantity__gt=0,
+    ).count()
+    wish_count = WishlistEntry.objects.filter(user=profile.user).count()
+    profile.selling_count = sel_count
+    data = PublicBinderProfileSerializer(profile, context={"request": request}).data
+    data["has_store"] = bool(profile.is_store_public and sel_count > 0)
+    data["has_wishlist"] = wish_count > 0
+    data["wishlist_count"] = wish_count
+    return data
+
+
+class PublicWishlistListView(generics.ListAPIView):
+    """Wishlist pública resolvida por share_token (UUID) o slug si la tienda es pública."""
+    serializer_class = WishlistEntrySerializer
+    pagination_class = CarpetaPagination
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        profile = _resolve_public_profile(self.kwargs["token"])
+        self._profile = profile
+        qs = WishlistEntry.objects.filter(user=profile.user).select_related(
+            "card__edition", "card__rarity", "card__race", "card__card_type",
+        )
+        search = self.request.query_params.get("search")
+        if search:
+            qs = qs.filter(card__name__icontains=search)
+        edition = self.request.query_params.get("edition")
+        if edition:
+            qs = qs.filter(card__edition__slug=edition)
+        ordering = self.request.query_params.get("ordering") or "-id"
+        allowed = {"card__name", "-card__name", "id", "-id"}
+        if ordering in allowed:
+            qs = qs.order_by(ordering)
+        return qs
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        response.data["store"] = _public_profile_payload(self._profile, request)
+        return response
+
+
 class PublicStoreListView(generics.ListAPIView):
     serializer_class = CollectionEntrySerializer
     pagination_class = CarpetaPagination
@@ -396,7 +440,7 @@ class PublicStoreListView(generics.ListAPIView):
             user=profile.user, selling_quantity__gt=0
         ).count()
         profile.selling_count = sel_count
-        response.data["store"] = PublicBinderProfileSerializer(profile, context={"request": request}).data
+        response.data["store"] = _public_profile_payload(profile, request)
         # Compatibilidad legacy
         response.data["store_owner"] = profile.user.username
         response.data["store_avatar"] = response.data["store"]["user_avatar_url"]

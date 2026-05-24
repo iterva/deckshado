@@ -6,7 +6,7 @@ import { CarpetaService, StoreFilters } from '../../services/carpeta.service';
 import { CardService } from '../../services/card.service';
 import { AuthService } from '../../services/auth.service';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
-import { CollectionEntry, Card, PublicBinderProfile, Edition, Race, Rarity, CardType } from '../../models';
+import { CollectionEntry, Card, PublicBinderProfile, Edition, Race, Rarity, CardType, WishlistEntry } from '../../models';
 
 interface CartItem {
   entryId: number;
@@ -36,6 +36,14 @@ export class TiendaComponent implements OnInit {
   showContactModal = false;
   showCart = false;
 
+  // Tabs
+  activeTab: 'store' | 'wishlist' = 'store';
+  wishlistEntries: WishlistEntry[] = [];
+  wishlistTotal = 0;
+  wishlistLoading = false;
+  wishlistLoaded = false;
+  wishlistSearch = '';
+
   // Filters
   filters: StoreFilters = { page: 1, ordering: '-id' };
   editions: Edition[] = [];
@@ -57,9 +65,12 @@ export class TiendaComponent implements OnInit {
   ngOnInit() {
     this.token = this.route.snapshot.paramMap.get('token') || this.route.snapshot.paramMap.get('slug') || '';
     if (!this.token) { this.notFound = true; return; }
+    const dt = this.route.snapshot.data?.['defaultTab'];
+    if (dt === 'wishlist') this.activeTab = 'wishlist';
     this.loadCart();
     this.loadFilters();
     this.loadStore();
+    if (this.activeTab === 'wishlist') this.loadWishlist();
   }
 
   loadFilters() {
@@ -185,6 +196,52 @@ export class TiendaComponent implements OnInit {
 
   copyOrder() {
     navigator.clipboard.writeText(this.buildOrderText());
+  }
+
+  // ── Tabs / Wishlist ──
+  switchTab(tab: 'store' | 'wishlist') {
+    if (this.activeTab === tab) return;
+    this.activeTab = tab;
+    if (tab === 'wishlist' && !this.wishlistLoaded) this.loadWishlist();
+  }
+
+  loadWishlist() {
+    this.wishlistLoading = true;
+    this.carpetaService.getPublicWishlist(this.token, { search: this.wishlistSearch || undefined }).subscribe({
+      next: res => {
+        this.wishlistEntries = res.results;
+        this.wishlistTotal = res.count;
+        // El backend siempre devuelve el store actualizado con flags
+        if (res.store && !this.store) this.store = res.store;
+        if (res.store) {
+          this.store = { ...this.store, ...res.store } as PublicBinderProfile;
+        }
+        this.wishlistLoading = false;
+        this.wishlistLoaded = true;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.wishlistLoading = false;
+        this.wishlistLoaded = true;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  applyWishlistFilter() {
+    this.wishlistLoaded = false;
+    this.loadWishlist();
+  }
+
+  shareWishlistLink() {
+    const url = `${window.location.origin}/wishlist/${this.token}`;
+    navigator.clipboard.writeText(url);
+  }
+
+  shareWishlistWhatsApp() {
+    const url = `${window.location.origin}/wishlist/${this.token}`;
+    const txt = encodeURIComponent(`Mira mi wishlist de cartas: ${url}`);
+    window.open(`https://wa.me/?text=${txt}`, '_blank');
   }
 
   // ── Share ──

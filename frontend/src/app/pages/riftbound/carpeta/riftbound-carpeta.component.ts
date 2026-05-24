@@ -40,9 +40,12 @@ interface DirtyPatch {
         } @else {
           <div class="binder-avatar-placeholder">📁</div>
         }
-        <button class="avatar-edit-btn" (click)="showAvatarPrompt()" title="Cambiar avatar">
-          <i class="bi bi-pencil-fill"></i>
+        <button class="avatar-edit-btn" (click)="avatarInput.click()" [disabled]="avatarUploading()"
+                [title]="avatarUploading() ? 'Subiendo...' : 'Cambiar avatar'">
+          @if (avatarUploading()) { <i class="bi bi-arrow-repeat spin"></i> }
+          @else { <i class="bi bi-pencil-fill"></i> }
         </button>
+        <input #avatarInput type="file" accept="image/*" hidden (change)="onAvatarFileChange($event)" />
       </div>
       <div class="binder-info">
         <h1>Mi Carpeta · Riftbound</h1>
@@ -169,23 +172,10 @@ interface DirtyPatch {
                 </div>
                 <div class="inline-fields">
                   <div class="field">
-                    <label>Cond.</label>
-                    <select [value]="entry.condition" (change)="onFieldChange(entry, 'condition', $any($event.target).value)">
-                      <option value="NM">NM</option>
-                      <option value="LP">LP</option>
-                      <option value="MP">MP</option>
-                      <option value="HP">HP</option>
-                      <option value="DMG">DMG</option>
-                    </select>
-                  </div>
-                  <div class="field">
                     <label>Idioma</label>
                     <select [value]="entry.language" (change)="onFieldChange(entry, 'language', $any($event.target).value)">
-                      <option value="ES">ES</option>
                       <option value="EN">EN</option>
-                      <option value="PT">PT</option>
-                      <option value="FR">FR</option>
-                      <option value="OT">Otro</option>
+                      <option value="ZH">中文</option>
                     </select>
                   </div>
                   <label class="foil-toggle">
@@ -487,7 +477,7 @@ interface DirtyPatch {
               </div>
               <div class="card-body">
                 <h4>{{ entry.card_data?.name }}</h4>
-                <span class="card-meta">{{ entry.card_data?.card_number }} · {{ entry.condition }} · {{ entry.language }}</span>
+                <span class="card-meta">{{ entry.card_data?.card_number }} · {{ entry.language }}</span>
                 <div class="inline-fields">
                   <div class="field">
                     <label>Precio</label>
@@ -1005,6 +995,7 @@ export class RiftboundCarpetaComponent implements OnInit {
 
   // Binder profile / Mercado
   binderProfile = signal<RiftboundBinderProfile | null>(null);
+  avatarUploading = signal(false);
   showStoreConfig = signal(false);
   mercadoEntries = signal<RiftboundCollectionEntry[]>([]);
   mercadoLoading = signal(false);
@@ -1296,14 +1287,29 @@ export class RiftboundCarpetaComponent implements OnInit {
     });
   }
 
-  showAvatarPrompt() {
-    const url = prompt('URL del nuevo avatar de carpeta (Cloudinary, etc.):',
-      this.binderProfile()?.binder_avatar || '');
-    if (url === null) return;
-    this.rb.uploadBinderAvatar(url).subscribe(p => {
-      this.binderProfile.set(p);
-      this.cdr.markForCheck();
+  onAvatarFileChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('La imagen es muy grande (máx. 5 MB).');
+      input.value = '';
+      return;
+    }
+    this.avatarUploading.set(true);
+    this.rb.uploadBinderAvatar(file).subscribe({
+      next: p => {
+        this.binderProfile.set(p);
+        this.avatarUploading.set(false);
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.avatarUploading.set(false);
+        alert('No se pudo subir la imagen. Inténtalo de nuevo.');
+        this.cdr.markForCheck();
+      },
     });
+    input.value = '';
   }
 
   regenerateToken() {

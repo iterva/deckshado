@@ -597,17 +597,49 @@ class RiftboundPublicStoreListView(generics.ListAPIView):
 
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
-        profile = self._profile
-        sel_count = RiftboundCollectionEntry.objects.filter(
-            user=profile.user, selling_quantity__gt=0,
-        ).count()
-        profile.selling_count = sel_count
-        response.data["store"] = RiftboundPublicBinderProfileSerializer(
-            profile, context={"request": request}
-        ).data
-        response.data["store_owner"] = profile.user.username
+        response.data["store"] = _rb_public_profile_payload(self._profile, request)
+        response.data["store_owner"] = self._profile.user.username
         response.data["store_avatar"] = response.data["store"]["user_avatar_url"]
         response.data["store_binder_avatar"] = response.data["store"]["binder_avatar_url"]
+        return response
+
+
+def _rb_public_profile_payload(profile, request):
+    sel_count = RiftboundCollectionEntry.objects.filter(
+        user=profile.user, selling_quantity__gt=0,
+    ).count()
+    wish_count = RiftboundWishlistEntry.objects.filter(user=profile.user).count()
+    profile.selling_count = sel_count
+    data = RiftboundPublicBinderProfileSerializer(profile, context={"request": request}).data
+    data["has_store"] = bool(profile.is_store_public and sel_count > 0)
+    data["has_wishlist"] = wish_count > 0
+    data["wishlist_count"] = wish_count
+    return data
+
+
+class RiftboundPublicWishlistListView(generics.ListAPIView):
+    """Wishlist pública de Riftbound por share_token (UUID) o slug si la tienda es pública."""
+    serializer_class = RiftboundWishlistEntrySerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        profile = _rb_resolve_public_profile(self.kwargs["token"])
+        self._profile = profile
+        qs = RiftboundWishlistEntry.objects.filter(user=profile.user).select_related(
+            "card", "card__set",
+        )
+        search = self.request.query_params.get("search")
+        if search:
+            qs = qs.filter(card__name__icontains=search)
+        ordering = self.request.query_params.get("ordering") or "-id"
+        allowed = {"card__name", "-card__name", "id", "-id"}
+        if ordering in allowed:
+            qs = qs.order_by(ordering)
+        return qs
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        response.data["store"] = _rb_public_profile_payload(self._profile, request)
         return response
 
 

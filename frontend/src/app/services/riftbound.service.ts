@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, shareReplay, tap } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import {
   RiftboundCard, RiftboundCardLite, RiftboundDeck, RiftboundFormat,
@@ -199,8 +200,18 @@ export class RiftboundService {
     return this.http.patch<RiftboundBinderProfile>(`${this.base}/profile/`, patch);
   }
 
-  uploadBinderAvatar(avatarUrl: string): Observable<RiftboundBinderProfile> {
-    return this.http.post<RiftboundBinderProfile>(`${this.base}/profile/avatar/`, { avatar_url: avatarUrl });
+  uploadBinderAvatar(file: File): Observable<RiftboundBinderProfile> {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', environment.cloudinaryUploadPreset);
+    fd.append('folder', 'deckshado/binder_avatars');
+    return this.http.post<any>(
+      `https://api.cloudinary.com/v1_1/${environment.cloudinaryCloudName}/image/upload`, fd,
+    ).pipe(
+      switchMap(res => this.http.post<RiftboundBinderProfile>(
+        `${this.base}/profile/avatar/`, { avatar_url: res.secure_url },
+      )),
+    );
   }
 
   myShareToken(): Observable<{ share_token: string; store_slug: string; is_store_public: boolean }> {
@@ -233,5 +244,14 @@ export class RiftboundService {
       if (v !== undefined && v !== null && v !== '') params = params.set(k, String(v));
     }
     return this.http.get<any>(`${this.base}/store/${token}/`, { params });
+  }
+
+  getPublicWishlist(token: string, opts: { search?: string; ordering?: string; page?: number } = {})
+    : Observable<PaginatedResponse<RiftboundWishlistEntry> & { store: RiftboundPublicBinderProfile }> {
+    let params = new HttpParams();
+    for (const [k, v] of Object.entries(opts)) {
+      if (v !== undefined && v !== null && v !== '') params = params.set(k, String(v));
+    }
+    return this.http.get<any>(`${this.base}/wishlist-public/${token}/`, { params });
   }
 }

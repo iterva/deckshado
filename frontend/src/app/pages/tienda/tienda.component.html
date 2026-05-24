@@ -46,7 +46,21 @@
       </div>
     </div>
 
-    <!-- Filters bar -->
+    <!-- Tabs -->
+    <div class="tabs-bar">
+      <button class="tab-btn" [class.active]="activeTab === 'store'" (click)="switchTab('store')"
+              [disabled]="store?.has_store === false">
+        🏪 Tienda
+        @if (store?.selling_count) { <span class="tab-count">{{ store?.selling_count }}</span> }
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'wishlist'" (click)="switchTab('wishlist')"
+              [disabled]="store?.has_wishlist === false">
+        ❤️ Wishlist
+        @if (store?.wishlist_count) { <span class="tab-count">{{ store?.wishlist_count }}</span> }
+      </button>
+    </div>
+
+    @if (activeTab === 'store') {
     <div class="filters-bar">
       <input type="text" placeholder="🔍 Buscar carta..." [(ngModel)]="filters.search" (keyup.enter)="applyFilter()" class="search-input" />
       <select [(ngModel)]="filters.edition" (change)="applyFilter()">
@@ -137,6 +151,43 @@
         <button class="btn btn-sm" (click)="prevPage()" [disabled]="(filters.page || 1) === 1">← Anterior</button>
         <span>{{ filters.page || 1 }} / {{ totalPages }}</span>
         <button class="btn btn-sm" (click)="nextPage()" [disabled]="(filters.page || 1) >= totalPages">Siguiente →</button>
+      </div>
+    }
+
+    } @else if (activeTab === 'wishlist') {
+      <!-- Wishlist tab -->
+      <div class="filters-bar">
+        <input type="text" placeholder="🔍 Buscar en wishlist..." [(ngModel)]="wishlistSearch"
+               (keyup.enter)="applyWishlistFilter()" class="search-input" />
+        <button class="btn btn-xs" (click)="applyWishlistFilter()">Buscar</button>
+        <span class="flex-spacer"></span>
+        <button class="btn btn-xs" (click)="shareWishlistLink()">🔗 Copiar link wishlist</button>
+        <button class="btn btn-xs" (click)="shareWishlistWhatsApp()">📱 Compartir wishlist</button>
+      </div>
+
+      @if (wishlistLoading) { <div class="loading">Cargando wishlist...</div> }
+      @if (!wishlistLoading && wishlistEntries.length === 0) {
+        <div class="empty-state">
+          <p>{{ store?.display_name || store?.username }} no tiene cartas en su wishlist.</p>
+        </div>
+      }
+
+      <div class="store-grid">
+        @for (w of wishlistEntries; track w.id) {
+          <div class="store-card wishlist-card">
+            <div class="card-image" (click)="previewCard = w.card_detail">
+              <img [src]="w.card_detail.image_url | thumb:350" [alt]="w.card_detail.name" loading="lazy"
+                (error)="$any($event.target).src = w.card_detail.image_url" />
+            </div>
+            <div class="card-body">
+              <h4>{{ w.card_detail.name }}</h4>
+              <span class="card-meta">{{ w.card_detail.type_name }} · {{ w.card_detail.edition_title }}</span>
+              <div class="card-selling-info">
+                <span class="qty-tag">❤️ Quiere x{{ w.desired_quantity }}</span>
+              </div>
+            </div>
+          </div>
+        }
       </div>
     }
 

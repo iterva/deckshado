@@ -25,4 +25,5 @@ urlpatterns = [
     # Public stores
     path("stores/", views.PublicStoreIndexView.as_view(), name="public-stores-index"),
     path("store/<str:token>/", views.PublicStoreListView.as_view(), name="public-store"),
+    path("wishlist-public/<str:token>/", views.PublicWishlistListView.as_view(), name="public-wishlist"),
 ]

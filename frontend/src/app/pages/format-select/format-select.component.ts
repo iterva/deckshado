@@ -11,6 +11,13 @@ interface RaceOption {
   description: string;
 }
 
+interface PbEditionOption {
+  slug: string;            // identificador del grupo (param URL)
+  name: string;            // nombre visible
+  editions: string[];      // slugs reales de ediciones de la BD que incluye
+  races: RaceOption[];     // razas disponibles para este grupo
+}
+
 @Component({
   selector: 'app-format-select',
   standalone: true,
@@ -21,12 +28,81 @@ interface RaceOption {
 export class FormatSelectComponent {
   formats: Format[] = [];
   loading = true;
-  step: 'format' | 'sub_format' | 'race' = 'format';
+  step: 'format' | 'sub_format' | 'pb_edition' | 'race' = 'format';
   selectedFormat = '';
   selectedFormatName = '';
   selectedSubFormat = '';
+  selectedPbEdition: PbEditionOption | null = null;
 
-  readonly enabledFormats = ['imp', 'imp_r', 'esc'];
+  readonly enabledFormats = ['imp', 'imp_r', 'esc', 'pb'];
+
+  /** Ediciones de Primer Bloque agrupadas con sus razas. */
+  readonly pbEditions: PbEditionOption[] = [
+    {
+      slug: 'espada-sagrada',
+      name: 'Espada Sagrada',
+      editions: ['espada-sagrada', 'espada_sagrada_aniversario'],
+      races: [
+        { slug: 'dream', name: 'Dream', description: 'Todas las razas + neutrales' },
+        { slug: 'caballero', name: 'Caballero', description: 'Aliados Caballero + neutrales' },
+        { slug: 'dragon', name: 'Dragón', description: 'Aliados Dragón + neutrales' },
+        { slug: 'faerie', name: 'Faerie', description: 'Aliados Faerie + neutrales' },
+      ],
+    },
+    {
+      slug: 'helenica',
+      name: 'Helénica',
+      editions: ['helenica', 'helenica_aniversario'],
+      races: [
+        { slug: 'dream', name: 'Dream', description: 'Todas las razas + neutrales' },
+        { slug: 'heroe', name: 'Héroe', description: 'Aliados Héroe + neutrales' },
+        { slug: 'olimpico', name: 'Olímpico', description: 'Aliados Olímpico + neutrales' },
+        { slug: 'titan', name: 'Titán', description: 'Aliados Titán + neutrales' },
+      ],
+    },
+    {
+      slug: 'hijos-de-daana',
+      name: 'Hijos de Daana',
+      editions: ['hijos_de_daana'],
+      races: [
+        { slug: 'dream', name: 'Dream', description: 'Todas las razas + neutrales' },
+        { slug: 'desafiante', name: 'Desafiante', description: 'Aliados Desafiante + neutrales' },
+        { slug: 'defensor', name: 'Defensor', description: 'Aliados Defensor + neutrales' },
+        { slug: 'sombra', name: 'Sombra', description: 'Aliados Sombra + neutrales' },
+      ],
+    },
+    {
+      slug: 'dominios-de-ra',
+      name: 'Dominios de Ra',
+      editions: ['dominios-de-ra'],
+      races: [
+        { slug: 'dream', name: 'Dream', description: 'Todas las razas + neutrales' },
+        { slug: 'eterno', name: 'Eterno', description: 'Aliados Eterno + neutrales' },
+        { slug: 'faraon', name: 'Faraón', description: 'Aliados Faraón + neutrales' },
+        { slug: 'sacerdote', name: 'Sacerdote', description: 'Aliados Sacerdote + neutrales' },
+      ],
+    },
+    {
+      slug: 'pb-dream',
+      name: 'Dream (todas las ediciones)',
+      editions: [],
+      races: [
+        { slug: 'dream', name: 'Dream', description: 'Todas las razas del bloque + neutrales' },
+        { slug: 'caballero', name: 'Caballero', description: 'Aliados Caballero + neutrales' },
+        { slug: 'dragon', name: 'Dragón', description: 'Aliados Dragón + neutrales' },
+        { slug: 'faerie', name: 'Faerie', description: 'Aliados Faerie + neutrales' },
+        { slug: 'heroe', name: 'Héroe', description: 'Aliados Héroe + neutrales' },
+        { slug: 'olimpico', name: 'Olímpico', description: 'Aliados Olímpico + neutrales' },
+        { slug: 'titan', name: 'Titán', description: 'Aliados Titán + neutrales' },
+        { slug: 'desafiante', name: 'Desafiante', description: 'Aliados Desafiante + neutrales' },
+        { slug: 'defensor', name: 'Defensor', description: 'Aliados Defensor + neutrales' },
+        { slug: 'sombra', name: 'Sombra', description: 'Aliados Sombra + neutrales' },
+        { slug: 'eterno', name: 'Eterno', description: 'Aliados Eterno + neutrales' },
+        { slug: 'faraon', name: 'Faraón', description: 'Aliados Faraón + neutrales' },
+        { slug: 'sacerdote', name: 'Sacerdote', description: 'Aliados Sacerdote + neutrales' },
+      ],
+    },
+  ];
 
   readonly impRaces: RaceOption[] = [
     { slug: 'dream', name: 'Dream', description: 'Todas las razas, talismanes, armas y tótems' },
@@ -67,6 +143,7 @@ export class FormatSelectComponent {
   ];
 
   get races(): RaceOption[] {
+    if (this.selectedFormat === 'pb' && this.selectedPbEdition) return this.selectedPbEdition.races;
     return this.selectedFormat === 'esc' ? this.escRaces : this.impRaces;
   }
 
@@ -83,7 +160,7 @@ export class FormatSelectComponent {
         return;
       }
       this.cardService.getFormats().subscribe(d => {
-        const order = ['imp', 'esc', 'imp_r'];
+        const order = ['imp', 'esc', 'imp_r', 'pb'];
         this.formats = d.sort((a, b) => {
           const ai = order.indexOf(a.code);
           const bi = order.indexOf(b.code);
@@ -107,6 +184,9 @@ export class FormatSelectComponent {
     this.selectedFormatName = this.formats.find(f => f.code === code)?.name || code;
     if (code === 'imp') {
       this.step = 'sub_format';
+    } else if (code === 'pb') {
+      this.selectedSubFormat = 'racial';
+      this.step = 'pb_edition';
     } else {
       this.selectedSubFormat = 'racial';
       this.step = 'race';
@@ -118,10 +198,18 @@ export class FormatSelectComponent {
     this.step = 'race';
   }
 
+  selectPbEdition(ed: PbEditionOption) {
+    this.selectedPbEdition = ed;
+    this.step = 'race';
+  }
+
   selectRace(slug: string) {
     const qp: any = { race: slug };
     if (this.selectedSubFormat === 'vcr') {
       qp.sub_fmt = 'vcr';
+    }
+    if (this.selectedFormat === 'pb' && this.selectedPbEdition) {
+      qp.pb_edition = this.selectedPbEdition.slug;
     }
     this.router.navigate(['/builder/new', this.selectedFormat], { queryParams: qp });
   }
@@ -129,9 +217,15 @@ export class FormatSelectComponent {
   backToFormats() {
     this.step = 'format';
     this.selectedSubFormat = '';
+    this.selectedPbEdition = null;
   }
 
   backToSubFormat() {
     this.step = 'sub_format';
+  }
+
+  backToPbEdition() {
+    this.step = 'pb_edition';
+    this.selectedPbEdition = null;
   }
 }

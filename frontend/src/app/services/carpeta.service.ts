@@ -23,6 +23,7 @@ export interface PublicStoreResponse extends PaginatedResponse<CollectionEntry> 
 export interface StoreFilters {
   page?: number;
   search?: string;
+  fmt?: string;
   edition?: string;
   race?: string;
   rarity?: string;

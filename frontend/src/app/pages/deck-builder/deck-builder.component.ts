@@ -122,6 +122,20 @@ export class DeckBuilderComponent implements OnInit {
     'hijos-del-sol', 'legado-gotico', 'escuelas_elementales',
     'steampunk', 'heroes_de_dharma',
   ];
+
+  /** Grupos de ediciones de Primer Bloque (slug grupo → slugs de ediciones). */
+  private readonly pbEditionGroups: Record<string, { name: string; slugs: string[] }> = {
+    'espada-sagrada':   { name: 'Espada Sagrada',   slugs: ['espada-sagrada', 'espada_sagrada_aniversario'] },
+    'helenica':         { name: 'Helénica',         slugs: ['helenica', 'helenica_aniversario'] },
+    'hijos-de-daana':   { name: 'Hijos de Daana',   slugs: ['hijos_de_daana'] },
+    'dominios-de-ra':   { name: 'Dominios de Ra',   slugs: ['dominios-de-ra'] },
+    'pb-dream':         { name: 'PB Dream',         slugs: [] },
+  };
+  /** Slug del grupo PB seleccionado (de query param). */
+  selectedPbEdition: string = '';
+  pbEditionName: string = '';
+  /** Slugs de edición a los que se restringe la búsqueda de cartas. */
+  private pbEditionScope: string[] = [];
   currentPage = 1;
   totalCards = 0;
   loading = false;
@@ -192,8 +206,19 @@ export class DeckBuilderComponent implements OnInit {
           'culto-tenebris': 'Culto Tenebris', 'vigilantes-etereos': 'Vigilantes Etéreos',
           'gremio-paladin': 'Gremio Paladín', 'clan-desafiante': 'Clan Desafiante',
           oscuridad: 'Oscuridad', luz: 'Luz',
+          olimpico: 'Olímpico', titan: 'Titán',
+          desafiante: 'Desafiante', defensor: 'Defensor', faraon: 'Faraón',
         };
         this.raceName = raceNames[race] || race;
+      }
+
+      // Read pb_edition (group slug) from query param
+      const pbEd = this.route.snapshot.queryParamMap.get('pb_edition');
+      if (pbEd && this.pbEditionGroups[pbEd]) {
+        this.selectedPbEdition = pbEd;
+        const grp = this.pbEditionGroups[pbEd];
+        this.pbEditionName = grp.name;
+        this.pbEditionScope = [...grp.slugs];
       }
 
       // Read sub_fmt from query param (vcr for VCR sub-format)
@@ -328,10 +353,18 @@ export class DeckBuilderComponent implements OnInit {
 
   loadCards() {
     this.loading = true;
+    // Si hay restricción PB por edición, fusionamos con la selección del usuario.
+    let editionParam = this.selectedEdition || '';
+    if (this.selectedFormat === 'pb' && this.pbEditionScope.length > 0) {
+      const userSelected = editionParam ? editionParam.split(',').filter(Boolean) : [];
+      // Intersect: si el usuario sub-selecciona dentro del scope, respetar; si no, usar todo el scope.
+      const inScope = userSelected.filter(s => this.pbEditionScope.includes(s));
+      editionParam = (inScope.length > 0 ? inScope : this.pbEditionScope).join(',');
+    }
     this.cardService.getCards({
       search: this.search || undefined,
       ability_search: this.abilitySearch || undefined,
-      edition: this.selectedEdition || undefined,
+      edition: editionParam || undefined,
       type: this.selectedType || undefined,
       rarity: this.selectedRarity || undefined,
       cost: this.selectedCost || undefined,
@@ -502,6 +535,8 @@ export class DeckBuilderComponent implements OnInit {
   filterEditions() {
     if (this.selectedFormat === 'esc') {
       this.editions = this.allEditions.filter(e => this.escEditionSlugs.includes(e.slug));
+    } else if (this.selectedFormat === 'pb' && this.pbEditionScope.length > 0) {
+      this.editions = this.allEditions.filter(e => this.pbEditionScope.includes(e.slug));
     } else {
       this.editions = this.allEditions.filter(e => e.format_code === this.selectedFormat);
     }

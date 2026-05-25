@@ -324,6 +324,24 @@ def _filter_store_qs(qs, params):
     search = params.get("search")
     if search:
         qs = qs.filter(card__name__icontains=search)
+    fmt = params.get("fmt")
+    if fmt:
+        codes = [c for c in fmt.split(",") if c]
+        if codes:
+            # Soporte para "esc" virtual (lista fija de slugs).
+            ESC_EDITION_SLUGS = [
+                "bushido", "sol-naciente",
+                "dominio", "contraataque", "aguila-imperial", "axis-mundi",
+                "hijos-del-sol", "legado-gotico", "escuelas_elementales",
+                "steampunk", "heroes_de_dharma",
+            ]
+            q = Q()
+            for code in codes:
+                if code == "esc":
+                    q |= Q(card__edition__slug__in=ESC_EDITION_SLUGS)
+                else:
+                    q |= Q(card__edition__format__code=code)
+            qs = qs.filter(q)
     edition = params.get("edition")
     if edition:
         qs = qs.filter(card__edition__slug=edition)

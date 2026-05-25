@@ -1,7 +1,7 @@
 <div class="builder-layout">
   <!-- Left panel: Card Browser -->
   <div class="card-browser">
-    <h2>Cartas Disponibles · {{ formatName }}@if (selectedSubFormat === 'vcr') { · VCR }@if (raceName) { · {{ raceName }} }</h2>
+    <h2>Cartas Disponibles · {{ formatName }}@if (pbEditionName) { · {{ pbEditionName }} }@if (selectedSubFormat === 'vcr') { · VCR }@if (raceName) { · {{ raceName }} }</h2>
     <div class="browser-filters">
       <div class="search-row">
         <div class="search-modes" role="tablist" aria-label="Modo de búsqueda">

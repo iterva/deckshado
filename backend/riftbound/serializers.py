@@ -101,6 +101,7 @@ class RiftboundDeckSerializer(serializers.ModelSerializer):
     entries = RiftboundDeckEntrySerializer(many=True, required=False)
     owner_username = serializers.CharField(source="owner.username", read_only=True)
     cover_card_data = RiftboundCardLiteSerializer(source="cover_card", read_only=True)
+    champion_unit_data = RiftboundCardLiteSerializer(source="champion_unit", read_only=True)
     validation = serializers.SerializerMethodField()
 
     class Meta:
@@ -108,6 +109,7 @@ class RiftboundDeckSerializer(serializers.ModelSerializer):
         fields = [
             "id", "name", "description", "format", "is_public",
             "primary_colors", "cover_card", "cover_card_data",
+            "champion_unit", "champion_unit_data",
             "owner", "owner_username",
             "entries", "validation",
             "created_at", "updated_at",

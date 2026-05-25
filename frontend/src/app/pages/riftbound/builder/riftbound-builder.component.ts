@@ -266,6 +266,28 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
           }
         </div>
 
+        <!-- Champion Unit designado (mismo tag que el legend) -->
+        @if (chosenLegend()) {
+          <div class="legend-banner cu-banner" [class.empty]="!championUnitData()">
+            @if (championUnitData(); as U) {
+              <img [src]="U.image" [alt]="U.name" class="legend-img" />
+              <div class="legend-info">
+                <span class="legend-tag cu-tag">CHAMPION UNIT</span>
+                <strong>{{ U.name }}</strong>
+                <span class="cu-num">{{ U.card_number }}</span>
+              </div>
+              <div class="legend-actions">
+                <button class="legend-btn" (click)="changeChampionUnit()">Cambiar</button>
+                <button class="legend-btn" (click)="clearChampionUnit()" title="Quitar designación">✕</button>
+              </div>
+            } @else {
+              <button class="choose-legend-btn cu-choose" (click)="openChampionUnitPicker()">
+                ⚔️ Elige tu Champion Unit ({{ championName() }})
+              </button>
+            }
+          </div>
+        }
+
         <div class="form-group">
           <label>Nombre del mazo</label>
           <input type="text" [(ngModel)]="deckName" placeholder="Mi mazo Riftbound" />
@@ -464,6 +486,44 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
             }
             @if (filteredLegends().length === 0) {
               <p class="muted center">Sin resultados.</p>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Modal Champion Unit Picker -->
+    @if (showChampionUnitPicker()) {
+      <div class="legend-picker-overlay" (click)="closeChampionUnitPicker()">
+        <div class="legend-picker-box" (click)="$event.stopPropagation()">
+          <div class="lp-head">
+            <h3>⚔️ Elige tu Champion Unit @if (championName()) { · {{ championName() }} }</h3>
+            <p class="muted">Unidades cuyo subtipo coincide con el nombre del legend. Se añadirá una copia al main si no estaba.</p>
+            <input type="search" [(ngModel)]="championUnitPickerSearch"
+                   placeholder="Buscar por nombre…" class="lp-search" />
+            <button class="lp-skip" (click)="closeChampionUnitPicker()">Cerrar</button>
+          </div>
+          @if (loadingChampionUnits()) {
+            <p class="muted center">Cargando unidades…</p>
+          }
+          <div class="lp-grid">
+            @for (U of filteredChampionUnits(); track U.id) {
+              <button type="button" class="lp-card" (click)="chooseChampionUnit(U)">
+                @if (U.image) {
+                  <img [src]="U.image" [alt]="U.name" />
+                } @else {
+                  <div class="lp-img-fallback">{{ U.card_number }}</div>
+                }
+                <div class="lp-name">{{ U.name }}</div>
+                <div class="lp-colors">
+                  @for (c of (U.colors || []); track c) {
+                    <span class="color-dot" [style.background]="colorHex(c)"></span>
+                  }
+                </div>
+              </button>
+            }
+            @if (!loadingChampionUnits() && filteredChampionUnits().length === 0) {
+              <p class="muted center">Sin unidades para este champion.</p>
             }
           </div>
         </div>
@@ -862,6 +922,12 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
     .legend-btn:hover { background: #2a4a5a; }
     .legend-btn.locked { background: #e94560; color: #0f0f23; border-color: #e94560; }
 
+    /* Champion Unit banner (variante del legend banner) */
+    .cu-banner { margin-top: .5rem; }
+    .cu-banner .legend-tag.cu-tag { background: #3aa6ff; color: #0f0f23; }
+    .cu-banner .cu-num { font-size: .7rem; opacity: .65; color: #98a2a8; }
+    .cu-choose { background: linear-gradient(135deg, #3aa6ff, #1e6bbf) !important; }
+
     /* Legend Picker modal */
     .legend-picker-overlay {
       position: fixed; inset: 0; z-index: 1100;
@@ -983,6 +1049,14 @@ export class RiftboundBuilderComponent implements OnInit {
   /** Si está activo, los filtros de colores quedan bloqueados a los del legend. */
   lockColorsToLegend = signal(true);
 
+  // Champion Unit (unidad designada con el mismo tag que el legend)
+  championUnitId = signal<number | null>(null);
+  championUnitData = signal<RiftboundCardLite | null>(null);
+  championUnitOptions = signal<RiftboundCardLite[]>([]);
+  showChampionUnitPicker = signal(false);
+  championUnitPickerSearch = '';
+  loadingChampionUnits = signal(false);
+
   // Deck entries
   entries = signal<Record<RiftboundZone, BuilderEntry[]>>({
     main: [], side: [], rune: [], champion: [], bg: [],
@@ -1059,6 +1133,12 @@ export class RiftboundBuilderComponent implements OnInit {
       }
     }
     this.entries.set(map);
+
+    // Champion unit + opciones
+    this.championUnitId.set(deck.champion_unit ?? null);
+    this.championUnitData.set(deck.champion_unit_data ?? null);
+    const legend = map.champion[0]?.card;
+    if (legend) this.loadChampionUnitsForLegend(legend);
   }
 
   // ── Búsqueda / filtros ──
@@ -1378,12 +1458,94 @@ export class RiftboundBuilderComponent implements OnInit {
     }
     this.showLegendPicker.set(false);
     this.page.set(1);
+    // Si cambia el legend, descartamos el champion unit anterior (subtype distinto)
+    this.championUnitId.set(null);
+    this.championUnitData.set(null);
+    this.championUnitOptions.set([]);
+    this.loadChampionUnitsForLegend(legend);
     this.reload();
   }
 
   changeLegend() {
     this.openLegendPicker();
   }
+
+  // ── Champion Unit ──
+  /** Nombre del champion derivado del legend ("Annie, Dark Child" → "Annie"). */
+  championName = computed<string | null>(() => {
+    const L = this.chosenLegend();
+    if (!L) return null;
+    const n = L.name || '';
+    return n.includes(',') ? n.split(',')[0].trim() : null;
+  });
+
+  /** Filtra los champion units por búsqueda. */
+  filteredChampionUnits = computed(() => {
+    const q = this.championUnitPickerSearch.trim().toLowerCase();
+    const list = this.championUnitOptions();
+    if (!q) return list;
+    return list.filter(u =>
+      u.name.toLowerCase().includes(q) ||
+      u.card_number.toLowerCase().includes(q),
+    );
+  });
+
+  /** Carga units cuyo subtype contiene el nombre del champion. */
+  private loadChampionUnitsForLegend(legend: RiftboundCardLite) {
+    const name = (legend.name || '').includes(',') ? legend.name.split(',')[0].trim() : '';
+    if (!name) return;
+    this.loadingChampionUnits.set(true);
+    const all: RiftboundCardLite[] = [];
+    const fetch = (p: number) => {
+      this.rb.listCards({ type: 'unit', subtype: name, lite: true, page: p }).subscribe({
+        next: (resp) => {
+          all.push(...(resp.results as RiftboundCardLite[]));
+          if (resp.next) {
+            fetch(p + 1);
+          } else {
+            this.championUnitOptions.set(all);
+            this.loadingChampionUnits.set(false);
+          }
+        },
+        error: () => this.loadingChampionUnits.set(false),
+      });
+    };
+    fetch(1);
+  }
+
+  openChampionUnitPicker() {
+    if (!this.chosenLegend()) return;
+    this.championUnitPickerSearch = '';
+    // Si todavía no hemos cargado las opciones, hazlo ahora
+    if (this.championUnitOptions().length === 0 && !this.loadingChampionUnits()) {
+      const L = this.chosenLegend();
+      if (L) this.loadChampionUnitsForLegend(L);
+    }
+    this.showChampionUnitPicker.set(true);
+  }
+  closeChampionUnitPicker() { this.showChampionUnitPicker.set(false); }
+
+  chooseChampionUnit(unit: RiftboundCardLite) {
+    this.championUnitId.set(unit.id);
+    this.championUnitData.set(unit);
+    // Asegura que la unidad esté en el main deck (1 copia mínimo)
+    const current = this.entries();
+    const existing = current.main.find(e => e.card.id === unit.id);
+    if (!existing) {
+      this.entries.set({
+        ...current,
+        main: [...current.main, { card: unit, quantity: 1, zone: 'main' }],
+      });
+    }
+    this.showChampionUnitPicker.set(false);
+  }
+
+  clearChampionUnit() {
+    this.championUnitId.set(null);
+    this.championUnitData.set(null);
+  }
+
+  changeChampionUnit() { this.openChampionUnitPicker(); }
 
   toggleLockColors() {
     this.lockColorsToLegend.update(v => !v);
@@ -1416,6 +1578,7 @@ export class RiftboundBuilderComponent implements OnInit {
       description: this.description,
       is_public: this.isPublic,
       cover_card: this.coverCardId() as any,
+      champion_unit: this.championUnitId() as any,
       entries: flat as RiftboundDeckEntry[],
     };
     const obs = this.deckId()

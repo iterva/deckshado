@@ -80,6 +80,8 @@ export interface RiftboundDeck {
   primary_colors: RiftboundColor[];
   cover_card: number | null;
   cover_card_data: RiftboundCardLite | null;
+  champion_unit?: number | null;
+  champion_unit_data?: RiftboundCardLite | null;
   owner: number;
   owner_username: string;
   entries: RiftboundDeckEntry[];

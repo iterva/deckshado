@@ -221,6 +221,12 @@ class RiftboundDeck(models.Model):
     cover_card = models.ForeignKey(
         RiftboundCard, on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
     )
+    # Champion Unit designado: una de las unidades del Main Deck cuyo subtype
+    # principal coincide con el nombre del champion legend (p.ej. "Annie, Stubborn"
+    # como champion unit del legend "Annie, Dark Child").
+    champion_unit = models.ForeignKey(
+        RiftboundCard, on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+    )
     primary_colors = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

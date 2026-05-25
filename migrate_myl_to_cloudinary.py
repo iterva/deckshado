@@ -62,7 +62,9 @@ def save_mapping(mapping):
 def get_target_cards():
     qs = (
         Card.objects.filter(
-            Q(edition__slug__in=ESC_EDITION_SLUGS) | Q(edition__format__code="imp")
+            Q(edition__slug__in=ESC_EDITION_SLUGS)
+            | Q(edition__format__code="imp")
+            | Q(edition__format__code="pb")
         )
         .exclude(edition__myl_id__startswith="custom_")
         .select_related("edition")

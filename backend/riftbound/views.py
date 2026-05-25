@@ -85,6 +85,14 @@ class RiftboundCardViewSet(viewsets.ReadOnlyModelViewSet):
                    if cs and any(c in color_set for c in cs)]
             qs = qs.filter(id__in=ids)
 
+        # ?subtype=Annie  → cartas cuyo JSONField `subtypes` contiene el valor
+        # (filtro en Python por compatibilidad con SQLite).
+        if (sub := (params.get("subtype") or "").strip()):
+            sub_l = sub.lower()
+            ids = [pk for pk, subs in qs.values_list("id", "subtypes")
+                   if subs and any((s or "").lower() == sub_l for s in subs)]
+            qs = qs.filter(id__in=ids)
+
         return qs
 
     def get_serializer_class(self):

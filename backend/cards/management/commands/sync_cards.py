@@ -1,3 +1,5 @@
+import json
+import os
 import requests
 from django.core.management.base import BaseCommand
 from django.conf import settings
@@ -212,11 +214,27 @@ class Command(BaseCommand):
             choices=ALL_FORMATS + ["all"],
             help="Formato a sincronizar: imp, pb, fx, 2b, pe, lbf, o 'all' para todo",
         )
+        parser.add_argument(
+            "--cache-dir",
+            type=str,
+            default=None,
+            help="Directorio con respuestas JSON pre-descargadas ({slug}.json). Usado cuando no hay acceso a la API (ej. PythonAnywhere free tier).",
+        )
+        parser.add_argument(
+            "--save-cache",
+            type=str,
+            default=None,
+            help="Directorio donde guardar las respuestas JSON descargadas (para construir el caché).",
+        )
 
     def handle(self, *args, **options):
         base_url = settings.MYL_API_BASE_URL
         edition_slug = options.get("edition")
         fmt = options.get("format")
+        cache_dir = options.get("cache_dir")
+        save_cache = options.get("save_cache")
+        if save_cache:
+            os.makedirs(save_cache, exist_ok=True)
 
         # Ensure all Format objects exist in the DB
         for code, name in FORMAT_NAMES.items():
@@ -237,17 +255,29 @@ class Command(BaseCommand):
 
         total_cards = 0
         for slug in slugs:
-            url = f"{base_url}/cards/edition/{slug}"
-            self.stdout.write(f"Consultando {url} ...")
+            data = None
+            if cache_dir:
+                cache_path = os.path.join(cache_dir, f"{slug}.json")
+                if not os.path.exists(cache_path):
+                    self.stderr.write(self.style.WARNING(f"  Caché no encontrado para {slug}: {cache_path}"))
+                    continue
+                self.stdout.write(f"Leyendo caché {cache_path} ...")
+                with open(cache_path, "r", encoding="utf-8") as fh:
+                    data = json.load(fh)
+            else:
+                url = f"{base_url}/cards/edition/{slug}"
+                self.stdout.write(f"Consultando {url} ...")
+                try:
+                    resp = requests.get(url, timeout=30)
+                    resp.raise_for_status()
+                except requests.RequestException as e:
+                    self.stderr.write(self.style.WARNING(f"  Error al consultar {slug}: {e}"))
+                    continue
+                data = resp.json()
+                if save_cache and data.get("status") == "OK":
+                    with open(os.path.join(save_cache, f"{slug}.json"), "w", encoding="utf-8") as fh:
+                        json.dump(data, fh, ensure_ascii=False)
 
-            try:
-                resp = requests.get(url, timeout=30)
-                resp.raise_for_status()
-            except requests.RequestException as e:
-                self.stderr.write(self.style.WARNING(f"  Error al consultar {slug}: {e}"))
-                continue
-
-            data = resp.json()
             if data.get("status") != "OK":
                 self.stderr.write(self.style.WARNING(f"  Respuesta no OK para {slug}"))
                 continue

@@ -13,6 +13,7 @@ from collections import defaultdict
 from django.core.management.base import BaseCommand
 
 from riftbound.models import RiftboundCard
+from riftbound.management.commands.reclassify_riftbound import classify
 
 
 # Cartas que la heuristica del scraper no detecta como `legend` y deben serlo.
@@ -51,6 +52,23 @@ class Command(BaseCommand):
     help = "Re-aplica fixes manuales de Riftbound (legend overrides + unificacion de colores)."
 
     def handle(self, *args, **opts):
+        # 0) Reclasificacion heuristica unit/spell/gear/battlefield/legend
+        # (replica la migracion 0006 reclassify_and_hide).
+        reclassified = 0
+        for card in RiftboundCard.objects.all():
+            new_type = classify(card)
+            if new_type != card.card_type:
+                card.card_type = new_type
+                card.save(update_fields=["card_type"])
+                reclassified += 1
+        self.stdout.write(self.style.SUCCESS(f"Reclasificadas por heuristica: {reclassified}"))
+
+        # 0.b) Ocultar cartas con arte placeholder ("/missing/").
+        hidden = RiftboundCard.objects.filter(
+            image_url__contains="/missing/", is_active=True
+        ).update(is_active=False)
+        self.stdout.write(self.style.SUCCESS(f"Ocultas (placeholder /missing/): {hidden}"))
+
         # 1) Forzar `card_type=legend` en cartas mal clasificadas.
         forced = 0
         for card in RiftboundCard.objects.all():

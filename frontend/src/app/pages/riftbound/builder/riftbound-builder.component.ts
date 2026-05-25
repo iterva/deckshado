@@ -141,7 +141,7 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
         }
 
         <div class="available-cards">
-          @for (card of results(); track card.id) {
+          @for (card of displayedResults(); track card.id) {
             <div class="mini-card"
                  [class.in-deck]="getQuantityInDeck(card.id) > 0"
                  [class.maxed]="getQuantityInDeck(card.id) >= getMaxCopies(card)"
@@ -217,7 +217,7 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
           }
         </div>
 
-        @if (!loading() && results().length === 0) {
+        @if (!loading() && displayedResults().length === 0) {
           <p class="muted center">Sin resultados.</p>
         }
 
@@ -1031,6 +1031,15 @@ export class RiftboundBuilderComponent implements OnInit {
   selectedColors = signal(new Set<RiftboundColor>());
 
   results = signal<RiftboundCardLite[]>([]);
+
+  /** Cartas mostradas en el listado: oculta los demás legends cuando ya hay
+   *  uno seleccionado (un mazo solo puede tener 1 Champion Legend). */
+  displayedResults = computed<RiftboundCardLite[]>(() => {
+    const list = this.results();
+    const L = this.chosenLegend();
+    if (!L) return list;
+    return list.filter(c => c.card_type !== 'legend' || c.id === L.id);
+  });
   loading = signal(false);
   page = signal(1);
   totalCount = signal(0);

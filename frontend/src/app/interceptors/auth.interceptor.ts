@@ -31,7 +31,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
           isRefreshing = true;
           const http = inject(HttpClient);
           return http
-            .post<{ access: string }>(
+            .post<{ access: string; refresh?: string }>(
               `${environment.apiUrl}/auth/refresh/`,
               { refresh: refreshToken }
             )
@@ -39,6 +39,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
               switchMap((tokens) => {
                 isRefreshing = false;
                 localStorage.setItem('access_token', tokens.access);
+                if (tokens.refresh) {
+                  localStorage.setItem('refresh_token', tokens.refresh);
+                }
                 const retryReq = req.clone({
                   setHeaders: { Authorization: `Bearer ${tokens.access}` },
                 });

@@ -1,11 +1,13 @@
 import { Routes } from '@angular/router';
 import { unsavedChangesGuard } from './guards/unsaved-changes.guard';
+import { gameModeHomeGuard } from './guards/game-mode-home.guard';
 
 export const routes: Routes = [
   {
     path: '',
     title: 'ShadowForge — Constructor de mazos Mitos y Leyendas (MYL)',
     data: { description: 'Arma, comparte y descubre mazos de Mitos y Leyendas. Banlist oficial, formatos Escuelas Elementales, Imperio y VCR Imperio, validador de decks y colección personal.' },
+    canMatch: [gameModeHomeGuard],
     loadComponent: () => import('./pages/home/home.component').then(m => m.HomeComponent)
   },
   {

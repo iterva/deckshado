@@ -31,17 +31,40 @@ export class GameModeService {
     const initial: GameMode = saved === 'riftbound' ? 'riftbound' : 'myl';
     this.applyMode(initial);
 
-    // Sincroniza con la URL: si abrimos /riftbound/* el modo se vuelve
-    // riftbound; si vamos a otra ruta volvemos a myl.
+    // Sincroniza con la URL:
+    // - `/riftbound/*` → modo riftbound.
+    // - Rutas exclusivas de MyL (`/cards`, `/decks`, `/builder`, `/carpeta`,
+    //   `/wordle`, `/banlist`, `/tienda`, `/t`, `/wishlist`, `/w`, `/tiendas`,
+    //   `/team`, `/`) → modo myl.
+    // - Rutas neutrales compartidas (`/login`, `/register`, `/profile`,
+    //   `/admin`) → no cambian el modo, así el usuario mantiene la
+    //   experiencia visual del juego en el que estaba.
     this.router.events
       .pipe(filter((e) => e instanceof NavigationEnd))
       .subscribe((e) => {
         const url = (e as NavigationEnd).urlAfterRedirects || '';
-        const next: GameMode = url.startsWith('/riftbound') ? 'riftbound' : 'myl';
-        if (next !== this.mode()) {
+        const next = this.detectModeFromUrl(url);
+        if (next && next !== this.mode()) {
           this.applyMode(next);
         }
       });
+  }
+
+  /**
+   * Devuelve el modo correspondiente a la URL, o `null` si la ruta es
+   * neutral (no debe cambiar el modo actual).
+   */
+  private detectModeFromUrl(url: string): GameMode | null {
+    if (url.startsWith('/riftbound')) return 'riftbound';
+
+    // Rutas neutrales (cuenta de usuario, autenticación, panel admin).
+    // No alteran el modo activo.
+    const neutralPrefixes = ['/login', '/register', '/profile', '/admin'];
+    if (neutralPrefixes.some((p) => url === p || url.startsWith(p + '/') || url.startsWith(p + '?'))) {
+      return null;
+    }
+
+    return 'myl';
   }
 
   /** Cambia de modo y navega a la home correspondiente. */

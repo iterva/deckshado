@@ -190,6 +190,13 @@
         </div>
       </div>
       <div class="filter-row">
+        <select [(ngModel)]="selectedFormat" (change)="onCodexFilter()">
+          <option value="">Todos los formatos</option>
+          <option value="imp">Imperio</option>
+          <option value="imp_r">Imperio Retro</option>
+          <option value="esc">Escuelas Elementales</option>
+          <option value="pb">Primer Bloque</option>
+        </select>
         <select [(ngModel)]="selectedEdition" (change)="onCodexFilter()">
           <option value="">Todas las ediciones</option>
           @for (ed of editions; track ed.id) {

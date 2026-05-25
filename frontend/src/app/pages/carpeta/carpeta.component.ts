@@ -49,6 +49,7 @@ export class CarpetaComponent implements OnInit {
   types: CardType[] = [];
   races: Race[] = [];
   rarities: Rarity[] = [];
+  selectedFormat = '';
   selectedEdition = '';
   selectedType = '';
   selectedRace = '';
@@ -253,6 +254,7 @@ export class CarpetaComponent implements OnInit {
     this.codexLoading = true;
     this.cardService.getCards({
       search: this.codexSearch || undefined,
+      format: this.selectedFormat || undefined,
       edition: this.selectedEdition || undefined,
       type: this.selectedType || undefined,
       race: this.selectedRace || undefined,

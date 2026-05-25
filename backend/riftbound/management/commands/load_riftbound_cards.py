@@ -123,3 +123,9 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(
             f"Cartas: {created} creadas, {updated} actualizadas (total {created+updated})"
         ))
+
+        # Re-aplicar fixes manuales (legend overrides + colores) que viven
+        # solo en migraciones one-shot y se pisan con cada recarga.
+        from django.core.management import call_command
+        self.stdout.write("Re-aplicando fixes manuales...")
+        call_command("apply_riftbound_fixes")

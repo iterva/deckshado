@@ -462,7 +462,7 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
           <div class="lp-head">
             <h3>👑 Elige tu Champion Legend</h3>
             <p class="muted">Las cartas se filtrarán automáticamente por los colores del legend.</p>
-            <input type="search" [(ngModel)]="legendPickerSearch"
+            <input type="search" [ngModel]="legendPickerSearch()" (ngModelChange)="legendPickerSearch.set($event)"
                    placeholder="Buscar por nombre…" class="lp-search" />
             @if (chosenLegend()) {
               <button class="lp-skip" (click)="closeLegendPicker()">Mantener actual</button>
@@ -499,7 +499,7 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
           <div class="lp-head">
             <h3>⚔️ Elige tu Champion Unit @if (championName()) { · {{ championName() }} }</h3>
             <p class="muted">Unidades cuyo subtipo coincide con el nombre del legend. Se añadirá una copia al main si no estaba.</p>
-            <input type="search" [(ngModel)]="championUnitPickerSearch"
+            <input type="search" [ngModel]="championUnitPickerSearch()" (ngModelChange)="championUnitPickerSearch.set($event)"
                    placeholder="Buscar por nombre…" class="lp-search" />
             <button class="lp-skip" (click)="closeChampionUnitPicker()">Cerrar</button>
           </div>
@@ -1045,7 +1045,7 @@ export class RiftboundBuilderComponent implements OnInit {
   // Champion-first wizard
   legendOptions = signal<RiftboundCardLite[]>([]);
   showLegendPicker = signal(false);
-  legendPickerSearch = '';
+  legendPickerSearch = signal('');
   /** Si está activo, los filtros de colores quedan bloqueados a los del legend. */
   lockColorsToLegend = signal(true);
 
@@ -1054,7 +1054,7 @@ export class RiftboundBuilderComponent implements OnInit {
   championUnitData = signal<RiftboundCardLite | null>(null);
   championUnitOptions = signal<RiftboundCardLite[]>([]);
   showChampionUnitPicker = signal(false);
-  championUnitPickerSearch = '';
+  championUnitPickerSearch = signal('');
   loadingChampionUnits = signal(false);
 
   // Deck entries
@@ -1433,7 +1433,7 @@ export class RiftboundBuilderComponent implements OnInit {
 
   /** Filtra los legends por búsqueda. */
   filteredLegends = computed(() => {
-    const q = this.legendPickerSearch.trim().toLowerCase();
+    const q = this.legendPickerSearch().trim().toLowerCase();
     const list = this.legendOptions();
     if (!q) return list;
     return list.filter(l =>
@@ -1443,7 +1443,7 @@ export class RiftboundBuilderComponent implements OnInit {
   });
 
   openLegendPicker() {
-    this.legendPickerSearch = '';
+    this.legendPickerSearch.set('');
     this.showLegendPicker.set(true);
   }
   closeLegendPicker() { this.showLegendPicker.set(false); }
@@ -1481,7 +1481,7 @@ export class RiftboundBuilderComponent implements OnInit {
 
   /** Filtra los champion units por búsqueda. */
   filteredChampionUnits = computed(() => {
-    const q = this.championUnitPickerSearch.trim().toLowerCase();
+    const q = this.championUnitPickerSearch().trim().toLowerCase();
     const list = this.championUnitOptions();
     if (!q) return list;
     return list.filter(u =>
@@ -1515,7 +1515,7 @@ export class RiftboundBuilderComponent implements OnInit {
 
   openChampionUnitPicker() {
     if (!this.chosenLegend()) return;
-    this.championUnitPickerSearch = '';
+    this.championUnitPickerSearch.set('');
     // Si todavía no hemos cargado las opciones, hazlo ahora
     if (this.championUnitOptions().length === 0 && !this.loadingChampionUnits()) {
       const L = this.chosenLegend();

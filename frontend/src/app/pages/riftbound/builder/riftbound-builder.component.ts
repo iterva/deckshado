@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -234,6 +234,11 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
       <div class="deck-panel" [class.mobile-visible]="showDeckPanel()">
         <div class="deck-header">
           <h2>{{ deckId() ? 'Editar Mazo' : 'Nuevo Mazo' }}</h2>
+          @if (!deckId() && totalEntries() > 0) {
+            <button class="discard-draft-btn" (click)="discardDraft()" title="Descartar borrador local">
+              🗑️ Descartar borrador
+            </button>
+          }
           <button class="mobile-close-btn" (click)="showDeckPanel.set(false)">✕</button>
         </div>
 
@@ -1000,7 +1005,7 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
     :host-context(body.light-theme) .zone-empty { color: #6a5a3a; }
   `],
 })
-export class RiftboundBuilderComponent implements OnInit {
+export class RiftboundBuilderComponent implements OnInit, OnDestroy {
   private rb = inject(RiftboundService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -1084,6 +1089,9 @@ export class RiftboundBuilderComponent implements OnInit {
     if (id) {
       this.deckId.set(+id);
       this.rb.getDeck(+id).subscribe({ next: (deck) => this.loadFromDeck(deck) });
+    } else {
+      // Mazo nuevo: intentar restaurar borrador local
+      this.restoreDraft();
     }
     this.rb.listSets().subscribe({
       next: (sets: any) => {
@@ -1579,6 +1587,125 @@ export class RiftboundBuilderComponent implements OnInit {
     return this.colors.find(c => c.code === code)?.hex ?? '#888';
   }
 
+  // ── Borrador en localStorage ──
+  /** Clave de localStorage para borradores de mazos nuevos. */
+  private readonly DRAFT_KEY = 'riftbound:builder:draft:v1';
+
+  /** Guarda el estado actual (solo para mazos nuevos, no para edicion). */
+  saveDraft() {
+    if (this.deckId()) return; // editando uno existente: no guardamos borrador
+    try {
+      const entries = this.entries();
+      const flat: { card_id: number; quantity: number; zone: RiftboundZone }[] = [];
+      for (const z of this.zones) {
+        for (const e of entries[z]) {
+          flat.push({ card_id: e.card.id, quantity: e.quantity, zone: z });
+        }
+      }
+      // Snapshot de las cartas (para reconstruir entries sin volver a pedir al backend).
+      const cardSnapshots: Record<number, RiftboundCardLite> = {};
+      for (const z of this.zones) {
+        for (const e of entries[z]) cardSnapshots[e.card.id] = e.card;
+      }
+      const cu = this.championUnitData();
+      if (cu) cardSnapshots[cu.id] = cu;
+
+      const draft = {
+        savedAt: Date.now(),
+        deckName: this.deckName,
+        description: this.description,
+        isPublic: this.isPublic,
+        coverCardId: this.coverCardId(),
+        championUnitId: this.championUnitId(),
+        entries: flat,
+        cardSnapshots,
+      };
+      localStorage.setItem(this.DRAFT_KEY, JSON.stringify(draft));
+    } catch {
+      // localStorage lleno o no disponible: ignorar silenciosamente.
+    }
+  }
+
+  /** Restaura un borrador previo si existe. Devuelve true si lo aplico. */
+  restoreDraft(): boolean {
+    try {
+      const raw = localStorage.getItem(this.DRAFT_KEY);
+      if (!raw) return false;
+      const draft = JSON.parse(raw);
+      if (!draft || typeof draft !== 'object') return false;
+
+      this.deckName = draft.deckName ?? this.deckName;
+      this.description = draft.description ?? '';
+      this.isPublic = draft.isPublic ?? true;
+      this.coverCardId.set(draft.coverCardId ?? null);
+      this.championUnitId.set(draft.championUnitId ?? null);
+
+      const snapshots: Record<number, RiftboundCardLite> = draft.cardSnapshots ?? {};
+      const map: Record<RiftboundZone, BuilderEntry[]> = {
+        main: [], side: [], rune: [], champion: [], bg: [],
+      };
+      for (const e of (draft.entries ?? []) as { card_id: number; quantity: number; zone: RiftboundZone }[]) {
+        const card = snapshots[e.card_id];
+        if (card && map[e.zone]) {
+          map[e.zone].push({ card, quantity: e.quantity, zone: e.zone });
+        }
+      }
+      this.entries.set(map);
+
+      // Champion unit data desde snapshots
+      const cuId = this.championUnitId();
+      if (cuId && snapshots[cuId]) this.championUnitData.set(snapshots[cuId]);
+
+      // Si el borrador tenia legend, recargar opciones de champion units
+      const legend = map.champion[0]?.card;
+      if (legend) this.loadChampionUnitsForLegend(legend);
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Borra el borrador de localStorage. */
+  clearDraft() {
+    try { localStorage.removeItem(this.DRAFT_KEY); } catch { /* noop */ }
+  }
+
+  /** Descarta el borrador y limpia el formulario. */
+  discardDraft() {
+    if (!confirm('¿Descartar el borrador actual? Se perdera lo que tengas sin guardar.')) return;
+    this.clearDraft();
+    this.deckName = 'Nuevo mazo Riftbound';
+    this.description = '';
+    this.isPublic = true;
+    this.coverCardId.set(null);
+    this.championUnitId.set(null);
+    this.championUnitData.set(null);
+    this.championUnitOptions.set([]);
+    this.entries.set({ main: [], side: [], rune: [], champion: [], bg: [] });
+    this.errors.set([]);
+  }
+
+  /** ¿Hay algun contenido digno de guardar? */
+  private hasDraftContent(): boolean {
+    if (this.deckId()) return false;
+    const e = this.entries();
+    for (const z of this.zones) if (e[z].length > 0) return true;
+    if (this.championUnitId()) return true;
+    if ((this.deckName || '').trim() && this.deckName !== 'Nuevo mazo Riftbound') return true;
+    if ((this.description || '').trim()) return true;
+    return false;
+  }
+
+  ngOnDestroy() {
+    if (this.hasDraftContent()) this.saveDraft();
+  }
+
+  @HostListener('window:beforeunload')
+  onBeforeUnload() {
+    if (this.hasDraftContent()) this.saveDraft();
+  }
+
   // ── Save ──
   save() {
     this.saving.set(true);
@@ -1610,6 +1737,7 @@ export class RiftboundBuilderComponent implements OnInit {
           return;
         }
         // Guardado correcto -> ir a la vista del mazo
+        this.clearDraft();
         this.router.navigate(['/riftbound/decks', deck.id]);
       },
       error: (err) => {

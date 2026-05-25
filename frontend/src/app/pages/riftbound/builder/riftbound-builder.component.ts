@@ -1479,10 +1479,17 @@ export class RiftboundBuilderComponent implements OnInit {
     return n.includes(',') ? n.split(',')[0].trim() : null;
   });
 
-  /** Filtra los champion units por búsqueda. */
+  /** Filtra los champion units por búsqueda. Excluye Signature Units
+   *  (unidades que tienen al champion como subtype pero cuyo nombre no
+   *  empieza con "<champion>,", ej. Tibbers para Annie). */
   filteredChampionUnits = computed(() => {
     const q = this.championUnitPickerSearch().trim().toLowerCase();
-    const list = this.championUnitOptions();
+    const champion = (this.championName() || '').toLowerCase();
+    let list = this.championUnitOptions();
+    if (champion) {
+      const prefix = champion + ',';
+      list = list.filter(u => (u.name || '').toLowerCase().startsWith(prefix));
+    }
     if (!q) return list;
     return list.filter(u =>
       u.name.toLowerCase().includes(q) ||

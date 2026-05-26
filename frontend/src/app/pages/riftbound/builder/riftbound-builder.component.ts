@@ -1234,10 +1234,12 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
    * y luego por nombre. Devuelve una copia, no muta el signal.
    */
   sortedEntries(z: RiftboundZone): BuilderEntry[] {
+    // Orden: tipo (unidad → hechizo → equipo → resto) → cantidad desc (3,2,1) → nombre.
     return [...this.entries()[z]].sort((a, b) => {
       const ra = typeRank(a.card.card_type);
       const rb = typeRank(b.card.card_type);
       if (ra !== rb) return ra - rb;
+      if (b.quantity !== a.quantity) return b.quantity - a.quantity;
       return (a.card.name ?? '').localeCompare(b.card.name ?? '');
     });
   }

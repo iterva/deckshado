@@ -1054,11 +1054,12 @@ export class RiftboundDeckViewComponent implements OnInit {
 
   entriesByZone(z: RiftboundZone): RiftboundDeckEntry[] {
     const list = this.deck()?.entries.filter(e => e.zone === z) ?? [];
-    // Orden estable por tipo (unidad → hechizo → equipo → resto), luego por nombre.
+    // Orden: tipo (unidad → hechizo → equipo → resto) → cantidad desc (3,2,1) → nombre.
     return [...list].sort((a, b) => {
       const ra = typeRank(a.card_data?.card_type);
       const rb = typeRank(b.card_data?.card_type);
       if (ra !== rb) return ra - rb;
+      if (b.quantity !== a.quantity) return b.quantity - a.quantity;
       return (a.card_data?.name ?? '').localeCompare(b.card_data?.name ?? '');
     });
   }

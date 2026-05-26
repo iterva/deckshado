@@ -110,6 +110,7 @@ FORCE_GEAR_NUMBERS = {
     "UNL-039",  # Soul Sword
     "UNL-045",  # Forgotten Signpost
     "UNL-074",  # Frigid Jewel
+    "UNL-188",  # Hextech Gauntlets
 }
 
 
@@ -119,6 +120,13 @@ FORCE_UNIT_NUMBERS = {
     "UNL-012",  # Lord Broadmane
     "UNL-018",  # Yeti Brawler
     "UNL-021",  # Grim Apothecary
+    "UNL-053",  # Scuttle Crab
+    "UNL-060",  # Vilemaw
+    "UNL-060a",  # Vilemaw (variant)
+    "UNL-071",  # Chakram Dancer
+    "UNL-093",  # Dragonsoul Sage
+    "UNL-166",  # Stalking Wolf
+    "UNL-194",  # Shadow
 }
 
 

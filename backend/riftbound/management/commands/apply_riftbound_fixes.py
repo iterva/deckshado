@@ -126,10 +126,16 @@ class Command(BaseCommand):
     help = "Re-aplica fixes manuales de Riftbound (legend overrides + unificacion de colores)."
 
     def handle(self, *args, **opts):
+        # Conjunto de overrides manuales: estas cartas NO deben tocarse por la heuristica.
+        manual_overrides = LEGEND_NUMBERS | FORCE_GEAR_NUMBERS | FORCE_UNIT_NUMBERS
+
         # 0) Reclasificacion heuristica unit/spell/gear/battlefield/legend
         # (replica la migracion 0006 reclassify_and_hide).
         reclassified = 0
         for card in RiftboundCard.objects.all():
+            base = (card.card_number or "").rstrip("*").strip()
+            if base in manual_overrides:
+                continue  # respeta overrides manuales
             new_type = classify(card)
             if new_type != card.card_type:
                 card.card_type = new_type

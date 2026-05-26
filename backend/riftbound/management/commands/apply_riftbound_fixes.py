@@ -40,6 +40,39 @@ LEGEND_NUMBERS = {
 }
 
 
+# Cartas que la heuristica clasifica como `spell` (u otro) pero en realidad son gears.
+# Fuente: revision manual de imagenes (tag "GEAR" visible en la carta).
+FORCE_GEAR_NUMBERS = {
+    "OGN-063",  # Spirit's Refuge
+    "OGN-098",  # Energy Conduit
+    "OGN-101",  # Mushroom Pouch
+    "OGN-120",  # Seal of Insight
+    "OGN-143",  # Pirate's Haven
+    "OGN-152",  # Mistfall
+    "OGN-160",  # Dazzling Aurora
+    "OGN-163",  # Seal of Strength
+    "OGN-182",  # Scrapheap
+    "OGN-204",  # Seal of Discord
+    "OGN-212",  # Forge of the Future
+    "OGN-227",  # Symbol of the Solari
+    "OGN-228",  # Vanguard Helm
+    "OGN-245",  # Seal of Unity
+    "SFD-009",  # Serrated Dirk
+    "SFD-016",  # Recurve Bow
+    "SFD-022",  # Long Sword
+    "SFD-030",  # Skyfall of Areion
+    "SFD-033",  # Doran's Shield
+    "SFD-042",  # Brutalizer
+    "SFD-051",  # Guardian Angel
+    "SFD-056",  # Sterak's Gage
+    "SFD-059",  # Svellsongur
+    "SFD-063",  # Chemtech Cask
+    "SFD-064",  # Cloth Armor
+    "SFD-115",  # Trinity Force
+    "SFD-117",  # Ancient Henge
+}
+
+
 # Colores canonicos por card_number base (ignora sufijo `*`).
 CANONICAL_COLORS = {
     "OGS-017": ["chaos", "fury"],   # Annie, Dark Child
@@ -78,6 +111,16 @@ class Command(BaseCommand):
                 card.save(update_fields=["card_type"])
                 forced += 1
         self.stdout.write(self.style.SUCCESS(f"Forzadas a legend: {forced}"))
+
+        # 1.b) Forzar `card_type=gear` en cartas mal clasificadas (spells que son gears).
+        forced_gear = 0
+        for card in RiftboundCard.objects.all():
+            base = (card.card_number or "").rstrip("*").strip()
+            if base in FORCE_GEAR_NUMBERS and card.card_type != "gear":
+                card.card_type = "gear"
+                card.save(update_fields=["card_type"])
+                forced_gear += 1
+        self.stdout.write(self.style.SUCCESS(f"Forzadas a gear: {forced_gear}"))
 
         # 2) Override explicito de colores por card_number.
         overridden = 0

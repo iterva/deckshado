@@ -43,7 +43,12 @@ LEGEND_NUMBERS = {
 # Cartas que la heuristica clasifica como `spell` (u otro) pero en realidad son gears.
 # Fuente: revision manual de imagenes (tag "GEAR" visible en la carta).
 FORCE_GEAR_NUMBERS = {
+    "OGN-040",  # Seal of Rage
+    "OGN-060",  # Mask of Foresight
     "OGN-063",  # Spirit's Refuge
+    "OGN-072",  # Solari Shrine
+    "OGN-077",  # Zhonya's Hourglass
+    "OGN-081",  # Seal of Focus
     "OGN-098",  # Energy Conduit
     "OGN-101",  # Mushroom Pouch
     "OGN-120",  # Seal of Insight
@@ -68,8 +73,20 @@ FORCE_GEAR_NUMBERS = {
     "SFD-059",  # Svellsongur
     "SFD-063",  # Chemtech Cask
     "SFD-064",  # Cloth Armor
+    "SFD-073",  # Experimental Hexplate
+    "SFD-083",  # Hextech Anomaly
+    "SFD-086",  # World Atlas
+    "SFD-090",  # The Zero Drive
+    "SFD-095",  # Doran's Blade
+    "SFD-102",  # Hexdrinker
+    "SFD-104",  # Petricite Monument
+    "SFD-108",  # Warmog's Armor
     "SFD-115",  # Trinity Force
     "SFD-117",  # Ancient Henge
+    "SFD-118",  # Boneshiver
+    "SFD-124",  # Doran's Ring
+    "SFD-133",  # Boots of Swiftness
+    "SFD-134",  # Cull
 }
 
 

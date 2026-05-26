@@ -87,6 +87,30 @@ FORCE_GEAR_NUMBERS = {
     "SFD-124",  # Doran's Ring
     "SFD-133",  # Boots of Swiftness
     "SFD-134",  # Cull
+    "SFD-139",  # Edge of Night
+    "SFD-144",  # Spirit Wheel
+    "SFD-150",  # Last Rites
+    "SFD-153",  # Eye of the Herald
+    "SFD-161",  # B.F. Sword
+    "SFD-169",  # Altar of Memories
+    "SFD-172",  # Sacred Shears
+    "SFD-178",  # Blade of the Ruined King
+    "SFD-186",  # Spinning Axe
+    "SFD-190",  # Forgefire Cape
+    "SFD-191",  # Rabadon's Deathcrown
+    "SFD-192",  # Shurelya's Requiem
+    "SFD-222",  # Seal of Rage
+    "SFD-226",  # Seal of Focus
+    "SFD-229",  # Seal of Insight
+    "SFD-231",  # Seal of Strength
+    "SFD-234",  # Seal of Discord
+    "SFD-238",  # Seal of Unity
+}
+
+
+# Cartas mal clasificadas que en realidad son units (tag "UNIT" visible).
+FORCE_UNIT_NUMBERS = {
+    "UNL-002",  # Inferna
 }
 
 
@@ -138,6 +162,16 @@ class Command(BaseCommand):
                 card.save(update_fields=["card_type"])
                 forced_gear += 1
         self.stdout.write(self.style.SUCCESS(f"Forzadas a gear: {forced_gear}"))
+
+        # 1.c) Forzar `card_type=unit` en cartas mal clasificadas (units que aparecen como spell).
+        forced_unit = 0
+        for card in RiftboundCard.objects.all():
+            base = (card.card_number or "").rstrip("*").strip()
+            if base in FORCE_UNIT_NUMBERS and card.card_type != "unit":
+                card.card_type = "unit"
+                card.save(update_fields=["card_type"])
+                forced_unit += 1
+        self.stdout.write(self.style.SUCCESS(f"Forzadas a unit: {forced_unit}"))
 
         # 2) Override explicito de colores por card_number.
         overridden = 0

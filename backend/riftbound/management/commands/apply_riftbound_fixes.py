@@ -108,6 +108,7 @@ FORCE_GEAR_NUMBERS = {
     "UNL-011",  # Fresh Beans
     "UNL-019",  # Blighted Battleaxe
     "UNL-039",  # Soul Sword
+    "UNL-045",  # Forgotten Signpost
 }
 
 

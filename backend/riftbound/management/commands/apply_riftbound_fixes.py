@@ -109,7 +109,15 @@ FORCE_GEAR_NUMBERS = {
     "UNL-019",  # Blighted Battleaxe
     "UNL-039",  # Soul Sword
     "UNL-045",  # Forgotten Signpost
+    "UNL-049",  # Honeyfruit
     "UNL-074",  # Frigid Jewel
+    "UNL-078",  # Sprite Fountain
+    "UNL-085",  # Sumpworks Map
+    "UNL-096",  # Hunter's Machete
+    "UNL-133",  # Blast Cone
+    "UNL-158",  # Shepherd's Heirloom
+    "UNL-161",  # Divining Shells
+    "UNL-174",  # Shard of Undoing
     "UNL-188",  # Hextech Gauntlets
 }
 

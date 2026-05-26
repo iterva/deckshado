@@ -33,6 +33,15 @@ const TYPE_COLOR: Record<string, string> = {
   rune: '#c084fc', battlefield: '#fb7185', champion: '#ffbd39', other: '#888',
 };
 
+/** Orden por tipo para organizar el mazo: unidad → hechizo → equipo → resto. */
+const TYPE_ORDER: Record<string, number> = {
+  unit: 1, spell: 2, gear: 3,
+  champion: 4, legend: 5, rune: 6, battlefield: 7,
+};
+function typeRank(t?: string): number {
+  return TYPE_ORDER[(t ?? '').toLowerCase()] ?? 99;
+}
+
 @Component({
   selector: 'app-riftbound-deck-view',
   standalone: true,
@@ -1044,7 +1053,14 @@ export class RiftboundDeckViewComponent implements OnInit {
   }
 
   entriesByZone(z: RiftboundZone): RiftboundDeckEntry[] {
-    return this.deck()?.entries.filter(e => e.zone === z) ?? [];
+    const list = this.deck()?.entries.filter(e => e.zone === z) ?? [];
+    // Orden estable por tipo (unidad → hechizo → equipo → resto), luego por nombre.
+    return [...list].sort((a, b) => {
+      const ra = typeRank(a.card_data?.card_type);
+      const rb = typeRank(b.card_data?.card_type);
+      if (ra !== rb) return ra - rb;
+      return (a.card_data?.name ?? '').localeCompare(b.card_data?.name ?? '');
+    });
   }
 
   countZone(z: RiftboundZone): number {

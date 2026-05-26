@@ -37,6 +37,15 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
   main: 'main', side: 'side', rune: 'rune', champion: 'champion', bg: 'bg',
 };
 
+/** Orden por tipo para organizar el mazo: unidad → hechizo → equipo → resto. */
+const TYPE_ORDER: Record<string, number> = {
+  unit: 1, spell: 2, gear: 3,
+  champion: 4, legend: 5, rune: 6, battlefield: 7,
+};
+function typeRank(t?: string): number {
+  return TYPE_ORDER[(t ?? '').toLowerCase()] ?? 99;
+}
+
 @Component({
   selector: 'app-riftbound-builder',
   standalone: true,
@@ -365,7 +374,7 @@ const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
             @if (entries()[z].length === 0) {
               <p class="zone-empty">Vacío. Añade cartas desde el catálogo.</p>
             }
-            @for (e of entries()[z]; track e.card.id) {
+            @for (e of sortedEntries(z); track e.card.id) {
               <div class="deck-entry" [class.is-cover]="coverCardId() === e.card.id">
                 <button type="button"
                         class="cover-star"
@@ -1218,6 +1227,19 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
   // ── Helpers de zona ──
   zoneCount(z: RiftboundZone): number {
     return this.entries()[z].reduce((s, e) => s + e.quantity, 0);
+  }
+
+  /**
+   * Entradas de una zona ordenadas por tipo (unidad → hechizo → equipo → resto)
+   * y luego por nombre. Devuelve una copia, no muta el signal.
+   */
+  sortedEntries(z: RiftboundZone): BuilderEntry[] {
+    return [...this.entries()[z]].sort((a, b) => {
+      const ra = typeRank(a.card.card_type);
+      const rb = typeRank(b.card.card_type);
+      if (ra !== rb) return ra - rb;
+      return (a.card.name ?? '').localeCompare(b.card.name ?? '');
+    });
   }
 
   totalEntries = computed(() => {

@@ -155,6 +155,65 @@ CANONICAL_COLORS = {
 }
 
 
+# Descripciones de battlefields extraidas manualmente de las imagenes oficiales.
+# El scraper no captura este texto porque esta rotado 180deg en las cartas verticales.
+BATTLEFIELD_DESCRIPTIONS = {
+    # --- OGN ---
+    "OGN-275": "When you hold here, play a 1 Recruit unit token in your base.",
+    "OGN-276": "Increase the points needed to win the game by 1.",
+    "OGN-277": "When a unit moves from here, give it +1 Might this turn.",
+    "OGN-278": "You may hide an additional card here.",
+    "OGN-279": "When you defend here, choose a unit. It gains Shield 2 this combat. (+2 Might while it's a defender.)",
+    "OGN-280": "When you hold here, draw 1.",
+    "OGN-281": "When you hold here, you may return your Chosen Champion from your trash to your Champion Zone if it is empty.",
+    "OGN-282": "When you conquer here, you may spend a buff to draw 1.",
+    "OGN-283": "When you hold here, buff a unit here. (If it doesn't have a buff, it gets a +1 Might buff.)",
+    "OGN-286": "When you hold here, activate the conquer effects of units here.",
+    "OGN-287": "When you conquer here, recycle one of your runes.",
+    "OGN-288": "When you hold here, you may channel 1 rune exhausted.",
+    "OGN-289": "When you conquer here, ready 2 runes at the end of this turn.",
+    "OGN-291": "When you conquer here, look at the top two cards of your Main Deck. You may recycle one or both of them. Put those you don't back in any order.",
+    "OGN-293": "When you hold here, if you have 7+ units here, you win the game.",
+    "OGN-294": "Units here have +1 Might. (This includes attackers.)",
+    "OGN-295": "Units can't move from here to base.",
+    "OGN-296": "Spells and abilities affecting units here each deal 1 Bonus Damage. (Each instance of damage the spell deals is increased by 1.)",
+    "OGN-297": "Units here have Ganking. (They can move from battlefield to battlefield.)",
+    "OGN-298": "When you conquer here, discard 1, then draw 1.",
+    # --- SFD ---
+    "SFD-207": "When you conquer here, you may pay 1 and return a unit you control here to its owner's hand. If you do, play a 2 Power Sand Soldier unit token here.",
+    "SFD-208": "While you control this battlefield, friendly legends have \"[Recycle]: Attach an Equipment you control to a unit you control.\"",
+    "SFD-209": "Players can't score here until their third turn.",
+    "SFD-210": "When you conquer here, you may pay 1 to ready your legend.",
+    "SFD-211": "While you control this battlefield, friendly REPEAT costs cost 1 less.",
+    "SFD-212": "When you conquer here, put the top 2 cards of your Main Deck into your trash.",
+    "SFD-213": "While you control this battlefield, the first friendly non-token gear played each turn costs 1 less.",
+    "SFD-214": "When you hold here, you may pay 4 Power to score 1 point.",
+    "SFD-215": "When you defend here, reveal the top card of your Main Deck. If it's a spell, put it in your hand. Otherwise, recycle it.",
+    "SFD-216": "Units can't be played here.",
+    "SFD-217": "When you conquer here, draw 1 for each other battlefield you or allies control.",
+    "SFD-218": "When you conquer here with one or more MIGHTY units, you may pay 1 to draw 1. (A unit is Mighty while it has 5+ Might.)",
+    "SFD-219": "When you hold here, each player channels 1 rune exhausted.",
+    "SFD-220": "When you conquer here, you may pay 1 to play a Gold gear token exhausted.",
+    "SFD-221": "When you conquer here, you may ready a friendly gear. If it's an Equipment, you may detach it.",
+    # --- UNL ---
+    "UNL-205": "When a player plays a spell, they may give a unit they control here +1 Might this turn.",
+    "UNL-206": "If a unit here would die during combat, its controller may pay 3 to heal it, exhaust it, and recall it instead.",
+    "UNL-207": "When you hold here, you may move a unit at a battlefield to its base.",
+    "UNL-208": "Units here with TEMPORARY have SHIELD. (+1 Might while they're defenders.)",
+    "UNL-209": "At the start of your Beginning Phase, you may kill a unit you control here to draw 1. (This happens before scoring.)",
+    "UNL-210": "While a unit here is defending alone, it has -2 Might. (It's alone if there are no other friendly units here.)",
+    "UNL-211": "While you control this battlefield, when you play a spell, if you spent 4 or more, PREDICT. (Look at the top card of your Main Deck. You may recycle it.)",
+    "UNL-212": "At the start of each player's Beginning Phase, deal 1 to each unit here. (This happens before scoring.)",
+    "UNL-213": "Units here have \"[Recycle]: Gain 1 XP.\"",
+    "UNL-214": "When a unit here is returned to a player's hand, that player may pay 1 to channel 1 rune exhausted.",
+    "UNL-215": "The first time a player plays a non-token unit here each turn, they may move another unit they control here to its base.",
+    "UNL-216": "When you hold here, give your next spell this turn REPEAT equal to its base cost. (You may pay the additional cost to repeat the spell's effect.)",
+    "UNL-217": "When you conquer here, if you assigned 3 or more excess damage, play a 1 Bird unit token with DEFLECT.",
+    "UNL-218": "When a player plays a unit here, they may pay 1 to BUFF it. (Give it a +1 buff if it doesn't have one.)",
+    "UNL-219": "When you hold here, your non-token units cost 1 more to play this turn.",
+}
+
+
 class Command(BaseCommand):
     help = "Re-aplica fixes manuales de Riftbound (legend overrides + unificacion de colores)."
 
@@ -250,5 +309,16 @@ class Command(BaseCommand):
                     c.save(update_fields=["colors"])
                     unified += 1
         self.stdout.write(self.style.SUCCESS(f"Colores unificados entre variantes: {unified}"))
+
+        # 4) Descripciones de battlefields (texto oculto por estar rotado en la imagen).
+        bf_desc = 0
+        for base, desc in BATTLEFIELD_DESCRIPTIONS.items():
+            for card in RiftboundCard.objects.filter(card_number__startswith=base):
+                # Solo escribir si esta vacio para no pisar overrides manuales del scraper.
+                if not (card.description or "").strip():
+                    card.description = desc
+                    card.save(update_fields=["description"])
+                    bf_desc += 1
+        self.stdout.write(self.style.SUCCESS(f"Descripciones de battlefield aplicadas: {bf_desc}"))
 
         self.stdout.write(self.style.SUCCESS("Fixes Riftbound re-aplicados OK."))

@@ -105,6 +105,9 @@ FORCE_GEAR_NUMBERS = {
     "SFD-231",  # Seal of Strength
     "SFD-234",  # Seal of Discord
     "SFD-238",  # Seal of Unity
+    "UNL-011",  # Fresh Beans
+    "UNL-019",  # Blighted Battleaxe
+    "UNL-039",  # Soul Sword
 }
 
 

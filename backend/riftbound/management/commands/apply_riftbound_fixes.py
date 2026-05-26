@@ -115,6 +115,9 @@ FORCE_GEAR_NUMBERS = {
 # Cartas mal clasificadas que en realidad son units (tag "UNIT" visible).
 FORCE_UNIT_NUMBERS = {
     "UNL-002",  # Inferna
+    "UNL-012",  # Lord Broadmane
+    "UNL-018",  # Yeti Brawler
+    "UNL-021",  # Grim Apothecary
 }
 
 

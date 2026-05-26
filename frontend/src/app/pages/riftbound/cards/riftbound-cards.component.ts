@@ -359,7 +359,9 @@ export class RiftboundCardsComponent implements OnInit {
   readonly colors = COLORS;
   readonly types = TYPES;
   readonly rarities = RARITIES;
-  readonly pageSize = 30;
+  // Debe coincidir con DRF PAGE_SIZE (backend/backend/settings.py).
+  // Si no coincide, totalPages se calcula mal y quedan cartas inaccesibles.
+  readonly pageSize = 20;
 
   searchQuery = '';
   searchMode: 'name' | 'ability' | 'all' = 'name';

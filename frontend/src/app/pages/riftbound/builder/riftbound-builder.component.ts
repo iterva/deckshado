@@ -98,7 +98,7 @@ function typeRank(t?: string): number {
           <div class="filter-row">
             <div class="multi-filter">
               <label class="filter-label">Set</label>
-              <select [(ngModel)]="setFilter" (ngModelChange)="reload()">
+              <select [(ngModel)]="setFilter" (ngModelChange)="page.set(1); reload()">
                 <option value="">Todos los sets</option>
                 @for (s of sets(); track s.code) {
                   <option [value]="s.code">{{ s.code }} — {{ s.name }}</option>
@@ -108,7 +108,7 @@ function typeRank(t?: string): number {
 
             <div class="multi-filter">
               <label class="filter-label">Energía</label>
-              <select [(ngModel)]="energyFilter" (ngModelChange)="reload()">
+              <select [(ngModel)]="energyFilter" (ngModelChange)="page.set(1); reload()">
                 <option [ngValue]="null">Cualquiera</option>
                 @for (n of [0,1,2,3,4,5,6,7,8]; track n) {
                   <option [ngValue]="n">{{ n }}</option>
@@ -118,7 +118,7 @@ function typeRank(t?: string): number {
 
             <div class="multi-filter">
               <label class="filter-label">Rareza</label>
-              <select [(ngModel)]="rarityFilter" (ngModelChange)="reload()">
+              <select [(ngModel)]="rarityFilter" (ngModelChange)="page.set(1); reload()">
                 <option value="">Todas</option>
                 <option value="common">Common</option>
                 <option value="uncommon">Uncommon</option>
@@ -1057,7 +1057,8 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
   loading = signal(false);
   page = signal(1);
   totalCount = signal(0);
-  pageSize = 24;
+  // Debe coincidir con DRF PAGE_SIZE (backend/backend/settings.py).
+  pageSize = 20;
   totalPages = computed(() => Math.max(1, Math.ceil(this.totalCount() / this.pageSize)));
 
   sets = signal<{ code: string; name: string }[]>([]);

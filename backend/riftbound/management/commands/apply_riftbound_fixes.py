@@ -121,6 +121,15 @@ FORCE_UNIT_NUMBERS = {
 }
 
 
+# Cartas mal clasificadas que en realidad son battlefields.
+FORCE_BATTLEFIELD_NUMBERS = {
+    "OGN-284",  # Obelisk of Power
+    "OGN-285",  # Reaver's Row
+    "OGN-290",  # The Arena's Greatest
+    "OGN-292",  # The Dreaming Tree
+}
+
+
 # Colores canonicos por card_number base (ignora sufijo `*`).
 CANONICAL_COLORS = {
     "OGS-017": ["chaos", "fury"],   # Annie, Dark Child
@@ -134,7 +143,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **opts):
         # Conjunto de overrides manuales: estas cartas NO deben tocarse por la heuristica.
-        manual_overrides = LEGEND_NUMBERS | FORCE_GEAR_NUMBERS | FORCE_UNIT_NUMBERS
+        manual_overrides = LEGEND_NUMBERS | FORCE_GEAR_NUMBERS | FORCE_UNIT_NUMBERS | FORCE_BATTLEFIELD_NUMBERS
 
         # 0) Reclasificacion heuristica unit/spell/gear/battlefield/legend
         # (replica la migracion 0006 reclassify_and_hide).
@@ -185,6 +194,16 @@ class Command(BaseCommand):
                 card.save(update_fields=["card_type"])
                 forced_unit += 1
         self.stdout.write(self.style.SUCCESS(f"Forzadas a unit: {forced_unit}"))
+
+        # 1.d) Forzar `card_type=battlefield` en cartas mal clasificadas.
+        forced_bf = 0
+        for card in RiftboundCard.objects.all():
+            base = (card.card_number or "").rstrip("*").strip()
+            if base in FORCE_BATTLEFIELD_NUMBERS and card.card_type != "battlefield":
+                card.card_type = "battlefield"
+                card.save(update_fields=["card_type"])
+                forced_bf += 1
+        self.stdout.write(self.style.SUCCESS(f"Forzadas a battlefield: {forced_bf}"))
 
         # 2) Override explicito de colores por card_number.
         overridden = 0

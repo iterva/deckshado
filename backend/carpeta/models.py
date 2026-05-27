@@ -90,6 +90,7 @@ class CollectionEntry(models.Model):
     is_foil = models.BooleanField(default=False)
     notes = models.CharField(max_length=200, blank=True, default="")
     photo_url = models.URLField(max_length=500, blank=True, default="", help_text="Foto real de la carta (Cloudinary)")
+    photo_url_2 = models.URLField(max_length=500, blank=True, default="", help_text="Segunda foto real (Cloudinary)")
 
     class Meta:
         unique_together = ("user", "card")

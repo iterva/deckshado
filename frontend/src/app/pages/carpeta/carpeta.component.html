@@ -488,23 +488,45 @@
               </div>
 
               <div class="card-photo-row">
+                <!-- Slot 1 -->
                 <input type="file" accept="image/*" capture="environment"
-                       [id]="'photo-input-' + entry.id"
-                       (change)="onPhotoSelected(entry, $event)" hidden />
+                       [id]="'photo-input-' + entry.id + '-1'"
+                       (change)="onPhotoSelected(entry, $event, 1)" hidden />
                 @if (entry.photo_url) {
-                  <button class="btn btn-xs btn-photo" (click)="openPhotoModal(entry.photo_url, $event)" title="Ver foto real">
-                    <img class="photo-thumb" [src]="entry.photo_url" alt="Foto" />
-                    📸 Ver foto
+                  <button class="btn btn-xs btn-photo" (click)="openPhotoModal(entry.photo_url, $event)" title="Ver foto 1">
+                    <img class="photo-thumb" [src]="entry.photo_url" alt="Foto 1" />
+                    📸 1
                   </button>
-                  <button class="btn btn-xs btn-photo-action" (click)="triggerPhotoUpload(entry, $event)"
-                          [disabled]="uploadingPhotoFor === entry.id" title="Reemplazar foto">
-                    {{ uploadingPhotoFor === entry.id ? '⏳' : '🔄' }}
+                  <button class="btn btn-xs btn-photo-action" (click)="triggerPhotoUpload(entry, $event, 1)"
+                          [disabled]="uploadingPhotoFor === entry.id" title="Reemplazar foto 1">
+                    {{ uploadingPhotoFor === entry.id && uploadingPhotoSlot === 1 ? '⏳' : '🔄' }}
                   </button>
-                  <button class="btn btn-xs btn-photo-action btn-danger" (click)="removeMercadoPhoto(entry, $event)" title="Quitar foto">✕</button>
+                  <button class="btn btn-xs btn-photo-action btn-danger" (click)="removeMercadoPhoto(entry, $event, 1)" title="Quitar foto 1">✕</button>
                 } @else {
-                  <button class="btn btn-xs btn-photo btn-photo-empty" (click)="triggerPhotoUpload(entry, $event)"
-                          [disabled]="uploadingPhotoFor === entry.id" title="Subir foto real de la carta">
-                    {{ uploadingPhotoFor === entry.id ? '⏳ Subiendo...' : '📷 Subir foto' }}
+                  <button class="btn btn-xs btn-photo btn-photo-empty" (click)="triggerPhotoUpload(entry, $event, 1)"
+                          [disabled]="uploadingPhotoFor === entry.id" title="Subir foto 1">
+                    {{ uploadingPhotoFor === entry.id && uploadingPhotoSlot === 1 ? '⏳ Subiendo...' : '📷 Foto 1' }}
+                  </button>
+                }
+
+                <!-- Slot 2 -->
+                <input type="file" accept="image/*" capture="environment"
+                       [id]="'photo-input-' + entry.id + '-2'"
+                       (change)="onPhotoSelected(entry, $event, 2)" hidden />
+                @if (entry.photo_url_2) {
+                  <button class="btn btn-xs btn-photo" (click)="openPhotoModal(entry.photo_url_2, $event)" title="Ver foto 2">
+                    <img class="photo-thumb" [src]="entry.photo_url_2" alt="Foto 2" />
+                    📸 2
+                  </button>
+                  <button class="btn btn-xs btn-photo-action" (click)="triggerPhotoUpload(entry, $event, 2)"
+                          [disabled]="uploadingPhotoFor === entry.id" title="Reemplazar foto 2">
+                    {{ uploadingPhotoFor === entry.id && uploadingPhotoSlot === 2 ? '⏳' : '🔄' }}
+                  </button>
+                  <button class="btn btn-xs btn-photo-action btn-danger" (click)="removeMercadoPhoto(entry, $event, 2)" title="Quitar foto 2">✕</button>
+                } @else if (entry.photo_url) {
+                  <button class="btn btn-xs btn-photo btn-photo-empty" (click)="triggerPhotoUpload(entry, $event, 2)"
+                          [disabled]="uploadingPhotoFor === entry.id" title="Subir foto 2 (opcional)">
+                    {{ uploadingPhotoFor === entry.id && uploadingPhotoSlot === 2 ? '⏳ Subiendo...' : '➕ Foto 2' }}
                   </button>
                 }
               </div>

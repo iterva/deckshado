@@ -241,6 +241,10 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
             entry.is_foil = bool(data["is_foil"])
         if "notes" in data:
             entry.notes = str(data["notes"] or "")[:200]
+        if "photo_url" in data:
+            entry.photo_url = str(data["photo_url"] or "")[:500]
+        if "photo_url_2" in data:
+            entry.photo_url_2 = str(data["photo_url_2"] or "")[:500]
         if entry.selling_quantity > entry.quantity:
             entry.selling_quantity = entry.quantity
 

@@ -161,6 +161,26 @@ export class RiftboundService {
     return this.http.post<any>(`${this.base}/collection/upsert/`, data);
   }
 
+  /** Sube una foto real de la carta a Cloudinary y la asocia a la entrada Riftbound.
+   *  `slot` indica en qué campo guardar (1 = photo_url, 2 = photo_url_2). */
+  uploadCollectionPhoto(
+    cardId: number, file: File, slot: 1 | 2 = 1, isFoil: boolean = false,
+  ): Observable<RiftboundCollectionEntry> {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', environment.cloudinaryUploadPreset);
+    fd.append('folder', 'deckshado/riftbound/store_card_photos');
+    const field = slot === 2 ? 'photo_url_2' : 'photo_url';
+    return this.http.post<any>(
+      `https://api.cloudinary.com/v1_1/${environment.cloudinaryCloudName}/image/upload`, fd,
+    ).pipe(
+      switchMap(res => this.http.post<RiftboundCollectionEntry>(
+        `${this.base}/collection/upsert/`,
+        { card: cardId, is_foil: isFoil, [field]: res.secure_url },
+      )),
+    );
+  }
+
   deleteCollection(id: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/collection/${id}/`);
   }

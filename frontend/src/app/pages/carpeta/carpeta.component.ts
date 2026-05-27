@@ -81,8 +81,9 @@ export class CarpetaComponent implements OnInit {
   exportingPdf = false;
   mercadoAllEntries: CollectionEntry[] = [];
 
-  // Foto real de la carta (por entry.id)
+  // Foto real de la carta (por entry.id + slot)
   uploadingPhotoFor: number | null = null;
+  uploadingPhotoSlot: 1 | 2 | null = null;
   viewPhotoUrl: string | null = null;
 
   // ── Tienda config ──
@@ -461,14 +462,14 @@ export class CarpetaComponent implements OnInit {
   }
 
   /** Trigger file input asociado a una entrada. */
-  triggerPhotoUpload(entry: CollectionEntry, ev: Event) {
+  triggerPhotoUpload(entry: CollectionEntry, ev: Event, slot: 1 | 2 = 1) {
     ev.stopPropagation();
-    const input = document.getElementById('photo-input-' + entry.id) as HTMLInputElement | null;
+    const input = document.getElementById(`photo-input-${entry.id}-${slot}`) as HTMLInputElement | null;
     input?.click();
   }
 
   /** Subir foto real de la carta a Cloudinary y guardar URL en la entrada. */
-  onPhotoSelected(entry: CollectionEntry, ev: Event) {
+  onPhotoSelected(entry: CollectionEntry, ev: Event, slot: 1 | 2 = 1) {
     const input = ev.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
@@ -483,11 +484,14 @@ export class CarpetaComponent implements OnInit {
       return;
     }
     this.uploadingPhotoFor = entry.id;
+    this.uploadingPhotoSlot = slot;
     this.cdr.detectChanges();
-    this.carpetaService.uploadEntryPhoto(entry.card_detail.id, file).subscribe({
+    this.carpetaService.uploadEntryPhoto(entry.card_detail.id, file, slot).subscribe({
       next: (updated) => {
         entry.photo_url = updated.photo_url;
+        entry.photo_url_2 = updated.photo_url_2;
         this.uploadingPhotoFor = null;
+        this.uploadingPhotoSlot = null;
         input.value = '';
         this.cdr.detectChanges();
       },
@@ -495,21 +499,22 @@ export class CarpetaComponent implements OnInit {
         console.error('Error subiendo foto:', err);
         alert('No se pudo subir la foto. Intenta de nuevo.');
         this.uploadingPhotoFor = null;
+        this.uploadingPhotoSlot = null;
         input.value = '';
         this.cdr.detectChanges();
       },
     });
   }
 
-  removeMercadoPhoto(entry: CollectionEntry, ev: Event) {
+  removeMercadoPhoto(entry: CollectionEntry, ev: Event, slot: 1 | 2 = 1) {
     ev.stopPropagation();
-    if (!entry.photo_url) return;
-    if (!confirm('¿Quitar la foto real de esta carta?')) return;
-    this.carpetaService.upsertCollection({
-      card: entry.card_detail.id,
-      photo_url: '',
-    }).subscribe(() => {
-      entry.photo_url = '';
+    const currentUrl = slot === 2 ? entry.photo_url_2 : entry.photo_url;
+    if (!currentUrl) return;
+    if (!confirm('¿Quitar esta foto?')) return;
+    const patch: any = { card: entry.card_detail.id };
+    patch[slot === 2 ? 'photo_url_2' : 'photo_url'] = '';
+    this.carpetaService.upsertCollection(patch).subscribe(() => {
+      if (slot === 2) entry.photo_url_2 = ''; else entry.photo_url = '';
       this.cdr.detectChanges();
     });
   }

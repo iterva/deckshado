@@ -66,7 +66,7 @@ class CollectionEntrySerializer(serializers.ModelSerializer):
         fields = [
             "id", "card", "quantity", "price", "selling_quantity",
             "condition", "condition_display", "language", "language_display",
-            "is_foil", "notes", "photo_url", "card_detail", "in_my_wishlist",
+            "is_foil", "notes", "photo_url", "photo_url_2", "card_detail", "in_my_wishlist",
         ]
         extra_kwargs = {"card": {"write_only": True}}
 
@@ -82,7 +82,7 @@ class CollectionEntryWriteSerializer(serializers.ModelSerializer):
         model = CollectionEntry
         fields = [
             "card", "quantity", "price", "selling_quantity",
-            "condition", "language", "is_foil", "notes", "photo_url",
+            "condition", "language", "is_foil", "notes", "photo_url", "photo_url_2",
         ]
 
 

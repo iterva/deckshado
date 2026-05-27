@@ -7,6 +7,8 @@ import { CardService } from '../../services/card.service';
 import { AuthService } from '../../services/auth.service';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
 import { CollectionEntry, Card, PublicBinderProfile, Edition, Race, Rarity, CardType, WishlistEntry } from '../../models';
+import { ShareImageComponent, ShareImageItem } from '../../components/share-image/share-image.component';
+import { CardPhotoCarouselComponent } from '../../components/card-photo-carousel/card-photo-carousel.component';
 
 interface CartItem {
   entryId: number;
@@ -21,7 +23,7 @@ interface CartItem {
 @Component({
   selector: 'app-tienda',
   standalone: true,
-  imports: [FormsModule, ThumbnailPipe, DecimalPipe, RouterLink],
+  imports: [FormsModule, ThumbnailPipe, DecimalPipe, RouterLink, ShareImageComponent, CardPhotoCarouselComponent],
   templateUrl: './tienda.component.html',
   styleUrl: './tienda.component.scss',
 })
@@ -264,6 +266,35 @@ export class TiendaComponent implements OnInit {
   }
 
   exportPdf() { window.print(); }
+
+  // ── Compartir imagen estilo CardIndex ──
+  get sellerHandle(): string {
+    return this.store?.display_name || (this.store?.username ? '@' + this.store.username : 'Tu tienda');
+  }
+  get shareStoreItems(): ShareImageItem[] {
+    return (this.entries || []).slice(0, 20).map(e => ({
+      name: e.card_detail?.name || '',
+      image: e.card_detail?.image_url || '',
+      quantity: e.selling_quantity || 1,
+      foil: !!e.is_foil,
+      price: e.price ?? null,
+    }));
+  }
+  get shareWishlistItems(): ShareImageItem[] {
+    return (this.wishlistEntries || []).slice(0, 20).map(w => ({
+      name: w.card_detail?.name || '',
+      image: w.card_detail?.image_url || '',
+      quantity: w.desired_quantity || 1,
+      foil: false,
+      price: null,
+    }));
+  }
+  get shareContactLine(): string {
+    return `¿Tienes alguna? Escríbeme · ${this.sellerHandle}`;
+  }
+  get shareSellingContactLine(): string {
+    return `Escríbeme para comprar · ${this.sellerHandle}`;
+  }
 
   get instagramHandle(): string {
     return (this.store?.instagram || '').replace(/^@/, '');

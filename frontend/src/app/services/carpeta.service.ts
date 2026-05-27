@@ -80,18 +80,20 @@ export class CarpetaService {
     return this.http.post<CollectionEntry>(`${this.apiUrl}/collection/upsert/`, data);
   }
 
-  /** Sube una foto real de la carta a Cloudinary y la asocia a la entrada (collection_upsert). */
-  uploadEntryPhoto(cardId: number, file: File): Observable<CollectionEntry> {
+  /** Sube una foto real de la carta a Cloudinary y la asocia a la entrada (collection_upsert).
+   *  `slot` indica en qué campo guardar (1 = photo_url, 2 = photo_url_2). Por defecto 1. */
+  uploadEntryPhoto(cardId: number, file: File, slot: 1 | 2 = 1): Observable<CollectionEntry> {
     const fd = new FormData();
     fd.append('file', file);
     fd.append('upload_preset', environment.cloudinaryUploadPreset);
     fd.append('folder', 'deckshado/store_card_photos');
+    const field = slot === 2 ? 'photo_url_2' : 'photo_url';
     return this.http.post<any>(
       `https://api.cloudinary.com/v1_1/${environment.cloudinaryCloudName}/image/upload`, fd
     ).pipe(
       switchMap(res => this.http.post<CollectionEntry>(
         `${this.apiUrl}/collection/upsert/`,
-        { card: cardId, photo_url: res.secure_url }
+        { card: cardId, [field]: res.secure_url }
       ))
     );
   }

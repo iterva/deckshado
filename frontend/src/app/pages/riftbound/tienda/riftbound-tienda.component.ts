@@ -9,6 +9,8 @@ import {
   RiftboundCollectionEntry, RiftboundCardLite, RiftboundPublicBinderProfile,
   RiftboundWishlistEntry,
 } from '../../../models/riftbound';
+import { ShareImageComponent, ShareImageItem } from '../../../components/share-image/share-image.component';
+import { CardPhotoCarouselComponent } from '../../../components/card-photo-carousel/card-photo-carousel.component';
 
 interface RiftboundCartItem {
   entryId: number;
@@ -23,7 +25,7 @@ interface RiftboundCartItem {
 @Component({
   selector: 'app-riftbound-tienda',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DecimalPipe],
+  imports: [CommonModule, FormsModule, RouterLink, DecimalPipe, ShareImageComponent, CardPhotoCarouselComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
   <div class="tienda-container">
@@ -60,6 +62,31 @@ interface RiftboundCartItem {
           </div>
           @if (s.payment_methods) { <p class="store-line"><strong>💳 Pago:</strong> {{ s.payment_methods }}</p> }
           @if (s.shipping_info) { <p class="store-line"><strong>🚚 Envío:</strong> {{ s.shipping_info }}</p> }
+          <div class="share-row" style="margin-top:.5rem;">
+            @if (activeTab() === 'store') {
+              <app-share-image
+                mode="selling"
+                gameLabel="Riftbound"
+                [sellerName]="sellerHandle()"
+                [contactLine]="shareSellingContactLine()"
+                [items]="shareStoreItems()"
+                ctaLabel="Imagen tienda"
+                filenamePrefix="shadowforge-riftbound"
+                footerTagline="ShadowForge · Marketplace TCG">
+              </app-share-image>
+            } @else {
+              <app-share-image
+                mode="buying"
+                gameLabel="Riftbound"
+                [sellerName]="sellerHandle()"
+                [contactLine]="shareContactLine()"
+                [items]="shareWishlistItems()"
+                ctaLabel="Imagen busco"
+                filenamePrefix="shadowforge-riftbound"
+                footerTagline="ShadowForge · Marketplace TCG">
+              </app-share-image>
+            }
+          </div>
         </div>
       </div>
 
@@ -108,7 +135,12 @@ interface RiftboundCartItem {
           <div class="store-card">
             <div class="card-image" (click)="preview.set(e.card_data)">
               @if (e.card_data?.image) {
-                <img [src]="e.card_data.image" [alt]="e.card_data.name" loading="lazy" />
+                <app-card-photo-carousel
+                  [cardImage]="e.card_data.image"
+                  [photos]="[e.photo_url, e.photo_url_2]"
+                  [alt]="e.card_data.name"
+                  [thumbWidth]="350">
+                </app-card-photo-carousel>
               } @else { <div class="img-fallback">{{ e.card_data?.card_number }}</div> }
               @if (e.is_foil) { <div class="foil-badge">✨ FOIL</div> }
             </div>
@@ -515,6 +547,36 @@ export class RiftboundTiendaComponent implements OnInit {
 
   cleanWa(v: string): string { return v.replace(/[^0-9]/g, ''); }
   cleanHandle(v: string): string { return v.replace(/^@/, '').trim(); }
+
+  // ── Compartir imagen estilo CardIndex ──
+  sellerHandle(): string {
+    const s = this.store();
+    return s?.display_name || (s?.username ? '@' + s.username : 'Tu tienda');
+  }
+  shareContactLine(): string {
+    return `¿Tienes alguna? Escríbeme · ${this.sellerHandle()}`;
+  }
+  shareSellingContactLine(): string {
+    return `Escríbeme para comprar · ${this.sellerHandle()}`;
+  }
+  shareStoreItems(): ShareImageItem[] {
+    return this.entries().slice(0, 20).map(e => ({
+      name: e.card_data?.name || '',
+      image: e.card_data?.image || '',
+      quantity: e.selling_quantity || 1,
+      foil: !!e.is_foil,
+      price: e.price ?? null,
+    }));
+  }
+  shareWishlistItems(): ShareImageItem[] {
+    return this.wishlist().slice(0, 20).map(w => ({
+      name: w.card_data?.name || '',
+      image: w.card_data?.image || '',
+      quantity: w.desired_quantity || 1,
+      foil: false,
+      price: null,
+    }));
+  }
 
   // ── Cart ──
   private cartKey(): string { return `riftbound-tienda-cart::${this.token}`; }

@@ -1165,7 +1165,15 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
     this.championUnitId.set(deck.champion_unit ?? null);
     this.championUnitData.set(deck.champion_unit_data ?? null);
     const legend = map.champion[0]?.card;
-    if (legend) this.loadChampionUnitsForLegend(legend);
+    if (legend) {
+      // Si el candado está cerrado, aplicar colores del legend como filtro
+      if (this.lockColorsToLegend()) {
+        const cs = (legend as any).colors as RiftboundColor[] | undefined;
+        this.selectedColors.set(new Set(cs ?? []));
+        this.reload();
+      }
+      this.loadChampionUnitsForLegend(legend);
+    }
   }
 
   // ── Búsqueda / filtros ──

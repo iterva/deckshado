@@ -229,6 +229,7 @@ export interface CollectionEntry {
   is_foil: boolean;
   notes: string;
   photo_url?: string | null;
+  photo_url_2?: string | null;
   card_detail: Card;
   in_my_wishlist?: boolean;
 }

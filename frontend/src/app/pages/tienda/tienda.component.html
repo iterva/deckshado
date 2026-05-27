@@ -43,6 +43,16 @@
         <button class="btn btn-sm" (click)="copyLink()">🔗 Copiar Link</button>
         <button class="btn btn-sm" (click)="shareWhatsApp()">📱 Compartir</button>
         <button class="btn btn-sm btn-pdf" (click)="exportPdf()">📄 PDF</button>
+        <app-share-image
+          mode="selling"
+          gameLabel="Mitos y Leyendas"
+          [sellerName]="sellerHandle"
+          [contactLine]="shareSellingContactLine"
+          [items]="shareStoreItems"
+          ctaLabel="Imagen tienda"
+          filenamePrefix="shadowforge-myl"
+          footerTagline="ShadowForge · Marketplace TCG">
+        </app-share-image>
       </div>
     </div>
 
@@ -119,8 +129,12 @@
             <span class="wl-flag" title="Está en tu wishlist">❤️</span>
           }
           <div class="card-image" (click)="previewCard = entry.card_detail">
-            <img [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" loading="lazy"
-              (error)="$any($event.target).src = entry.card_detail.image_url" />
+            <app-card-photo-carousel
+              [cardImage]="entry.card_detail.image_url"
+              [photos]="[entry.photo_url, entry.photo_url_2]"
+              [alt]="entry.card_detail.name"
+              [thumbWidth]="350">
+            </app-card-photo-carousel>
           </div>
           <div class="card-body">
             <h4>{{ entry.card_detail.name }}</h4>
@@ -167,7 +181,17 @@
         <button class="btn btn-sm" (click)="nextPage()" [disabled]="(filters.page || 1) >= totalPages">Siguiente →</button>
       </div>
     }
-
+  <app-share-image
+          mode="buying"
+          gameLabel="Mitos y Leyendas"
+          [sellerName]="sellerHandle"
+          [contactLine]="shareContactLine"
+          [items]="shareWishlistItems"
+          ctaLabel="Imagen busco"
+          filenamePrefix="shadowforge-myl"
+          footerTagline="ShadowForge · Marketplace TCG">
+        </app-share-image>
+      
     } @else if (activeTab === 'wishlist') {
       <!-- Wishlist tab -->
       <div class="filters-bar">

@@ -150,7 +150,7 @@ class RiftboundCollectionEntrySerializer(serializers.ModelSerializer):
         fields = [
             "id", "card", "card_data", "quantity",
             "price", "selling_quantity", "condition", "language",
-            "is_foil", "notes",
+            "is_foil", "notes", "photo_url", "photo_url_2",
         ]
 
 

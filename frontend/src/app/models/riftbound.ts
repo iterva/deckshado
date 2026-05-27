@@ -136,6 +136,8 @@ export interface RiftboundCollectionEntry {
   language: RiftboundLanguage;
   is_foil: boolean;
   notes: string;
+  photo_url?: string | null;
+  photo_url_2?: string | null;
 }
 
 export interface RiftboundBinderProfile {

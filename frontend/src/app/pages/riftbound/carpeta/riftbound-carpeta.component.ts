@@ -493,6 +493,46 @@ interface DirtyPatch {
                       (input)="onMercadoFieldChange(entry, 'selling_quantity', $any($event.target).valueAsNumber)" />
                   </div>
                 </div>
+                <div class="card-photo-row">
+                  <!-- Slot 1 -->
+                  <input type="file" accept="image/*" capture="environment"
+                         [id]="'rb-photo-input-' + entry.id + '-1'"
+                         (change)="onPhotoSelected(entry, $event, 1)" hidden />
+                  @if (entry.photo_url) {
+                    <button class="btn btn-xs btn-photo" (click)="openPhotoModal(entry.photo_url, $event)" title="Ver foto 1">
+                      <img class="photo-thumb" [src]="entry.photo_url" alt="Foto 1" /> 📸 1
+                    </button>
+                    <button class="btn btn-xs btn-photo-action" (click)="triggerPhotoUpload(entry, $event, 1)"
+                            [disabled]="uploadingPhotoFor() === entry.id" title="Reemplazar foto 1">
+                      {{ uploadingPhotoFor() === entry.id && uploadingPhotoSlot() === 1 ? '⏳' : '🔄' }}
+                    </button>
+                    <button class="btn btn-xs btn-danger" (click)="removePhoto(entry, $event, 1)" title="Quitar">✕</button>
+                  } @else {
+                    <button class="btn btn-xs btn-photo btn-photo-empty" (click)="triggerPhotoUpload(entry, $event, 1)"
+                            [disabled]="uploadingPhotoFor() === entry.id" title="Subir foto real">
+                      {{ uploadingPhotoFor() === entry.id && uploadingPhotoSlot() === 1 ? '⏳ Subiendo...' : '📷 Foto 1' }}
+                    </button>
+                  }
+                  <!-- Slot 2 -->
+                  <input type="file" accept="image/*" capture="environment"
+                         [id]="'rb-photo-input-' + entry.id + '-2'"
+                         (change)="onPhotoSelected(entry, $event, 2)" hidden />
+                  @if (entry.photo_url_2) {
+                    <button class="btn btn-xs btn-photo" (click)="openPhotoModal(entry.photo_url_2, $event)" title="Ver foto 2">
+                      <img class="photo-thumb" [src]="entry.photo_url_2" alt="Foto 2" /> 📸 2
+                    </button>
+                    <button class="btn btn-xs btn-photo-action" (click)="triggerPhotoUpload(entry, $event, 2)"
+                            [disabled]="uploadingPhotoFor() === entry.id" title="Reemplazar foto 2">
+                      {{ uploadingPhotoFor() === entry.id && uploadingPhotoSlot() === 2 ? '⏳' : '🔄' }}
+                    </button>
+                    <button class="btn btn-xs btn-danger" (click)="removePhoto(entry, $event, 2)" title="Quitar">✕</button>
+                  } @else if (entry.photo_url) {
+                    <button class="btn btn-xs btn-photo btn-photo-empty" (click)="triggerPhotoUpload(entry, $event, 2)"
+                            [disabled]="uploadingPhotoFor() === entry.id" title="Subir 2ª foto">
+                      {{ uploadingPhotoFor() === entry.id && uploadingPhotoSlot() === 2 ? '⏳ Subiendo...' : '➕ Foto 2' }}
+                    </button>
+                  }
+                </div>
               </div>
             </div>
           }
@@ -616,6 +656,16 @@ interface DirtyPatch {
               </button>
             </div>
           </div>
+        </div>
+      </div>
+    }
+
+    <!-- ═══ MODAL: Foto real en grande ═══ -->
+    @if (viewPhotoUrl(); as purl) {
+      <div class="modal-overlay" (click)="closePhotoModal()">
+        <div class="modal modal-photo" (click)="$event.stopPropagation()">
+          <button class="close-btn" (click)="closePhotoModal()">✕</button>
+          <img [src]="purl" alt="Foto real" class="full-photo" />
         </div>
       </div>
     }
@@ -762,6 +812,19 @@ interface DirtyPatch {
     .card-meta, .card-type { color: #9ba3b4; font-size: .78rem; }
 
     .inline-fields { display: flex; gap: .5rem; align-items: flex-end; margin-top: .6rem; flex-wrap: wrap; }
+
+    .card-photo-row { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .55rem; }
+    .btn-photo { display: inline-flex; align-items: center; gap: .35rem; padding: .25rem .5rem;
+      background: #1e2235; color: #e5e7eb; border: 1px solid #374151; border-radius: 6px;
+      font-size: .72rem; cursor: pointer; }
+    .btn-photo:hover:not(:disabled) { background: #2a3553; }
+    .btn-photo-empty { border-style: dashed; color: #9ba3b4; }
+    .photo-thumb { width: 22px; height: 22px; object-fit: cover; border-radius: 3px; }
+    .btn-photo-action { padding: .25rem .45rem; background: #1e2235; color: #e5e7eb;
+      border: 1px solid #374151; border-radius: 6px; font-size: .72rem; cursor: pointer; }
+    .btn-danger { background: #4a1d27 !important; border-color: #7f1d1d !important; color: #fecaca !important; }
+    .modal-photo { background: #0f0f23; padding: .6rem; border-radius: 10px; max-width: 92vw; max-height: 92vh; }
+    .full-photo { display: block; max-width: 88vw; max-height: 80vh; object-fit: contain; border-radius: 6px; }
     .field { display: flex; flex-direction: column; gap: .15rem; min-width: 60px; flex: 1; }
     .field.full { flex-basis: 100%; margin-top: .4rem; }
     .field label { color: #9ba3b4; font-size: .72rem; text-transform: uppercase; }
@@ -1023,6 +1086,74 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   // Preview
   previewCard = signal<RiftboundCardLite | null>(null);
+
+  // Foto real (por entry.id + slot)
+  uploadingPhotoFor = signal<number | null>(null);
+  uploadingPhotoSlot = signal<1 | 2 | null>(null);
+  viewPhotoUrl = signal<string | null>(null);
+
+  triggerPhotoUpload(entry: RiftboundCollectionEntry, ev: Event, slot: 1 | 2 = 1) {
+    ev.stopPropagation();
+    const input = document.getElementById(`rb-photo-input-${entry.id}-${slot}`) as HTMLInputElement | null;
+    input?.click();
+  }
+
+  onPhotoSelected(entry: RiftboundCollectionEntry, ev: Event, slot: 1 | 2 = 1) {
+    const input = ev.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Solo se permiten imágenes.');
+      input.value = '';
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      alert('La imagen es muy grande (máx 8 MB).');
+      input.value = '';
+      return;
+    }
+    this.uploadingPhotoFor.set(entry.id);
+    this.uploadingPhotoSlot.set(slot);
+    this.rb.uploadCollectionPhoto(entry.card, file, slot, !!entry.is_foil).subscribe({
+      next: (updated) => {
+        entry.photo_url = updated.photo_url;
+        entry.photo_url_2 = updated.photo_url_2;
+        this.uploadingPhotoFor.set(null);
+        this.uploadingPhotoSlot.set(null);
+        input.value = '';
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error subiendo foto:', err);
+        alert('No se pudo subir la foto. Intenta de nuevo.');
+        this.uploadingPhotoFor.set(null);
+        this.uploadingPhotoSlot.set(null);
+        input.value = '';
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  removePhoto(entry: RiftboundCollectionEntry, ev: Event, slot: 1 | 2 = 1) {
+    ev.stopPropagation();
+    const currentUrl = slot === 2 ? entry.photo_url_2 : entry.photo_url;
+    if (!currentUrl) return;
+    if (!confirm('¿Quitar esta foto?')) return;
+    const patch: any = { card: entry.card, is_foil: !!entry.is_foil };
+    patch[slot === 2 ? 'photo_url_2' : 'photo_url'] = '';
+    this.rb.upsertCollection(patch).subscribe(() => {
+      if (slot === 2) entry.photo_url_2 = ''; else entry.photo_url = '';
+      this.cdr.markForCheck();
+    });
+  }
+
+  openPhotoModal(url: string | null | undefined, ev?: Event) {
+    if (ev) ev.stopPropagation();
+    if (!url) return;
+    this.viewPhotoUrl.set(url);
+  }
+
+  closePhotoModal() { this.viewPhotoUrl.set(null); }
 
   ngOnInit() {
     if (!this.auth.isAuthenticated()) {

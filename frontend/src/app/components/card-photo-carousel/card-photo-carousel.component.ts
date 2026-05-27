@@ -36,9 +36,11 @@ import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
       <img
         class="cpc-img"
         [class.active]="i === index()"
+        [class.cpc-zoomable]="i > 0"
         [src]="img | thumb:thumbWidth"
         [alt]="alt"
         loading="lazy"
+        (click)="onImageClick(i, img, $event)"
         (error)="onImgError($event, img)" />
     }
 
@@ -59,10 +61,19 @@ import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
         }
       </div>
       @if (index() > 0) {
-        <span class="cpc-badge cpc-badge-real">📷 Foto real</span>
+        <span class="cpc-badge cpc-badge-real" (click)="openLightbox(images()[index()], $event)">
+          🔍 Foto real
+        </span>
       }
     }
   </div>
+
+  @if (lightboxUrl()) {
+    <div class="cpc-lightbox" (click)="closeLightbox($event)">
+      <button type="button" class="cpc-lb-close" (click)="closeLightbox($event)" aria-label="Cerrar">✕</button>
+      <img [src]="lightboxUrl()!" [alt]="alt" class="cpc-lb-img" (click)="$event.stopPropagation()" />
+    </div>
+  }
   `,
   styles: [`
     :host { display: block; width: 100%; height: 100%; }
@@ -121,7 +132,38 @@ import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
       padding: 2px 8px; border-radius: 999px;
       font-size: 11px; font-weight: 700;
       z-index: 3; letter-spacing: .3px;
+      cursor: zoom-in;
     }
+    .cpc-badge:hover { background: rgba(0,0,0,.85); }
+    .cpc-zoomable { cursor: zoom-in; }
+
+    /* Lightbox */
+    .cpc-lightbox {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.92);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999;
+      padding: 1rem;
+      animation: cpcFadeIn .15s ease;
+    }
+    @keyframes cpcFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .cpc-lb-img {
+      max-width: 95vw; max-height: 92vh;
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0 12px 60px rgba(0,0,0,.6);
+      cursor: default;
+    }
+    .cpc-lb-close {
+      position: absolute; top: 16px; right: 18px;
+      width: 38px; height: 38px;
+      background: rgba(255,255,255,.12); color: #fff;
+      border: none; border-radius: 50%;
+      font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s ease;
+    }
+    .cpc-lb-close:hover { background: rgba(255,255,255,.25); }
   `],
 })
 export class CardPhotoCarouselComponent implements OnChanges {
@@ -132,6 +174,7 @@ export class CardPhotoCarouselComponent implements OnChanges {
 
   readonly index = signal(0);
   readonly images = computed<string[]>(() => this._images);
+  readonly lightboxUrl = signal<string | null>(null);
   private _images: string[] = [];
 
   ngOnChanges(_: SimpleChanges) {
@@ -161,6 +204,32 @@ export class CardPhotoCarouselComponent implements OnChanges {
   goTo(i: number, ev: Event) {
     ev.stopPropagation();
     this.index.set(i);
+  }
+
+  /** Click sobre la imagen activa: si es foto real (i>0) abre el lightbox.
+   *  Si es la imagen oficial (i===0) deja burbujear para que el padre maneje. */
+  onImageClick(i: number, url: string, ev: Event) {
+    if (i > 0) {
+      ev.stopPropagation();
+      this.openLightbox(url, ev);
+    }
+    // i===0: no stopPropagation → el padre abre su modal de detalle
+  }
+
+  openLightbox(url: string | null | undefined, ev?: Event) {
+    if (ev) ev.stopPropagation();
+    if (!url) return;
+    this.lightboxUrl.set(url);
+  }
+
+  closeLightbox(ev?: Event) {
+    if (ev) ev.stopPropagation();
+    this.lightboxUrl.set(null);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEsc() {
+    if (this.lightboxUrl()) this.closeLightbox();
   }
 
   /** Swipe básico para touch. */

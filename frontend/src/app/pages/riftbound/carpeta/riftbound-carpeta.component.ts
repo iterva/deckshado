@@ -382,10 +382,10 @@ interface DirtyPatch {
           <div class="store-config-panel">
             <h4>Configuración de tienda</h4>
             <div class="form-grid">
-              <label class="full">
+              <label class="full check-row">
                 <input type="checkbox" [checked]="binderProfile()?.is_store_public ?? false"
                   (change)="patchProfile({ is_store_public: $any($event.target).checked })" />
-                Tienda pública (visible en /riftbound/tiendas)
+                <span>Tienda pública (visible en /riftbound/tiendas)</span>
               </label>
               <label>
                 <span>Nombre público</span>
@@ -445,10 +445,10 @@ interface DirtyPatch {
                 <input type="text" [value]="binderProfile()?.shipping_info || ''" maxlength="200"
                   (change)="patchProfile({ shipping_info: $any($event.target).value })" />
               </label>
-              <label class="full">
+              <label class="full check-row">
                 <input type="checkbox" [checked]="binderProfile()?.accepts_trades ?? false"
                   (change)="patchProfile({ accepts_trades: $any($event.target).checked })" />
-                Acepto cambios / trades
+                <span>Acepto cambios / trades</span>
               </label>
               <div class="full token-row">
                 <span>Token público:</span>
@@ -989,6 +989,13 @@ interface DirtyPatch {
       display: flex; flex-direction: column; gap: .25rem; color: #9ba3b4; font-size: .82rem;
     }
     .form-grid label.full { grid-column: 1 / -1; }
+    .form-grid label.check-row {
+      flex-direction: row; align-items: center; gap: .55rem;
+      color: #c8c8da; font-size: .9rem; cursor: pointer;
+    }
+    .form-grid label.check-row input[type="checkbox"] {
+      width: 18px; height: 18px; accent-color: #e94560; flex-shrink: 0; margin: 0;
+    }
     .form-grid input[type="text"],
     .form-grid input[type="email"],
     .form-grid input[type="number"],

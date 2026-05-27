@@ -89,6 +89,7 @@ class CollectionEntry(models.Model):
     language = models.CharField(max_length=4, choices=LANGUAGE_CHOICES, default="ES")
     is_foil = models.BooleanField(default=False)
     notes = models.CharField(max_length=200, blank=True, default="")
+    photo_url = models.URLField(max_length=500, blank=True, default="", help_text="Foto real de la carta (Cloudinary)")
 
     class Meta:
         unique_together = ("user", "card")

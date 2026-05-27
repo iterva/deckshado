@@ -209,6 +209,18 @@
       }
     }
     .btn-add-cart { margin-top: 0.4rem; align-self: flex-start; }
+    .btn-photo-view {
+      margin-top: 0.35rem;
+      align-self: flex-start;
+      background: #1f2942;
+      border: 1px solid #2e3a55;
+      color: #d6e1f5;
+      padding: 0.25rem 0.55rem;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      &:hover { background: #283355; }
+    }
   }
 }
 

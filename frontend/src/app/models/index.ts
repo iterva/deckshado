@@ -228,6 +228,7 @@ export interface CollectionEntry {
   language_display?: string;
   is_foil: boolean;
   notes: string;
+  photo_url?: string | null;
   card_detail: Card;
   in_my_wishlist?: boolean;
 }

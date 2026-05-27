@@ -102,6 +102,8 @@ def _apply_collection_fields(entry, data):
         entry.is_foil = bool(data["is_foil"])
     if "notes" in data:
         entry.notes = (data["notes"] or "")[:200]
+    if "photo_url" in data:
+        entry.photo_url = (data["photo_url"] or "")[:500]
     if entry.selling_quantity > entry.quantity:
         entry.selling_quantity = entry.quantity
 

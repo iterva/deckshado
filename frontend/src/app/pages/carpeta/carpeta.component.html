@@ -486,6 +486,28 @@
                 }
                 <button class="btn btn-xs btn-danger" (click)="removeMercadoEntry(entry)" title="Quitar de venta">🗑️</button>
               </div>
+
+              <div class="card-photo-row">
+                <input type="file" accept="image/*" capture="environment"
+                       [id]="'photo-input-' + entry.id"
+                       (change)="onPhotoSelected(entry, $event)" hidden />
+                @if (entry.photo_url) {
+                  <button class="btn btn-xs btn-photo" (click)="openPhotoModal(entry.photo_url, $event)" title="Ver foto real">
+                    <img class="photo-thumb" [src]="entry.photo_url" alt="Foto" />
+                    📸 Ver foto
+                  </button>
+                  <button class="btn btn-xs btn-photo-action" (click)="triggerPhotoUpload(entry, $event)"
+                          [disabled]="uploadingPhotoFor === entry.id" title="Reemplazar foto">
+                    {{ uploadingPhotoFor === entry.id ? '⏳' : '🔄' }}
+                  </button>
+                  <button class="btn btn-xs btn-photo-action btn-danger" (click)="removeMercadoPhoto(entry, $event)" title="Quitar foto">✕</button>
+                } @else {
+                  <button class="btn btn-xs btn-photo btn-photo-empty" (click)="triggerPhotoUpload(entry, $event)"
+                          [disabled]="uploadingPhotoFor === entry.id" title="Subir foto real de la carta">
+                    {{ uploadingPhotoFor === entry.id ? '⏳ Subiendo...' : '📷 Subir foto' }}
+                  </button>
+                }
+              </div>
             </div>
           </div>
         }
@@ -654,6 +676,16 @@
       <div class="preview-modal" (click)="$event.stopPropagation()">
         <button class="close-btn" (click)="previewCard = null">✕</button>
         <img [src]="previewCard.image_url" [alt]="previewCard.name" class="preview-image" />
+      </div>
+    </div>
+  }
+
+  <!-- ═══ MODAL: Foto real de la carta ═══ -->
+  @if (viewPhotoUrl) {
+    <div class="modal-overlay" (click)="closePhotoModal()">
+      <div class="preview-modal" (click)="$event.stopPropagation()">
+        <button class="close-btn" (click)="closePhotoModal()">✕</button>
+        <img [src]="viewPhotoUrl" alt="Foto real de la carta" class="preview-image" />
       </div>
     </div>
   }

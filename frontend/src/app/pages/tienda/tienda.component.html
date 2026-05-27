@@ -148,6 +148,13 @@
                 🛒 Añadir
               }
             </button>
+            @if (entry.photo_url) {
+              <button class="btn btn-xs btn-photo-view"
+                      (click)="viewPhotoUrl = entry.photo_url ?? null; $event.stopPropagation()"
+                      title="Ver foto real de la carta">
+                📸 Ver foto real
+              </button>
+            }
           </div>
         </div>
       }
@@ -293,6 +300,16 @@
         <div class="preview-modal" (click)="$event.stopPropagation()">
           <button class="close-btn" (click)="previewCard = null">✕</button>
           <img [src]="previewCard.image_url" [alt]="previewCard.name" class="preview-image" />
+        </div>
+      </div>
+    }
+
+    <!-- Modal: Foto real de la carta del vendedor -->
+    @if (viewPhotoUrl) {
+      <div class="modal-overlay" (click)="viewPhotoUrl = null">
+        <div class="preview-modal" (click)="$event.stopPropagation()">
+          <button class="close-btn" (click)="viewPhotoUrl = null">✕</button>
+          <img [src]="viewPhotoUrl" alt="Foto real de la carta" class="preview-image" />
         </div>
       </div>
     }

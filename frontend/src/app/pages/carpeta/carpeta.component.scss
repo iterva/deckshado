@@ -363,6 +363,56 @@
     align-items: center;
   }
 
+  .card-photo-row {
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+    margin-top: 0.4rem;
+    flex-wrap: wrap;
+
+    .btn-photo {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: #1f2942;
+      border: 1px solid #2e3a55;
+      color: #d6e1f5;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      cursor: pointer;
+
+      &:hover { background: #283355; }
+      &:disabled { opacity: 0.6; cursor: not-allowed; }
+
+      .photo-thumb {
+        width: 22px;
+        height: 22px;
+        object-fit: cover;
+        border-radius: 4px;
+        border: 1px solid #3a4870;
+      }
+    }
+
+    .btn-photo-empty {
+      border-style: dashed;
+      color: #9ab0d0;
+    }
+
+    .btn-photo-action {
+      padding: 0.25rem 0.45rem;
+      font-size: 0.75rem;
+      background: #1f2942;
+      border: 1px solid #2e3a55;
+      color: #d6e1f5;
+      border-radius: 6px;
+      cursor: pointer;
+      &.btn-danger { color: #ff7676; border-color: #5a2828; }
+      &:hover:not(:disabled) { background: #283355; }
+      &:disabled { opacity: 0.6; cursor: not-allowed; }
+    }
+  }
+
   .card-info {
     flex: 1;
     min-width: 0;

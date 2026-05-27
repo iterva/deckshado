@@ -33,6 +33,7 @@ export class TiendaComponent implements OnInit {
   loading = false;
   notFound = false;
   previewCard: Card | null = null;
+  viewPhotoUrl: string | null = null;
   showContactModal = false;
   showCart = false;
 

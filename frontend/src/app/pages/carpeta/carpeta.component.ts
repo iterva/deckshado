@@ -81,6 +81,10 @@ export class CarpetaComponent implements OnInit {
   exportingPdf = false;
   mercadoAllEntries: CollectionEntry[] = [];
 
+  // Foto real de la carta (por entry.id)
+  uploadingPhotoFor: number | null = null;
+  viewPhotoUrl: string | null = null;
+
   // ── Tienda config ──
   storeConfigOpen = false;
   storeProfileSaving = false;
@@ -454,6 +458,70 @@ export class CarpetaComponent implements OnInit {
       this.mercadoTotal--;
       this.cdr.detectChanges();
     });
+  }
+
+  /** Trigger file input asociado a una entrada. */
+  triggerPhotoUpload(entry: CollectionEntry, ev: Event) {
+    ev.stopPropagation();
+    const input = document.getElementById('photo-input-' + entry.id) as HTMLInputElement | null;
+    input?.click();
+  }
+
+  /** Subir foto real de la carta a Cloudinary y guardar URL en la entrada. */
+  onPhotoSelected(entry: CollectionEntry, ev: Event) {
+    const input = ev.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Solo se permiten imágenes.');
+      input.value = '';
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      alert('La imagen es muy grande (máx 8 MB).');
+      input.value = '';
+      return;
+    }
+    this.uploadingPhotoFor = entry.id;
+    this.cdr.detectChanges();
+    this.carpetaService.uploadEntryPhoto(entry.card_detail.id, file).subscribe({
+      next: (updated) => {
+        entry.photo_url = updated.photo_url;
+        this.uploadingPhotoFor = null;
+        input.value = '';
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error subiendo foto:', err);
+        alert('No se pudo subir la foto. Intenta de nuevo.');
+        this.uploadingPhotoFor = null;
+        input.value = '';
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  removeMercadoPhoto(entry: CollectionEntry, ev: Event) {
+    ev.stopPropagation();
+    if (!entry.photo_url) return;
+    if (!confirm('¿Quitar la foto real de esta carta?')) return;
+    this.carpetaService.upsertCollection({
+      card: entry.card_detail.id,
+      photo_url: '',
+    }).subscribe(() => {
+      entry.photo_url = '';
+      this.cdr.detectChanges();
+    });
+  }
+
+  openPhotoModal(url: string | null | undefined, ev?: Event) {
+    if (ev) ev.stopPropagation();
+    if (!url) return;
+    this.viewPhotoUrl = url;
+  }
+
+  closePhotoModal() {
+    this.viewPhotoUrl = null;
   }
 
   async exportMercadoPdf() {

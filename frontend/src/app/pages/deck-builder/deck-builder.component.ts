@@ -1527,6 +1527,7 @@ export class DeckBuilderComponent implements OnInit {
   importBusy = false;
   importTarget: 'main' | 'side' = 'main';
   importReport: { added: number; notFound: string[]; partial: string[] } | null = null;
+  importingJson = false;
   @ViewChild('exportCard') exportCardRef?: ElementRef<HTMLElement>;
 
   /** Construye el texto exportable agrupado por tipo. */
@@ -1860,5 +1861,82 @@ export class DeckBuilderComponent implements OnInit {
     };
 
     processNext();
+  }
+
+  // ====== Copiar mazo actual a nuevo borrador ======
+  copyDeck() {
+    if (this.totalDeckCards === 0) return;
+    const snapshot = {
+      name: this.deckName || 'Sin nombre',
+      description: this.deckDescription || '',
+      format: this.selectedFormat,
+      sub_format: this.selectedSubFormat,
+      race: this.selectedRace,
+      starting_gold: this.startingGoldId,
+      entries: this.deckCards.map(c => ({ card_detail: c.card, quantity: c.quantity })),
+      sideboard_entries: this.sideCards.map(c => ({ card_detail: c.card, quantity: c.quantity })),
+    };
+    const fmt = this.selectedFormat;
+    const qp: any = {};
+    if (this.selectedSubFormat) qp.sub = this.selectedSubFormat;
+    if (this.selectedRace) qp.race = this.selectedRace;
+    this.router.navigate(['/builder/new', fmt], {
+      queryParams: qp,
+      state: { copyFrom: snapshot },
+    });
+  }
+
+  // ====== Importar mazo desde archivo .deck.json ======
+  triggerImportJson(input: HTMLInputElement) {
+    if (this.importingJson) return;
+    input.value = '';
+    input.click();
+  }
+
+  onImportJsonFile(ev: Event) {
+    const input = ev.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (file.size > 1_000_000) {
+      this.showToast('Archivo demasiado grande (máx 1 MB).', 'error');
+      input.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      let payload: any;
+      try {
+        payload = JSON.parse(String(reader.result || ''));
+      } catch {
+        this.showToast('Archivo JSON inválido.', 'error');
+        input.value = '';
+        return;
+      }
+      this.importingJson = true;
+      this.cdr.detectChanges();
+      this.deckService.importDeck(payload).subscribe({
+        next: (res) => {
+          this.importingJson = false;
+          const missing = res.missing_myl_ids?.length || 0;
+          const msg = missing > 0
+            ? `Mazo importado (faltan ${missing} cartas).`
+            : '¡Mazo importado exitosamente!';
+          this.showToast(msg, missing > 0 ? 'error' : 'success');
+          this.router.navigate(['/builder', res.id]);
+        },
+        error: (err) => {
+          this.importingJson = false;
+          const detail = err?.error?.detail || err?.error?.error || 'No se pudo importar el mazo.';
+          this.showToast(detail, 'error');
+          this.cdr.detectChanges();
+        },
+      });
+      input.value = '';
+    };
+    reader.onerror = () => {
+      this.showToast('No se pudo leer el archivo.', 'error');
+      input.value = '';
+    };
+    reader.readAsText(file);
   }
 }

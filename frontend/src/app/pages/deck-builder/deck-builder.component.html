@@ -223,11 +223,24 @@
                 title="Importar mazo desde texto o código">
           <i class="bi bi-box-arrow-in-down"></i>
         </button>
+        <input #importJsonInput type="file" accept="application/json,.json" (change)="onImportJsonFile($event)" hidden />
+        <button class="icon-btn"
+                (click)="triggerImportJson(importJsonInput)"
+                [disabled]="importingJson"
+                [title]="importingJson ? 'Importando…' : 'Importar mazo desde archivo .deck.json'">
+          <i class="bi bi-filetype-json"></i>
+        </button>
         <button class="icon-btn"
                 (click)="openExportModal()"
                 [disabled]="totalDeckCards === 0"
                 title="Exportar mazo">
           <i class="bi bi-box-arrow-up"></i>
+        </button>
+        <button class="icon-btn"
+                (click)="copyDeck()"
+                [disabled]="totalDeckCards === 0"
+                title="Copiar mazo a un nuevo borrador">
+          <i class="bi bi-files"></i>
         </button>
         <button class="icon-btn"
                 [class.active]="compactView"

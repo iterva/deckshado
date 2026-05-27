@@ -676,11 +676,18 @@ export class DeckViewComponent implements OnInit {
     this.cdr.detectChanges();
     try {
       const el = this.deckContent.nativeElement as HTMLElement;
+      // Force layout to settle at the orientation's intended width before measuring,
+      // otherwise on mobile the captured layout collapses (vertical-looking export).
+      await new Promise<void>(r => requestAnimationFrame(() => r()));
+      const targetWidth = this.exportOrientation === 'horizontal' ? 1200 : 650;
       const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(el, {
         backgroundColor: this.getRaceBackground(),
         useCORS: true, allowTaint: true, scale: 2,
-        windowWidth: el.scrollWidth, windowHeight: el.scrollHeight,
+        width: targetWidth,
+        height: el.scrollHeight,
+        windowWidth: targetWidth,
+        windowHeight: el.scrollHeight,
       });
       const blob: Blob | null = await new Promise(res => canvas.toBlob(b => res(b), 'image/png'));
       if (blob) {
@@ -892,13 +899,19 @@ export class DeckViewComponent implements OnInit {
       }));
 
       const bgColor = this.getRaceBackground();
+      // Force a layout flush so the offscreen export area has its final size
+      // before html2canvas measures it (prevents collapsed/vertical output on mobile).
+      await new Promise<void>(r => requestAnimationFrame(() => r()));
+      const targetWidth = this.exportOrientation === 'horizontal' ? 1200 : 650;
       const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(el, {
         backgroundColor: bgColor,
         useCORS: true,
         allowTaint: true,
         scale: 2,
-        windowWidth: el.scrollWidth,
+        width: targetWidth,
+        height: el.scrollHeight,
+        windowWidth: targetWidth,
         windowHeight: el.scrollHeight,
       });
       const link = document.createElement('a');

@@ -826,6 +826,19 @@ interface DirtyPatch {
       display: grid; gap: .9rem;
       grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
     }
+    @media (max-width: 600px) {
+      .collection-grid, .wishlist-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: .5rem;
+      }
+      .card-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: .5rem;
+      }
+      .wishlist-card .share-check {
+        width: 22px; height: 22px; top: 4px; left: 4px; font-size: .7rem;
+      }
+    }
 
     .collection-card, .wishlist-card {
       background: #16213e; border: 1px solid #2a3a4a; border-radius: 10px;

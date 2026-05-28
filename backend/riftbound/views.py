@@ -81,11 +81,16 @@ class RiftboundCardViewSet(viewsets.ReadOnlyModelViewSet):
         # Filtro de colores en Python (compatible con SQLite). OR entre colores.
         # Los battlefields se incluyen siempre (son cartas neutrales necesarias
         # en cualquier mazo, independientemente de los colores elegidos).
+        # Excepcion: ?exclude_battlefields=1 fuerza a excluirlos del listado.
+        exclude_bg = params.get("exclude_battlefields") in ("1", "true", "True")
         if color_list:
             color_set = set(color_list)
             ids = [pk for pk, cs, ct in qs.values_list("id", "colors", "card_type")
-                   if ct == "battlefield" or (cs and any(c in color_set for c in cs))]
+                   if (ct == "battlefield" and not exclude_bg)
+                   or (cs and any(c in color_set for c in cs))]
             qs = qs.filter(id__in=ids)
+        elif exclude_bg:
+            qs = qs.exclude(card_type="battlefield")
 
         # ?subtype=Annie  → cartas cuyo JSONField `subtypes` contiene el valor
         # (filtro en Python por compatibilidad con SQLite).

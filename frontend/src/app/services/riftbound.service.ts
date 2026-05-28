@@ -38,6 +38,7 @@ export class RiftboundService {
     page?: number;
     lite?: boolean;
     subtype?: string;
+    excludeBattlefields?: boolean;
   } = {}): Observable<PaginatedResponse<RiftboundCard | RiftboundCardLite>> {
     let params = new HttpParams();
     if (opts.search) {
@@ -54,6 +55,7 @@ export class RiftboundService {
     if (opts.page) params = params.set('page', String(opts.page));
     if (opts.lite) params = params.set('lite', '1');
     if (opts.subtype) params = params.set('subtype', opts.subtype);
+    if (opts.excludeBattlefields) params = params.set('exclude_battlefields', '1');
     return this.http.get<PaginatedResponse<RiftboundCard | RiftboundCardLite>>(
       `${this.base}/cards/`, { params },
     );

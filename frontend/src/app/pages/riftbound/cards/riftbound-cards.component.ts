@@ -442,6 +442,7 @@ export class RiftboundCardsComponent implements OnInit {
       rarity: this.rarityFilter || undefined,
       energy: this.energyFilter ?? undefined,
       colors: [...this.selectedColors()],
+      excludeBattlefields: this.selectedColors().size > 0 && this.typeFilter !== 'battlefield',
       page: this.page(),
       lite: true,
     }).subscribe({

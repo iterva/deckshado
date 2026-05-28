@@ -362,6 +362,32 @@ function typeRank(t?: string): number {
           }
         }
 
+        <!-- Distribución por tipo (Unit / Spell / Gear) -->
+        @if (typeDist(); as td) {
+          @if (td.total > 0) {
+            <div class="color-dist type-dist">
+              <span class="cd-title">Tipos</span>
+              <div class="cd-bars">
+                @if (td.counts['unit']) {
+                  <span class="cd-pill" [style.--c]="'#f0a020'">
+                    Unidades: <strong>{{ td.counts['unit'] }}</strong>
+                  </span>
+                }
+                @if (td.counts['spell']) {
+                  <span class="cd-pill" [style.--c]="'#7d5cff'">
+                    Hechizos: <strong>{{ td.counts['spell'] }}</strong>
+                  </span>
+                }
+                @if (td.counts['gear']) {
+                  <span class="cd-pill" [style.--c]="'#9aa4ae'">
+                    Gears: <strong>{{ td.counts['gear'] }}</strong>
+                  </span>
+                }
+              </div>
+            </div>
+          }
+        }
+
         <!-- Zonas con sus cartas -->
         @for (z of zones; track z) {
           <div class="zone-section" [class.empty]="entries()[z].length === 0">
@@ -1447,6 +1473,21 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
         if (!cs?.length) continue;
         for (const c of cs) {
           counts[c] = (counts[c] ?? 0) + e.quantity;
+          total += e.quantity;
+        }
+      }
+    }
+    return { counts, total };
+  });
+
+  typeDist = computed(() => {
+    const counts: Record<string, number> = { unit: 0, spell: 0, gear: 0 };
+    let total = 0;
+    for (const z of ['main', 'side'] as RiftboundZone[]) {
+      for (const e of this.entries()[z]) {
+        const t = (e.card.card_type ?? '').toLowerCase();
+        if (t in counts) {
+          counts[t] += e.quantity;
           total += e.quantity;
         }
       }

@@ -154,6 +154,9 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
                     <a [routerLink]="['/riftbound/builder', deck.id]" class="action-btn action-edit">
                       ✏️ Editar
                     </a>
+                    <button class="action-btn action-copy" (click)="duplicateDeck(deck)" [disabled]="duplicatingId() === deck.id" title="Duplicar este mazo">
+                      {{ duplicatingId() === deck.id ? '…' : '📋' }}
+                    </button>
                     <button class="action-btn action-delete" (click)="deleteDeck(deck.id)">🗑</button>
                   </div>
                 }
@@ -332,6 +335,9 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
     }
     .action-edit { flex: 1; color: #c9c9e6; border-color: #3a3a5e; }
     .action-edit:hover { color: #fff; background: rgba(99,102,241,.12); border-color: #6366f1; }
+    .action-copy { flex: 0 0 auto; width: 38px; color: #7dd3fc; border-color: #2a3a4a; }
+    .action-copy:hover:not(:disabled) { color: #fff; background: rgba(56,189,248,.15); border-color: #38bdf8; }
+    .action-copy:disabled { opacity: .55; cursor: wait; }
     .action-delete { flex: 0 0 auto; width: 38px; color: #d97a7a; border-color: #4a2a2a; }
     .action-delete:hover { color: #fff; background: rgba(220,53,69,.18); border-color: #dc3545; }
 
@@ -371,6 +377,7 @@ export class RiftboundDecksComponent implements OnInit {
   loading = signal(true);
   page = signal(1);
   totalCount = signal(0);
+  duplicatingId = signal<number | null>(null);
   activeTab = signal<Tab>('public');
   readonly pageSize = 20;
   totalPages = () => Math.max(1, Math.ceil(this.totalCount() / this.pageSize));
@@ -470,5 +477,30 @@ export class RiftboundDecksComponent implements OnInit {
   deleteDeck(id: number) {
     if (!confirm('¿Eliminar este mazo? Esta acción no se puede deshacer.')) return;
     this.rb.deleteDeck(id).subscribe({ next: () => this.reload() });
+  }
+
+  duplicateDeck(deck: RiftboundDeck) {
+    if (this.duplicatingId() !== null) return;
+    this.duplicatingId.set(deck.id);
+    this.rb.getDeck(deck.id).subscribe({
+      next: (full) => {
+        const entries = (full.entries ?? []).map(e => ({
+          card: e.card, quantity: e.quantity, zone: e.zone,
+        })) as RiftboundDeck['entries'];
+        const payload: Partial<RiftboundDeck> = {
+          name: `${full.name} (copia)`,
+          description: full.description,
+          is_public: false,
+          cover_card: full.cover_card,
+          champion_unit: full.champion_unit,
+          entries,
+        };
+        this.rb.createDeck(payload).subscribe({
+          next: () => { this.duplicatingId.set(null); this.activeTab.set('mine'); this.page.set(1); this.reload(); },
+          error: () => { this.duplicatingId.set(null); alert('No se pudo duplicar el mazo.'); },
+        });
+      },
+      error: () => { this.duplicatingId.set(null); alert('No se pudo cargar el mazo para duplicar.'); },
+    });
   }
 }

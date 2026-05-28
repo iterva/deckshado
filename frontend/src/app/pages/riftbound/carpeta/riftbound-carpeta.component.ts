@@ -764,6 +764,18 @@ interface DirtyPatch {
       font-size: .85rem; min-width: 220px;
     }
     .share-message-input::placeholder { color: #6b7a8a; }
+    @media (max-width: 600px) {
+      .share-row {
+        display: flex;
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        gap: .5rem;
+      }
+      .share-row .share-message-input { min-width: 0; width: 100%; }
+      .share-row .btn { width: 100%; justify-content: center; }
+      .share-row app-share-image { display: block; width: 100%; }
+    }
     .search-bar { display: flex; gap: .4rem; flex: 1; min-width: 240px; }
     .search-bar input {
       flex: 1; padding: .55rem .8rem; background: #0f0f23;

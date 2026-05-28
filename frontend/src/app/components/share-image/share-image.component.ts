@@ -182,6 +182,8 @@ export class ShareImageComponent {
   @Input() gameLabel = '';
   @Input() sellerName = '';
   @Input() contactLine = '';
+  /** Si se define, reemplaza completamente el título por defecto. */
+  @Input() customHeadline = '';
   @Input() items: ShareImageItem[] = [];
   @Input() filenamePrefix = 'shadowforge';
   /** Etiqueta del botón principal (sobrescribe el por defecto). */
@@ -195,6 +197,8 @@ export class ShareImageComponent {
   readonly toast = signal<string | null>(null);
 
   get headlineText(): string {
+    const custom = (this.customHeadline || '').trim();
+    if (custom) return custom;
     const game = this.gameLabel ? ` ${this.gameLabel}` : '';
     if (this.mode === 'buying') {
       const sep = this.gameLabel ? ' · ' : '';

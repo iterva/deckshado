@@ -83,11 +83,6 @@ export interface ShareImageItem {
         </div>
       }
     </div>
-
-    <div class="footer">
-      <div class="brand">ShadowForge</div>
-      <div class="tagline">{{ footerTagline }}</div>
-    </div>
   </div>
   `,
   styles: [`

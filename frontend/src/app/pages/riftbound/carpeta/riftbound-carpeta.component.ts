@@ -8,6 +8,7 @@ import { Router } from '@angular/router';
 
 import { RiftboundService } from '../../../services/riftbound.service';
 import { AuthService } from '../../../services/auth.service';
+import { ShareImageComponent, ShareImageItem } from '../../../components/share-image/share-image.component';
 import {
   RiftboundCard, RiftboundCardLite, RiftboundCollectionEntry, RiftboundWishlistEntry,
   RiftboundSet, RiftboundCollectionStats, RiftboundBinderProfile, RiftboundBulkImportResult,
@@ -29,7 +30,7 @@ interface DirtyPatch {
 @Component({
   selector: 'app-riftbound-carpeta',
   standalone: true,
-  imports: [CommonModule, FormsModule, DecimalPipe],
+  imports: [CommonModule, FormsModule, DecimalPipe, ShareImageComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
   <div class="carpeta-container">
@@ -313,6 +314,28 @@ interface DirtyPatch {
                    [(ngModel)]="wishlistSearch" (keyup.enter)="onWishlistSearch()" />
             <button class="btn btn-primary btn-sm" (click)="onWishlistSearch()">Buscar</button>
           </div>
+          @if (wishlistEntries().length > 0) {
+            <div class="share-row">
+              <app-share-image
+                mode="buying"
+                gameLabel="Riftbound"
+                [sellerName]="wishlistSellerHandle()"
+                [contactLine]="wishlistContactLine()"
+                [items]="wishlistShareItems()"
+                ctaLabel="Imagen busco"
+                filenamePrefix="shadowforge-wishlist"
+                footerTagline="ShadowForge · Marketplace TCG">
+              </app-share-image>
+              @if (binderProfile()?.is_store_public && binderProfile()?.share_token) {
+                <button class="btn btn-sm" (click)="copyWishlistLink()">
+                  <i class="bi bi-link-45deg"></i> Copiar link wishlist
+                </button>
+                <button class="btn btn-sm" (click)="shareWishlistWhatsApp()">
+                  <i class="bi bi-whatsapp"></i> Compartir
+                </button>
+              }
+            </div>
+          }
         </div>
 
         <p class="results-count">{{ wishlistTotal() }} cartas en tu wishlist</p>
@@ -327,7 +350,13 @@ interface DirtyPatch {
 
         <div class="wishlist-grid">
           @for (entry of wishlistEntries(); track entry.id) {
-            <div class="wishlist-card">
+            <div class="wishlist-card" [class.is-share-selected]="isWishlistShareSelected(entry.id)">
+              <label class="share-check" title="Incluir en la imagen para compartir" (click)="$event.stopPropagation()">
+                <input type="checkbox"
+                       [checked]="isWishlistShareSelected(entry.id)"
+                       (change)="toggleWishlistShare(entry.id, $any($event.target).checked)" />
+                <i class="bi bi-camera-fill"></i>
+              </label>
               <div class="card-image" (click)="previewCard.set(entry.card_data)">
                 @if (entry.card_data?.image) {
                   <img [src]="entry.card_data.image" [alt]="entry.card_data.name" loading="lazy" />
@@ -776,7 +805,25 @@ interface DirtyPatch {
     .collection-card, .wishlist-card {
       background: #16213e; border: 1px solid #2a3a4a; border-radius: 10px;
       overflow: hidden; display: flex; flex-direction: column;
+      position: relative;
     }
+    .wishlist-card.is-share-selected {
+      border-color: #e94560;
+      box-shadow: 0 0 0 2px rgba(233,69,96,.35);
+    }
+    .wishlist-card .share-check {
+      position: absolute; top: 8px; left: 8px; z-index: 5;
+      width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,.65); color: #fff; border-radius: 6px;
+      cursor: pointer; font-size: .85rem;
+      border: 1px solid rgba(255,255,255,.18);
+    }
+    .wishlist-card .share-check input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+    .wishlist-card .share-check i { pointer-events: none; opacity: .75; }
+    .wishlist-card.is-share-selected .share-check {
+      background: #e94560; border-color: #e94560;
+    }
+    .wishlist-card.is-share-selected .share-check i { opacity: 1; }
     .collection-card .card-image, .wishlist-card .card-image, .card-item .card-image {
       position: relative; aspect-ratio: 5/7; background: #0f0f23; overflow: hidden; cursor: pointer;
     }
@@ -1072,6 +1119,8 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   // Binder profile / Mercado
   binderProfile = signal<RiftboundBinderProfile | null>(null);
+  /** IDs (no persistidos) de entradas de wishlist marcadas para incluir en la imagen. */
+  wishlistShareSelection = signal<Set<number>>(new Set<number>());
   avatarUploading = signal(false);
   showStoreConfig = signal(false);
   mercadoEntries = signal<RiftboundCollectionEntry[]>([]);
@@ -1519,6 +1568,52 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     navigator.clipboard?.writeText(url).then(() => {
       alert('Enlace copiado:\n' + url);
     }).catch(() => prompt('Copia el enlace:', url));
+  }
+
+  // ── Compartir wishlist ──
+  wishlistSellerHandle(): string {
+    const p = this.binderProfile();
+    if (p?.display_name) return p.display_name;
+    const u = this.auth.user();
+    return u?.username ? '@' + u.username : 'Mi wishlist';
+  }
+  wishlistContactLine(): string {
+    return `¿Tienes alguna? Escríbeme · ${this.wishlistSellerHandle()}`;
+  }
+  wishlistShareItems(): ShareImageItem[] {
+    const sel = this.wishlistShareSelection();
+    const source = this.wishlistEntries();
+    const filtered = sel.size > 0 ? source.filter(w => sel.has(w.id)) : source;
+    return filtered.slice(0, 20).map(w => ({
+      name: w.card_data?.name || '',
+      image: w.card_data?.image || '',
+      quantity: w.desired_quantity || 1,
+      foil: false,
+      price: null,
+    }));
+  }
+  isWishlistShareSelected(id: number): boolean {
+    return this.wishlistShareSelection().has(id);
+  }
+  toggleWishlistShare(id: number, checked: boolean) {
+    const next = new Set(this.wishlistShareSelection());
+    if (checked) next.add(id); else next.delete(id);
+    this.wishlistShareSelection.set(next);
+  }
+  copyWishlistLink() {
+    const token = this.binderProfile()?.share_token;
+    if (!token) return;
+    const url = `${window.location.origin}/riftbound/wishlist/${token}`;
+    navigator.clipboard?.writeText(url).then(() => {
+      alert('Enlace copiado:\n' + url);
+    }).catch(() => prompt('Copia el enlace:', url));
+  }
+  shareWishlistWhatsApp() {
+    const token = this.binderProfile()?.share_token;
+    if (!token) return;
+    const url = `${window.location.origin}/riftbound/wishlist/${token}`;
+    const txt = encodeURIComponent(`Mira mi wishlist Riftbound: ${url}`);
+    window.open(`https://wa.me/?text=${txt}`, '_blank');
   }
 
   // ── Mercado ──

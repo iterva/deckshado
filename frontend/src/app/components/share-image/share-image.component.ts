@@ -56,7 +56,7 @@ export interface ShareImageItem {
   <div class="share-export" #exportArea aria-hidden="true">
     <div class="hero">
       <div class="title-row">
-        <span class="emoji">{{ mode === 'buying' ? '❤️' : '🛒' }}</span>
+        <span class="emoji">{{ mode === 'buying' ? '🔎' : '🛒' }}</span>
         <h1>{{ headlineText }}</h1>
       </div>
       @if (contactLine) { <p class="subtitle">{{ contactLine }}</p> }
@@ -200,9 +200,12 @@ export class ShareImageComponent {
   readonly toast = signal<string | null>(null);
 
   get headlineText(): string {
-    const verb = this.mode === 'buying' ? 'Buscando' : 'Vendiendo';
     const game = this.gameLabel ? ` ${this.gameLabel}` : '';
-    return `${verb}${game}`;
+    if (this.mode === 'buying') {
+      const sep = this.gameLabel ? ' · ' : '';
+      return `En la mira${sep}${this.gameLabel ?? ''}`.trim();
+    }
+    return `Vendiendo${game}`;
   }
 
   get gridCols(): number {

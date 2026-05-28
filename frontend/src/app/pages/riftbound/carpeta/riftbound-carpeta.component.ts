@@ -316,6 +316,11 @@ interface DirtyPatch {
           </div>
           @if (wishlistEntries().length > 0) {
             <div class="share-row">
+              <input type="text"
+                     class="share-message-input"
+                     placeholder="Mensaje en la imagen (opcional)"
+                     [(ngModel)]="wishlistShareMessage"
+                     maxlength="120" />
               <app-share-image
                 mode="buying"
                 gameLabel="Riftbound"
@@ -751,6 +756,13 @@ interface DirtyPatch {
     .tab.active { color: #e94560; border-bottom-color: #e94560; }
 
     .tab-toolbar { display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+    .share-row { display: inline-flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+    .share-message-input {
+      padding: .35rem .6rem; border-radius: 6px;
+      border: 1px solid #2a3a4a; background: #0f0f23; color: #fff;
+      font-size: .85rem; min-width: 220px;
+    }
+    .share-message-input::placeholder { color: #6b7a8a; }
     .search-bar { display: flex; gap: .4rem; flex: 1; min-width: 240px; }
     .search-bar input {
       flex: 1; padding: .55rem .8rem; background: #0f0f23;
@@ -1121,6 +1133,8 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   binderProfile = signal<RiftboundBinderProfile | null>(null);
   /** IDs (no persistidos) de entradas de wishlist marcadas para incluir en la imagen. */
   wishlistShareSelection = signal<Set<number>>(new Set<number>());
+  /** Mensaje personalizable que aparece bajo el titulo en la imagen compartida. */
+  wishlistShareMessage = '';
   avatarUploading = signal(false);
   showStoreConfig = signal(false);
   mercadoEntries = signal<RiftboundCollectionEntry[]>([]);
@@ -1578,7 +1592,8 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     return u?.username ? '@' + u.username : 'Mi wishlist';
   }
   wishlistContactLine(): string {
-    return `¿Tienes alguna? Escríbeme · ${this.wishlistSellerHandle()}`;
+    const msg = (this.wishlistShareMessage || '').trim();
+    return msg || 'Busco cartas';
   }
   wishlistShareItems(): ShareImageItem[] {
     const sel = this.wishlistShareSelection();

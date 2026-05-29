@@ -244,8 +244,8 @@ function typeRank(t?: string): number {
         <div class="deck-header">
           <h2>{{ deckId() ? 'Editar Mazo' : 'Nuevo Mazo' }}</h2>
           @if (!deckId() && totalEntries() > 0) {
-            <button class="discard-draft-btn" (click)="discardDraft()" title="Descartar borrador local">
-              🗑️ Descartar borrador
+            <button class="discard-draft-btn" (click)="discardDraft()" title="Descartar borrador local" aria-label="Descartar borrador">
+              <i class="bi bi-trash"></i>
             </button>
           }
           <button class="mobile-close-btn" (click)="showDeckPanel.set(false)">✕</button>
@@ -964,9 +964,16 @@ function typeRank(t?: string): number {
 
     /* Champion Unit banner (variante del legend banner) */
     .cu-banner { margin-top: .5rem; }
-    .cu-banner .legend-tag.cu-tag { background: #3aa6ff; color: #0f0f23; }
+    .cu-banner .legend-tag.cu-tag { background: transparent; color: #3aa6ff; }
     .cu-banner .cu-num { font-size: .7rem; opacity: .65; color: #98a2a8; }
     .cu-choose { background: linear-gradient(135deg, #3aa6ff, #1e6bbf) !important; }
+    .discard-draft-btn {
+      background: transparent; border: 1px solid #2a3a4a; color: #c8c8da;
+      width: 32px; height: 32px; border-radius: 6px; padding: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 1rem; transition: all .15s;
+    }
+    .discard-draft-btn:hover { color: #e94560; border-color: #e94560; background: rgba(233,69,96,.08); }
 
     /* Legend Picker modal */
     .legend-picker-overlay {

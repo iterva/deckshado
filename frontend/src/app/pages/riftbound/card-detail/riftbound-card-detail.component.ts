@@ -14,7 +14,9 @@ import { RiftboundCard } from '../../../models/riftbound';
         <a routerLink="/riftbound/cards" class="back">← Volver al catálogo</a>
         <div class="layout">
           @if (c.image) {
-            <img [src]="c.image" [alt]="c.name" />
+            <div class="img-wrap" [class.battlefield]="c.card_type === 'battlefield'">
+              <img [src]="c.image" [alt]="c.name" />
+            </div>
           }
           <div class="info">
             <h1>{{ c.name }}</h1>
@@ -47,7 +49,25 @@ import { RiftboundCard } from '../../../models/riftbound';
   styles: [`
     .back { display: inline-block; margin-bottom: 1rem; opacity: .8; }
     .layout { display: grid; gap: 2rem; grid-template-columns: minmax(220px, 360px) 1fr; }
-    .layout img { width: 100%; border-radius: .75rem; }
+    .layout .img-wrap { width: 100%; }
+    .layout .img-wrap img { width: 100%; border-radius: .75rem; display: block; }
+    .layout .img-wrap.battlefield {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 5 / 7;
+      overflow: hidden;
+      border-radius: .75rem;
+      background: #0f0f23;
+    }
+    .layout .img-wrap.battlefield img {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 140%;
+      height: auto;
+      border-radius: 0;
+      transform: translate(-50%, -50%) rotate(-90deg);
+      transform-origin: center center;
+    }
     .badges { display: flex; gap: .35rem; flex-wrap: wrap; margin: .75rem 0; }
     .badge { padding: .25rem .55rem; border-radius: .35rem; border: 1px solid var(--border-color, #444); font-size: .85rem; }
     .badge.color { background: #e9456020; }

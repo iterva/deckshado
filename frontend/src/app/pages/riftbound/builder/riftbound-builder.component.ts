@@ -1998,7 +1998,9 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
       next: (deck) => {
         this.saving.set(false);
         // El mazo se guarda aunque este incompleto: la validacion es solo informativa.
-        // Siempre redirigimos a la vista previa del mazo recien guardado.
+        // Marcamos como persistido (deckId no nulo) para que ngOnDestroy no
+        // vuelva a guardar el borrador al navegar fuera del builder.
+        this.deckId.set(deck.id);
         this.clearDraft();
         this.router.navigate(['/riftbound/decks', deck.id]);
       },

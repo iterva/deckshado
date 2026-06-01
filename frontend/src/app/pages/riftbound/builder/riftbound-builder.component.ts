@@ -1455,13 +1455,9 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
     return [...this.entries()[z]].sort(this.entryComparator);
   }
 
-  /** Comparador compartido: tipo → cantidad desc → nombre. */
+  /** Comparador compartido: tipo (unidad → hechizo → equipo → resto). Estable: preserva orden de inserción dentro del mismo tipo. */
   private entryComparator(a: BuilderEntry, b: BuilderEntry): number {
-    const ra = typeRank(a.card.card_type);
-    const rb = typeRank(b.card.card_type);
-    if (ra !== rb) return ra - rb;
-    if (b.quantity !== a.quantity) return b.quantity - a.quantity;
-    return (a.card.name ?? '').localeCompare(b.card.name ?? '');
+    return typeRank(a.card.card_type) - typeRank(b.card.card_type);
   }
 
   /** Ordena en sitio el mapa de entries (se usa al entrar al builder). */

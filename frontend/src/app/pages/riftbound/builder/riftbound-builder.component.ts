@@ -442,15 +442,17 @@ function typeRank(t?: string): number {
           </div>
         }
 
-        <button type="button" class="preview-deck-btn"
-                (click)="openDeckPreview()"
-                [disabled]="totalEntries() === 0">
-          👁️ Previsualizar mazo
-        </button>
+        <div class="action-row">
+          <button type="button" class="preview-deck-btn"
+                  (click)="openDeckPreview()"
+                  [disabled]="totalEntries() === 0">
+            👁️ Previsualizar
+          </button>
 
-        <button class="save-btn" (click)="save()" [disabled]="saving()">
-          {{ saving() ? 'Guardando…' : (deckId() ? 'Guardar cambios' : 'Crear mazo') }}
-        </button>
+          <button class="save-btn" (click)="save()" [disabled]="saving()">
+            {{ saving() ? 'Guardando…' : (deckId() ? 'Guardar cambios' : 'Crear mazo') }}
+          </button>
+        </div>
       </div>
 
       <!-- FAB para previsualizar el mazo (móvil) -->
@@ -933,6 +935,12 @@ function typeRank(t?: string): number {
     }
     .save-btn:hover:not(:disabled) { background: #d4a84b; }
     .save-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+    .action-row {
+      display: flex; gap: .5rem; align-items: stretch;
+    }
+    .action-row .preview-deck-btn,
+    .action-row .save-btn { flex: 1; margin-bottom: 0; white-space: nowrap; }
 
     .preview-deck-btn {
       width: 100%; padding: .55rem 1rem; border: 1px solid #2a3a4a; border-radius: 6px;

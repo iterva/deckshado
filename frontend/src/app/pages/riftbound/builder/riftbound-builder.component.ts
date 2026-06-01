@@ -442,10 +442,24 @@ function typeRank(t?: string): number {
           </div>
         }
 
+        <button type="button" class="preview-deck-btn"
+                (click)="openDeckPreview()"
+                [disabled]="totalEntries() === 0">
+          👁️ Previsualizar mazo
+        </button>
+
         <button class="save-btn" (click)="save()" [disabled]="saving()">
           {{ saving() ? 'Guardando…' : (deckId() ? 'Guardar cambios' : 'Crear mazo') }}
         </button>
       </div>
+
+      <!-- FAB para previsualizar el mazo (móvil) -->
+      <button type="button" class="rb-fab rb-fab-preview"
+              (click)="openDeckPreview()"
+              [disabled]="totalEntries() === 0"
+              aria-label="Previsualizar mazo">
+        <span class="fab-icon">👁️</span>
+      </button>
 
       <!-- FAB para abrir el panel del mazo en móvil -->
       <button type="button" class="rb-fab" (click)="showDeckPanel.set(true)" aria-label="Abrir mazo">
@@ -453,6 +467,58 @@ function typeRank(t?: string): number {
         <span class="fab-icon">📚</span>
       </button>
     </div>
+
+    <!-- Modal vista previa del mazo (estilo galería) -->
+    @if (showDeckPreview()) {
+      <div class="deck-preview-overlay" (click)="closeDeckPreview()">
+        <div class="deck-preview-box" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+          <div class="dp-head">
+            <div>
+              <h2>{{ deckName || 'Mazo Riftbound' }}</h2>
+              <p class="muted">{{ totalEntries() }} cartas · {{ deckId() ? 'Editando' : 'Borrador' }}</p>
+            </div>
+            <button class="dp-close" (click)="closeDeckPreview()" aria-label="Cerrar">✕</button>
+          </div>
+          <div class="dp-body">
+            @for (z of zones; track z) {
+              @if (entries()[z].length > 0) {
+                <section class="dp-section">
+                  <h3 class="dp-section-title">
+                    {{ labels[z] }}
+                    <span class="dp-section-count">{{ zoneCount(z) }}/{{ rules[z] }}</span>
+                  </h3>
+                  <div class="dp-grid">
+                    @for (e of sortedEntries(z); track e.card.id) {
+                      <div class="dp-card">
+                        <div class="dp-img-wrap">
+                          @if (e.card.image) {
+                            <img [src]="e.card.image" [alt]="e.card.name" />
+                          } @else {
+                            <div class="dp-img-fallback">{{ e.card.card_number }}</div>
+                          }
+                          <span class="dp-qty"
+                                [class.is-single]="e.quantity === 1 && (z === 'champion' || z === 'bg')">
+                            @if (e.quantity === 1 && (z === 'champion' || z === 'bg')) {
+                              ★
+                            } @else {
+                              ×{{ e.quantity }}
+                            }
+                          </span>
+                        </div>
+                        <div class="dp-name">{{ e.card.name }}</div>
+                      </div>
+                    }
+                  </div>
+                </section>
+              }
+            }
+            @if (totalEntries() === 0) {
+              <p class="muted center" style="padding:2rem">El mazo está vacío.</p>
+            }
+          </div>
+        </div>
+      </div>
+    }
 
     <!-- Modal preview -->
     @if (previewCard(); as pc) {
@@ -855,6 +921,93 @@ function typeRank(t?: string): number {
     .save-btn:hover:not(:disabled) { background: #d4a84b; }
     .save-btn:disabled { opacity: .55; cursor: not-allowed; }
 
+    .preview-deck-btn {
+      width: 100%; padding: .55rem 1rem; border: 1px solid #2a3a4a; border-radius: 6px;
+      background: #16213e; color: #c8c8da; font-weight: 600; cursor: pointer;
+      font-size: .95rem; margin-bottom: .55rem;
+      transition: all .15s;
+    }
+    .preview-deck-btn:hover:not(:disabled) { background: #1e3a4a; border-color: #ffbd39; color: #ffbd39; }
+    .preview-deck-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* Deck preview modal (galería) */
+    .deck-preview-overlay {
+      position: fixed; inset: 0; z-index: 1200;
+      background: rgba(0,0,0,.88); display: grid; place-items: center;
+      padding: 1rem; backdrop-filter: blur(4px); overflow-y: auto;
+    }
+    .deck-preview-box {
+      width: min(1280px, 100%); max-height: 92vh; display: flex; flex-direction: column;
+      background: #0f0f23; border: 1px solid #1e3a4a; border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.55); overflow: hidden;
+    }
+    .dp-head {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      padding: 1rem 1.25rem; border-bottom: 1px solid #1e3a4a; gap: 1rem;
+    }
+    .dp-head h2 { margin: 0; color: #fff; font-size: 1.3rem; }
+    .dp-head .muted { margin: .15rem 0 0; color: #98a2a8; font-size: .85rem; }
+    .dp-close {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #16213e; border: 1px solid #2a3a4a; color: #c8c8da;
+      cursor: pointer; font-size: 1rem; display: grid; place-items: center;
+      flex-shrink: 0; transition: all .15s;
+    }
+    .dp-close:hover { background: #e94560; border-color: #e94560; color: #fff; }
+    .dp-body { padding: 1rem 1.25rem 1.5rem; overflow-y: auto; }
+    .dp-section { margin-bottom: 1.75rem; }
+    .dp-section:last-child { margin-bottom: 0; }
+    .dp-section-title {
+      margin: 0 0 .65rem; color: #ffbd39; font-size: 1rem;
+      font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+      display: flex; align-items: baseline; gap: .55rem;
+      border-bottom: 1px solid #1e3a4a; padding-bottom: .35rem;
+    }
+    .dp-section-count { font-size: .8rem; color: #98a2a8; font-weight: 500; letter-spacing: 0; text-transform: none; }
+    .dp-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 1rem;
+    }
+    @media (max-width: 600px) {
+      .dp-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: .65rem; }
+      .dp-head { padding: .75rem 1rem; }
+      .dp-body { padding: .75rem 1rem 1.25rem; }
+    }
+    .dp-card { display: flex; flex-direction: column; gap: .4rem; }
+    .dp-img-wrap {
+      position: relative; width: 100%; aspect-ratio: 0.72;
+      border-radius: 8px; overflow: hidden; background: #16213e;
+      box-shadow: 0 4px 10px rgba(0,0,0,.4);
+    }
+    .dp-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .dp-img-fallback {
+      width: 100%; height: 100%; display: grid; place-items: center;
+      color: #98a2a8; font-size: .75rem; text-align: center; padding: .5rem;
+    }
+    .dp-qty {
+      position: absolute; top: 6px; left: 6px;
+      background: #e94560; color: #fff;
+      padding: .15rem .55rem; border-radius: 999px;
+      font-size: .85rem; font-weight: 700;
+      box-shadow: 0 2px 6px rgba(0,0,0,.45);
+      letter-spacing: .02em;
+    }
+    .dp-qty.is-single { background: #ffbd39; color: #1a1a2e; }
+    .dp-name {
+      font-size: .82rem; color: #e0e0e0; text-align: center;
+      line-height: 1.2; font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* Segundo FAB (preview) en móvil */
+    .rb-fab-preview {
+      bottom: 12.5rem !important;
+      background: #ffbd39 !important;
+      color: #1a1a2e !important;
+    }
+    .rb-fab-preview:disabled { opacity: .4; cursor: not-allowed; }
+
     /* FAB móvil */
     .rb-fab {
       display: none;
@@ -1121,6 +1274,7 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
 
   // UI state
   showDeckPanel = signal(false);
+  showDeckPreview = signal(false);
   previewCard = signal<RiftboundCardLite | null>(null);
   previewDetail = signal<RiftboundCard | null>(null);
   previewLoading = signal(false);
@@ -1519,6 +1673,12 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
     this.previewLoading.set(false);
   }
 
+  openDeckPreview() {
+    if (this.totalEntries() === 0) return;
+    this.showDeckPreview.set(true);
+  }
+  closeDeckPreview() { this.showDeckPreview.set(false); }
+
   toggleCover(cardId: number) {
     this.coverCardId.set(this.coverCardId() === cardId ? null : cardId);
   }
@@ -1811,13 +1971,8 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
     obs.subscribe({
       next: (deck) => {
         this.saving.set(false);
-        if (deck.validation && !deck.validation.valid) {
-          this.errors.set(deck.validation.errors);
-          // No redirigir si hay errores de validacion: el mazo no se guardo bien
-          if (!this.deckId() && deck.id) this.deckId.set(deck.id);
-          return;
-        }
-        // Guardado correcto -> ir a la vista del mazo
+        // El mazo se guarda aunque este incompleto: la validacion es solo informativa.
+        // Siempre redirigimos a la vista previa del mazo recien guardado.
         this.clearDraft();
         this.router.navigate(['/riftbound/decks', deck.id]);
       },

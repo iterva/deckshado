@@ -400,7 +400,7 @@ function typeRank(t?: string): number {
             @if (entries()[z].length === 0) {
               <p class="zone-empty">Vacío. Añade cartas desde el catálogo.</p>
             }
-            @for (e of sortedEntries(z); track e.card.id) {
+            @for (e of entries()[z]; track e.card.id) {
               <div class="deck-entry" [class.is-cover]="coverCardId() === e.card.id">
                 <button type="button"
                         class="cover-star"
@@ -1367,6 +1367,7 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
         map[e.zone].push({ card: e.card_data as RiftboundCardLite, quantity: e.quantity, zone: e.zone });
       }
     }
+    this.sortAllZonesInPlace(map);
     this.entries.set(map);
 
     // Champion unit + opciones
@@ -1451,14 +1452,21 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
    * y luego por nombre. Devuelve una copia, no muta el signal.
    */
   sortedEntries(z: RiftboundZone): BuilderEntry[] {
-    // Orden: tipo (unidad → hechizo → equipo → resto) → cantidad desc (3,2,1) → nombre.
-    return [...this.entries()[z]].sort((a, b) => {
-      const ra = typeRank(a.card.card_type);
-      const rb = typeRank(b.card.card_type);
-      if (ra !== rb) return ra - rb;
-      if (b.quantity !== a.quantity) return b.quantity - a.quantity;
-      return (a.card.name ?? '').localeCompare(b.card.name ?? '');
-    });
+    return [...this.entries()[z]].sort(this.entryComparator);
+  }
+
+  /** Comparador compartido: tipo → cantidad desc → nombre. */
+  private entryComparator(a: BuilderEntry, b: BuilderEntry): number {
+    const ra = typeRank(a.card.card_type);
+    const rb = typeRank(b.card.card_type);
+    if (ra !== rb) return ra - rb;
+    if (b.quantity !== a.quantity) return b.quantity - a.quantity;
+    return (a.card.name ?? '').localeCompare(b.card.name ?? '');
+  }
+
+  /** Ordena en sitio el mapa de entries (se usa al entrar al builder). */
+  private sortAllZonesInPlace(map: Record<RiftboundZone, BuilderEntry[]>) {
+    for (const z of this.zones) map[z].sort(this.entryComparator);
   }
 
   totalEntries = computed(() => {
@@ -1912,6 +1920,7 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
           map[e.zone].push({ card, quantity: e.quantity, zone: e.zone });
         }
       }
+      this.sortAllZonesInPlace(map);
       this.entries.set(map);
 
       // Champion unit data desde snapshots

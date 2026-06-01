@@ -806,12 +806,25 @@ function typeRank(t?: string): number {
     .deck-panel {
       padding: 1.25rem; background: #091428; border-left: 1px solid #1e3a4a;
       overflow-y: auto;
+      position: sticky;
+      top: 64px;
+      align-self: start;
+      max-height: calc(100vh - 64px);
+      scrollbar-width: thin;
+      scrollbar-color: #e94560 #0f0f23;
     }
+    .deck-panel::-webkit-scrollbar { width: 10px; }
+    .deck-panel::-webkit-scrollbar-track { background: #0f0f23; }
+    .deck-panel::-webkit-scrollbar-thumb {
+      background: #1e3a4a; border-radius: 6px; border: 2px solid #0f0f23;
+    }
+    .deck-panel::-webkit-scrollbar-thumb:hover { background: #e94560; }
     @media (max-width: 900px) {
       .deck-panel {
         position: fixed; inset: 0;
         z-index: 950; transform: translateX(100%); transition: transform .25s ease;
         background: #091428;
+        max-height: none; top: 0;
       }
       .deck-panel.mobile-visible { transform: translateX(0); }
     }

@@ -133,6 +133,13 @@ class CardListView(generics.ListAPIView):
         if ability_search:
             qs = qs.filter(ability__iregex=_accent_insensitive(ability_search))
 
+        # Exclude editions (season rotation)
+        exclude_editions = self.request.query_params.get("exclude_editions")
+        if exclude_editions:
+            ex_slugs = [s for s in exclude_editions.split(",") if s]
+            if ex_slugs:
+                qs = qs.exclude(edition__slug__in=ex_slugs)
+
         # VCR sub-format filter: vasallo, cortesano, real + promos with same name AND ability
         sub_fmt = self.request.query_params.get("sub_fmt")
         if sub_fmt == "vcr" and fmt == "imp":

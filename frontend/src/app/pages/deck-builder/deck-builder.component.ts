@@ -116,6 +116,13 @@ export class DeckBuilderComponent implements OnInit {
   selectedFormat = 'imp';
   formatName = 'Imperio';
 
+  /** Temporadas del formato Imperio (rotación de ediciones). */
+  seasons = [
+    { id: 'aydv', label: 'Temporada Ángeles y Demonios: Vigilantes', excludedEditions: ['espiritu_samurai'] },
+    { id: 'kvm', label: 'Temporada Kaiju vs Mecha: Titanes', excludedEditions: ['aydv-mazo-guerreros'] },
+  ];
+  selectedSeason = 'aydv';
+
   private readonly escEditionSlugs = [
     'bushido', 'sol-naciente',
     'dominio', 'contraataque', 'aguila-imperial', 'axis-mundi',
@@ -372,6 +379,7 @@ export class DeckBuilderComponent implements OnInit {
       page: this.currentPage,
       deck_race: this.selectedRace || undefined,
       sub_fmt: this.selectedSubFormat === 'vcr' ? 'vcr' : undefined,
+      exclude_editions: this.getSeasonExclusions() || undefined,
     }).subscribe({
       next: (res) => {
         this.availableCards = res.results;
@@ -530,6 +538,18 @@ export class DeckBuilderComponent implements OnInit {
   onFilterChange() {
     this.currentPage = 1;
     this.loadCards();
+  }
+
+  onSeasonChange() {
+    this.currentPage = 1;
+    this.loadCards();
+  }
+
+  /** Devuelve los slugs de ediciones excluidas por la temporada actual (CSV). */
+  private getSeasonExclusions(): string {
+    if (this.selectedFormat !== 'imp') return '';
+    const season = this.seasons.find(s => s.id === this.selectedSeason);
+    return season ? season.excludedEditions.join(',') : '';
   }
 
   filterEditions() {

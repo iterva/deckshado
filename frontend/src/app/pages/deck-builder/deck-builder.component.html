@@ -3,6 +3,13 @@
   <div class="card-browser">
     <h2>Cartas Disponibles · {{ formatName }}@if (pbEditionName) { · {{ pbEditionName }} }@if (selectedSubFormat === 'vcr') { · VCR }@if (raceName) { · {{ raceName }} }</h2>
     <div class="browser-filters">
+      @if (selectedFormat === 'imp') {
+        <select class="season-filter" [(ngModel)]="selectedSeason" (ngModelChange)="onSeasonChange()">
+          @for (s of seasons; track s.id) {
+            <option [value]="s.id">{{ s.label }}</option>
+          }
+        </select>
+      }
       <div class="search-row">
         <div class="search-modes" role="tablist" aria-label="Modo de búsqueda">
           <button type="button"

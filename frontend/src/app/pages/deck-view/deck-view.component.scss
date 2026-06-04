@@ -1859,6 +1859,14 @@
 
       .eye-icon {
         font-size: 0.7rem;
+        opacity: 1;
+        background: rgba(0,0,0,0.5);
+        inset: auto;
+        bottom: 4px;
+        right: 4px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
       }
     }
 

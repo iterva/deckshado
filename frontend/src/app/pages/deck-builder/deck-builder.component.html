@@ -480,6 +480,9 @@
           <i class="bi bi-trash"></i>
         </button>
       }
+      <button type="button" class="btn btn-preview-deck" (click)="openDeckPreview()" [disabled]="totalDeckCards === 0" title="Previsualizar mazo">
+        <i class="bi bi-eye"></i>
+      </button>
       <button class="btn btn-gold" (click)="saveDeck()" [disabled]="saving">
         {{ saving ? 'Guardando...' : (deckId ? 'Actualizar Mazo' : 'Guardar Mazo') }}
       </button>
@@ -492,6 +495,68 @@
 <button class="mobile-deck-toggle" (click)="toggleDeckPanel()" [class.active]="showDeckPanel">
   📋 <span class="fab-count">{{ totalDeckCards }}/50</span>
 </button>
+
+<!-- Deck Preview Modal -->
+@if (showDeckPreview()) {
+  <div class="deck-preview-overlay" (click)="closeDeckPreview()">
+    <div class="deck-preview-box" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+      <div class="dp-head">
+        <div>
+          <h2>{{ deckName || 'Mazo sin nombre' }}</h2>
+          <p class="muted">{{ totalDeckCards }}/50 cartas · {{ deckId ? 'Editando' : 'Borrador' }}</p>
+        </div>
+        <button class="dp-close" (click)="closeDeckPreview()" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="dp-body">
+        @for (g of groupedDeckCards; track g.type) {
+          <section class="dp-section">
+            <h3 class="dp-section-title">
+              {{ g.type }}
+              <span class="dp-section-count">{{ g.total }}</span>
+            </h3>
+            <div class="dp-grid">
+              @for (dc of g.cards; track dc.card.id) {
+                <div class="dp-card">
+                  <div class="dp-img-wrap">
+                    <img [src]="dc.card.image_url | thumb:250" [alt]="dc.card.name" />
+                    @if (dc.quantity > 1) {
+                      <span class="dp-qty">×{{ dc.quantity }}</span>
+                    }
+                  </div>
+                  <div class="dp-name">{{ dc.card.name }}</div>
+                </div>
+              }
+            </div>
+          </section>
+        }
+        @if (sideCards.length > 0) {
+          <section class="dp-section dp-side">
+            <h3 class="dp-section-title dp-side-title">
+              Sidedeck
+              <span class="dp-section-count">{{ totalSideCards }}</span>
+            </h3>
+            <div class="dp-grid">
+              @for (dc of sideCards; track dc.card.id) {
+                <div class="dp-card">
+                  <div class="dp-img-wrap">
+                    <img [src]="dc.card.image_url | thumb:250" [alt]="dc.card.name" />
+                    @if (dc.quantity > 1) {
+                      <span class="dp-qty">×{{ dc.quantity }}</span>
+                    }
+                  </div>
+                  <div class="dp-name">{{ dc.card.name }}</div>
+                </div>
+              }
+            </div>
+          </section>
+        }
+        @if (totalDeckCards === 0) {
+          <p class="muted center" style="padding:2rem">El mazo está vacío.</p>
+        }
+      </div>
+    </div>
+  </div>
+}
 
 <!-- Card Preview Overlay -->
 @if (previewCard(); as pc) {

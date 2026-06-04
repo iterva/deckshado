@@ -170,6 +170,9 @@ export class DeckBuilderComponent implements OnInit {
   // Mobile deck panel toggle
   showDeckPanel = false;
 
+  // Deck preview modal
+  showDeckPreview = signal(false);
+
   /** Subject para debounce del input de búsqueda. */
   private searchSubject = new Subject<void>();
 
@@ -1115,6 +1118,12 @@ export class DeckBuilderComponent implements OnInit {
     this.previewAbility.set(null);
     this.previewAbilityLoading.set(false);
   }
+
+  openDeckPreview() {
+    if (this.totalDeckCards === 0) return;
+    this.showDeckPreview.set(true);
+  }
+  closeDeckPreview() { this.showDeckPreview.set(false); }
 
   saveDeck() {
     this.fieldErrors = {};

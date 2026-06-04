@@ -827,6 +827,9 @@ function typeRank(t?: string): number {
         z-index: 950; transform: translateX(100%); transition: transform .25s ease;
         background: #091428;
         max-height: none; top: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
       }
       .deck-panel.mobile-visible { transform: translateX(0); }
     }

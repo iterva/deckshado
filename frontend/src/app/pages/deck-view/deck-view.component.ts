@@ -676,8 +676,34 @@ export class DeckViewComponent implements OnInit {
     this.cdr.detectChanges();
     try {
       const el = this.deckContent.nativeElement as HTMLElement;
-      // Force layout to settle at the orientation's intended width before measuring,
-      // otherwise on mobile the captured layout collapses (vertical-looking export).
+
+      // Move into view to force image loading
+      el.style.position = 'absolute';
+      el.style.left = '0';
+      el.style.top = '0';
+      el.style.zIndex = '-1';
+      el.style.opacity = '0';
+      el.style.pointerEvents = 'none';
+      this.cdr.detectChanges();
+
+      // Preload images
+      const imgs = Array.from(el.querySelectorAll('img')) as HTMLImageElement[];
+      await Promise.all(imgs.map(img => {
+        img.loading = 'eager';
+        img.decoding = 'sync';
+        img.crossOrigin = 'anonymous';
+        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+        return new Promise<void>((resolve) => {
+          const timeout = setTimeout(() => resolve(), 8000);
+          img.onload = () => { clearTimeout(timeout); resolve(); };
+          img.onerror = () => { clearTimeout(timeout); resolve(); };
+          const origSrc = img.src;
+          img.src = '';
+          img.src = origSrc;
+        });
+      }));
+      await new Promise<void>(r => setTimeout(r, 300));
+
       await new Promise<void>(r => requestAnimationFrame(() => r()));
       const targetWidth = this.exportOrientation === 'horizontal' ? 1200 : 650;
       const html2canvas = (await import('html2canvas')).default;
@@ -700,6 +726,14 @@ export class DeckViewComponent implements OnInit {
     } catch (e) {
       console.error('Error copiando imagen:', e);
     }
+    // Restore offscreen
+    const el = this.deckContent.nativeElement as HTMLElement;
+    el.style.position = '';
+    el.style.left = '';
+    el.style.top = '';
+    el.style.zIndex = '';
+    el.style.opacity = '';
+    el.style.pointerEvents = '';
     this.exporting = false;
     this.cdr.detectChanges();
   }
@@ -884,23 +918,39 @@ export class DeckViewComponent implements OnInit {
     this.exporting = true;
     this.cdr.detectChanges();
     try {
-      // Preload all images in the export area before capturing
       const el = this.deckContent.nativeElement as HTMLElement;
+
+      // Move the export area into view temporarily so the browser loads images
+      el.style.position = 'absolute';
+      el.style.left = '0';
+      el.style.top = '0';
+      el.style.zIndex = '-1';
+      el.style.opacity = '0';
+      el.style.pointerEvents = 'none';
+      this.cdr.detectChanges();
+
+      // Force all images to load eagerly, bust cache for any stale entries
       const imgs = Array.from(el.querySelectorAll('img')) as HTMLImageElement[];
       await Promise.all(imgs.map(img => {
+        img.loading = 'eager';
+        img.decoding = 'sync';
+        img.crossOrigin = 'anonymous';
         if (img.complete && img.naturalWidth > 0) return Promise.resolve();
         return new Promise<void>((resolve) => {
-          img.onload = () => resolve();
-          img.onerror = () => resolve(); // don't block on broken images
-          // Force load by reassigning src (handles lazy images)
-          img.loading = 'eager';
-          img.src = img.src;
+          const timeout = setTimeout(() => resolve(), 8000); // max 8s per image
+          img.onload = () => { clearTimeout(timeout); resolve(); };
+          img.onerror = () => { clearTimeout(timeout); resolve(); };
+          // Force reload by appending a cache-buster
+          const origSrc = img.src;
+          img.src = '';
+          img.src = origSrc;
         });
       }));
 
+      // Wait for images to decode/render
+      await new Promise<void>(r => setTimeout(r, 300));
+
       const bgColor = this.getRaceBackground();
-      // Force a layout flush so the offscreen export area has its final size
-      // before html2canvas measures it (prevents collapsed/vertical output on mobile).
       await new Promise<void>(r => requestAnimationFrame(() => r()));
       const targetWidth = this.exportOrientation === 'horizontal' ? 1200 : 650;
       const html2canvas = (await import('html2canvas')).default;
@@ -921,6 +971,14 @@ export class DeckViewComponent implements OnInit {
     } catch (e) {
       console.error('Error exporting image:', e);
     }
+    // Restore offscreen positioning
+    const el = this.deckContent.nativeElement as HTMLElement;
+    el.style.position = '';
+    el.style.left = '';
+    el.style.top = '';
+    el.style.zIndex = '';
+    el.style.opacity = '';
+    el.style.pointerEvents = '';
     this.exporting = false;
     this.cdr.detectChanges();
   }

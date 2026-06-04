@@ -18349,6 +18349,30 @@
     "source_url": "https://piltoverarchive.com/cards?page=15"
   },
   {
+    "card_number": "SFD-R03b",
+    "external_id": "a03b5fd0-0000-4000-8000-000000000003",
+    "name": "Mind Rune",
+    "set_code": "SFD",
+    "set_name": "Spiritforged",
+    "variant": "Alt Art",
+    "rarity": "showcase",
+    "card_type": "rune",
+    "supertype": "",
+    "subtypes": [],
+    "colors": [
+      "mind"
+    ],
+    "energy": 0,
+    "power": 0,
+    "might": 0,
+    "description": "-",
+    "flavor": "",
+    "image_url": "https://res.cloudinary.com/dmvu6tuee/image/upload/riftbound/cards/sfd/sfd-r03b.jpg",
+    "image_url_small": "",
+    "artist": "-",
+    "source_url": "https://piltoverarchive.com/cards?page=15"
+  },
+  {
     "card_number": "SFD-R04",
     "external_id": "5f9c0a35-ecf2-4e73-9652-f40589d220a6",
     "name": "Body Rune",

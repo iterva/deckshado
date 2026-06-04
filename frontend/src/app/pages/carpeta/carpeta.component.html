@@ -272,6 +272,16 @@
           <input type="text" placeholder="Buscar en wishlist..." [(ngModel)]="wishlistSearch" (keyup.enter)="onWishlistSearch()" />
           <button class="btn btn-primary btn-sm" (click)="onWishlistSearch()">Buscar</button>
         </div>
+        <app-share-image
+          mode="buying"
+          gameLabel="Mitos y Leyendas"
+          [sellerName]="shareSellerName"
+          contactLine="¿Tienes alguna? Escríbeme · ShadowForge"
+          [items]="shareWishlistItems"
+          ctaLabel="📷 Imagen busco"
+          filenamePrefix="shadowforge-myl-wishlist"
+          footerTagline="ShadowForge · Marketplace TCG">
+        </app-share-image>
       </div>
 
       <p class="results-count">{{ wishlistTotal }} cartas en tu wishlist</p>
@@ -438,6 +448,16 @@
         <button class="btn btn-sm btn-pdf" (click)="exportMercadoPdf()" [disabled]="exportingPdf || mercadoEntries.length === 0">
           {{ exportingPdf ? '⏳ Generando...' : '📄 Exportar PDF' }}
         </button>
+        <app-share-image
+          mode="selling"
+          gameLabel="Mitos y Leyendas"
+          [sellerName]="shareSellerName"
+          contactLine="Escríbeme para comprar · ShadowForge"
+          [items]="shareMercadoItems"
+          ctaLabel="📷 Imagen vendo"
+          filenamePrefix="shadowforge-myl-vendo"
+          footerTagline="ShadowForge · Marketplace TCG">
+        </app-share-image>
         @if (mercadoDirty.size > 0) {
           <button class="btn btn-sm btn-primary" (click)="saveMercadoChanges()" [disabled]="batchSaving">
             {{ batchSaving ? '⏳ Guardando...' : '💾 Guardar Cambios (' + mercadoDirty.size + ')' }}

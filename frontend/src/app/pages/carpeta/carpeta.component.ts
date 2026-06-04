@@ -6,6 +6,7 @@ import { AuthService } from '../../services/auth.service';
 import { CarpetaService } from '../../services/carpeta.service';
 import { CardService } from '../../services/card.service';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
+import { ShareImageComponent, ShareImageItem } from '../../components/share-image/share-image.component';
 import {
   Card, CollectionEntry, WishlistEntry, BinderProfile,
   Edition, CardType, Race, Rarity, CarpetaIds,
@@ -16,7 +17,7 @@ type Tab = 'carpeta' | 'codex' | 'wishlist' | 'mercado' | 'stats';
 @Component({
   selector: 'app-carpeta',
   standalone: true,
-  imports: [FormsModule, ThumbnailPipe, DecimalPipe, RouterLink],
+  imports: [FormsModule, ThumbnailPipe, DecimalPipe, RouterLink, ShareImageComponent],
   templateUrl: './carpeta.component.html',
   styleUrl: './carpeta.component.scss',
 })
@@ -527,6 +528,31 @@ export class CarpetaComponent implements OnInit {
 
   closePhotoModal() {
     this.viewPhotoUrl = null;
+  }
+
+  // ── Share image (Wishlist + Mercado) ──
+  get shareWishlistItems(): ShareImageItem[] {
+    return this.wishlistEntries.slice(0, 20).map(w => ({
+      name: w.card_detail?.name || '',
+      image: w.card_detail?.image_url || '',
+      quantity: w.desired_quantity || 1,
+      foil: false,
+      price: null,
+    }));
+  }
+
+  get shareMercadoItems(): ShareImageItem[] {
+    return this.mercadoEntries.slice(0, 20).map(e => ({
+      name: e.card_detail?.name || '',
+      image: e.card_detail?.image_url || '',
+      quantity: e.selling_quantity || 1,
+      foil: !!e.is_foil,
+      price: e.price ?? null,
+    }));
+  }
+
+  get shareSellerName(): string {
+    return this.binderProfile?.display_name || ('@' + (this.auth.user()?.username || ''));
   }
 
   async exportMercadoPdf() {

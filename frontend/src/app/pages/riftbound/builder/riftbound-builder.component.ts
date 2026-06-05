@@ -829,7 +829,7 @@ function typeRank(t?: string): number {
         max-height: none; top: 0;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+        padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
       }
       .deck-panel.mobile-visible { transform: translateX(0); }
     }
@@ -944,6 +944,14 @@ function typeRank(t?: string): number {
     }
     .action-row .preview-deck-btn,
     .action-row .save-btn { flex: 1; margin-bottom: 0; white-space: nowrap; }
+    @media (max-width: 900px) {
+      .action-row {
+        position: sticky; bottom: 0; z-index: 10;
+        background: #091428; padding: .75rem 0;
+        border-top: 1px solid #1e3a4a;
+        margin: 0 -.6rem; padding-left: .6rem; padding-right: .6rem;
+      }
+    }
 
     .preview-deck-btn {
       width: 100%; padding: .55rem 1rem; border: 1px solid #2a3a4a; border-radius: 6px;

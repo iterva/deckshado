@@ -184,6 +184,17 @@ class Command(BaseCommand):
             })
         return out
 
+    def _resolve_card(self, name, name_to_card):
+        """Resolve card by name lookup in PE editions."""
+        # Exact match
+        if name in name_to_card:
+            return name_to_card[name]
+        # Try without accents or case differences
+        for db_name, card_id in name_to_card.items():
+            if db_name.lower() == name.lower():
+                return card_id
+        return None
+
     def handle(self, *args, **options):
         dry_run = options["dry_run"]
 
@@ -192,22 +203,28 @@ class Command(BaseCommand):
         entries += self._build("limited_1", LIMITED_1)
         entries += self._build("limited_2", LIMITED_2)
 
-        # Validate referenced card IDs
-        ids = {e["card_id"] for e in entries if e["card_id"] is not None}
-        existing_ids = set(Card.objects.filter(id__in=ids).values_list("id", flat=True))
-        missing = ids - existing_ids
-        if missing:
-            self.stdout.write(self.style.WARNING(
-                f"⚠ Card IDs no encontrados: {sorted(missing)} — entradas sin enlace"
-            ))
+        # Build name→id lookup from PE editions (104-108)
+        from cards.models import Edition
+        pe_edition_ids = list(
+            Edition.objects.filter(format__code="pe").values_list("id", flat=True)
+        )
+        name_to_card = {}
+        for card in Card.objects.filter(edition_id__in=pe_edition_ids).only("id", "name"):
+            # Keep first match (non-variant) per name
+            if card.name not in name_to_card and "(v" not in card.name:
+                name_to_card[card.name] = card.id
 
         created = 0
         updated = 0
+        linked = 0
 
         for e in entries:
-            cid = e["card_id"]
-            if cid is not None and cid not in existing_ids:
-                cid = None
+            # Try name-based lookup instead of hardcoded ID
+            cid = self._resolve_card(e["card_name"], name_to_card)
+            if not cid and e["card_id"]:
+                # Fallback to hardcoded ID if it exists in DB
+                if Card.objects.filter(id=e["card_id"]).exists():
+                    cid = e["card_id"]
 
             action = "—"
             if not dry_run:
@@ -235,15 +252,17 @@ class Command(BaseCommand):
                 ).first()
                 action = "UPD" if exists else "NEW"
 
-            link = "✓" if cid and cid in existing_ids else "⚠"
+            if cid:
+                linked += 1
+            link = "✓" if cid else "⚠"
             self.stdout.write(
                 f"  [{action}] [{e['status']:9}] "
-                f"{e['card_name']} (max {e['max_copies']}) id={e['card_id']} {link}"
+                f"{e['card_name']} (max {e['max_copies']}) id={cid} {link}"
             )
 
         if dry_run:
-            self.stdout.write(f"\n(dry-run) {len(entries)} entradas procesadas")
+            self.stdout.write(f"\n(dry-run) {len(entries)} entradas, {linked} enlazadas")
         else:
             self.stdout.write(self.style.SUCCESS(
-                f"\n✅ PE banlist Racial Edición: {created} creadas, {updated} actualizadas"
+                f"\n✅ PE banlist Racial Edición: {created} creadas, {updated} actualizadas, {linked}/{len(entries)} enlazadas"
             ))

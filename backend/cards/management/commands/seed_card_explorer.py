@@ -165,8 +165,37 @@ def classify_card(url: str):
     return None
 
 
+PE_EDITIONS = [
+    {"id": 104, "myl_id": "pe_01", "slug": "el_reto", "title": "PE - El Reto"},
+    {"id": 105, "myl_id": "pe_02", "slug": "mundo_gotico", "title": "PE - Mundo Gótico"},
+    {"id": 106, "myl_id": "pe_03", "slug": "ira_del_nahual", "title": "PE - La Ira del Nahual"},
+    {"id": 107, "myl_id": "pe_04", "slug": "ragnarok", "title": "PE - Ragnarok"},
+    {"id": 108, "myl_id": "pe_05", "slug": "espiritu_del_dragon", "title": "PE - Espíritu de Dragón"},
+]
+
+
 class Command(BaseCommand):
     help = "Seed 1511 card-explorer PE cards (alt arts + missing)"
+
+    def _ensure_pe_editions(self):
+        """Create PE format and editions if they don't exist."""
+        from cards.models import Format
+        fmt, created = Format.objects.get_or_create(code="pe", defaults={"name": "Primera Era"})
+        if created:
+            self.stdout.write(f"  Created format: {fmt.name}")
+        for ed_data in PE_EDITIONS:
+            obj, created = Edition.objects.get_or_create(
+                id=ed_data["id"],
+                defaults={
+                    "myl_id": ed_data["myl_id"],
+                    "slug": ed_data["slug"],
+                    "title": ed_data["title"],
+                    "format": fmt,
+                    "active": True,
+                },
+            )
+            if created:
+                self.stdout.write(f"  Created edition: {obj.title}")
 
     def handle(self, *args, **options):
         if not os.path.exists(RAW_FILE):
@@ -175,6 +204,8 @@ class Command(BaseCommand):
         if not os.path.exists(MAPPING_FILE):
             self.stderr.write(f"ERROR: {MAPPING_FILE} not found")
             return
+
+        self._ensure_pe_editions()
 
         raw_cards = json.load(open(RAW_FILE, "r", encoding="utf-8"))
         mapping = json.load(open(MAPPING_FILE, "r", encoding="utf-8"))

@@ -84,6 +84,7 @@ export class DeckListComponent implements OnInit {
 
   private readonly formatLabels: Record<string, string> = {
     imp: 'Imperial', fx: 'FX', esc: 'Escuelas Elementales', imp_r: 'Imperio Retro',
+    pb: 'Primer Bloque', pe: 'Primera Era',
   };
 
   private readonly subFormatLabels: Record<string, string> = { vcr: 'VCR' };

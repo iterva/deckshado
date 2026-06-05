@@ -36,10 +36,10 @@
     <button class="btn btn-secondary" (click)="backToFormats()">← Volver a formatos</button>
   } @else if (step === 'pb_edition') {
     <h1>{{ selectedFormatName }}</h1>
-    <p class="subtitle">Elige la edición de Primer Bloque</p>
+    <p class="subtitle">Elige la edición</p>
 
     <div class="format-grid">
-      @for (e of pbEditions; track e.slug) {
+      @for (e of (selectedFormat === 'pe' ? peEditions : pbEditions); track e.slug) {
         <div class="format-card" (click)="selectPbEdition(e)">
           <span class="format-code">{{ e.name }}</span>
           <span class="format-name">{{ e.races.length }} razas</span>
@@ -61,7 +61,7 @@
       }
     </div>
 
-    <button class="btn btn-secondary" (click)="selectedFormat === 'imp' ? backToSubFormat() : (selectedFormat === 'pb' ? backToPbEdition() : backToFormats())">← Volver</button>
+    <button class="btn btn-secondary" (click)="selectedFormat === 'imp' ? backToSubFormat() : ((selectedFormat === 'pb' || selectedFormat === 'pe') ? backToPbEdition() : backToFormats())">← Volver</button>
   }
 
   <div class="back-link">

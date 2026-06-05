@@ -34,7 +34,7 @@ export class FormatSelectComponent {
   selectedSubFormat = '';
   selectedPbEdition: PbEditionOption | null = null;
 
-  readonly enabledFormats = ['imp', 'imp_r', 'esc', 'pb'];
+  readonly enabledFormats = ['imp', 'imp_r', 'esc', 'pb', 'pe'];
 
   /** Ediciones de Primer Bloque agrupadas con sus razas. */
   readonly pbEditions: PbEditionOption[] = [
@@ -104,6 +104,61 @@ export class FormatSelectComponent {
     },
   ];
 
+  /** Ediciones de Primera Era agrupadas con sus razas. */
+  readonly peEditions: PbEditionOption[] = [
+    {
+      slug: 'el-reto',
+      name: 'El Reto',
+      editions: ['el-reto'],
+      races: [
+        { slug: 'caballero', name: 'Caballero', description: 'Aliados Caballero + soporte de la edición' },
+        { slug: 'dragon', name: 'Dragón', description: 'Aliados Dragón + soporte de la edición' },
+        { slug: 'fairy', name: 'Fairy', description: 'Aliados Fairy + soporte de la edición' },
+      ],
+    },
+    {
+      slug: 'mundo-gotico',
+      name: 'Mundo Gótico',
+      editions: ['mundo-gotico'],
+      races: [
+        { slug: 'cazador', name: 'Cazador', description: 'Aliados Cazador + soporte de la edición' },
+        { slug: 'vampiro', name: 'Vampiro', description: 'Aliados Vampiro + soporte de la edición' },
+        { slug: 'licantropo', name: 'Licántropo', description: 'Aliados Licántropo + soporte de la edición' },
+      ],
+    },
+    {
+      slug: 'la-ira-del-nahual',
+      name: 'La Ira del Nahual',
+      editions: ['la-ira-del-nahual'],
+      races: [
+        { slug: 'bestia', name: 'Bestia', description: 'Aliados Bestia + soporte de la edición' },
+        { slug: 'chaman', name: 'Chamán', description: 'Aliados Chamán + soporte de la edición' },
+        { slug: 'guerrero', name: 'Guerrero', description: 'Aliados Guerrero + soporte de la edición' },
+      ],
+    },
+    {
+      slug: 'ragnarok',
+      name: 'Ragnarok',
+      editions: ['ragnarok'],
+      races: [
+        { slug: 'abominacion', name: 'Abominación', description: 'Aliados Abominación + soporte de la edición' },
+        { slug: 'barbaro', name: 'Bárbaro', description: 'Aliados Bárbaro + soporte de la edición' },
+        { slug: 'dios', name: 'Dios', description: 'Aliados Dios + soporte de la edición' },
+      ],
+    },
+    {
+      slug: 'espiritu-de-dragon',
+      name: 'Espíritu de Dragón',
+      editions: ['espiritu-de-dragon'],
+      races: [
+        { slug: 'campeon', name: 'Campeón', description: 'Aliados Campeón + soporte de la edición' },
+        { slug: 'criaturas', name: 'Criaturas', description: 'Aliados Criaturas + soporte de la edición' },
+        { slug: 'kami', name: 'Kami', description: 'Aliados Kami + soporte de la edición' },
+        { slug: 'xian', name: 'Xian', description: 'Aliados Xian + soporte de la edición' },
+      ],
+    },
+  ];
+
   readonly impRaces: RaceOption[] = [
     { slug: 'dream', name: 'Dream', description: 'Todas las razas, talismanes, armas y tótems' },
     { slug: 'totem', name: 'Tótem', description: 'Aliados sin raza + tótems, talismanes y armas' },
@@ -144,6 +199,7 @@ export class FormatSelectComponent {
 
   get races(): RaceOption[] {
     if (this.selectedFormat === 'pb' && this.selectedPbEdition) return this.selectedPbEdition.races;
+    if (this.selectedFormat === 'pe' && this.selectedPbEdition) return this.selectedPbEdition.races;
     return this.selectedFormat === 'esc' ? this.escRaces : this.impRaces;
   }
 
@@ -184,7 +240,7 @@ export class FormatSelectComponent {
     this.selectedFormatName = this.formats.find(f => f.code === code)?.name || code;
     if (code === 'imp') {
       this.step = 'sub_format';
-    } else if (code === 'pb') {
+    } else if (code === 'pb' || code === 'pe') {
       this.selectedSubFormat = 'racial';
       this.step = 'pb_edition';
     } else {
@@ -208,7 +264,7 @@ export class FormatSelectComponent {
     if (this.selectedSubFormat === 'vcr') {
       qp.sub_fmt = 'vcr';
     }
-    if (this.selectedFormat === 'pb' && this.selectedPbEdition) {
+    if ((this.selectedFormat === 'pb' || this.selectedFormat === 'pe') && this.selectedPbEdition) {
       qp.pb_edition = this.selectedPbEdition.slug;
     }
     this.router.navigate(['/builder/new', this.selectedFormat], { queryParams: qp });

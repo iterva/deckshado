@@ -137,6 +137,12 @@ export class DeckBuilderComponent implements OnInit {
     'hijos-de-daana':   { name: 'Hijos de Daana',   slugs: ['hijos_de_daana'] },
     'dominios-de-ra':   { name: 'Dominios de Ra',   slugs: ['dominios-de-ra'] },
     'pb-dream':         { name: 'PB Dream',         slugs: [] },
+    // Primera Era
+    'el-reto':              { name: 'El Reto',              slugs: ['el-reto'] },
+    'mundo-gotico':         { name: 'Mundo Gótico',         slugs: ['mundo-gotico'] },
+    'la-ira-del-nahual':    { name: 'La Ira del Nahual',    slugs: ['la-ira-del-nahual'] },
+    'ragnarok':             { name: 'Ragnarok',             slugs: ['ragnarok'] },
+    'espiritu-de-dragon':   { name: 'Espíritu de Dragón',   slugs: ['espiritu-de-dragon'] },
   };
   /** Slug del grupo PB seleccionado (de query param). */
   selectedPbEdition: string = '';
@@ -218,6 +224,11 @@ export class DeckBuilderComponent implements OnInit {
           oscuridad: 'Oscuridad', luz: 'Luz',
           olimpico: 'Olímpico', titan: 'Titán',
           desafiante: 'Desafiante', defensor: 'Defensor', faraon: 'Faraón',
+          // Primera Era
+          fairy: 'Fairy', cazador: 'Cazador', vampiro: 'Vampiro',
+          licantropo: 'Licántropo', chaman: 'Chamán', abominacion: 'Abominación',
+          dios: 'Dios', campeon: 'Campeón', criaturas: 'Criaturas',
+          kami: 'Kami', xian: 'Xian',
         };
         this.raceName = raceNames[race] || race;
       }
@@ -363,9 +374,9 @@ export class DeckBuilderComponent implements OnInit {
 
   loadCards() {
     this.loading = true;
-    // Si hay restricción PB por edición, fusionamos con la selección del usuario.
+    // Si hay restricción PB/PE por edición, fusionamos con la selección del usuario.
     let editionParam = this.selectedEdition || '';
-    if (this.selectedFormat === 'pb' && this.pbEditionScope.length > 0) {
+    if ((this.selectedFormat === 'pb' || this.selectedFormat === 'pe') && this.pbEditionScope.length > 0) {
       const userSelected = editionParam ? editionParam.split(',').filter(Boolean) : [];
       // Intersect: si el usuario sub-selecciona dentro del scope, respetar; si no, usar todo el scope.
       const inScope = userSelected.filter(s => this.pbEditionScope.includes(s));
@@ -558,7 +569,7 @@ export class DeckBuilderComponent implements OnInit {
   filterEditions() {
     if (this.selectedFormat === 'esc') {
       this.editions = this.allEditions.filter(e => this.escEditionSlugs.includes(e.slug));
-    } else if (this.selectedFormat === 'pb' && this.pbEditionScope.length > 0) {
+    } else if ((this.selectedFormat === 'pb' || this.selectedFormat === 'pe') && this.pbEditionScope.length > 0) {
       this.editions = this.allEditions.filter(e => this.pbEditionScope.includes(e.slug));
     } else {
       this.editions = this.allEditions.filter(e => e.format_code === this.selectedFormat);

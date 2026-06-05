@@ -1565,6 +1565,8 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
     if (c.card_type === 'battlefield') return 1;
     if (c.card_type === 'legend') return 1;
     if (c.card_type === 'rune') return this.rules.rune;
+    // [Unique] keyword: solo 1 copia permitida
+    if (c.description && c.description.includes('[Unique]')) return 1;
     return 3;
   }
 
@@ -1582,7 +1584,7 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
     if (e.zone === 'bg') return 1;
     if (e.zone === 'champion') return 1;
     if (e.zone === 'rune') return this.rules.rune;
-    return 3;
+    return this.getMaxCopies(e.card);
   }
 
   canAddToAuto(c: RiftboundCardLite, z: RiftboundZone): boolean {

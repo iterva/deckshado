@@ -92,6 +92,14 @@ def validate_riftbound_deck(deck: "RiftboundDeck") -> dict:
             f"(tienes {side_count}). En juego casual el sideboard no es obligatorio."
         )
 
+    # Pre-cargar cartas con [Unique] para limitar a 1 copia
+    from .models import RiftboundCard
+    unique_card_ids = set(
+        RiftboundCard.objects.filter(
+            id__in=copies.keys(), description__icontains='[Unique]'
+        ).values_list('id', flat=True)
+    )
+
     # Copias maximas (la copia inicial del Chosen Champion ya esta representada en sus entries).
     # Las runas estan exentas: pueden repetirse hasta llenar la zona de runas.
     for card_id, qty in copies.items():
@@ -107,6 +115,12 @@ def validate_riftbound_deck(deck: "RiftboundDeck") -> dict:
                     f"Carta limitada a {be.max_copies} copia(s) (id={card_id}), tienes {qty}."
                 )
                 continue
+        # [Unique] keyword: máximo 1 copia
+        if card_id in unique_card_ids and qty > 1:
+            errors.append(
+                f"Carta con [Unique] limitada a 1 copia (id={card_id}), tienes {qty}."
+            )
+            continue
         if qty > MAX_COPIES_DEFAULT:
             errors.append(
                 f"Máximo {MAX_COPIES_DEFAULT} copias por carta (id={card_id}), tienes {qty}."

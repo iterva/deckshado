@@ -133,6 +133,3 @@ export class TcgPlayerService {
     this.cache.clear();
   }
 }
-    this.cache.clear();
-  }
-}

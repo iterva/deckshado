@@ -28,6 +28,7 @@ interface DeckCard {
 function normalizeName(name: string): string {
   if (!name) return '';
   return name
+    .replace(/\(v\d+\)/gi, '')       // strip variant suffixes (v2), (v3)…
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '') // strip accents
     .toLowerCase()

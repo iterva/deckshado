@@ -730,7 +730,8 @@ export class DeckViewComponent implements OnInit {
 
   private normalizeName(name: string): string {
     if (!name) return '';
-    return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    return name.replace(/\(v\d+\)/gi, '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
   }
 

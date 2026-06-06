@@ -77,7 +77,7 @@ export class CardListComponent implements OnInit {
       search: this.search || undefined,
       edition: this.selectedEdition || undefined,
       type: this.selectedType || undefined,
-      race: this.selectedRace || undefined,
+      deck_race: this.selectedRace || undefined,
       rarity: this.selectedRarity || undefined,
       page: this.currentPage,
     }).subscribe({

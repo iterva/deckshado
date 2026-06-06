@@ -29,10 +29,6 @@ HEADERS = {
 
 def _search_tcgplayer(card_name: str) -> Optional[dict]:
     """Busca un producto en TCGPlayer y devuelve el primer resultado que haga match."""
-    params = {
-        "q": card_name,
-        "isList": "false",
-    }
     body = {
         "algorithm": "",
         "from": 0,
@@ -59,6 +55,7 @@ def _search_tcgplayer(card_name: str) -> Optional[dict]:
     try:
         resp = requests.post(
             TCG_SEARCH_URL,
+            params={"q": card_name, "isList": "false"},
             json=body,
             headers=HEADERS,
             timeout=10,
@@ -97,10 +94,10 @@ def _search_tcgplayer(card_name: str) -> Optional[dict]:
         return {
             "product_name": best.get("productName", ""),
             "market_price": best.get("marketPrice"),
-            "low_price": best.get("lowPrice"),
-            "mid_price": best.get("midPrice"),
-            "high_price": best.get("highPrice"),
-            "product_url": f"https://www.tcgplayer.com/product/{best.get('productId', '')}" if best.get("productId") else None,
+            "low_price": best.get("lowestPrice"),
+            "mid_price": best.get("medianPrice"),
+            "high_price": None,
+            "product_url": f"https://www.tcgplayer.com/product/{int(best['productId'])}" if best.get("productId") else None,
             "image_url": best.get("imageUrl", ""),
         }
 

@@ -827,6 +827,8 @@ function typeRank(t?: string): number {
       .deck-panel {
         position: fixed;
         top: 0; left: 0; right: 0; bottom: 0;
+        height: 100vh;
+        height: 100dvh;
         z-index: 950;
         transform: translateX(100%);
         transition: transform .25s ease;

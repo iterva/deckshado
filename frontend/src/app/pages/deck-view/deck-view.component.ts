@@ -720,7 +720,7 @@ export class DeckViewComponent implements OnInit {
       this.banlistByCardId.clear();
       for (const e of entries) {
         // Indexar por nombre SIEMPRE: la regla aplica a todas las ediciones con ese nombre.
-        this.banlistByName.set(e.card_name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''), e);
+        this.banlistByName.set(this.normalizeName(e.card_name), e);
         // Indexar también por card_id si la entrada lo tiene (precedencia sobre el nombre).
         if (e.card_id) this.banlistByCardId.set(e.card_id, e);
       }
@@ -728,9 +728,15 @@ export class DeckViewComponent implements OnInit {
     });
   }
 
+  private normalizeName(name: string): string {
+    if (!name) return '';
+    return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
+  }
+
   getBanStatus(card: Card): BanlistEntry | null {
     return this.banlistByCardId.get(card.id)
-      || this.banlistByName.get(card.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''))
+      || this.banlistByName.get(this.normalizeName(card.name))
       || null;
   }
 

@@ -74,6 +74,15 @@ MANUAL_RACE = {
     ("espiritu-de-dragon", "susano wa"): "kami",
     ("espiritu-de-dragon", "yingyanggong"): "xian",
     ("espiritu-de-dragon", "calabaza del inmortal"): "xian",
+    ("espiritu-de-dragon", "ge xiang weng"): "xian",
+    ("espiritu-de-dragon", "xu qin xi"): "xian",
+    ("el-reto", "zduhac"): "faerie",
+    ("el-reto", "sengen"): "faerie",
+    ("el-reto", "shango"): "faerie",
+    ("mundo-gotico", "strix"): "vampiro",
+    ("la-ira-del-nahual", "uxmal"): "guerrero",
+    ("ragnarok", "eostre"): "dios",
+    ("ragnarok", "vordr"): "dios",
 }
 
 # Cards wrongly classified as Aliado → correct type_id

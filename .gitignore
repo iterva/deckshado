@@ -43,3 +43,15 @@ cost_damage_mismatches.json
 cartas por subir 8/
 cartas por subir 6/
 cartas por subir 7/
+cartas por subir 9/
+cartas por subir 10/
+cartas por subir 11/
+
+# Archivos grandes / binarios
+*.zip
+myl/
+myl.zip
+cartas-blog/
+cartas-blog2/
+cartas-blog-vigilantes/
+tmp_bf/

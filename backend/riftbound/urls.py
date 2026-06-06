@@ -9,6 +9,7 @@ from .views import (
     riftbound_regenerate_share_token, riftbound_my_share_token,
     RiftboundPublicStoreListView, RiftboundPublicStoreIndexView,
     RiftboundPublicWishlistListView,
+    tcgplayer_price_view, tcgplayer_prices_batch_view,
 )
 
 router = DefaultRouter()
@@ -29,4 +30,6 @@ urlpatterns = [
     path("stores/", RiftboundPublicStoreIndexView.as_view(), name="riftbound-public-stores"),
     path("store/<str:token>/", RiftboundPublicStoreListView.as_view(), name="riftbound-public-store"),
     path("wishlist-public/<str:token>/", RiftboundPublicWishlistListView.as_view(), name="riftbound-public-wishlist"),
+    path("tcgplayer/price/", tcgplayer_price_view, name="riftbound-tcgplayer-price"),
+    path("tcgplayer/prices-batch/", tcgplayer_prices_batch_view, name="riftbound-tcgplayer-prices-batch"),
 ] + router.urls

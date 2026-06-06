@@ -9,6 +9,7 @@ import { Router } from '@angular/router';
 import { RiftboundService } from '../../../services/riftbound.service';
 import { AuthService } from '../../../services/auth.service';
 import { ShareImageComponent, ShareImageItem } from '../../../components/share-image/share-image.component';
+import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.component';
 import {
   RiftboundCard, RiftboundCardLite, RiftboundCollectionEntry, RiftboundWishlistEntry,
   RiftboundSet, RiftboundCollectionStats, RiftboundBinderProfile, RiftboundBulkImportResult,
@@ -30,7 +31,7 @@ interface DirtyPatch {
 @Component({
   selector: 'app-riftbound-carpeta',
   standalone: true,
-  imports: [CommonModule, FormsModule, DecimalPipe, ShareImageComponent],
+  imports: [CommonModule, FormsModule, DecimalPipe, ShareImageComponent, TcgPriceComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
   <div class="carpeta-container">
@@ -171,6 +172,9 @@ interface DirtyPatch {
                     <input type="number" [value]="entry.selling_quantity" min="0" [max]="entry.quantity"
                       (input)="onFieldChange(entry, 'selling_quantity', $any($event.target).valueAsNumber)" />
                   </div>
+                </div>
+                <div class="tcg-ref-row">
+                  <app-tcg-price [cardName]="entry.card_data?.name || ''" [compact]="true"></app-tcg-price>
                 </div>
                 <div class="inline-fields">
                   <div class="field">
@@ -379,6 +383,7 @@ interface DirtyPatch {
                   <input type="number" [value]="entry.desired_quantity" min="1"
                     (change)="updateWishlistQty(entry, $any($event.target).valueAsNumber)" />
                 </div>
+                <app-tcg-price [cardName]="entry.card_data?.name || ''" [compact]="true"></app-tcg-price>
               </div>
               <div class="card-actions">
                 <button class="btn btn-xs btn-danger" (click)="removeFromWishlist(entry)" title="Quitar de wishlist">
@@ -527,6 +532,10 @@ interface DirtyPatch {
                     <input type="number" [value]="entry.selling_quantity" min="0" [max]="entry.quantity"
                       (input)="onMercadoFieldChange(entry, 'selling_quantity', $any($event.target).valueAsNumber)" />
                   </div>
+                </div>
+                <div class="tcg-ref-row">
+                  <span class="tcg-ref-label">Ref. TCG:</span>
+                  <app-tcg-price [cardName]="entry.card_data?.name || ''" [compact]="true"></app-tcg-price>
                 </div>
                 <div class="card-photo-row">
                   <!-- Slot 1 -->
@@ -680,6 +689,7 @@ interface DirtyPatch {
               </div>
             }
             <p class="detail-edition">{{ pc.card_number }}</p>
+            <app-tcg-price [cardName]="pc.name" [compact]="false" [showLink]="true"></app-tcg-price>
             <div class="detail-actions">
               <button class="btn btn-primary" (click)="quickAddToCollection(pc, $event); previewCard.set(null)">
                 <i class="bi bi-plus-lg"></i> Añadir a Carpeta
@@ -924,6 +934,11 @@ interface DirtyPatch {
     }
     .card-action-row { display: flex; gap: .35rem; margin-top: .6rem; justify-content: flex-end; align-items: center; }
 
+    .tcg-ref-row {
+      display: flex; align-items: center; gap: .4rem; margin-top: .5rem; flex-wrap: wrap;
+    }
+    .tcg-ref-label { font-size: .72rem; color: #9ba3b4; text-transform: uppercase; }
+
     /* Codex card */
     .card-item {
       background: #16213e; border: 1px solid #2a3a4a; border-radius: 10px;
@@ -1025,6 +1040,14 @@ interface DirtyPatch {
     .detail-ability h4 { margin: 0 0 .35rem; color: #4fc3f7; font-size: .85rem; }
     .detail-ability p { margin: 0; color: #c8c8da; font-size: .9rem; white-space: pre-wrap; }
     .detail-edition { color: #9ba3b4; font-size: .85rem; margin: 0; }
+    .btn-tcg {
+      display: inline-flex; align-items: center; gap: .4rem;
+      margin-top: .8rem; padding: .55rem 1rem; border-radius: 8px;
+      background: linear-gradient(135deg, #1a6bc4, #0d4a8e); border: 1px solid #2980d9;
+      color: #fff; font-weight: 700; font-size: .9rem; text-decoration: none;
+      transition: background .2s, transform .15s;
+    }
+    .btn-tcg:hover { background: linear-gradient(135deg, #2980d9, #1a6bc4); transform: translateY(-1px); }
     .detail-actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: auto; }
     .close-btn {
       position: absolute; top: .5rem; right: .5rem;
@@ -1462,6 +1485,17 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   selectCodexCard(card: RiftboundCardLite) { this.previewCard.set(card); }
+
+  // ── TCGPlayer ──
+  private readonly tcgSetSlugs: Record<string, string> = {
+    OGN: 'origins', UNL: 'unleashed', OGS: 'proving-grounds', SFD: 'spiritforged', ARC: 'product',
+  };
+  getTcgPlayerUrl(card: RiftboundCardLite | RiftboundCard): string {
+    const setCode = card.card_number?.split('-')[0]?.toUpperCase() || '';
+    const setSlug = this.tcgSetSlugs[setCode] || 'product';
+    const q = encodeURIComponent(card.name);
+    return `https://www.tcgplayer.com/search/riftbound-league-of-legends-trading-card-game/${setSlug}?q=${q}&Language=English`;
+  }
 
   quickAddToCollection(card: RiftboundCardLite | RiftboundCard, ev?: MouseEvent) {
     ev?.stopPropagation();

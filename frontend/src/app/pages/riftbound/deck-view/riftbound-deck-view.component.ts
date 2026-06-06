@@ -12,6 +12,7 @@ import {
   RiftboundDeck, RiftboundDeckEntry, RiftboundBanlistEntry,
   RIFTBOUND_ZONE_LABELS, RiftboundZone, RiftboundColor, RiftboundCard,
 } from '../../../models/riftbound';
+import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.component';
 
 type ViewMode = 'grid' | 'list' | 'stats';
 type Orientation = 'vertical' | 'horizontal';
@@ -45,7 +46,7 @@ function typeRank(t?: string): number {
 @Component({
   selector: 'app-riftbound-deck-view',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, TcgPriceComponent],
   template: `
     @if (loading()) {
       <p class="loading">Cargando mazo…</p>
@@ -467,6 +468,7 @@ function typeRank(t?: string): number {
                     <a class="action-btn" [routerLink]="['/riftbound/cards', c.card_number]" (click)="closePreview()">🔎 Ver en explorador</a>
                     <button class="action-btn" (click)="copyText(deepLinkUrl(c.id), 'Enlace de la carta copiado')">🔗 Copiar enlace</button>
                   </div>
+                  <app-tcg-price [cardName]="c.name" [compact]="false" [showLink]="true"></app-tcg-price>
                 </div>
               </div>
             } @else {

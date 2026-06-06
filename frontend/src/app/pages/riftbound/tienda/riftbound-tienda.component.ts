@@ -11,6 +11,7 @@ import {
 } from '../../../models/riftbound';
 import { ShareImageComponent, ShareImageItem } from '../../../components/share-image/share-image.component';
 import { CardPhotoCarouselComponent } from '../../../components/card-photo-carousel/card-photo-carousel.component';
+import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.component';
 
 interface RiftboundCartItem {
   entryId: number;
@@ -25,7 +26,7 @@ interface RiftboundCartItem {
 @Component({
   selector: 'app-riftbound-tienda',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DecimalPipe, ShareImageComponent, CardPhotoCarouselComponent],
+  imports: [CommonModule, FormsModule, RouterLink, DecimalPipe, ShareImageComponent, CardPhotoCarouselComponent, TcgPriceComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
   <div class="tienda-container">
@@ -151,6 +152,7 @@ interface RiftboundCartItem {
                 <span class="price">{{ e.price != null ? ('$' + (e.price | number)) : 'Consultar' }}</span>
                 <span class="qty">x{{ e.selling_quantity }}</span>
               </div>
+              <app-tcg-price [cardName]="e.card_data?.name || ''" [compact]="true" [hideIfEmpty]="true"></app-tcg-price>
               <button class="btn btn-sm btn-primary btn-add-cart"
                       (click)="addToCart(e, $event)"
                       [disabled]="inCart(e.id) >= e.selling_quantity">
@@ -200,6 +202,7 @@ interface RiftboundCartItem {
                 <div class="price-row">
                   <span class="qty wishlist-qty">❤️ Quiere x{{ w.desired_quantity }}</span>
                 </div>
+                <app-tcg-price [cardName]="w.card_data?.name || ''" [compact]="true" [hideIfEmpty]="true"></app-tcg-price>
               </div>
             </div>
           }
@@ -269,6 +272,7 @@ interface RiftboundCartItem {
             <h2>{{ pc.name }}</h2>
             <p class="card-meta">{{ pc.card_number }}</p>
             @if (pc.description) { <p>{{ pc.description }}</p> }
+            <app-tcg-price [cardName]="pc.name" [compact]="false" [showLink]="true"></app-tcg-price>
           </div>
         </div>
       </div>
@@ -391,6 +395,15 @@ interface RiftboundCartItem {
       background: rgba(15,15,35,.85); border: 1px solid #2a3a4a; color: #fff;
       width: 32px; height: 32px; border-radius: 50%; cursor: pointer; z-index: 2; }
     .close-btn:hover { background: #e94560; border-color: #e94560; }
+
+    .btn-tcg {
+      display: inline-flex; align-items: center; gap: .4rem;
+      margin-top: .8rem; padding: .55rem 1rem; border-radius: 8px;
+      background: linear-gradient(135deg, #1a6bc4, #0d4a8e); border: 1px solid #2980d9;
+      color: #fff; font-weight: 700; font-size: .9rem; text-decoration: none;
+      transition: background .2s, transform .15s;
+    }
+    .btn-tcg:hover { background: linear-gradient(135deg, #2980d9, #1a6bc4); transform: translateY(-1px); }
 
     /* Cart */
     .btn-add-cart { width: 100%; margin-top: .55rem; font-size: .82rem; }
@@ -665,6 +678,22 @@ export class RiftboundTiendaComponent implements OnInit {
 
   copyOrder() {
     navigator.clipboard.writeText(this.buildOrderText());
+  }
+
+  // ── TCGPlayer ──
+  private readonly tcgSetSlugs: Record<string, string> = {
+    OGN: 'origins',
+    UNL: 'unleashed',
+    OGS: 'proving-grounds',
+    SFD: 'spiritforged',
+    ARC: 'product',
+  };
+
+  getTcgPlayerUrl(card: RiftboundCardLite): string {
+    const setCode = card.card_number?.split('-')[0]?.toUpperCase() || '';
+    const setSlug = this.tcgSetSlugs[setCode] || 'product';
+    const q = encodeURIComponent(card.name);
+    return `https://www.tcgplayer.com/search/riftbound-league-of-legends-trading-card-game/${setSlug}?q=${q}&Language=English`;
   }
 
   // ── Tabs / Wishlist ──

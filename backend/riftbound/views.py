@@ -5,6 +5,8 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
 
+from .tcgplayer import get_tcg_price, get_tcg_prices_batch
+
 from .models import (
     RiftboundCard, RiftboundSet, RiftboundFormat, RiftboundBanlistEntry,
     RiftboundDeck, RiftboundCollectionEntry, RiftboundWishlistEntry, RiftboundIcon,
@@ -703,3 +705,35 @@ class RiftboundPublicStoreIndexView(generics.ListAPIView):
         if ordering in allowed:
             qs = qs.order_by(ordering)
         return qs
+
+
+# ─── TCGPlayer Price Proxy ───────────────────────────────────────────────────
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def tcgplayer_price_view(request):
+    """Obtiene precio de TCGPlayer para una carta por nombre."""
+    card_name = request.query_params.get("card_name", "").strip()
+    if not card_name or len(card_name) < 2:
+        return Response({"error": "card_name is required (min 2 chars)"}, status=400)
+
+    data = get_tcg_price(card_name)
+    if data is None or not data.get("market_price"):
+        return Response({"card_name": card_name, "market_price": None})
+
+    return Response(data)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def tcgplayer_prices_batch_view(request):
+    """Obtiene precios de TCGPlayer para múltiples cartas (máx 20)."""
+    card_names = request.data.get("card_names", [])
+    if not isinstance(card_names, list):
+        return Response({"error": "card_names must be a list"}, status=400)
+    if len(card_names) == 0:
+        return Response({"prices": []})
+
+    prices = get_tcg_prices_batch(card_names)
+    return Response({"prices": prices})

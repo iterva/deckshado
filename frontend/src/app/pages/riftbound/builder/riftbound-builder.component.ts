@@ -251,6 +251,7 @@ function typeRank(t?: string): number {
           <button class="mobile-close-btn" (click)="showDeckPanel.set(false)">✕</button>
         </div>
 
+        <div class="deck-panel-scroll">
         <!-- Champion Legend del mazo -->
         <div class="legend-banner" [class.empty]="!chosenLegend()">
           @if (chosenLegend(); as L) {
@@ -441,6 +442,7 @@ function typeRank(t?: string): number {
             </ul>
           </div>
         }
+        </div><!-- /deck-panel-scroll -->
 
         <div class="action-row">
           <button type="button" class="preview-deck-btn"
@@ -823,18 +825,36 @@ function typeRank(t?: string): number {
     .deck-panel::-webkit-scrollbar-thumb:hover { background: #e94560; }
     @media (max-width: 900px) {
       .deck-panel {
-        position: fixed; inset: 0;
-        z-index: 950; transform: translateX(100%); transition: transform .25s ease;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 950;
+        transform: translateX(100%);
+        transition: transform .25s ease;
         background: #091428;
-        max-height: none; top: 0;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+        max-height: none;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
       }
       .deck-panel.mobile-visible { transform: translateX(0); }
+      .deck-panel-scroll {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+        padding: 0 .6rem;
+      }
+      .action-row {
+        flex-shrink: 0;
+        padding: .75rem .6rem calc(.75rem + env(safe-area-inset-bottom, 0px));
+        background: #091428;
+        border-top: 1px solid #1e3a4a;
+      }
     }
     .deck-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
     .deck-header h2 { margin: 0; font-size: 1.1rem; color: #fff; }
+    .deck-panel-scroll { }
     .mobile-close-btn {
       display: none; width: 36px; height: 36px; border-radius: 50%;
       border: 1px solid #2a3a4a; background: #0f0f23; color: #c8c8da; cursor: pointer;
@@ -944,14 +964,6 @@ function typeRank(t?: string): number {
     }
     .action-row .preview-deck-btn,
     .action-row .save-btn { flex: 1; margin-bottom: 0; white-space: nowrap; }
-    @media (max-width: 900px) {
-      .action-row {
-        position: sticky; bottom: 0; z-index: 10;
-        background: #091428; padding: .75rem 0;
-        border-top: 1px solid #1e3a4a;
-        margin: 0 -.6rem; padding-left: .6rem; padding-right: .6rem;
-      }
-    }
 
     .preview-deck-btn {
       width: 100%; padding: .55rem 1rem; border: 1px solid #2a3a4a; border-radius: 6px;
@@ -1565,8 +1577,6 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
     if (c.card_type === 'battlefield') return 1;
     if (c.card_type === 'legend') return 1;
     if (c.card_type === 'rune') return this.rules.rune;
-    // [Unique] keyword: solo 1 copia permitida
-    if (c.description && c.description.includes('[Unique]')) return 1;
     return 3;
   }
 
@@ -1584,7 +1594,7 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
     if (e.zone === 'bg') return 1;
     if (e.zone === 'champion') return 1;
     if (e.zone === 'rune') return this.rules.rune;
-    return this.getMaxCopies(e.card);
+    return 3;
   }
 
   canAddToAuto(c: RiftboundCardLite, z: RiftboundZone): boolean {

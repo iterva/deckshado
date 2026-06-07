@@ -53,7 +53,7 @@ export class TiendaComponent implements OnInit {
   races: Race[] = [];
   rarities: Rarity[] = [];
   types: CardType[] = [];
-  openFilter: 'edition' | 'race' | 'rarity' | 'type' | null = null;
+  openFilter: 'fmt' | 'edition' | 'race' | 'rarity' | 'type' | null = null;
 
   // Cart (localStorage scoped per token/slug)
   cart: CartItem[] = [];
@@ -108,12 +108,18 @@ export class TiendaComponent implements OnInit {
     this.loadStore();
   }
 
-  toggleFilterPopover(filter: 'edition' | 'race' | 'rarity' | 'type', event: Event) {
+  toggleFilterPopover(filter: 'fmt' | 'edition' | 'race' | 'rarity' | 'type', event: Event) {
     event.stopPropagation();
     this.openFilter = this.openFilter === filter ? null : filter;
   }
 
-  filterLabel(filter: 'edition' | 'race' | 'rarity' | 'type'): string {
+  filterLabel(filter: 'fmt' | 'edition' | 'race' | 'rarity' | 'type'): string {
+    if (filter === 'fmt') {
+      const val = this.filters.fmt;
+      if (!val) return 'Todos los formatos';
+      const map: Record<string, string> = { imp: 'Imperio', imp_r: 'Imperio Retro', esc: 'Escuelas Elementales', pb: 'Primer Bloque', pe: 'Primera Era' };
+      return map[val] || val;
+    }
     const val = this.filters[filter] as string | undefined;
     if (!val) {
       const labels = { edition: 'Todas las ediciones', race: 'Todas las razas', rarity: 'Todas las frecuencias', type: 'Todos los tipos' };
@@ -125,7 +131,7 @@ export class TiendaComponent implements OnInit {
     return this.types.find(t => t.slug === val)?.name || val;
   }
 
-  selectFilter(filter: 'edition' | 'race' | 'rarity' | 'type', value: string) {
+  selectFilter(filter: 'fmt' | 'edition' | 'race' | 'rarity' | 'type', value: string) {
     (this.filters as any)[filter] = this.filters[filter] === value ? '' : value;
     this.openFilter = null;
     this.applyFilter();

@@ -73,14 +73,31 @@
     @if (activeTab === 'store') {
     <div class="filters-bar">
       <input type="text" placeholder="🔍 Buscar carta..." [(ngModel)]="filters.search" (keyup.enter)="applyFilter()" class="search-input" />
-      <select [(ngModel)]="filters.fmt" (change)="applyFilter()">
-        <option value="">Todos los formatos</option>
-        <option value="imp">Imperio</option>
-        <option value="imp_r">Imperio Retro</option>
-        <option value="esc">Escuelas Elementales</option>
-        <option value="pb">Primer Bloque</option>
-        <option value="pe">Primera Era</option>
-      </select>
+
+      <!-- Formato combobox -->
+      <div class="tienda-multi-filter" [class.open]="openFilter === 'fmt'" (click)="$event.stopPropagation()">
+        <button type="button" class="tienda-multi-trigger" [class.has-value]="filters.fmt" (click)="toggleFilterPopover('fmt', $event)">
+          <span>{{ filterLabel('fmt') }}</span>
+          <i class="bi bi-chevron-down"></i>
+        </button>
+        @if (openFilter === 'fmt') {
+          <div class="tienda-multi-popover">
+            <div class="tienda-multi-head">
+              <span>FORMATO</span>
+              @if (filters.fmt) {
+                <button type="button" class="link-btn" (click)="filters.fmt = ''; applyFilter()">Limpiar</button>
+              }
+            </div>
+            <div class="tienda-multi-list">
+              <label class="tienda-multi-item" [class.active]="filters.fmt === 'imp'" (click)="selectFilter('fmt', 'imp')"><span>Imperio</span></label>
+              <label class="tienda-multi-item" [class.active]="filters.fmt === 'imp_r'" (click)="selectFilter('fmt', 'imp_r')"><span>Imperio Retro</span></label>
+              <label class="tienda-multi-item" [class.active]="filters.fmt === 'esc'" (click)="selectFilter('fmt', 'esc')"><span>Escuelas Elementales</span></label>
+              <label class="tienda-multi-item" [class.active]="filters.fmt === 'pb'" (click)="selectFilter('fmt', 'pb')"><span>Primer Bloque</span></label>
+              <label class="tienda-multi-item" [class.active]="filters.fmt === 'pe'" (click)="selectFilter('fmt', 'pe')"><span>Primera Era</span></label>
+            </div>
+          </div>
+        }
+      </div>
 
       <!-- Ediciones combobox -->
       <div class="tienda-multi-filter" [class.open]="openFilter === 'edition'" (click)="$event.stopPropagation()">

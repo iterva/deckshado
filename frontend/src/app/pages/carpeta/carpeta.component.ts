@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, signal, ChangeDetectorRef, HostListener } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
@@ -24,6 +24,9 @@ type Tab = 'carpeta' | 'codex' | 'wishlist' | 'mercado' | 'stats';
 export class CarpetaComponent implements OnInit {
   activeTab: Tab = 'carpeta';
   binderProfile: BinderProfile | null = null;
+
+  @HostListener('document:click')
+  onDocClick() { this.codexOpenFilter = null; }
 
   // ── Carpeta (Collection) ──
   collectionEntries: CollectionEntry[] = [];
@@ -58,6 +61,7 @@ export class CarpetaComponent implements OnInit {
   selectedCard: Card | null = null;
   addQty = 1;
   filtersOpen = true;
+  codexOpenFilter: 'edition' | 'type' | 'race' | 'rarity' | null = null;
 
   // ── Wishlist ──
   wishlistEntries: WishlistEntry[] = [];
@@ -316,6 +320,37 @@ export class CarpetaComponent implements OnInit {
     this.selectedTypes = [];
     this.selectedRaces = [];
     this.selectedRarities = [];
+    this.onCodexFilter();
+  }
+
+  toggleCodexPopover(filter: 'edition' | 'type' | 'race' | 'rarity', event: Event) {
+    event.stopPropagation();
+    this.codexOpenFilter = this.codexOpenFilter === filter ? null : filter;
+  }
+
+  codexFilterLabel(filter: 'edition' | 'type' | 'race' | 'rarity'): string {
+    const map: Record<string, { arr: string[]; label: string }> = {
+      edition: { arr: this.selectedEditions, label: 'Todas las ediciones' },
+      type: { arr: this.selectedTypes, label: 'Todos los tipos' },
+      race: { arr: this.selectedRaces, label: 'Todas las razas' },
+      rarity: { arr: this.selectedRarities, label: 'Todas las frecuencias' },
+    };
+    const { arr, label } = map[filter];
+    if (arr.length === 0) return label;
+    if (arr.length === 1) {
+      if (filter === 'edition') return this.filteredEditions.find(e => e.slug === arr[0])?.title || arr[0];
+      if (filter === 'type') return this.types.find(t => t.slug === arr[0])?.name || arr[0];
+      if (filter === 'race') return this.filteredRaces.find(r => r.slug === arr[0])?.name || arr[0];
+      return this.rarities.find(r => r.slug === arr[0])?.name || arr[0];
+    }
+    return `${arr.length} seleccionados`;
+  }
+
+  clearCodexFilter(filter: 'edition' | 'type' | 'race' | 'rarity') {
+    if (filter === 'edition') this.selectedEditions = [];
+    else if (filter === 'type') this.selectedTypes = [];
+    else if (filter === 'race') this.selectedRaces = [];
+    else this.selectedRarities = [];
     this.onCodexFilter();
   }
   codexPrev() { if (this.codexPage > 1) { this.codexPage--; this.loadCodex(); } }

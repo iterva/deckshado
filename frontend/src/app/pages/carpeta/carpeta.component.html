@@ -197,10 +197,9 @@
       </div>
 
       @if (filtersOpen) {
-        <div class="checkbox-filters">
+        <div class="checkbox-filters codex-combo-filters">
           <!-- Formato -->
           <div class="filter-section">
-            <h4 class="filter-title">Formato</h4>
             <select [(ngModel)]="selectedFormat" (change)="onFormatChange()">
               <option value="">Todos los formatos</option>
               <option value="imp">Imperio</option>
@@ -212,59 +211,107 @@
           </div>
 
           <!-- Ediciones -->
-          <div class="filter-section">
-            <h4 class="filter-title">Ediciones</h4>
-            <div class="checkbox-group">
-              @for (ed of filteredEditions; track ed.id) {
-                <label class="chip" [class.active]="isSelected(selectedEditions, ed.slug)">
-                  <input type="checkbox" [checked]="isSelected(selectedEditions, ed.slug)"
-                    (change)="toggleFilter(selectedEditions, ed.slug)" hidden />
-                  {{ ed.title }}
-                </label>
-              }
-            </div>
+          <div class="codex-multi-filter" [class.open]="codexOpenFilter === 'edition'">
+            <button type="button" class="codex-multi-trigger" [class.has-value]="selectedEditions.length > 0" (click)="toggleCodexPopover('edition', $event)">
+              <span>{{ codexFilterLabel('edition') }}</span>
+              <i class="bi bi-chevron-down"></i>
+            </button>
+            @if (codexOpenFilter === 'edition') {
+              <div class="codex-multi-popover" (click)="$event.stopPropagation()">
+                <div class="codex-multi-head">
+                  <span>EDICIONES</span>
+                  @if (selectedEditions.length > 0) {
+                    <button type="button" class="link-btn" (click)="clearCodexFilter('edition')">Limpiar</button>
+                  }
+                </div>
+                <div class="codex-multi-list">
+                  @for (ed of filteredEditions; track ed.id) {
+                    <label class="codex-multi-item">
+                      <input type="checkbox" [checked]="isSelected(selectedEditions, ed.slug)" (change)="toggleFilter(selectedEditions, ed.slug)">
+                      <span>{{ ed.title }}</span>
+                    </label>
+                  }
+                </div>
+              </div>
+            }
           </div>
 
           <!-- Tipos -->
-          <div class="filter-section">
-            <h4 class="filter-title">Tipos</h4>
-            <div class="checkbox-group">
-              @for (t of types; track t.id) {
-                <label class="chip" [class.active]="isSelected(selectedTypes, t.slug)">
-                  <input type="checkbox" [checked]="isSelected(selectedTypes, t.slug)"
-                    (change)="toggleFilter(selectedTypes, t.slug)" hidden />
-                  {{ t.name }}
-                </label>
-              }
-            </div>
+          <div class="codex-multi-filter" [class.open]="codexOpenFilter === 'type'">
+            <button type="button" class="codex-multi-trigger" [class.has-value]="selectedTypes.length > 0" (click)="toggleCodexPopover('type', $event)">
+              <span>{{ codexFilterLabel('type') }}</span>
+              <i class="bi bi-chevron-down"></i>
+            </button>
+            @if (codexOpenFilter === 'type') {
+              <div class="codex-multi-popover" (click)="$event.stopPropagation()">
+                <div class="codex-multi-head">
+                  <span>TIPOS</span>
+                  @if (selectedTypes.length > 0) {
+                    <button type="button" class="link-btn" (click)="clearCodexFilter('type')">Limpiar</button>
+                  }
+                </div>
+                <div class="codex-multi-list">
+                  @for (t of types; track t.id) {
+                    <label class="codex-multi-item">
+                      <input type="checkbox" [checked]="isSelected(selectedTypes, t.slug)" (change)="toggleFilter(selectedTypes, t.slug)">
+                      <span>{{ t.name }}</span>
+                    </label>
+                  }
+                </div>
+              </div>
+            }
           </div>
 
           <!-- Razas -->
-          <div class="filter-section">
-            <h4 class="filter-title">Razas</h4>
-            <div class="checkbox-group">
-              @for (r of filteredRaces; track r.id) {
-                <label class="chip" [class.active]="isSelected(selectedRaces, r.slug)">
-                  <input type="checkbox" [checked]="isSelected(selectedRaces, r.slug)"
-                    (change)="toggleFilter(selectedRaces, r.slug)" hidden />
-                  {{ r.name }}
-                </label>
-              }
-            </div>
+          <div class="codex-multi-filter" [class.open]="codexOpenFilter === 'race'">
+            <button type="button" class="codex-multi-trigger" [class.has-value]="selectedRaces.length > 0" (click)="toggleCodexPopover('race', $event)">
+              <span>{{ codexFilterLabel('race') }}</span>
+              <i class="bi bi-chevron-down"></i>
+            </button>
+            @if (codexOpenFilter === 'race') {
+              <div class="codex-multi-popover" (click)="$event.stopPropagation()">
+                <div class="codex-multi-head">
+                  <span>RAZAS</span>
+                  @if (selectedRaces.length > 0) {
+                    <button type="button" class="link-btn" (click)="clearCodexFilter('race')">Limpiar</button>
+                  }
+                </div>
+                <div class="codex-multi-list">
+                  @for (r of filteredRaces; track r.id) {
+                    <label class="codex-multi-item">
+                      <input type="checkbox" [checked]="isSelected(selectedRaces, r.slug)" (change)="toggleFilter(selectedRaces, r.slug)">
+                      <span>{{ r.name }}</span>
+                    </label>
+                  }
+                </div>
+              </div>
+            }
           </div>
 
           <!-- Frecuencias -->
-          <div class="filter-section">
-            <h4 class="filter-title">Frecuencia</h4>
-            <div class="checkbox-group">
-              @for (r of rarities; track r.id) {
-                <label class="chip" [class.active]="isSelected(selectedRarities, r.slug)">
-                  <input type="checkbox" [checked]="isSelected(selectedRarities, r.slug)"
-                    (change)="toggleFilter(selectedRarities, r.slug)" hidden />
-                  {{ r.name }}
-                </label>
-              }
-            </div>
+          <div class="codex-multi-filter" [class.open]="codexOpenFilter === 'rarity'">
+            <button type="button" class="codex-multi-trigger" [class.has-value]="selectedRarities.length > 0" (click)="toggleCodexPopover('rarity', $event)">
+              <span>{{ codexFilterLabel('rarity') }}</span>
+              <i class="bi bi-chevron-down"></i>
+            </button>
+            @if (codexOpenFilter === 'rarity') {
+              <div class="codex-multi-popover" (click)="$event.stopPropagation()">
+                <div class="codex-multi-head">
+                  <span>FRECUENCIA</span>
+                  @if (selectedRarities.length > 0) {
+                    <button type="button" class="link-btn" (click)="clearCodexFilter('rarity')">Limpiar</button>
+                  }
+                </div>
+                <div class="codex-multi-list">
+                  @for (r of rarities; track r.id) {
+                    <label class="codex-multi-item">
+                      <input type="checkbox" [checked]="isSelected(selectedRarities, r.slug)" (change)="toggleFilter(selectedRarities, r.slug)">
+                      <span>{{ r.name }}</span>
+                    </label>
+                  }
+                </div>
+              </div>
+            }
           </div>
         </div>
       }

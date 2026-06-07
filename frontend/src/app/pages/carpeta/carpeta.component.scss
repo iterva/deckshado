@@ -245,6 +245,113 @@
   }
 }
 
+// ── Codex Combo Filters ──
+.codex-combo-filters {
+  flex-direction: row !important;
+  flex-wrap: wrap;
+  align-items: flex-start;
+
+  .filter-section {
+    select {
+      max-width: 200px;
+    }
+  }
+}
+
+.codex-multi-filter {
+  position: relative;
+
+  .codex-multi-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.8rem;
+    border-radius: 6px;
+    border: 1px solid #333;
+    background: #1e1e3a;
+    color: #ccc;
+    font-size: 0.85rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.2s;
+
+    &:hover { border-color: #00d4ff; }
+
+    &.has-value {
+      border-color: #ffbd39;
+      color: #ffbd39;
+    }
+
+    i { font-size: 0.7rem; transition: transform 0.2s; }
+  }
+
+  &.open .codex-multi-trigger i {
+    transform: rotate(180deg);
+  }
+}
+
+.codex-multi-popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 260px;
+  max-height: 320px;
+  display: flex;
+  flex-direction: column;
+  background: #1a1a2e;
+  border: 1px solid #3a3a5a;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  overflow: hidden;
+
+  .codex-multi-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 0.8rem;
+    border-bottom: 1px solid #2a2a4a;
+    font-size: 0.75rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    .link-btn {
+      background: none;
+      border: none;
+      color: #ff4081;
+      font-size: 0.75rem;
+      cursor: pointer;
+      &:hover { text-decoration: underline; }
+    }
+  }
+
+  .codex-multi-list {
+    overflow-y: auto;
+    max-height: 260px;
+    padding: 0.4rem 0;
+  }
+
+  .codex-multi-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.82rem;
+    color: #ccc;
+    cursor: pointer;
+
+    &:hover { background: rgba(0, 212, 255, 0.05); }
+
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #00d4ff;
+      flex-shrink: 0;
+    }
+  }
+}
+
 .results-count {
   color: #888;
   font-size: 0.85rem;
@@ -815,10 +922,10 @@
 }
 
 .mercado-check {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  z-index: 3;
+  display: flex;
+  align-items: flex-start;
+  padding-top: 0.3rem;
+  flex-shrink: 0;
   cursor: pointer;
 
   input[type="checkbox"] {

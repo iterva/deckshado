@@ -619,12 +619,12 @@ export class CarpetaComponent implements OnInit {
     const source = this.mercadoSelected.size > 0
       ? this.mercadoEntries.filter(e => this.mercadoSelected.has(e.id))
       : this.mercadoEntries;
-    return source.slice(0, 20).map(e => ({
+    return source.map(e => ({
       name: e.card_detail?.name || '',
       image: e.card_detail?.image_url || '',
       quantity: e.selling_quantity || 1,
       foil: !!e.is_foil,
-      price: e.price ?? null,
+      price: null,
     }));
   }
 

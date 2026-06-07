@@ -103,6 +103,10 @@ export class TiendaComponent implements OnInit {
   }
 
   applyFilter() { this.filters.page = 1; this.loadStore(); }
+
+  get isOwner(): boolean {
+    return !!this.store?.username && this.store.username === this.auth.user()?.username;
+  }
   resetFilters() {
     this.filters = { page: 1, ordering: '-id' };
     this.loadStore();

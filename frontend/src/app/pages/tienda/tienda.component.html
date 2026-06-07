@@ -39,20 +39,24 @@
         }
       </div>
       <div class="store-actions">
-        <button class="btn btn-primary btn-sm" (click)="showContactModal = true">📩 Contactar</button>
+        @if (!isOwner) {
+          <button class="btn btn-primary btn-sm" (click)="showContactModal = true">📩 Contactar</button>
+        }
         <button class="btn btn-sm" (click)="copyLink()">🔗 Copiar Link</button>
         <button class="btn btn-sm" (click)="shareWhatsApp()">📱 Compartir</button>
-        <button class="btn btn-sm btn-pdf" (click)="exportPdf()">📄 PDF</button>
-        <app-share-image
-          mode="selling"
-          gameLabel="Mitos y Leyendas"
-          [sellerName]="sellerHandle"
-          [contactLine]="shareSellingContactLine"
-          [items]="shareStoreItems"
-          ctaLabel="Imagen tienda"
-          filenamePrefix="shadowforge-myl"
-          footerTagline="ShadowForge · Marketplace TCG">
-        </app-share-image>
+        @if (isOwner) {
+          <button class="btn btn-sm btn-pdf" (click)="exportPdf()">📄 PDF</button>
+          <app-share-image
+            mode="selling"
+            gameLabel="Mitos y Leyendas"
+            [sellerName]="sellerHandle"
+            [contactLine]="shareSellingContactLine"
+            [items]="shareStoreItems"
+            ctaLabel="Imagen tienda"
+            filenamePrefix="shadowforge-myl"
+            footerTagline="ShadowForge · Marketplace TCG">
+          </app-share-image>
+        }
       </div>
     </div>
 

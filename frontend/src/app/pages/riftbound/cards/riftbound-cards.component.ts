@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RiftboundService } from '../../../services/riftbound.service';
 import { RiftboundCard, RiftboundCardLite, RiftboundColor } from '../../../models/riftbound';
+import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.component';
 
 const COLORS: { code: RiftboundColor; label: string; hex: string }[] = [
   { code: 'fury',  label: 'Fury',  hex: '#e94560' },
@@ -36,7 +37,7 @@ const RARITIES = [
 @Component({
   selector: 'app-riftbound-cards',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TcgPriceComponent],
   template: `
     <div class="rb-cards-page">
       <header class="page-head">
@@ -142,6 +143,7 @@ const RARITIES = [
               @if (card.description) {
                 <p class="rb-card-ability">{{ card.description }}</p>
               }
+              <app-tcg-price [cardName]="card.name" [compact]="true" [showLink]="true" [hideIfEmpty]="true"></app-tcg-price>
             </div>
           </button>
         }
@@ -177,6 +179,7 @@ const RARITIES = [
                     <h3>Descripción</h3>
                     <pre class="desc">{{ c.description }}</pre>
                   }
+                  <app-tcg-price [cardName]="c.name" [compact]="false" [showLink]="true"></app-tcg-price>
                 </div>
               </div>
             } @else {

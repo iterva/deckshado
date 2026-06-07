@@ -188,41 +188,86 @@
           <input type="text" placeholder="Buscar cartas..." [(ngModel)]="codexSearch" (keyup.enter)="onCodexSearch()" />
           <button class="btn btn-primary btn-sm" (click)="onCodexSearch()">Buscar</button>
         </div>
+        <button class="btn btn-sm btn-filter" [class.active]="filtersOpen" (click)="filtersOpen = !filtersOpen">
+          🔽 Filtros
+        </button>
+        @if (selectedEditions.length || selectedTypes.length || selectedRaces.length || selectedRarities.length) {
+          <button class="btn btn-sm btn-ghost" (click)="clearFilters()">✕ Limpiar</button>
+        }
       </div>
-      <div class="filter-row">
-        <select [(ngModel)]="selectedFormat" (change)="onCodexFilter()">
-          <option value="">Todos los formatos</option>
-          <option value="imp">Imperio</option>
-          <option value="imp_r">Imperio Retro</option>
-          <option value="esc">Escuelas Elementales</option>
-          <option value="pb">Primer Bloque</option>
-          <option value="pe">Primera Era</option>
-        </select>
-        <select [(ngModel)]="selectedEdition" (change)="onCodexFilter()">
-          <option value="">Todas las ediciones</option>
-          @for (ed of editions; track ed.id) {
-            <option [value]="ed.slug">{{ ed.title }}</option>
-          }
-        </select>
-        <select [(ngModel)]="selectedType" (change)="onCodexFilter()">
-          <option value="">Todos los tipos</option>
-          @for (t of types; track t.id) {
-            <option [value]="t.slug">{{ t.name }}</option>
-          }
-        </select>
-        <select [(ngModel)]="selectedRace" (change)="onCodexFilter()">
-          <option value="">Todas las razas</option>
-          @for (r of races; track r.id) {
-            <option [value]="r.slug">{{ r.name }}</option>
-          }
-        </select>
-        <select [(ngModel)]="selectedRarity" (change)="onCodexFilter()">
-          <option value="">Todas las frecuencias</option>
-          @for (r of rarities; track r.id) {
-            <option [value]="r.slug">{{ r.name }}</option>
-          }
-        </select>
-      </div>
+
+      @if (filtersOpen) {
+        <div class="checkbox-filters">
+          <!-- Formato -->
+          <div class="filter-section">
+            <h4 class="filter-title">Formato</h4>
+            <select [(ngModel)]="selectedFormat" (change)="onFormatChange()">
+              <option value="">Todos los formatos</option>
+              <option value="imp">Imperio</option>
+              <option value="imp_r">Imperio Retro</option>
+              <option value="esc">Escuelas Elementales</option>
+              <option value="pb">Primer Bloque</option>
+              <option value="pe">Primera Era</option>
+            </select>
+          </div>
+
+          <!-- Ediciones -->
+          <div class="filter-section">
+            <h4 class="filter-title">Ediciones</h4>
+            <div class="checkbox-group">
+              @for (ed of filteredEditions; track ed.id) {
+                <label class="chip" [class.active]="isSelected(selectedEditions, ed.slug)">
+                  <input type="checkbox" [checked]="isSelected(selectedEditions, ed.slug)"
+                    (change)="toggleFilter(selectedEditions, ed.slug)" hidden />
+                  {{ ed.title }}
+                </label>
+              }
+            </div>
+          </div>
+
+          <!-- Tipos -->
+          <div class="filter-section">
+            <h4 class="filter-title">Tipos</h4>
+            <div class="checkbox-group">
+              @for (t of types; track t.id) {
+                <label class="chip" [class.active]="isSelected(selectedTypes, t.slug)">
+                  <input type="checkbox" [checked]="isSelected(selectedTypes, t.slug)"
+                    (change)="toggleFilter(selectedTypes, t.slug)" hidden />
+                  {{ t.name }}
+                </label>
+              }
+            </div>
+          </div>
+
+          <!-- Razas -->
+          <div class="filter-section">
+            <h4 class="filter-title">Razas</h4>
+            <div class="checkbox-group">
+              @for (r of filteredRaces; track r.id) {
+                <label class="chip" [class.active]="isSelected(selectedRaces, r.slug)">
+                  <input type="checkbox" [checked]="isSelected(selectedRaces, r.slug)"
+                    (change)="toggleFilter(selectedRaces, r.slug)" hidden />
+                  {{ r.name }}
+                </label>
+              }
+            </div>
+          </div>
+
+          <!-- Frecuencias -->
+          <div class="filter-section">
+            <h4 class="filter-title">Frecuencia</h4>
+            <div class="checkbox-group">
+              @for (r of rarities; track r.id) {
+                <label class="chip" [class.active]="isSelected(selectedRarities, r.slug)">
+                  <input type="checkbox" [checked]="isSelected(selectedRarities, r.slug)"
+                    (change)="toggleFilter(selectedRarities, r.slug)" hidden />
+                  {{ r.name }}
+                </label>
+              }
+            </div>
+          </div>
+        </div>
+      }
 
       <p class="results-count">{{ codexCards.length }} de {{ codexTotal }} cartas</p>
 

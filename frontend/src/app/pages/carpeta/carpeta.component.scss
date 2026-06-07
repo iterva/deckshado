@@ -167,6 +167,84 @@
   }
 }
 
+.btn-filter {
+  background: #1e1e3a;
+  border: 1px solid #333;
+  color: #aaa;
+  &.active { border-color: #00d4ff; color: #00d4ff; }
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid #555;
+  color: #ff6b6b;
+  &:hover { border-color: #ff6b6b; }
+}
+
+.checkbox-filters {
+  background: #161630;
+  border: 1px solid #2a2a4a;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+
+  .filter-section {
+    .filter-title {
+      font-size: 0.8rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.4rem;
+    }
+
+    select {
+      width: 100%;
+      max-width: 250px;
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+      border: 1px solid #333;
+      background: #1e1e3a;
+      color: #e0e0e0;
+      font-size: 0.85rem;
+      &:focus { outline: none; border-color: #00d4ff; }
+    }
+  }
+
+  .checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.7rem;
+    border-radius: 16px;
+    border: 1px solid #333;
+    background: #1e1e3a;
+    color: #bbb;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+
+    &:hover {
+      border-color: #00d4ff;
+      color: #fff;
+    }
+
+    &.active {
+      background: rgba(0, 212, 255, 0.15);
+      border-color: #00d4ff;
+      color: #00d4ff;
+    }
+  }
+}
+
 .results-count {
   color: #888;
   font-size: 0.85rem;

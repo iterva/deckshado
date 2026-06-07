@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { RiftboundService } from '../../../services/riftbound.service';
 import { RiftboundCard } from '../../../models/riftbound';
+import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.component';
 
 @Component({
   selector: 'app-riftbound-card-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, TcgPriceComponent],
   template: `
     @if (card(); as c) {
       <article class="rb-card-detail">
@@ -37,6 +38,7 @@ import { RiftboundCard } from '../../../models/riftbound';
               <h2>Descripción</h2>
               <pre class="desc">{{ c.description }}</pre>
             }
+            <app-tcg-price [cardName]="c.name" [compact]="false" [showLink]="true"></app-tcg-price>
           </div>
         </div>
       </article>

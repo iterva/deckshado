@@ -51,12 +51,13 @@ export class CarpetaComponent implements OnInit {
   races: Race[] = [];
   rarities: Rarity[] = [];
   selectedFormat = '';
-  selectedEdition = '';
-  selectedType = '';
-  selectedRace = '';
-  selectedRarity = '';
+  selectedEditions: string[] = [];
+  selectedTypes: string[] = [];
+  selectedRaces: string[] = [];
+  selectedRarities: string[] = [];
   selectedCard: Card | null = null;
   addQty = 1;
+  filtersOpen = true;
 
   // ── Wishlist ──
   wishlistEntries: WishlistEntry[] = [];
@@ -256,15 +257,26 @@ export class CarpetaComponent implements OnInit {
     this.cardService.getRarities().subscribe(d => { this.rarities = d; this.cdr.detectChanges(); });
   }
 
+  get filteredEditions(): Edition[] {
+    if (!this.selectedFormat) return this.editions;
+    return this.editions.filter(e => e.format_code === this.selectedFormat);
+  }
+
+  get filteredRaces(): Race[] {
+    // Hide 'noraza' / 'Sin Raza' from filter (internal use)
+    return this.races.filter(r => r.slug !== 'noraza');
+  }
+
   loadCodex() {
     this.codexLoading = true;
     this.cardService.getCards({
       search: this.codexSearch || undefined,
       format: this.selectedFormat || undefined,
-      edition: this.selectedEdition || undefined,
-      type: this.selectedType || undefined,
-      race: this.selectedRace || undefined,
-      rarity: this.selectedRarity || undefined,
+      edition: this.selectedEditions.length ? this.selectedEditions.join(',') : undefined,
+      type: this.selectedTypes.length ? this.selectedTypes.join(',') : undefined,
+      deck_race: this.selectedRaces.length === 1 ? this.selectedRaces[0] : undefined,
+      race: this.selectedRaces.length > 1 ? this.selectedRaces.join(',') : undefined,
+      rarity: this.selectedRarities.length ? this.selectedRarities.join(',') : undefined,
       page: this.codexPage,
     }).subscribe({
       next: res => {
@@ -279,6 +291,32 @@ export class CarpetaComponent implements OnInit {
 
   onCodexSearch() { this.codexPage = 1; this.loadCodex(); }
   onCodexFilter() { this.codexPage = 1; this.loadCodex(); }
+
+  onFormatChange() {
+    // Clear edition selection when format changes (editions are now different)
+    this.selectedEditions = [];
+    this.onCodexFilter();
+  }
+
+  toggleFilter(arr: string[], value: string) {
+    const idx = arr.indexOf(value);
+    if (idx >= 0) arr.splice(idx, 1);
+    else arr.push(value);
+    this.onCodexFilter();
+  }
+
+  isSelected(arr: string[], value: string): boolean {
+    return arr.includes(value);
+  }
+
+  clearFilters() {
+    this.selectedFormat = '';
+    this.selectedEditions = [];
+    this.selectedTypes = [];
+    this.selectedRaces = [];
+    this.selectedRarities = [];
+    this.onCodexFilter();
+  }
   codexPrev() { if (this.codexPage > 1) { this.codexPage--; this.loadCodex(); } }
   codexNext() { if (this.codexPage * 40 < this.codexTotal) { this.codexPage++; this.loadCodex(); } }
   get codexTotalPages() { return Math.ceil(this.codexTotal / 40); }

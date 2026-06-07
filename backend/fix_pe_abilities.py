@@ -35,11 +35,59 @@ OCR_REPLACEMENTS = [
     (r'\bFala fuerza\b', '1 a la fuerza'),
     (r'\bdcaed\s*', ''),
     (r'\bI ala Fuerza\b', '1 a la Fuerza'),
+    (r'\bIala Fuerza\b', '1 a la Fuerza'),
+    (r'\bIala fuerza\b', '1 a la fuerza'),
     (r'\bala fuerza\b', 'a la fuerza'),
     (r'\bala Fuerza\b', 'a la Fuerza'),
     (r'\b1ala\b', '1 a la'),
     (r'\bUn aliado\b', 'Un Aliado'),  # capitalize
     (r'\bun aliado\b', 'un Aliado'),
+    # "]" misread as "1" — the most common OCR error
+    (r'\] carta', '1 carta'),
+    (r'\] Oro', '1 Oro'),
+    (r'\] a la [Ff]uerza', '1 a la Fuerza'),
+    (r'\] 0 menos', '1 o menos'),
+    (r'e\] ', 'el '),
+    # "v" misread as "y" (conjunction)
+    (r' v ', ' y '),
+    # "tuoponente" -> "tu oponente"
+    (r'\btuoponente\b', 'tu oponente'),
+    # "Iu" / "lu" -> "tu"
+    (r'\bIu\b', 'tu'),
+    (r'\blu\b(?!\s*[A-Z])', 'tu'),
+    # "IO" -> "no" (in context "IO puede" -> "no puede")
+    (r'\bIO\b', 'no'),
+    # "pponente" -> "oponente"
+    (r'\bpponente\b', 'oponente'),
+    # "yno" -> "y no"
+    (r'\byno\b', 'y no'),
+    # "vava aser" -> "vaya a ser"
+    (r'\bvava aser\b', 'vaya a ser'),
+    (r'\bvava a ser\b', 'vaya a ser'),
+    # "bloauoado" -> "bloqueado"
+    (r'\bbloauoado\b', 'bloqueado'),
+    # "Wn" -> "un"
+    (r'\bWn\b', 'un'),
+    # "@" as "a" in context
+    (r'movido@', 'movido a'),
+    (r' @ ', '. '),
+    # "Cadà" -> "Cada"
+    (r'\bCadà\b', 'Cada'),
+    # "ólo" at start -> "Sólo"
+    (r'^ólo\b', 'Sólo'),
+    # Trailing noise: quotes, braces
+    (r'[\s]*["{}\[\]]+\s*$', ''),
+    # "havan" -> "hayan"
+    (r'\bhavan\b', 'hayan'),
+    # "Fina" at end -> "Final"
+    (r'\bFina$', 'Final'),
+    (r'\bFil$', 'Final'),
+    # "Maze" -> "Mazo"
+    (r'\bMaze\b', 'Mazo'),
+    # "Mare" -> "Mano" at end
+    (r'\bMare$', 'Mano'),
+    # "SU '" -> "su"
+    (r"\bSU '", 'su '),
     # Common OCR digit/letter swaps
     (r'\bCoste O\b', 'Coste 0'),
     (r'\b(\d)\s*0\s*(m[aá]s|menos)', r'\1 o \2'),  # "2 0 más" -> "2 o más"

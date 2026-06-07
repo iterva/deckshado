@@ -20,7 +20,7 @@ class DeckListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Deck
-        fields = ["id", "name", "description", "is_public", "shared_with_team", "owner_username", "card_count", "like_count", "format", "sub_format", "race", "starting_gold", "cover_card", "cover_card_detail", "cover_preview", "created_at", "updated_at"]
+        fields = ["id", "name", "description", "is_public", "shared_with_team", "owner_username", "card_count", "like_count", "format", "sub_format", "race", "pb_edition", "starting_gold", "cover_card", "cover_card_detail", "cover_preview", "created_at", "updated_at"]
         read_only_fields = ["created_at", "updated_at"]
 
     def get_cover_preview(self, obj):
@@ -63,7 +63,7 @@ class DeckDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Deck
-        fields = ["id", "name", "description", "is_public", "shared_with_team", "owner_username", "card_count", "like_count", "user_liked", "comment_count", "format", "sub_format", "race", "starting_gold", "starting_gold_detail", "cover_card", "cover_card_detail", "entries", "sideboard_entries", "created_at", "updated_at"]
+        fields = ["id", "name", "description", "is_public", "shared_with_team", "owner_username", "card_count", "like_count", "user_liked", "comment_count", "format", "sub_format", "race", "pb_edition", "starting_gold", "starting_gold_detail", "cover_card", "cover_card_detail", "entries", "sideboard_entries", "created_at", "updated_at"]
         read_only_fields = ["created_at", "updated_at"]
 
     def get_user_liked(self, obj):
@@ -89,7 +89,7 @@ class DeckCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Deck
-        fields = ["id", "name", "description", "is_public", "shared_with_team", "format", "sub_format", "race", "starting_gold", "cover_card", "entries"]
+        fields = ["id", "name", "description", "is_public", "shared_with_team", "format", "sub_format", "race", "pb_edition", "starting_gold", "cover_card", "entries"]
 
     def create(self, validated_data):
         entries_data = validated_data.pop("entries", [])

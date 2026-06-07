@@ -69,6 +69,7 @@ export interface Deck {
   format?: string;
   sub_format?: string;
   race?: string;
+  pb_edition?: string;
   starting_gold?: number | null;
   starting_gold_detail?: Card | null;
   cover_card?: number | null;

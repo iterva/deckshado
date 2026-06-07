@@ -330,17 +330,40 @@ export class DeckBuilderComponent implements OnInit {
         // Restore starting gold
         this.startingGoldId = deck.starting_gold || null;
 
-        // Restore format, sub_format and race from saved deck
-        const needsReload =
+        // Restore format, sub_format, race and pb_edition from saved deck
+        let needsReload =
           (deck.format && deck.format !== this.selectedFormat) ||
           (deck.sub_format && deck.sub_format !== this.selectedSubFormat) ||
-          (deck.race && deck.race !== this.selectedRace);
+          (deck.race && deck.race !== this.selectedRace) ||
+          (deck.pb_edition && deck.pb_edition !== this.selectedPbEdition);
 
         if (deck.format) {
           this.selectedFormat = deck.format;
         }
         if (deck.sub_format) {
           this.selectedSubFormat = deck.sub_format;
+        }
+        const prevScope = this.pbEditionScope.length;
+        if (deck.pb_edition && this.pbEditionGroups[deck.pb_edition]) {
+          this.selectedPbEdition = deck.pb_edition;
+          const grp = this.pbEditionGroups[deck.pb_edition];
+          this.pbEditionName = grp.name;
+          this.pbEditionScope = [...grp.slugs];
+        } else if ((deck.format === 'pe' || deck.format === 'pb') && this.deckCards.length > 0) {
+          // Fallback: infer pb_edition from deck cards' edition_slug
+          const edSlugs = this.deckCards.map(dc => dc.card.edition_slug).filter(Boolean);
+          for (const [key, grp] of Object.entries(this.pbEditionGroups)) {
+            if (grp.slugs.length > 0 && edSlugs.some(s => grp.slugs.includes(s))) {
+              this.selectedPbEdition = key;
+              this.pbEditionName = grp.name;
+              this.pbEditionScope = [...grp.slugs];
+              break;
+            }
+          }
+        }
+        // If scope was set by inference, force reload
+        if (!prevScope && this.pbEditionScope.length > 0) {
+          needsReload = true;
         }
         if (deck.race) {
           this.selectedRace = deck.race;
@@ -1177,6 +1200,7 @@ export class DeckBuilderComponent implements OnInit {
       format: this.selectedFormat,
       sub_format: this.selectedSubFormat,
       race: this.selectedRace || '',
+      pb_edition: this.selectedPbEdition || '',
       starting_gold: this.startingGoldId,
       entries: [...entries, ...sideEntries],
     };

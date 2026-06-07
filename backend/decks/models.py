@@ -9,6 +9,7 @@ class Deck(models.Model):
     format = models.CharField(max_length=20, default="imp")
     sub_format = models.CharField(max_length=20, blank=True, default="racial")
     race = models.CharField(max_length=50, blank=True, default="")
+    pb_edition = models.CharField(max_length=50, blank=True, default="")
     is_public = models.BooleanField(default=True)
     shared_with_team = models.BooleanField(default=False)
     starting_gold = models.ForeignKey(

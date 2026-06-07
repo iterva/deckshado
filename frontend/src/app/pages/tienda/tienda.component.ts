@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, HostListener } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
@@ -53,6 +53,7 @@ export class TiendaComponent implements OnInit {
   races: Race[] = [];
   rarities: Rarity[] = [];
   types: CardType[] = [];
+  openFilter: 'edition' | 'race' | 'rarity' | 'type' | null = null;
 
   // Cart (localStorage scoped per token/slug)
   cart: CartItem[] = [];
@@ -64,6 +65,9 @@ export class TiendaComponent implements OnInit {
     public auth: AuthService,
     private cdr: ChangeDetectorRef,
   ) {}
+
+  @HostListener('document:click')
+  onDocClick() { this.openFilter = null; }
 
   ngOnInit() {
     this.token = this.route.snapshot.paramMap.get('token') || this.route.snapshot.paramMap.get('slug') || '';
@@ -102,6 +106,29 @@ export class TiendaComponent implements OnInit {
   resetFilters() {
     this.filters = { page: 1, ordering: '-id' };
     this.loadStore();
+  }
+
+  toggleFilterPopover(filter: 'edition' | 'race' | 'rarity' | 'type', event: Event) {
+    event.stopPropagation();
+    this.openFilter = this.openFilter === filter ? null : filter;
+  }
+
+  filterLabel(filter: 'edition' | 'race' | 'rarity' | 'type'): string {
+    const val = this.filters[filter] as string | undefined;
+    if (!val) {
+      const labels = { edition: 'Todas las ediciones', race: 'Todas las razas', rarity: 'Todas las frecuencias', type: 'Todos los tipos' };
+      return labels[filter];
+    }
+    if (filter === 'edition') return this.editions.find(e => e.slug === val)?.title || val;
+    if (filter === 'race') return this.races.find(r => r.slug === val)?.name || val;
+    if (filter === 'rarity') return this.rarities.find(r => r.slug === val)?.name || val;
+    return this.types.find(t => t.slug === val)?.name || val;
+  }
+
+  selectFilter(filter: 'edition' | 'race' | 'rarity' | 'type', value: string) {
+    (this.filters as any)[filter] = this.filters[filter] === value ? '' : value;
+    this.openFilter = null;
+    this.applyFilter();
   }
   prevPage() { if ((this.filters.page || 1) > 1) { this.filters.page = (this.filters.page || 1) - 1; this.loadStore(); } }
   nextPage() { if ((this.filters.page || 1) * 40 < this.total) { this.filters.page = (this.filters.page || 1) + 1; this.loadStore(); } }

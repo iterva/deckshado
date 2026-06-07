@@ -81,30 +81,107 @@
         <option value="pb">Primer Bloque</option>
         <option value="pe">Primera Era</option>
       </select>
-      <select [(ngModel)]="filters.edition" (change)="applyFilter()">
-        <option value="">Todas las ediciones</option>
-        @for (e of editions; track e.id) { <option [value]="e.slug">{{ e.title }}</option> }
-      </select>
-      <select [(ngModel)]="filters.race" (change)="applyFilter()">
-        <option value="">Todas las razas</option>
-        @for (r of races; track r.id) { <option [value]="r.slug">{{ r.name }}</option> }
-      </select>
-      <select [(ngModel)]="filters.rarity" (change)="applyFilter()">
-        <option value="">Todas las rarezas</option>
-        @for (r of rarities; track r.id) { <option [value]="r.slug">{{ r.name }}</option> }
-      </select>
-      <select [(ngModel)]="filters.type" (change)="applyFilter()">
-        <option value="">Todos los tipos</option>
-        @for (t of types; track t.id) { <option [value]="t.slug">{{ t.name }}</option> }
-      </select>
-      <select [(ngModel)]="filters.condition" (change)="applyFilter()">
-        <option value="">Cond.</option>
-        <option value="NM">NM</option>
-        <option value="LP">LP</option>
-        <option value="MP">MP</option>
-        <option value="HP">HP</option>
-        <option value="DMG">DMG</option>
-      </select>
+
+      <!-- Ediciones combobox -->
+      <div class="tienda-multi-filter" [class.open]="openFilter === 'edition'" (click)="$event.stopPropagation()">
+        <button type="button" class="tienda-multi-trigger" [class.has-value]="filters.edition" (click)="toggleFilterPopover('edition', $event)">
+          <span>{{ filterLabel('edition') }}</span>
+          <i class="bi bi-chevron-down"></i>
+        </button>
+        @if (openFilter === 'edition') {
+          <div class="tienda-multi-popover">
+            <div class="tienda-multi-head">
+              <span>EDICIONES</span>
+              @if (filters.edition) {
+                <button type="button" class="link-btn" (click)="filters.edition = ''; applyFilter()">Limpiar</button>
+              }
+            </div>
+            <div class="tienda-multi-list">
+              @for (e of editions; track e.id) {
+                <label class="tienda-multi-item" [class.active]="filters.edition === e.slug" (click)="selectFilter('edition', e.slug)">
+                  <span>{{ e.title }}</span>
+                </label>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Razas combobox -->
+      <div class="tienda-multi-filter" [class.open]="openFilter === 'race'" (click)="$event.stopPropagation()">
+        <button type="button" class="tienda-multi-trigger" [class.has-value]="filters.race" (click)="toggleFilterPopover('race', $event)">
+          <span>{{ filterLabel('race') }}</span>
+          <i class="bi bi-chevron-down"></i>
+        </button>
+        @if (openFilter === 'race') {
+          <div class="tienda-multi-popover">
+            <div class="tienda-multi-head">
+              <span>RAZAS</span>
+              @if (filters.race) {
+                <button type="button" class="link-btn" (click)="filters.race = ''; applyFilter()">Limpiar</button>
+              }
+            </div>
+            <div class="tienda-multi-list">
+              @for (r of races; track r.id) {
+                <label class="tienda-multi-item" [class.active]="filters.race === r.slug" (click)="selectFilter('race', r.slug)">
+                  <span>{{ r.name }}</span>
+                </label>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Frecuencia combobox -->
+      <div class="tienda-multi-filter" [class.open]="openFilter === 'rarity'" (click)="$event.stopPropagation()">
+        <button type="button" class="tienda-multi-trigger" [class.has-value]="filters.rarity" (click)="toggleFilterPopover('rarity', $event)">
+          <span>{{ filterLabel('rarity') }}</span>
+          <i class="bi bi-chevron-down"></i>
+        </button>
+        @if (openFilter === 'rarity') {
+          <div class="tienda-multi-popover">
+            <div class="tienda-multi-head">
+              <span>FRECUENCIA</span>
+              @if (filters.rarity) {
+                <button type="button" class="link-btn" (click)="filters.rarity = ''; applyFilter()">Limpiar</button>
+              }
+            </div>
+            <div class="tienda-multi-list">
+              @for (r of rarities; track r.id) {
+                <label class="tienda-multi-item" [class.active]="filters.rarity === r.slug" (click)="selectFilter('rarity', r.slug)">
+                  <span>{{ r.name }}</span>
+                </label>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Tipos combobox -->
+      <div class="tienda-multi-filter" [class.open]="openFilter === 'type'" (click)="$event.stopPropagation()">
+        <button type="button" class="tienda-multi-trigger" [class.has-value]="filters.type" (click)="toggleFilterPopover('type', $event)">
+          <span>{{ filterLabel('type') }}</span>
+          <i class="bi bi-chevron-down"></i>
+        </button>
+        @if (openFilter === 'type') {
+          <div class="tienda-multi-popover">
+            <div class="tienda-multi-head">
+              <span>TIPOS</span>
+              @if (filters.type) {
+                <button type="button" class="link-btn" (click)="filters.type = ''; applyFilter()">Limpiar</button>
+              }
+            </div>
+            <div class="tienda-multi-list">
+              @for (t of types; track t.id) {
+                <label class="tienda-multi-item" [class.active]="filters.type === t.slug" (click)="selectFilter('type', t.slug)">
+                  <span>{{ t.name }}</span>
+                </label>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
       <select [(ngModel)]="filters.ordering" (change)="applyFilter()">
         <option value="-id">Más recientes</option>
         <option value="price">Precio ↑</option>

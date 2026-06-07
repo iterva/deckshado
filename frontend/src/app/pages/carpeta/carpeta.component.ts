@@ -82,6 +82,7 @@ export class CarpetaComponent implements OnInit {
   batchSaving = false;
   exportingPdf = false;
   mercadoAllEntries: CollectionEntry[] = [];
+  mercadoSelected = new Set<number>();
 
   // Foto real de la carta (por entry.id + slot)
   uploadingPhotoFor: number | null = null;
@@ -580,13 +581,32 @@ export class CarpetaComponent implements OnInit {
   }
 
   get shareMercadoItems(): ShareImageItem[] {
-    return this.mercadoEntries.slice(0, 20).map(e => ({
+    const source = this.mercadoSelected.size > 0
+      ? this.mercadoEntries.filter(e => this.mercadoSelected.has(e.id))
+      : this.mercadoEntries;
+    return source.slice(0, 20).map(e => ({
       name: e.card_detail?.name || '',
       image: e.card_detail?.image_url || '',
       quantity: e.selling_quantity || 1,
       foil: !!e.is_foil,
       price: e.price ?? null,
     }));
+  }
+
+  toggleMercadoSelect(entryId: number) {
+    if (this.mercadoSelected.has(entryId)) {
+      this.mercadoSelected.delete(entryId);
+    } else {
+      this.mercadoSelected.add(entryId);
+    }
+  }
+
+  toggleSelectAllMercado() {
+    if (this.mercadoSelected.size === this.mercadoEntries.length) {
+      this.mercadoSelected.clear();
+    } else {
+      this.mercadoEntries.forEach(e => this.mercadoSelected.add(e.id));
+    }
   }
 
   get shareSellerName(): string {

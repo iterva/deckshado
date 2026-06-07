@@ -806,6 +806,56 @@
 
 .mercado-card {
   border-left: 3px solid #ffbd39;
+  position: relative;
+
+  &.mercado-selected {
+    border-color: #4fc3f7;
+    box-shadow: 0 0 0 2px rgba(79, 195, 247, 0.3);
+  }
+}
+
+.mercado-check {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 3;
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #4fc3f7;
+    cursor: pointer;
+  }
+}
+
+.mercado-select-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+
+  .checkbox-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: #ccc;
+    cursor: pointer;
+
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #4fc3f7;
+      cursor: pointer;
+    }
+  }
+
+  .select-count {
+    font-size: 0.8rem;
+    color: #4fc3f7;
+    font-style: italic;
+  }
 }
 
 // ── Hidden Export Area ──

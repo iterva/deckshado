@@ -511,6 +511,16 @@
         }
       </div>
 
+      <div class="mercado-select-bar">
+        <label class="checkbox-inline">
+          <input type="checkbox" [checked]="mercadoSelected.size === mercadoEntries.length && mercadoEntries.length > 0" (change)="toggleSelectAllMercado()" />
+          Seleccionar todas
+        </label>
+        @if (mercadoSelected.size > 0) {
+          <span class="select-count">{{ mercadoSelected.size }} seleccionada{{ mercadoSelected.size > 1 ? 's' : '' }} para imagen</span>
+        }
+      </div>
+
       <p class="results-count">{{ mercadoTotal }} cartas en venta</p>
 
       @if (mercadoLoading) {
@@ -525,7 +535,10 @@
 
       <div class="collection-grid">
         @for (entry of mercadoEntries; track entry.id) {
-          <div class="collection-card mercado-card">
+          <div class="collection-card mercado-card" [class.mercado-selected]="mercadoSelected.has(entry.id)">
+            <label class="mercado-check">
+              <input type="checkbox" [checked]="mercadoSelected.has(entry.id)" (change)="toggleMercadoSelect(entry.id)" />
+            </label>
             <div class="card-image" (click)="previewCard = entry.card_detail">
               <img [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" loading="lazy"
                 (error)="$any($event.target).src = entry.card_detail.image_url" />

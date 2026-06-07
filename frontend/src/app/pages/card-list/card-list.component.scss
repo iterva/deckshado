@@ -279,7 +279,8 @@
     .detail-image {
       width: 100%;
       min-height: auto;
-      max-height: 300px;
+      max-height: none;
+      object-fit: contain;
       border-radius: 16px 16px 0 0;
     }
   }

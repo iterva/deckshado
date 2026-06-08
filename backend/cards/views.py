@@ -258,6 +258,43 @@ class RarityListView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
 
 
+class CardsByFormatView(generics.ListAPIView):
+    """Return ALL cards for a given format code (no pagination).
+    GET /api/cards/by-format/<format_code>/
+    Examples: /api/cards/by-format/imp/  /api/cards/by-format/pb/
+    """
+    serializer_class = CardListSerializer
+    pagination_class = None
+    permission_classes = [permissions.AllowAny]
+
+    @method_decorator(cache_page(60 * 10))
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    def get_queryset(self):
+        format_code = self.kwargs["format_code"]
+        if format_code == "esc":
+            qs = Card.objects.filter(edition__slug__in=ESC_EDITION_SLUGS)
+        else:
+            qs = Card.objects.filter(edition__format__code=format_code)
+        return qs.select_related("edition", "rarity", "race", "card_type").only(
+            "id", "myl_id", "edid", "slug", "name", "cost", "damage", "ability",
+            "custom_image_url",
+            "edition__slug", "edition__title", "edition__myl_id",
+            "rarity__name", "race__name", "race__slug", "card_type__name",
+        ).annotate(
+            image_url=Concat(
+                Value(MYL_CARDS_CDN),
+                "edition__myl_id", Value("/"), "edid", Value(".png"),
+            ),
+            is_unique=Case(
+                When(ability__startswith="Única", then=Value(True)),
+                default=Value(False),
+                output_field=BooleanField(),
+            ),
+        ).order_by("rarity__display_order", "edition", "edid")
+
+
 class BanlistView(generics.ListAPIView):
     serializer_class = BanlistEntrySerializer
     pagination_class = None

@@ -6,7 +6,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django.db.models import Q
-from external_api import external_token, external_my_decks, external_cards_by_format
+from external_api import external_token, external_token_google, external_set_password, external_my_decks, external_cards_by_format
 
 
 @api_view(["GET"])
@@ -49,6 +49,8 @@ urlpatterns = [
     path("api/search/", global_search, name="global-search"),
     # External API (para integraciones de terceros)
     path("api/external/token/", external_token, name="external-token"),
+    path("api/external/token/google/", external_token_google, name="external-token-google"),
+    path("api/external/set-password/", external_set_password, name="external-set-password"),
     path("api/external/my-decks/", external_my_decks, name="external-my-decks"),
     path("api/external/cards/<str:format_code>/", external_cards_by_format, name="external-cards"),
 ]

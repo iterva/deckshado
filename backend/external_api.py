@@ -76,6 +76,101 @@ def external_token(request):
     })
 
 
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def external_token_google(request):
+    """Login con Google id_token (para usuarios creados con Gmail).
+
+    Body: {"credential": "<google_id_token>"}
+    """
+    from users.google_auth import _verify_google_token
+    from users.models import SocialAccount
+
+    credential = (request.data.get("credential") or "").strip()
+    if not credential:
+        return Response(
+            {"error": "Se requiere el campo 'credential' con el id_token de Google."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    payload = _verify_google_token(credential)
+    if not payload:
+        return Response(
+            {"error": "Token de Google inválido."},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+    if "_error" in payload:
+        return Response(
+            {"error": payload["_error"]},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if not payload.get("email_verified"):
+        return Response(
+            {"error": "El correo de Google no está verificado."},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    google_id = payload["sub"]
+    email = payload.get("email", "").lower().strip()
+
+    # Buscar usuario vinculado a esta cuenta Google
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+
+    social = SocialAccount.objects.filter(provider="google", provider_uid=google_id).first()
+    if social:
+        user = social.user
+    else:
+        # Intentar por email
+        user = User.objects.filter(email__iexact=email).first()
+        if not user:
+            return Response(
+                {"error": "No existe una cuenta asociada a este correo de Google."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+    if not user.is_active:
+        return Response(
+            {"error": "Cuenta desactivada."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    refresh = RefreshToken.for_user(user)
+    return Response({
+        "access": str(refresh.access_token),
+        "refresh": str(refresh),
+        "user": {
+            "id": user.id,
+            "username": user.username,
+        },
+    })
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def external_set_password(request):
+    """Permite a un usuario (especialmente los creados con Google) definir una
+    contraseña para usar el endpoint /api/external/token/ con username+password.
+
+    Body: {"password": "mi_nueva_contraseña"}
+    Requiere estar autenticado (header Authorization: Bearer <token>).
+    """
+    password = request.data.get("password", "")
+    if len(password) < 8:
+        return Response(
+            {"error": "La contraseña debe tener al menos 8 caracteres."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    request.user.set_password(password)
+    request.user.save(update_fields=["password"])
+    return Response({
+        "detail": "Contraseña configurada correctamente. Ya puedes usar /api/external/token/ con tu username y esta contraseña.",
+        "username": request.user.username,
+    })
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def external_my_decks(request):

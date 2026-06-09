@@ -121,6 +121,7 @@ export class TcgPriceComponent implements OnChanges {
 
   loading = signal(false);
   price = signal<TcgPlayerPrice | null>(null);
+  private retried = false;
 
   get tcgSearchUrl(): string {
     return `https://www.tcgplayer.com/search/riftbound-league-of-legends-trading-card-game/product?q=${encodeURIComponent(this.cardName)}&view=grid`;
@@ -128,15 +129,22 @@ export class TcgPriceComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['cardName'] && this.cardName) {
+      this.retried = false;
       this.fetchPrice();
     }
   }
 
-  private fetchPrice(): void {
+  private fetchPrice(force = false): void {
     this.loading.set(true);
-    this.tcg.getPrice(this.cardName).subscribe(data => {
+    this.tcg.getPrice(this.cardName, force).subscribe(data => {
       this.price.set(data);
       this.loading.set(false);
+
+      // Reintento breve para evitar N/A por fallos transitorios.
+      if (data.market_price == null && !this.retried) {
+        this.retried = true;
+        setTimeout(() => this.fetchPrice(true), 350);
+      }
     });
   }
 }

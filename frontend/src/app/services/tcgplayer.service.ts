@@ -30,23 +30,32 @@ export class TcgPlayerService {
   /**
    * Obtiene precio de una carta por nombre via backend proxy.
    */
-  getPrice(cardName: string): Observable<TcgPlayerPrice> {
+  getPrice(cardName: string, force = false): Observable<TcgPlayerPrice> {
     const key = cardName.toLowerCase().trim();
     const now = Date.now();
 
-    const cached = this.cache.get(key);
-    if (cached && (now - cached.ts) < this.CACHE_TTL) {
-      return of(cached.data);
+    if (!force) {
+      const cached = this.cache.get(key);
+      if (cached && (now - cached.ts) < this.CACHE_TTL) {
+        return of(cached.data);
+      }
     }
 
-    if (this.inflight.has(key)) {
+    if (!force && this.inflight.has(key)) {
       return this.inflight.get(key)!;
+    }
+
+    if (force) {
+      this.inflight.delete(key);
     }
 
     const params = new HttpParams().set('card_name', cardName);
     const req$ = this.http.get<TcgPlayerPrice>(`${this.base}/price/`, { params }).pipe(
       tap(data => {
-        this.cache.set(key, { ts: Date.now(), data });
+        // No cachear N/A para no “pegar” fallos transitorios de red/backend.
+        if (data.market_price != null) {
+          this.cache.set(key, { ts: Date.now(), data });
+        }
         this.inflight.delete(key);
       }),
       catchError(() => {

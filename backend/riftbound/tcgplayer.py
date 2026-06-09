@@ -6,6 +6,7 @@ Cachea en memoria con un TTL de 30 minutos.
 """
 import time
 import logging
+import re
 from typing import Optional
 
 import requests
@@ -25,6 +26,47 @@ HEADERS = {
     "Accept": "application/json",
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
 }
+
+
+def _candidate_queries(card_name: str) -> list[str]:
+    """Genera variantes de búsqueda para mejorar match en TCGPlayer."""
+    base = (card_name or "").strip()
+    if not base:
+        return []
+
+    # Normalización básica de guiones y espacios
+    base = base.replace("—", "-").replace("–", "-")
+    base = re.sub(r"\s+", " ", base).strip()
+
+    candidates = [base]
+
+    # Remueve sufijos de variante comunes: (Metal), (Alternate Art), etc.
+    no_paren = re.sub(r"\s*\([^)]*\)", "", base).strip()
+    if no_paren and no_paren != base:
+        candidates.append(no_paren)
+
+    # Algunos nombres vienen como "A // B"
+    if "//" in no_paren:
+        left = no_paren.split("//", 1)[0].strip()
+        if left:
+            candidates.append(left)
+
+    # Variante extra para nombres tipo "Champ - Titulo"
+    if " - " in no_paren:
+        _, right = no_paren.split(" - ", 1)
+        right = right.strip()
+        if right:
+            candidates.append(right)
+
+    # Dedup preservando orden
+    seen = set()
+    ordered = []
+    for c in candidates:
+        key = c.lower().strip()
+        if key and key not in seen:
+            seen.add(key)
+            ordered.append(c)
+    return ordered
 
 
 def _search_tcgplayer(card_name: str) -> Optional[dict]:
@@ -93,7 +135,8 @@ def _search_tcgplayer(card_name: str) -> Optional[dict]:
 
         return {
             "product_name": best.get("productName", ""),
-            "market_price": best.get("marketPrice"),
+            # Fallback para productos sin marketPrice explícito
+            "market_price": best.get("marketPrice") or best.get("lowestPrice") or best.get("medianPrice"),
             "low_price": best.get("lowestPrice"),
             "mid_price": best.get("medianPrice"),
             "high_price": None,
@@ -119,8 +162,14 @@ def get_tcg_price(card_name: str) -> Optional[dict]:
         if now - ts < CACHE_TTL:
             return data
 
-    data = _search_tcgplayer(card_name)
+    data = None
+    for query in _candidate_queries(card_name):
+        data = _search_tcgplayer(query)
+        if data and data.get("market_price") is not None:
+            break
+
     if data is not None:
+        data["card_name"] = card_name
         _price_cache[key] = (now, data)
     else:
         # Cache negativo corto (5 min) para no reintentar constantemente

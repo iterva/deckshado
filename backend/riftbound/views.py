@@ -719,7 +719,7 @@ def tcgplayer_price_view(request):
         return Response({"error": "card_name is required (min 2 chars)"}, status=400)
 
     data = get_tcg_price(card_name)
-    if data is None or not data.get("market_price"):
+    if data is None or data.get("market_price") is None:
         return Response({"card_name": card_name, "market_price": None})
 
     return Response(data)

@@ -13,8 +13,19 @@ registerLocaleData(localeEsCL);
 
 class GlobalErrorHandler implements ErrorHandler {
   handleError(error: any) {
+    const message = error?.message || error?.toString?.() || '';
+
+    // Angular puede emitir esta excepción cuando una navegación es reemplazada
+    // por otra (p.ej. redirección/guard). No es un fallo funcional.
+    if (
+      error?.name === 'NavigationCancelingError' ||
+      /NavigationCancelingError|Navigation canceled/i.test(message)
+    ) {
+      return;
+    }
+
     const chunkError = /Loading chunk|Failed to fetch dynamically imported module|ChunkLoadError/;
-    if (chunkError.test(error?.message || error?.toString())) {
+    if (chunkError.test(message)) {
       if (!sessionStorage.getItem('chunk_reload')) {
         sessionStorage.setItem('chunk_reload', '1');
         window.location.reload();

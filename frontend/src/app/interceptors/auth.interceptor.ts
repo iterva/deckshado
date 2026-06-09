@@ -1,7 +1,7 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { catchError, switchMap, throwError } from 'rxjs';
+import { catchError, retry, switchMap, throwError, timer } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 let isRefreshing = false;
@@ -19,6 +19,16 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     : req;
 
   return next(authReq).pipe(
+    retry({
+      count: 1,
+      delay: (error) => {
+        // Reintento corto para errores transitorios de gateway en lecturas.
+        if (req.method === 'GET' && [502, 503, 504].includes(error?.status)) {
+          return timer(350);
+        }
+        throw error;
+      },
+    }),
     catchError((error) => {
       if (
         error.status === 401 &&

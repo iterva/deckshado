@@ -285,6 +285,7 @@ interface DirtyPatch {
               <div class="card-info">
                 <h4>{{ card.name }}</h4>
                 <span class="card-type">{{ typeLabel(card.card_type) }}</span>
+                <app-tcg-price [cardName]="card.name" [compact]="true"></app-tcg-price>
               </div>
               <div class="card-overlay-actions">
                 <button class="btn-icon btn-add" (click)="quickAddToCollection(card, $event)" title="Añadir a colección">

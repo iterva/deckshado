@@ -143,7 +143,7 @@ const RARITIES = [
               @if (card.description) {
                 <p class="rb-card-ability">{{ card.description }}</p>
               }
-              <app-tcg-price [cardName]="card.name" [compact]="true" [showLink]="true" [hideIfEmpty]="true"></app-tcg-price>
+              <app-tcg-price [cardName]="card.name" [compact]="true" [showLink]="true"></app-tcg-price>
             </div>
           </button>
         }

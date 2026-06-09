@@ -178,6 +178,7 @@ function typeRank(t?: string): number {
                   @if (card.might !== null && card.might !== undefined) { · ⚔️{{ card.might }} }
                 </span>
                 <span class="mini-num">{{ card.card_number }}</span>
+                <app-tcg-price [cardName]="card.name" [compact]="true"></app-tcg-price>
                 @if (card.description) {
                   <p class="mini-ability">{{ card.description }}</p>
                 }
@@ -557,7 +558,7 @@ function typeRank(t?: string): number {
                   <pre class="preview-desc">{{ c.description }}</pre>
                 }
                 <a class="btn-tcg" [href]="getTcgPlayerUrl(c)" target="_blank" rel="noopener noreferrer">
-                  💲 Ver precio en TCGPlayer
+                  Ir a TCGPlayer
                 </a>
                 <app-tcg-price [cardName]="c.name" [compact]="false" [showLink]="true"></app-tcg-price>
               </div>

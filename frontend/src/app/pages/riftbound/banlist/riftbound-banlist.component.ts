@@ -2,11 +2,12 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RiftboundService } from '../../../services/riftbound.service';
 import { RiftboundBanlistEntry } from '../../../models/riftbound';
+import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.component';
 
 @Component({
   selector: 'app-riftbound-banlist',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TcgPriceComponent],
   template: `
     <div class="rb-banlist-page">
       <header class="rb-page-head">
@@ -41,6 +42,7 @@ import { RiftboundBanlistEntry } from '../../../models/riftbound';
                   <strong>{{ e.card_name }}</strong>
                   <small><code>{{ e.card_number }}</code></small>
                   <span class="ban-tag">PROHIBIDA</span>
+                  <app-tcg-price [cardName]="e.card_name" [compact]="true"></app-tcg-price>
                 </div>
               </article>
             }
@@ -66,6 +68,7 @@ import { RiftboundBanlistEntry } from '../../../models/riftbound';
                   <strong>{{ e.card_name }}</strong>
                   <small><code>{{ e.card_number }}</code></small>
                   <span class="ban-tag tag-limited">{{ statusLabel(e.status) }}</span>
+                  <app-tcg-price [cardName]="e.card_name" [compact]="true"></app-tcg-price>
                 </div>
               </article>
             }

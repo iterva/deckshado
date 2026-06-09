@@ -45,13 +45,27 @@ class Command(BaseCommand):
             "--dry-run", action="store_true",
             help="Solo mostrar qué se insertaría, sin tocar la DB",
         )
+        parser.add_argument(
+            "--file", default=None,
+            help="Ruta a JSON pre-descargado (si PA no puede acceder a la API)",
+        )
 
     def handle(self, *args, **opts):
         dry_run = opts["dry_run"]
 
-        # 1. Fetch all cards from API
-        self.stdout.write("Descargando cartas de api.riftcodex.com...")
-        all_api_cards = self._fetch_all_cards()
+        # 1. Fetch all cards from API or load from file
+        if opts["file"]:
+            import json
+            from pathlib import Path
+            path = Path(opts["file"])
+            if not path.exists():
+                self.stderr.write(self.style.ERROR(f"No existe: {path}"))
+                return
+            self.stdout.write(f"Cargando cartas desde {path}...")
+            all_api_cards = json.loads(path.read_text(encoding="utf-8"))
+        else:
+            self.stdout.write("Descargando cartas de api.riftcodex.com...")
+            all_api_cards = self._fetch_all_cards()
         self.stdout.write(f"  Total en API: {len(all_api_cards)}")
 
         # 2. Get local card_numbers

@@ -7,6 +7,8 @@ Cachea en memoria con un TTL de 30 minutos.
 import time
 import logging
 import re
+import json
+from pathlib import Path
 from typing import Optional
 
 import requests
@@ -18,6 +20,8 @@ logger = logging.getLogger(__name__)
 _price_cache: dict[str, tuple[float, dict]] = {}
 CACHE_TTL = 30 * 60  # 30 minutos
 
+_snapshot_cache: Optional[dict[str, dict]] = None
+
 
 TCG_SEARCH_URL = "https://mp-search-api.tcgplayer.com/v1/search/request"
 TCG_PRODUCT_LINE = "riftbound-league-of-legends-trading-card-game"
@@ -26,6 +30,27 @@ HEADERS = {
     "Accept": "application/json",
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
 }
+
+
+def _load_snapshot_prices() -> dict[str, dict]:
+    """Carga snapshot de precios local para fallback en entornos sin salida externa."""
+    global _snapshot_cache
+    if _snapshot_cache is not None:
+        return _snapshot_cache
+
+    try:
+        path = Path(__file__).resolve().parent / "tcgplayer_snapshot.json"
+        if path.exists():
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            prices = payload.get("prices") if isinstance(payload, dict) else {}
+            if isinstance(prices, dict):
+                _snapshot_cache = prices
+                return _snapshot_cache
+    except Exception as e:
+        logger.warning("TCGPlayer snapshot load failed: %s", e)
+
+    _snapshot_cache = {}
+    return _snapshot_cache
 
 
 def _candidate_queries(card_name: str) -> list[str]:
@@ -162,6 +187,13 @@ def get_tcg_price(card_name: str) -> Optional[dict]:
         if now - ts < CACHE_TTL:
             return data
 
+    # Fallback local inmediato (útil para PythonAnywhere free).
+    snap = _load_snapshot_prices().get(key)
+    if snap and snap.get("market_price") is not None:
+        data = {**snap, "card_name": card_name}
+        _price_cache[key] = (now, data)
+        return data
+
     data = None
     for query in _candidate_queries(card_name):
         data = _search_tcgplayer(query)
@@ -172,6 +204,16 @@ def get_tcg_price(card_name: str) -> Optional[dict]:
         data["card_name"] = card_name
         _price_cache[key] = (now, data)
     else:
+        # Último fallback por query normalizada contra snapshot.
+        snapshot = _load_snapshot_prices()
+        for query in _candidate_queries(card_name):
+            qkey = query.lower().strip()
+            snap_item = snapshot.get(qkey)
+            if snap_item and snap_item.get("market_price") is not None:
+                data = {**snap_item, "card_name": card_name}
+                _price_cache[key] = (now, data)
+                return data
+
         # Cache negativo corto (5 min) para no reintentar constantemente
         _price_cache[key] = (now - CACHE_TTL + 300, {})
 

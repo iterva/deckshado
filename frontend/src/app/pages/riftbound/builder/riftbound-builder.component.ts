@@ -557,9 +557,6 @@ function typeRank(t?: string): number {
                   <h3>Descripción</h3>
                   <pre class="preview-desc">{{ c.description }}</pre>
                 }
-                <a class="btn-tcg" [href]="getTcgPlayerUrl(c)" target="_blank" rel="noopener noreferrer">
-                  Ir a TCGPlayer
-                </a>
                 <app-tcg-price [cardName]="c.name" [compact]="false" [showLink]="true"></app-tcg-price>
               </div>
             </div>
@@ -1113,17 +1110,16 @@ function typeRank(t?: string): number {
     .preview-stats span { opacity: .7; font-size: .8rem; }
     .preview-stats strong { font-size: 1.4rem; color: #fff; }
     .preview-desc { white-space: pre-wrap; font-family: inherit; line-height: 1.55; margin: 0; font-size: .92rem; text-align: left; }
-    .btn-tcg {
-      display: inline-flex; align-items: center; gap: .4rem;
-      margin-top: .8rem; padding: .55rem 1rem; border-radius: 8px;
-      background: linear-gradient(135deg, #1a6bc4, #0d4a8e); border: 1px solid #2980d9;
-      color: #fff; font-weight: 700; font-size: .9rem; text-decoration: none;
-      transition: background .2s, transform .15s;
+    .preview-info app-tcg-price {
+      display: block;
+      width: max-content;
+      margin-top: .9rem;
+      margin-left: auto;
     }
-    .btn-tcg:hover { background: linear-gradient(135deg, #2980d9, #1a6bc4); transform: translateY(-1px); }
     @media (max-width: 720px) {
       .preview-layout { grid-template-columns: 1fr; }
       .preview-box { padding: 1rem; }
+      .preview-info app-tcg-price { margin-left: 0; }
     }
 
     /* Legend banner (en deck-panel) */
@@ -1735,17 +1731,6 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
     this.previewCard.set(null);
     this.previewDetail.set(null);
     this.previewLoading.set(false);
-  }
-
-  // ── TCGPlayer ──
-  private readonly tcgSetSlugs: Record<string, string> = {
-    OGN: 'origins', UNL: 'unleashed', OGS: 'proving-grounds', SFD: 'spiritforged', ARC: 'product',
-  };
-  getTcgPlayerUrl(card: RiftboundCardLite | RiftboundCard): string {
-    const setCode = card.card_number?.split('-')[0]?.toUpperCase() || '';
-    const setSlug = this.tcgSetSlugs[setCode] || 'product';
-    const q = encodeURIComponent(card.name);
-    return `https://www.tcgplayer.com/search/riftbound-league-of-legends-trading-card-game/${setSlug}?q=${q}&Language=English`;
   }
 
   openDeckPreview() {

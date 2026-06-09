@@ -340,12 +340,19 @@ const RARITIES = [
     .stats span { opacity: .7; font-size: .8rem; }
     .stats strong { font-size: 1.4rem; color: #fff; }
     .desc { white-space: pre-wrap; font-family: inherit; line-height: 1.55; margin: 0; font-size: .92rem; }
+    .rb-modal-info app-tcg-price {
+      display: block;
+      width: max-content;
+      margin-top: .9rem;
+      margin-left: auto;
+    }
     @media (max-width: 720px) {
       .rb-modal-layout { grid-template-columns: 1fr; }
       .rb-modal { padding: 1rem; }
       .rb-modal-info h2 { font-size: 1.25rem !important; }
       .stats > div { padding: 0.35rem 0.7rem; min-width: 60px; }
       .stats strong { font-size: 1.1rem; }
+      .rb-modal-info app-tcg-price { margin-left: 0; }
     }
 
     /* Light theme */

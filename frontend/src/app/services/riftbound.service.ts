@@ -19,11 +19,12 @@ interface PaginatedResponse<T> {
 interface RiftboundCatalogCachePayload {
   version: number;
   savedAt: number;
+  total: number;
   cards: RiftboundCard[];
 }
 
-const RB_CATALOG_CACHE_KEY = 'rb_catalog_cards_v2';
-const RB_CATALOG_CACHE_VERSION = 2;
+const RB_CATALOG_CACHE_KEY = 'rb_catalog_cards_v3';
+const RB_CATALOG_CACHE_VERSION = 3;
 const RB_CATALOG_CACHE_TTL_MS = 1000 * 60 * 60 * 6;
 const RB_DEFAULT_PAGE_SIZE = 20;
 const RB_MAX_PAGE_SIZE = 100;
@@ -37,6 +38,7 @@ export class RiftboundService {
   private sets$: Observable<RiftboundSet[]> | null = null;
   private icons$: Observable<RiftboundIcon[]> | null = null;
   private catalogCards = signal<RiftboundCard[] | null>(null);
+  private catalogTotal = signal<number>(0);
   private catalogLoadedAt = signal<number>(0);
   private catalogWarmup$: Observable<RiftboundCard[]> | null = null;
 
@@ -45,21 +47,27 @@ export class RiftboundService {
   }
 
   hasUsableCatalogSnapshot(): boolean {
+    if (this.catalogTotal() > 0) {
+      return true;
+    }
     const inMemory = this.catalogCards();
     if (inMemory?.length) {
       return true;
     }
     const fromStorage = this.readCatalogFromStorage();
-    return !!fromStorage?.cards?.length;
+    return (fromStorage?.total ?? 0) > 0 || !!fromStorage?.cards?.length;
   }
 
   cachedCatalogCountSnapshot(): number {
+    if (this.catalogTotal() > 0) {
+      return this.catalogTotal();
+    }
     const inMemory = this.catalogCards();
     if (inMemory?.length) {
       return inMemory.length;
     }
     const fromStorage = this.readCatalogFromStorage();
-    return fromStorage?.cards?.length ?? 0;
+    return fromStorage?.total ?? fromStorage?.cards?.length ?? 0;
   }
 
   // ── Cartas ──
@@ -127,12 +135,16 @@ export class RiftboundService {
       const inMemory = this.catalogCards();
       const loadedAt = this.catalogLoadedAt();
       if (inMemory?.length && this.isCacheFresh(loadedAt)) {
+        if (this.catalogTotal() <= 0) {
+          this.catalogTotal.set(inMemory.length);
+        }
         return of(inMemory);
       }
 
       const fromStorage = this.readCatalogFromStorage();
       if (fromStorage?.cards?.length) {
         this.catalogCards.set(fromStorage.cards);
+        this.catalogTotal.set(fromStorage.total || fromStorage.cards.length);
         this.catalogLoadedAt.set(fromStorage.savedAt);
         return of(fromStorage.cards);
       }
@@ -227,12 +239,15 @@ export class RiftboundService {
 
   private saveCatalog(cards: RiftboundCard[]): void {
     const now = Date.now();
+    const total = cards.length;
     this.catalogCards.set(cards);
+    this.catalogTotal.set(total);
     this.catalogLoadedAt.set(now);
     try {
       const payload: RiftboundCatalogCachePayload = {
         version: RB_CATALOG_CACHE_VERSION,
         savedAt: now,
+        total,
         cards,
       };
       localStorage.setItem(RB_CATALOG_CACHE_KEY, JSON.stringify(payload));

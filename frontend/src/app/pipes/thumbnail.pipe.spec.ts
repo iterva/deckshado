@@ -9,27 +9,26 @@ describe('ThumbnailPipe', () => {
     expect(pipe.transform('')).toBe('');
   });
 
-  it('keeps direct URL for regular hosts', () => {
-    const url = 'https://example.com/assets/card.png';
-    expect(pipe.transform(url, 150)).toBe(url);
-  });
-
-  it('normalizes protocol-relative URL', () => {
-    expect(pipe.transform('//cdn.example.com/card.png', 150)).toBe('https://cdn.example.com/card.png');
-  });
-
-  it('normalizes relative media URL to backend origin', () => {
-    expect(pipe.transform('/media/extra_cards/card.png', 150)).toBe('http://localhost:8000/media/extra_cards/card.png');
-  });
-
-  it('rewrites production media origin to local backend in dev mode', () => {
-    const src = 'https://iterva.pythonanywhere.com/media/extra_cards/card.png';
-    expect(pipe.transform(src, 150)).toBe('http://localhost:8000/media/extra_cards/card.png');
-  });
-
-  it('ignores width argument but keeps API compatibility', () => {
+  it('applies cloudinary transforms for thumbnails', () => {
     const url = 'https://res.cloudinary.com/demo/image/upload/sample.png';
+    const out = pipe.transform(url, 150);
+    expect(out).toContain('https://res.cloudinary.com/demo/image/upload/');
+    expect(out).toContain('f_auto,dpr_auto,c_limit,w_150,q_auto:good/');
+    expect(out).toContain('sample.png');
+  });
+
+  it('uses eco quality for tiny cloudinary thumbs', () => {
+    const url = 'https://res.cloudinary.com/demo/image/upload/sample.png';
+    expect(pipe.transform(url, 80)).toContain('w_80,q_auto:eco');
+  });
+
+  it('keeps non-cloudinary URLs unchanged', () => {
+    const url = 'https://example.com/x.png';
     expect(pipe.transform(url, 80)).toBe(url);
-    expect(pipe.transform(url, 350)).toBe(url);
+  });
+
+  it('does not stack transforms when cloudinary URL is already transformed', () => {
+    const url = 'https://res.cloudinary.com/demo/image/upload/f_auto,w_250,q_auto/sample.png';
+    expect(pipe.transform(url, 150)).toBe(url);
   });
 });

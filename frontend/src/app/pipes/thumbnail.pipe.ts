@@ -1,41 +1,46 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { environment } from '../../environments/environment';
 
 @Pipe({ name: 'thumb', standalone: true })
 export class ThumbnailPipe implements PipeTransform {
   /**
-   * Returns a stable image URL without third-party proxy dependency.
-   * This avoids broken-image flashes when wsrv is slow/unavailable.
+   * Generates an optimized image URL.
+   * - Cloudinary images: apply native Cloudinary transformations.
+   * - Other hosts: keep original URL to avoid proxy bottlenecks.
    * @param url  Original image URL
-   * @param width  Unused, kept for template compatibility
+   * @param width  Desired width in pixels (default 150)
    */
   transform(url: string | null | undefined, width: number = 150): string {
     if (!url) return '';
-    void width;
-    return this.normalizeImageUrl(url.trim());
+    const secureUrl = url.trim().replace(/^http:\/\//i, 'https://');
+    if (!secureUrl) return '';
+
+    // Use Cloudinary CDN transforms directly for speed and reliability.
+    if (/res\.cloudinary\.com/i.test(secureUrl)) {
+      return this.cloudinaryThumb(secureUrl, width);
+    }
+
+    return secureUrl;
   }
 
-  private normalizeImageUrl(raw: string): string {
-    if (!raw) return '';
+  private cloudinaryThumb(url: string, width: number): string {
+    const marker = '/image/upload/';
+    const markerIndex = url.indexOf(marker);
+    if (markerIndex === -1) return url;
 
-    if (raw.startsWith('//')) {
-      return `https:${raw}`;
-    }
+    const prefix = url.slice(0, markerIndex + marker.length);
+    const suffix = url.slice(markerIndex + marker.length);
+    const firstSegment = suffix.split('/')[0] ?? '';
 
-    if (raw.startsWith('/')) {
-      return `${this.backendOrigin()}${raw}`;
-    }
+    // If URL already has an explicit transform segment, keep it unchanged.
+    const hasExistingTransform =
+      !/^v\d+$/.test(firstSegment) &&
+      /(^|,)(w_\d+|q_auto|f_auto|c_[a-z]+)/.test(firstSegment);
+    if (hasExistingTransform) return url;
 
-    // In local development, prefer local media when URL points to production backend.
-    if (!environment.production && raw.includes('iterva.pythonanywhere.com/media/')) {
-      return raw.replace('https://iterva.pythonanywhere.com', 'http://localhost:8000');
-    }
+    const safeWidth = Math.max(40, Math.round(width || 150));
+    const quality = safeWidth <= 120 ? 'q_auto:eco' : 'q_auto:good';
+    const transform = `f_auto,dpr_auto,c_limit,w_${safeWidth},${quality}`;
 
-    return raw;
-  }
-
-  private backendOrigin(): string {
-    const api = environment.apiUrl || '';
-    return api.endsWith('/api') ? api.slice(0, -4) : api;
+    return `${prefix}${transform}/${suffix}`;
   }
 }

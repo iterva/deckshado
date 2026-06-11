@@ -1,3 +1,5 @@
+import os
+
 from django.db.models import Q
 from rest_framework import viewsets, permissions, status, filters, generics
 from rest_framework.decorators import action, api_view, permission_classes
@@ -20,6 +22,7 @@ from .serializers import (
     RiftboundIconSerializer,
     RiftboundBinderProfileSerializer, RiftboundPublicBinderProfileSerializer,
 )
+from .integrations.riftcodex import RiftcodexClient, map_card_type, map_card_rarity, normalize_riftbound_card_number
 
 
 class RiftboundCardViewSet(viewsets.ReadOnlyModelViewSet):
@@ -33,6 +36,281 @@ class RiftboundCardViewSet(viewsets.ReadOnlyModelViewSet):
     ordering_fields = ["card_number", "name", "energy", "power", "might"]
     serializer_class = RiftboundCardSerializer
     lookup_field = "card_number"
+
+    def _remote_cards_enabled(self) -> bool:
+        source = (self.request.query_params.get("source") or os.environ.get("RIFTBOUND_CARDS_SOURCE") or "riftcodex").strip().lower()
+        return source in {"riftcodex", "remote", "api"}
+
+    def _page_size(self) -> int:
+        raw = self.request.query_params.get("page_size") or "20"
+        try:
+            size = int(raw)
+        except ValueError:
+            size = 20
+        return max(1, min(100, size))
+
+    def _page_number(self) -> int:
+        raw = self.request.query_params.get("page") or "1"
+        try:
+            page = int(raw)
+        except ValueError:
+            page = 1
+        return max(1, page)
+
+    def _build_page_url(self, page: int | None) -> str | None:
+        if page is None:
+            return None
+        query = self.request.query_params.copy()
+        query["page"] = str(page)
+        return f"{self.request.build_absolute_uri(self.request.path)}?{query.urlencode()}"
+
+    def _apply_remote_filters(self, rows: list[dict]) -> list[dict]:
+        params = self.request.query_params
+        out = list(rows)
+
+        ctype = (params.get("type") or "").strip().lower()
+        if ctype:
+            if ctype == "champion":
+                out = [
+                    r for r in out
+                    if (r.get("card_type") == "unit")
+                    and ("," in (r.get("name") or ""))
+                    and (r.get("name") or "").split(",")[0].strip() in (r.get("subtypes") or [])
+                ]
+            else:
+                out = [r for r in out if (r.get("card_type") or "") == ctype]
+
+        rarity = (params.get("rarity") or "").strip().lower()
+        if rarity:
+            out = [r for r in out if (r.get("rarity") or "") == rarity]
+
+        energy_raw = params.get("energy")
+        if energy_raw not in (None, ""):
+            try:
+                energy = int(energy_raw)
+                out = [r for r in out if r.get("energy") == energy]
+            except ValueError:
+                pass
+
+        sub = (params.get("subtype") or "").strip().lower()
+        if sub:
+            out = [
+                r for r in out
+                if any((s or "").lower() == sub for s in (r.get("subtypes") or []))
+            ]
+
+        exclude_bg = params.get("exclude_battlefields") in ("1", "true", "True")
+        colors = (params.get("colors") or "").strip()
+        if colors:
+            color_set = {c.strip().lower() for c in colors.split(",") if c.strip()}
+            out = [
+                r for r in out
+                if ((r.get("card_type") == "battlefield") and not exclude_bg)
+                or any((c or "").lower() in color_set for c in (r.get("colors") or []))
+            ]
+        elif exclude_bg:
+            out = [r for r in out if r.get("card_type") != "battlefield"]
+
+        return out
+
+    def _card_number_to_riftbound_query(self, card_number: str) -> str:
+        value = (card_number or "").strip().upper()
+        if not value:
+            return ""
+        if "-" not in value:
+            return value.lower()
+        set_code, number = value.split("-", 1)
+        number = number.rstrip("*")
+        return f"{set_code.lower()}-{number.lower()}"
+
+    def _map_remote_item(self, item: dict, local_map: dict, lite: bool = False):
+        meta = item.get("metadata") or {}
+        attrs = item.get("attributes") or {}
+        text = item.get("text") or {}
+        media = item.get("media") or {}
+        classification = item.get("classification") or {}
+        set_data = item.get("set") or {}
+
+        card_number = normalize_riftbound_card_number(
+            item.get("riftbound_id") or "",
+            signature=bool(meta.get("signature")),
+        )
+        if not card_number:
+            return None
+
+        local_card = local_map.get(card_number)
+        if not local_card:
+            # Keep DB-backed flows (builder/collection/decks) safe by avoiding orphan IDs.
+            return None
+
+        color_values = [str(c).lower() for c in (classification.get("domain") or []) if c]
+        card_type = map_card_type(classification.get("type"))
+        rarity = map_card_rarity(classification.get("rarity"))
+        image_url = media.get("image_url") or local_card.image_url or local_card.image_url_small or ""
+        cdn_image_url = local_card.cdn_image_url or ""
+        image = image_url or cdn_image_url or local_card.image_url_small or ""
+
+        if lite:
+            return {
+                "id": local_card.id,
+                "card_number": card_number,
+                "name": item.get("name") or local_card.name,
+                "card_type": card_type,
+                "rarity": rarity,
+                "colors": color_values,
+                "energy": attrs.get("energy"),
+                "power": attrs.get("power"),
+                "might": attrs.get("might"),
+                "image": image,
+                "description": text.get("plain") or local_card.description or "",
+                "subtypes": local_card.subtypes or [],
+            }
+
+        set_payload = None
+        if local_card.set:
+            set_payload = {
+                "id": local_card.set.id,
+                "code": local_card.set.code,
+                "name": local_card.set.name,
+                "release_date": local_card.set.release_date.isoformat() if local_card.set.release_date else None,
+            }
+        elif set_data:
+            set_payload = {
+                "id": None,
+                "code": (set_data.get("set_id") or "").upper() or None,
+                "name": set_data.get("label") or "",
+                "release_date": None,
+            }
+
+        return {
+            "id": local_card.id,
+            "card_number": card_number,
+            "external_id": str(item.get("id") or local_card.external_id),
+            "name": item.get("name") or local_card.name,
+            "slug": local_card.slug,
+            "set": set_payload,
+            "card_type": card_type,
+            "supertype": classification.get("supertype") or "",
+            "subtypes": local_card.subtypes or [],
+            "rarity": rarity,
+            "variant": "Alt Art" if meta.get("alternate_art") else (local_card.variant or ""),
+            "colors": color_values,
+            "energy": attrs.get("energy"),
+            "power": attrs.get("power"),
+            "might": attrs.get("might"),
+            "description": text.get("plain") or local_card.description or "",
+            "flavor": text.get("flavour") or local_card.flavor or "",
+            "image_url": image_url,
+            "image_url_small": local_card.image_url_small or "",
+            "cdn_image_url": cdn_image_url,
+            "image": image,
+            "is_active": bool(local_card.is_active),
+        }
+
+    def list(self, request, *args, **kwargs):
+        if not self._remote_cards_enabled():
+            return super().list(request, *args, **kwargs)
+
+        client = RiftcodexClient()
+        page = self._page_number()
+        size = self._page_size()
+
+        try:
+            name_search = (request.query_params.get("name_search") or "").strip()
+            ability_search = (request.query_params.get("ability_search") or "").strip()
+            generic_search = (request.query_params.get("search") or "").strip()
+            set_code = (request.query_params.get("set") or "").strip().upper() or None
+
+            remote_items: list[dict]
+            total = 0
+            pages = 1
+            if name_search:
+                remote_items = client.search_cards_by_name(fuzzy=name_search, set_id=set_code, size=size, page=page)
+                total = len(remote_items)
+            elif ability_search:
+                remote_items = client.search_cards(query=ability_search, set_id=set_code, size=size, page=page)
+                total = len(remote_items)
+            elif generic_search:
+                remote_items = client.search_cards_by_name(fuzzy=generic_search, set_id=set_code, size=size, page=page)
+                if not remote_items:
+                    remote_items = client.search_cards(query=generic_search, set_id=set_code, size=size, page=page)
+                total = len(remote_items)
+            else:
+                remote_page = client.fetch_cards_page(page=page, size=size)
+                remote_items = remote_page.items
+                total = remote_page.total
+                pages = remote_page.pages
+
+            card_numbers = []
+            for item in remote_items:
+                meta = item.get("metadata") or {}
+                cn = normalize_riftbound_card_number(item.get("riftbound_id") or "", signature=bool(meta.get("signature")))
+                if cn:
+                    card_numbers.append(cn)
+
+            local_cards = RiftboundCard.objects.filter(card_number__in=card_numbers).select_related("set")
+            local_map = {c.card_number: c for c in local_cards}
+
+            lite = request.query_params.get("lite") == "1"
+            mapped = []
+            for item in remote_items:
+                payload = self._map_remote_item(item, local_map, lite=lite)
+                if payload:
+                    mapped.append(payload)
+
+            mapped = self._apply_remote_filters(mapped)
+
+            if total and pages > 1:
+                next_page = page + 1 if page < pages else None
+                prev_page = page - 1 if page > 1 else None
+                return Response(
+                    {
+                        "count": total,
+                        "next": self._build_page_url(next_page),
+                        "previous": self._build_page_url(prev_page),
+                        "results": mapped,
+                    }
+                )
+
+            return Response(
+                {
+                    "count": len(mapped),
+                    "next": None,
+                    "previous": None,
+                    "results": mapped,
+                }
+            )
+        except Exception:
+            # Safe fallback: keep app usable if external API is unavailable.
+            return super().list(request, *args, **kwargs)
+
+    def retrieve(self, request, *args, **kwargs):
+        if not self._remote_cards_enabled():
+            return super().retrieve(request, *args, **kwargs)
+
+        card_number = (kwargs.get(self.lookup_field) or "").strip().upper()
+        if not card_number:
+            return super().retrieve(request, *args, **kwargs)
+
+        local_card = RiftboundCard.objects.filter(card_number=card_number).select_related("set").first()
+        if not local_card:
+            return super().retrieve(request, *args, **kwargs)
+
+        client = RiftcodexClient()
+        try:
+            items = client.fetch_cards_by_riftbound_id(self._card_number_to_riftbound_query(card_number))
+            local_map = {local_card.card_number: local_card}
+            for item in items:
+                meta = item.get("metadata") or {}
+                cn = normalize_riftbound_card_number(item.get("riftbound_id") or "", signature=bool(meta.get("signature")))
+                if cn == card_number:
+                    payload = self._map_remote_item(item, local_map, lite=False)
+                    if payload:
+                        return Response(payload)
+        except Exception:
+            pass
+
+        return super().retrieve(request, *args, **kwargs)
 
     def get_queryset(self):
         qs = super().get_queryset()

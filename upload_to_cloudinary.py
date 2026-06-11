@@ -1,21 +1,12 @@
 """
-Sube imágenes de backend/media/extra_cards/ a Cloudinary
-y genera un JSON con el mapeo filename → cloudinary_url.
+Sube imágenes de backend/media/extra_cards/ al CDN configurado
+y genera un JSON con el mapeo filename → cdn_url.
 Luego actualiza la DB local (custom_image_url).
 """
 import os
 import sqlite3
 import json
-import cloudinary
-import cloudinary.uploader
-
-# Configuración
-cloudinary.config(
-    cloud_name="dmvu6tuee",
-    api_key="618467334728855",
-    api_secret="egB_Ypv0wdVVBL2oRhUaoHr8bY8",
-    secure=True,
-)
+from cdn_uploader import upload_file
 
 MEDIA_DIR = os.path.join("backend", "media", "extra_cards")
 DB_PATH = os.path.join("backend", "db.sqlite3")
@@ -25,8 +16,8 @@ MAPPING_FILE = "cloudinary_mapping.json"
 TEAM_LOGOS_DIR = os.path.join("backend", "media", "team_logos")
 
 
-def upload_folder(folder, cloudinary_folder):
-    """Sube todos los archivos de una carpeta local a Cloudinary."""
+def upload_folder(folder, cdn_folder):
+    """Sube todos los archivos de una carpeta local al CDN configurado."""
     mapping = {}
     if not os.path.isdir(folder):
         print(f"  Carpeta {folder} no existe, saltando.")
@@ -37,16 +28,10 @@ def upload_folder(folder, cloudinary_folder):
 
     for i, fname in enumerate(sorted(files), 1):
         filepath = os.path.join(folder, fname)
-        public_id = f"{cloudinary_folder}/{os.path.splitext(fname)[0]}"
+        public_id = f"{cdn_folder}/{os.path.splitext(fname)[0]}"
         print(f"  [{i}/{len(files)}] Subiendo {fname}...", end=" ", flush=True)
         try:
-            result = cloudinary.uploader.upload(
-                filepath,
-                public_id=public_id,
-                overwrite=True,
-                resource_type="image",
-            )
-            url = result["secure_url"]
+            url = upload_file(filepath, public_id=public_id, overwrite=True)
             mapping[fname] = url
             print(f"OK → {url}")
         except Exception as e:
@@ -83,10 +68,10 @@ def update_database(extra_mapping, logo_mapping):
 
 
 def main():
-    print("=== Subiendo extra_cards a Cloudinary ===")
+    print("=== Subiendo extra_cards al CDN configurado ===")
     extra_mapping = upload_folder(MEDIA_DIR, "deckshado/extra_cards")
 
-    print("\n=== Subiendo team_logos a Cloudinary ===")
+    print("\n=== Subiendo team_logos al CDN configurado ===")
     logo_mapping = upload_folder(TEAM_LOGOS_DIR, "deckshado/team_logos")
 
     # Guardar mapping

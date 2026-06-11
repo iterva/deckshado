@@ -1,18 +1,11 @@
 """
-Sube imágenes de cartas del blog de Vigilantes a Cloudinary.
+Sube imágenes de cartas del blog de Vigilantes al CDN configurado.
 Genera aydv_blog_vigilantes_mapping.json con el mapeo cloudinary_id → url.
 """
 import os
 import json
-import cloudinary
-import cloudinary.uploader
 
-cloudinary.config(
-    cloud_name="dmvu6tuee",
-    api_key="618467334728855",
-    api_secret="egB_Ypv0wdVVBL2oRhUaoHr8bY8",
-    secure=True,
-)
+from cdn_uploader import upload_file
 
 SOURCE_DIR = "cartas-blog-vigilantes"
 CLOUDINARY_FOLDER = "deckshado/myl_cards/aydv_blog_vigilantes"
@@ -62,7 +55,7 @@ def main():
     mapping = {}
     total = len(FILE_TO_ID)
 
-    print(f"Subiendo {total} cartas a Cloudinary ({CLOUDINARY_FOLDER})...\n")
+    print(f"Subiendo {total} cartas al CDN configurado ({CLOUDINARY_FOLDER})...\n")
 
     for i, (filename, cloud_id) in enumerate(sorted(FILE_TO_ID.items()), 1):
         filepath = os.path.join(SOURCE_DIR, filename)
@@ -74,13 +67,7 @@ def main():
         print(f"  [{i}/{total}] {filename} → {cloud_id}...", end=" ", flush=True)
 
         try:
-            result = cloudinary.uploader.upload(
-                filepath,
-                public_id=public_id,
-                overwrite=True,
-                resource_type="image",
-            )
-            url = result["secure_url"]
+            url = upload_file(filepath, public_id=public_id, overwrite=True)
             mapping[cloud_id] = url
             print(f"OK")
         except Exception as e:

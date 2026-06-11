@@ -16,6 +16,12 @@ frontend/.angular/
 .cursor/
 *.swp
 
+# Local env files (never commit secrets)
+.env
+.env.*
+!.env.example
+!.env.*.example
+
 # Temporales
 banlist_raw.html
 .vercel

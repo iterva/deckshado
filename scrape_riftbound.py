@@ -1,5 +1,8 @@
 """
-Scraper de cartas Riftbound desde piltoverarchive.com (Next.js + RSC).
+Scraper de cartas Riftbound.
+
+Fuente primaria: Riftcodex API.
+Fallback opcional: piltoverarchive.com (Next.js + RSC).
 
 Cada página /cards?page=N renderiza 48 celdas. La data viaja como "RSC flight":
 una secuencia de líneas `<id>:<value>` dentro de scripts `__next_f.push`.
@@ -7,8 +10,8 @@ Cada celda de carta es un valor que empieza con `["$","$L7a","<UUID>",{...}]`
 y referencia 5 sub-chunks (`$LXX`) con stats, descripción, info, etc.
 
 Uso:
-    python scrape_riftbound.py --pages 1-21 --out riftbound_cards.json
-    python scrape_riftbound.py --pages 1 -v
+    python scrape_riftbound.py --source riftcodex --out riftbound_cards.json
+    python scrape_riftbound.py --source piltover --pages 1-21 --out riftbound_cards.json
 """
 from __future__ import annotations
 
@@ -25,6 +28,7 @@ import requests
 
 BASE = "https://piltoverarchive.com"
 LIST_URL = BASE + "/cards"
+RIFTCODEX_API = "https://api.riftcodex.com"
 DEFAULT_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -70,6 +74,121 @@ class CardData:
     image_url_small: str = ""
     artist: str = ""
     source_url: str = ""
+
+
+def _variant_from_meta(meta: dict) -> str:
+    if meta.get("signature"):
+        return "Signature"
+    if meta.get("overnumbered"):
+        return "Overnumbered + Signed"
+    if meta.get("alternate_art"):
+        return "Alt-art"
+    return ""
+
+
+def _card_number_from_riftcodex(card: dict) -> str:
+    """Convierte riftbound_id API al formato local.
+
+    Ejemplos:
+    - unl-060a-219 -> UNL-060a
+    - ogn-299-298 (overnumbered) -> OGN-299*
+    - ogn-299*-298 (signature) -> OGN-299**
+    """
+    rid = (card.get("riftbound_id") or "").strip().lower()
+    meta = card.get("metadata") or {}
+    parts = rid.split("-")
+    if len(parts) < 2:
+        return ""
+
+    number_part = parts[1].rstrip("*")
+    base = f"{parts[0].upper()}-{number_part}"
+    if meta.get("signature"):
+        return f"{base}**"
+    if meta.get("overnumbered"):
+        return f"{base}*"
+    return base
+
+
+def _card_from_riftcodex(raw: dict) -> CardData:
+    attrs = raw.get("attributes") or {}
+    cls = raw.get("classification") or {}
+    txt = raw.get("text") or {}
+    media = raw.get("media") or {}
+    meta = raw.get("metadata") or {}
+    set_obj = raw.get("set") or {}
+
+    card = CardData(
+        card_number=_card_number_from_riftcodex(raw),
+        external_id="",  # La API usa id no-UUID; no forzamos UUID inválidos en DB.
+        name=(raw.get("name") or "").strip(),
+        set_code=(set_obj.get("set_id") or "").upper(),
+        set_name=(set_obj.get("label") or "").strip(),
+        variant=_variant_from_meta(meta),
+        rarity=(cls.get("rarity") or "").lower(),
+        card_type=(cls.get("type") or "").lower(),
+        supertype=(cls.get("supertype") or "") or "",
+        subtypes=[t for t in (raw.get("tags") or []) if isinstance(t, str)],
+        colors=[c.lower() for c in (cls.get("domain") or []) if isinstance(c, str)],
+        energy=parse_int(attrs.get("energy")),
+        power=parse_int(attrs.get("power")),
+        might=parse_int(attrs.get("might")),
+        description=(txt.get("plain") or "").strip(),
+        flavor=(txt.get("flavour") or "") or "",
+        image_url=(media.get("image_url") or "").strip(),
+        image_url_small="",
+        artist=(media.get("artist") or "").strip(),
+        source_url=f"{RIFTCODEX_API}/cards/riftbound/{(raw.get('riftbound_id') or '').strip()}",
+    )
+    if not card.card_type:
+        infer_card_type(card)
+    return card
+
+
+def parse_riftcodex_pages(pages: Iterable[int], verbose: bool = False):
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 deckshado-riftcodex-scraper/1.0",
+        "Accept": "application/json",
+    })
+
+    # Primer fetch para obtener total de páginas disponible
+    first = session.get(
+        f"{RIFTCODEX_API}/cards",
+        params={"page": 1, "size": 100},
+        timeout=30,
+    )
+    first.raise_for_status()
+    first_data = first.json()
+    total_pages = int(first_data.get("pages") or 1)
+
+    selected = sorted({p for p in pages if 1 <= p <= total_pages})
+    if not selected:
+        selected = list(range(1, total_pages + 1))
+
+    by_page: dict[int, dict] = {1: first_data}
+    all_cards: dict[str, CardData] = {}
+    for p in selected:
+        if p not in by_page:
+            r = session.get(
+                f"{RIFTCODEX_API}/cards",
+                params={"page": p, "size": 100},
+                timeout=30,
+            )
+            r.raise_for_status()
+            by_page[p] = r.json()
+
+        items = by_page[p].get("items") or []
+        if verbose:
+            print(f"[+] Riftcodex página {p}/{total_pages} -> {len(items)}", file=sys.stderr)
+        for raw in items:
+            card = _card_from_riftcodex(raw)
+            if not card.card_number:
+                continue
+            key = card.card_number
+            all_cards[key] = card
+
+    # La API de cartas no expone URLs de iconos; se generan por modo piltover.
+    return list(all_cards.values()), []
 
 
 def fetch_page(page: int, session: requests.Session, retries: int = 3) -> str:
@@ -560,6 +679,12 @@ def parse_pages_arg(s: str) -> list[int]:
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument(
+        "--source",
+        choices=["riftcodex", "piltover"],
+        default="riftcodex",
+        help="Fuente de datos: riftcodex (default) o piltover",
+    )
     ap.add_argument("--pages", default="1-21", help="Ej: 1-21 o 1,3,5")
     ap.add_argument("--out", default="riftbound_cards.json")
     ap.add_argument("--icons-out", default="riftbound_icons.json")
@@ -568,7 +693,10 @@ def main():
     args = ap.parse_args()
 
     pages = parse_pages_arg(args.pages)
-    cards, icons = parse_pages(pages, delay=args.delay, verbose=args.verbose)
+    if args.source == "riftcodex":
+        cards, icons = parse_riftcodex_pages(pages, verbose=args.verbose)
+    else:
+        cards, icons = parse_pages(pages, delay=args.delay, verbose=args.verbose)
 
     Path(args.out).write_text(
         json.dumps([asdict(c) for c in cards], ensure_ascii=False, indent=2),
@@ -578,8 +706,8 @@ def main():
         json.dumps(icons, ensure_ascii=False, indent=2), encoding="utf-8",
     )
 
-    print(f"[OK] {len(cards)} cartas -> {args.out}")
-    print(f"[OK] {len(icons)} iconos -> {args.icons_out}")
+    print(f"[OK] fuente={args.source} cartas={len(cards)} -> {args.out}")
+    print(f"[OK] fuente={args.source} iconos={len(icons)} -> {args.icons_out}")
 
 
 if __name__ == "__main__":

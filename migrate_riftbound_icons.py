@@ -1,18 +1,21 @@
 """
 Descarga los iconos de Riftbound desde cdn.piltoverarchive.com
-y los sube a Cloudinary bajo `riftbound/icons/<kind>/<code>`.
+y los sube al CDN configurado bajo `riftbound/icons/<kind>/<code>`.
 Luego actualiza `RiftboundIcon.cdn_image_url` en la BD.
 
 Uso:
     python migrate_riftbound_icons.py
+
+Variables de entorno:
+    CDN_PROVIDER=imagekit | cloudinary (default: cloudinary)
 """
 import io
 import os
 import sys
 import django
 import requests
-import cloudinary
-import cloudinary.uploader
+
+from cdn_uploader import upload_bytes
 
 # Setup Django
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "backend"))
@@ -20,13 +23,6 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 django.setup()
 
 from riftbound.models import RiftboundIcon  # noqa: E402
-
-cloudinary.config(
-    cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME", "dmvu6tuee"),
-    api_key=os.environ.get("CLOUDINARY_API_KEY", "618467334728855"),
-    api_secret=os.environ.get("CLOUDINARY_API_SECRET", "egB_Ypv0wdVVBL2oRhUaoHr8bY8"),
-    secure=True,
-)
 
 
 def slugify(s: str) -> str:
@@ -60,14 +56,17 @@ def main():
             r = session.get(icon.image_url, timeout=20)
             r.raise_for_status()
             buf = io.BytesIO(r.content)
-            buf.name = f"{slugify(icon.code)}.webp"
-            result = cloudinary.uploader.upload(
-                buf,
+            ext = icon.image_url.split("?")[0].rsplit(".", 1)[-1].lower()
+            if ext not in {"webp", "png", "jpg", "jpeg"}:
+                ext = "webp"
+            buf.name = f"{slugify(icon.code)}.{ext}"
+            cdn = upload_bytes(
+                buf.getvalue(),
                 public_id=public_id,
+                default_ext=ext,
+                mime_type=r.headers.get("Content-Type", "image/webp"),
                 overwrite=True,
-                resource_type="image",
             )
-            cdn = result["secure_url"]
             icon.cdn_image_url = cdn
             icon.save(update_fields=["cdn_image_url"])
             print("OK")

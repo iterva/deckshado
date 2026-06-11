@@ -93,6 +93,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # CORS
 _cors_extra = os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
+_cors_regex_extra = os.environ.get("CORS_ALLOWED_ORIGIN_REGEXES", "").split(",")
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:4200",
     "http://127.0.0.1:4200",
@@ -102,7 +103,8 @@ CORS_ALLOWED_ORIGINS = [
 ] + [o.strip() for o in _cors_extra if o.strip()]
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://shadow-forge-deck.*\.vercel\.app$",
-]
+    r"^https://ik\.imagekit\.io$",
+] + [r.strip() for r in _cors_regex_extra if r.strip()]
 
 # REST Framework
 REST_FRAMEWORK = {

@@ -1,8 +1,8 @@
 """
-Aplica el mapping JSON generado por migrate_myl_to_cloudinary.py:
+Aplica el mapping JSON generado por scripts de migración:
     python manage.py apply_cloudinary_mapping myl_cloudinary_mapping.json
 
-Actualiza Card.custom_image_url con la URL de Cloudinary,
+Actualiza Card.custom_image_url con la URL CDN (Cloudinary/ImageKit),
 solo si la carta no tiene custom_image_url ya seteado (no pisa overrides manuales).
 
 Use --force para sobrescribir custom_image_url existentes.
@@ -15,7 +15,7 @@ from cards.models import Card
 
 
 class Command(BaseCommand):
-    help = "Aplica un mapping myl_id -> Cloudinary URL a Card.custom_image_url"
+    help = "Aplica un mapping myl_id -> CDN URL a Card.custom_image_url"
 
     def add_arguments(self, parser):
         parser.add_argument("mapping_file", type=str, help="Ruta al JSON de mapping")

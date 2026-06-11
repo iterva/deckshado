@@ -61,20 +61,20 @@ class CardListSerializer(serializers.ModelSerializer):
         # Prefer custom URL for promo/extra cards
         custom = getattr(obj, 'custom_image_url', None)
         if custom:
-            if self._should_fallback_from_cloudinary(obj, custom) and fallback:
+            if self._should_fallback_from_non_r2(obj, custom) and fallback:
                 return fallback
             return custom
 
         # Use annotated value if present, otherwise compute
         if hasattr(obj, '_image_url_cache'):
             cached = obj._image_url_cache
-            if self._should_fallback_from_cloudinary(obj, cached) and fallback:
+            if self._should_fallback_from_non_r2(obj, cached) and fallback:
                 return fallback
             return cached
 
         val = getattr(obj, 'image_url', None)
         if val and not callable(val):
-            if self._should_fallback_from_cloudinary(obj, val) and fallback:
+            if self._should_fallback_from_non_r2(obj, val) and fallback:
                 return fallback
             return val
         return fallback
@@ -87,14 +87,20 @@ class CardListSerializer(serializers.ModelSerializer):
             return f"https://api.myl.cl/static/cards/{edition_myl_id}/{edid}.png"
         return None
 
-    def _should_fallback_from_cloudinary(self, obj, url):
+    def _should_fallback_from_non_r2(self, obj, url):
         if not isinstance(url, str) or not url:
             return False
-        if 'res.cloudinary.com/' not in url:
+        lower_url = url.lower()
+        if self._is_r2_url(lower_url):
             return False
         # Keep Cloudinary for fully custom cards where MYL fallback may not exist.
         myl_id = str(getattr(obj, 'myl_id', '') or '')
         return not myl_id.startswith('custom_')
+
+    def _is_r2_url(self, lower_url):
+        if '.r2.dev/' in lower_url or '.r2.cloudflarestorage.com/' in lower_url:
+            return True
+        return False
 
     def get_is_unique(self, obj):
         val = getattr(obj, 'is_unique', None)

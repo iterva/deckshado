@@ -3,6 +3,7 @@ djangorestframework==3.17.1
 djangorestframework_simplejwt==5.5.1
 django-cors-headers==4.9.0
 requests==2.33.1
+boto3==1.40.68
 beautifulsoup4==4.14.3
 lxml==6.0.2
 pillow==12.2.0

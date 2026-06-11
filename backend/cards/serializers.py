@@ -56,17 +56,45 @@ class CardListSerializer(serializers.ModelSerializer):
         ]
 
     def get_image_url(self, obj):
+        fallback = self._default_myl_image_url(obj)
+
         # Prefer custom URL for promo/extra cards
         custom = getattr(obj, 'custom_image_url', None)
         if custom:
+            if self._should_fallback_from_cloudinary(obj, custom) and fallback:
+                return fallback
             return custom
+
         # Use annotated value if present, otherwise compute
         if hasattr(obj, '_image_url_cache'):
-            return obj._image_url_cache
+            cached = obj._image_url_cache
+            if self._should_fallback_from_cloudinary(obj, cached) and fallback:
+                return fallback
+            return cached
+
         val = getattr(obj, 'image_url', None)
         if val and not callable(val):
+            if self._should_fallback_from_cloudinary(obj, val) and fallback:
+                return fallback
             return val
-        return f"https://api.myl.cl/static/cards/{obj.edition.myl_id}/{obj.edid}.png"
+        return fallback
+
+    def _default_myl_image_url(self, obj):
+        edition = getattr(obj, 'edition', None)
+        edition_myl_id = getattr(edition, 'myl_id', None)
+        edid = getattr(obj, 'edid', None)
+        if edition_myl_id and edid:
+            return f"https://api.myl.cl/static/cards/{edition_myl_id}/{edid}.png"
+        return None
+
+    def _should_fallback_from_cloudinary(self, obj, url):
+        if not isinstance(url, str) or not url:
+            return False
+        if 'res.cloudinary.com/' not in url:
+            return False
+        # Keep Cloudinary for fully custom cards where MYL fallback may not exist.
+        myl_id = str(getattr(obj, 'myl_id', '') or '')
+        return not myl_id.startswith('custom_')
 
     def get_is_unique(self, obj):
         val = getattr(obj, 'is_unique', None)

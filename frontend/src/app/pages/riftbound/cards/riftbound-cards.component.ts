@@ -42,7 +42,7 @@ const RARITIES = [
     <div class="rb-cards-page">
       <header class="page-head">
         <h1>Cartas de Riftbound</h1>
-        <p class="muted">{{ totalCount() }} cartas en la base de datos</p>
+        <p class="muted">{{ totalCount() }} cartas en catalogo Riftcodex</p>
       </header>
 
       <div class="filters">

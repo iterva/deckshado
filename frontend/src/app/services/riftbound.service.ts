@@ -22,8 +22,8 @@ interface RiftboundCatalogCachePayload {
   cards: RiftboundCard[];
 }
 
-const RB_CATALOG_CACHE_KEY = 'rb_catalog_cards_v1';
-const RB_CATALOG_CACHE_VERSION = 1;
+const RB_CATALOG_CACHE_KEY = 'rb_catalog_cards_v2';
+const RB_CATALOG_CACHE_VERSION = 2;
 const RB_CATALOG_CACHE_TTL_MS = 1000 * 60 * 60 * 6;
 const RB_DEFAULT_PAGE_SIZE = 20;
 const RB_MAX_PAGE_SIZE = 100;
@@ -102,6 +102,7 @@ export class RiftboundService {
     excludeBattlefields?: boolean;
   }): Observable<PaginatedResponse<RiftboundCard | RiftboundCardLite>> {
     let params = new HttpParams();
+    params = params.set('source', 'riftcodex');
     if (opts.search) {
       const mode = opts.searchMode ?? 'all';
       if (mode === 'name') params = params.set('name_search', opts.search);
@@ -154,6 +155,7 @@ export class RiftboundService {
 
   private fetchCardsPage(page: number, pageSize: number): Observable<PaginatedResponse<RiftboundCard>> {
     let params = new HttpParams();
+    params = params.set('source', 'riftcodex');
     params = params.set('page', String(page));
     params = params.set('page_size', String(pageSize));
     return this.http.get<PaginatedResponse<RiftboundCard>>(`${this.base}/cards/`, { params });
@@ -165,7 +167,8 @@ export class RiftboundService {
       switchMap(first => {
         const firstResults = Array.isArray(first.results) ? first.results : [];
         const total = first.count || firstResults.length;
-        const pages = Math.max(1, Math.ceil(total / pageSize));
+        const effectivePageSize = Math.max(1, firstResults.length || pageSize);
+        const pages = Math.max(1, Math.ceil(total / effectivePageSize));
         if (pages === 1) {
           return of(this.normalizeCatalog(firstResults));
         }
@@ -356,7 +359,8 @@ export class RiftboundService {
   }
 
   getCard(numberOrId: string | number): Observable<RiftboundCard> {
-    return this.http.get<RiftboundCard>(`${this.base}/cards/${numberOrId}/`);
+    const params = new HttpParams().set('source', 'riftcodex');
+    return this.http.get<RiftboundCard>(`${this.base}/cards/${numberOrId}/`, { params });
   }
 
   // ── Sets / formatos / iconos (caché en memoria) ──

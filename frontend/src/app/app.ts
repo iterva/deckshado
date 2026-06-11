@@ -7,6 +7,7 @@ import { AuthService } from './services/auth.service';
 import { ThemeService } from './services/theme.service';
 import { GameModeService } from './services/game-mode.service';
 import { NotificationService } from './services/notification.service';
+import { RiftboundService } from './services/riftbound.service';
 import { IosInstallHintComponent } from './components/ios-install-hint/ios-install-hint.component';
 import { PwaInstallHintComponent } from './components/pwa-install-hint/pwa-install-hint.component';
 import { ThumbnailPipe } from './pipes/thumbnail.pipe';
@@ -26,12 +27,15 @@ export class App implements OnInit {
   showMobileMenu = signal(false);
   searchQuery = '';
   searchResults: any = null;
+  riftboundCacheLoading = signal(false);
+  riftboundCacheCount = signal(0);
 
   constructor(
     public auth: AuthService,
     public theme: ThemeService,
     public gameMode: GameModeService,
     public notifs: NotificationService,
+    private riftbound: RiftboundService,
     private router: Router,
     private http: HttpClient,
   ) {
@@ -42,6 +46,13 @@ export class App implements OnInit {
     if (this.auth.isAuthenticated()) {
       this.notifs.load();
     }
+
+    this.riftboundCacheLoading.set(true);
+    this.riftbound.preloadCardsCatalog().subscribe({
+      next: count => this.riftboundCacheCount.set(count),
+      error: () => this.riftboundCacheLoading.set(false),
+      complete: () => this.riftboundCacheLoading.set(false),
+    });
   }
 
   toggleDropdown() {

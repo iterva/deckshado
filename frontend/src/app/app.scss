@@ -4,6 +4,18 @@
   min-height: 100vh;
 }
 
+.rb-cache-loader {
+  position: sticky;
+  top: 64px;
+  z-index: 99;
+  padding: 0.45rem 1rem;
+  text-align: center;
+  font-size: 0.86rem;
+  color: #f7f9ff;
+  background: linear-gradient(90deg, #1f3f5b, #1e6f5c);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+
 .navbar {
   display: flex;
   align-items: center;

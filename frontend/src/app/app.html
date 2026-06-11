@@ -136,6 +136,14 @@
     </button>
   </div>
 </nav>
+@if (riftboundCacheLoading()) {
+  <div class="rb-cache-loader" role="status" aria-live="polite">
+    Sincronizando cartas de Riftbound para carga rapida...
+    @if (riftboundCacheCount() > 0) {
+      <span> ({{ riftboundCacheCount() }} cartas)</span>
+    }
+  </div>
+}
 <main class="content" id="main-content" tabindex="-1">
   <router-outlet />
 </main>

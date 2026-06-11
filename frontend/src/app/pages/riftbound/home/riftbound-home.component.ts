@@ -249,15 +249,10 @@ export class RiftboundHomeComponent implements OnInit {
 
   ngOnInit() {
     this.titleSvc.setTitle('ShadowForge — Riftbound | Constructor de mazos LoL TCG');
-    const cachedTotal = this.rb.cachedCatalogCountSnapshot();
-    if (cachedTotal > 0) {
-      this.totalCards.set(cachedTotal);
-    } else {
-      this.rb.preloadCardsCatalog().subscribe({
-        next: (count) => this.totalCards.set(count),
-        error: () => this.totalCards.set(0),
-      });
-    }
+    this.rb.listCards({ page: 1, lite: true }).subscribe({
+      next: (r) => this.totalCards.set(r.count),
+      error: () => this.totalCards.set(0),
+    });
     this.rb.listDecks({ page: 1 }).subscribe({
       next: (r: any) => this.totalDecks.set(r.count ?? (Array.isArray(r) ? r.length : 0)),
       error: () => this.totalDecks.set(0),

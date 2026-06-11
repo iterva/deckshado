@@ -85,14 +85,7 @@ export class RiftboundService {
     subtype?: string;
     excludeBattlefields?: boolean;
   } = {}): Observable<PaginatedResponse<RiftboundCard | RiftboundCardLite>> {
-    return this.ensureCatalogReady().pipe(
-      switchMap(cards => {
-        if (cards.length > 0) {
-          return of(this.buildCatalogResponse(cards, opts));
-        }
-        return this.fetchCardsHttp(opts);
-      }),
-    );
+    return this.fetchCardsHttp(opts);
   }
 
   private fetchCardsHttp(opts: {

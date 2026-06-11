@@ -460,15 +460,9 @@ input, select, textarea {
   font-size: 1.8rem;
   font-weight: 700;
   margin-bottom: 1.5rem;
-  color: #f2f6ff;
-
-  @supports ((-webkit-background-clip: text) or (background-clip: text)) {
-    background: linear-gradient(90deg, #e94560, #ffbd39);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
-  }
+  background: linear-gradient(90deg, #e94560, #ffbd39);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 // Shimmer placeholder for loading images
@@ -482,11 +476,6 @@ input, select, textarea {
 .export-card {
   background: linear-gradient(90deg, #16213e 25%, #1e2d50 50%, #16213e 75%);
   background-size: 200% 100%;
-}
-
-.card-image.is-loading,
-.img-wrapper.is-loading,
-.export-card.is-loading {
   animation: shimmer 1.5s ease-in-out infinite;
 }
 

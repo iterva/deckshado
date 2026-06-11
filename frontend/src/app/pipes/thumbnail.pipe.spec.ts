@@ -9,26 +9,19 @@ describe('ThumbnailPipe', () => {
     expect(pipe.transform('')).toBe('');
   });
 
-  it('applies cloudinary transforms for thumbnails', () => {
+  it('proxies via wsrv.nl with webp output', () => {
     const url = 'https://res.cloudinary.com/demo/image/upload/sample.png';
     const out = pipe.transform(url, 150);
-    expect(out).toContain('https://res.cloudinary.com/demo/image/upload/');
-    expect(out).toContain('f_auto,dpr_auto,c_limit,w_150,q_auto:good/');
-    expect(out).toContain('sample.png');
+    expect(out).toContain('https://wsrv.nl/?url=');
+    expect(out).toContain(encodeURIComponent(url));
+    expect(out).toContain('output=webp');
+    expect(out).toContain('w=150');
   });
 
-  it('uses eco quality for tiny cloudinary thumbs', () => {
-    const url = 'https://res.cloudinary.com/demo/image/upload/sample.png';
-    expect(pipe.transform(url, 80)).toContain('w_80,q_auto:eco');
-  });
-
-  it('keeps non-cloudinary URLs unchanged', () => {
+  it('lowers quality for smaller widths', () => {
     const url = 'https://example.com/x.png';
-    expect(pipe.transform(url, 80)).toBe(url);
-  });
-
-  it('does not stack transforms when cloudinary URL is already transformed', () => {
-    const url = 'https://res.cloudinary.com/demo/image/upload/f_auto,w_250,q_auto/sample.png';
-    expect(pipe.transform(url, 150)).toBe(url);
+    expect(pipe.transform(url, 80)).toContain('q=55');
+    expect(pipe.transform(url, 150)).toContain('q=60');
+    expect(pipe.transform(url, 350)).toContain('q=70');
   });
 });

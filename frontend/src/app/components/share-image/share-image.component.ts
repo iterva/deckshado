@@ -39,12 +39,12 @@ export interface ShareImageItem {
   template: `
   <div class="share-toolbar">
     <button type="button" class="btn btn-sm btn-primary"
-            (click)="download()" [disabled]="busy() || !items.length"
-            [title]="!items.length ? 'No hay cartas para incluir' : 'Descargar imagen'">
+            (click)="download()" [disabled]="busy() || !items?.length"
+            [title]="!items?.length ? 'No hay cartas para incluir' : 'Descargar imagen'">
       📷 {{ busy() ? 'Generando...' : ctaLabel }}
     </button>
     @if (canCopy) {
-      <button type="button" class="btn btn-sm" (click)="copy()" [disabled]="busy() || !items.length"
+      <button type="button" class="btn btn-sm" (click)="copy()" [disabled]="busy() || !items?.length"
               title="Copiar imagen al portapapeles">
         📋 Copiar
       </button>
@@ -208,15 +208,15 @@ export class ShareImageComponent {
   }
 
   get gridCols(): number {
-    const n = this.items.length;
+    const n = this.items?.length || 0;
     if (n <= 3) return 3;
     if (n >= 15) return 5;
     return 4;
   }
 
   private async render(): Promise<HTMLCanvasElement | null> {
-    if (!this.items.length) return null;
-    const el = this.exportArea.nativeElement;
+    if (!this.items?.length) return null;
+    const el = this.exportArea?.nativeElement;
     if (!el) return null;
     // Esperar a que el navegador haga layout de las imágenes
     await new Promise<void>(r => requestAnimationFrame(() => r()));

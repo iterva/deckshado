@@ -263,7 +263,7 @@
             </button>
             @if (entry.photo_url) {
               <button class="btn btn-xs btn-photo-view"
-                      (click)="viewPhotoUrl = entry.photo_url; $event.stopPropagation()"
+                      (click)="viewPhotoUrl = entry.photo_url ?? null; $event.stopPropagation()"
                       title="Ver foto real de la carta">
                 📸 Ver foto real
               </button>

@@ -79,28 +79,29 @@ import { RiftboundPublicBinderProfile } from '../../../models/riftbound';
   </div>
   `,
   styles: [`
-    :host { display: block; min-height: 100vh; background: var(--ui-bg); color: var(--ui-text-muted); }
+    :host { display: block; min-height: 100vh; background: #0f0f23; color: #c8c8da; }
     .stores-container { max-width: 1300px; margin: 0 auto; padding: 1.5rem; }
     @media (max-width: 600px) { .stores-container { padding: 1rem 0.65rem 2rem; } }
     .hero { text-align: center; margin-bottom: 2rem; padding: 1.5rem 1rem;
-      background: color-mix(in srgb, var(--ui-surface) 94%, #ffffff 6%);
-      border: 1px solid var(--ui-border); border-radius: 12px; }
+      background: linear-gradient(135deg, #16213e, #1a1a2e);
+      border: 1px solid #2a3a4a; border-radius: 12px; }
     .hero h1 { margin: 0; font-size: 2rem;
-      color: var(--ui-text); display: inline-block; }
-    .hero p { color: var(--ui-text-muted); margin: .5rem 0 0; }
+      background: linear-gradient(90deg, #e94560, #4fc3f7); -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent; background-clip: text; }
+    .hero p { color: #9ba3b4; margin: .5rem 0 0; }
 
     .filter-row { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
     .filter-row input, .filter-row select {
-      padding: .5rem .7rem; background: var(--ui-surface); color: var(--ui-text);
-      border: 1px solid var(--ui-border); border-radius: 6px;
+      padding: .5rem .7rem; background: #0f0f23; color: #c8c8da;
+      border: 1px solid #2a3a4a; border-radius: 6px;
     }
     .filter-row input { flex: 1; min-width: 200px; }
-    .filter-row input:focus, .filter-row select:focus { outline: none; border-color: var(--ui-accent); }
+    .filter-row input:focus, .filter-row select:focus { outline: none; border-color: #e94560; }
 
-    .results-count { color: var(--ui-text-muted); font-size: .9rem; margin-bottom: 1rem; }
-    .loading { padding: 2rem; text-align: center; color: var(--ui-text-muted); }
-    .empty-state { padding: 3rem 1rem; text-align: center; color: var(--ui-text-muted);
-      background: color-mix(in srgb, var(--ui-surface) 94%, #ffffff 6%); border: 1px dashed var(--ui-border); border-radius: 12px; }
+    .results-count { color: #9ba3b4; font-size: .9rem; margin-bottom: 1rem; }
+    .loading { padding: 2rem; text-align: center; color: #9ba3b4; }
+    .empty-state { padding: 3rem 1rem; text-align: center; color: #9ba3b4;
+      background: #16213e; border: 1px dashed #2a3a4a; border-radius: 12px; }
 
     .stores-grid {
       display: grid; gap: 1rem;
@@ -108,32 +109,32 @@ import { RiftboundPublicBinderProfile } from '../../../models/riftbound';
     }
     .store-card {
       display: flex; gap: 1rem; padding: 1rem;
-      background: color-mix(in srgb, var(--ui-surface) 94%, #ffffff 6%); border: 1px solid var(--ui-border); border-radius: 10px;
+      background: #16213e; border: 1px solid #2a3a4a; border-radius: 10px;
       text-decoration: none; color: inherit; transition: all .15s;
     }
-    .store-card:hover { border-color: var(--ui-accent); transform: translateY(-2px); }
+    .store-card:hover { border-color: #e94560; transform: translateY(-2px); }
     .avatar {
       width: 64px; height: 64px; border-radius: 10px; flex-shrink: 0;
-      border: 2px solid var(--ui-accent); object-fit: cover;
+      border: 2px solid #e94560; object-fit: cover;
     }
     .avatar.placeholder {
-      background: var(--ui-bg-soft); display: flex; align-items: center; justify-content: center; font-size: 1.8rem;
+      background: #0f0f23; display: flex; align-items: center; justify-content: center; font-size: 1.8rem;
     }
     .info { flex: 1; min-width: 0; }
-    .info h3 { margin: 0; color: var(--ui-text); font-size: 1rem;
+    .info h3 { margin: 0; color: #fff; font-size: 1rem;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .meta { display: flex; gap: .6rem; flex-wrap: wrap; color: var(--ui-text-muted); font-size: .82rem; margin: .25rem 0; }
-    .count { color: var(--ui-accent); font-size: .9rem; margin: .25rem 0; font-weight: 600; }
-    .trade-badge { display: inline-block; background: color-mix(in srgb, var(--ui-accent) 18%, transparent); color: var(--ui-accent);
-      border: 1px solid var(--ui-accent); padding: .15rem .45rem; border-radius: 4px; font-size: .72rem; }
+    .meta { display: flex; gap: .6rem; flex-wrap: wrap; color: #9ba3b4; font-size: .82rem; margin: .25rem 0; }
+    .count { color: #4fc3f7; font-size: .9rem; margin: .25rem 0; font-weight: 600; }
+    .trade-badge { display: inline-block; background: #c89b3c30; color: #c89b3c;
+      border: 1px solid #c89b3c; padding: .15rem .45rem; border-radius: 4px; font-size: .72rem; }
 
-    .btn { padding: .4rem .8rem; border: 1px solid var(--ui-border); background: transparent; color: var(--ui-text);
+    .btn { padding: .4rem .8rem; border: 1px solid #2a3a4a; background: transparent; color: #c8c8da;
       border-radius: 6px; cursor: pointer; font-weight: 600; }
-    .btn:hover:not(:disabled) { background: color-mix(in srgb, var(--ui-surface-elevated) 92%, #ffffff 8%); }
+    .btn:hover:not(:disabled) { background: #1e2d3d; }
     .btn:disabled { opacity: .5; cursor: not-allowed; }
     .btn-sm { padding: .35rem .65rem; font-size: .85rem; }
-    .btn-primary { background: var(--ui-accent); border-color: var(--ui-accent); color: #fff; }
-    .pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1.5rem; color: var(--ui-text-muted); }
+    .btn-primary { background: #e94560; border-color: #e94560; color: #fff; }
+    .pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1.5rem; color: #9ba3b4; }
   `],
 })
 export class RiftboundStoresIndexComponent implements OnInit {

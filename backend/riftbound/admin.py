@@ -10,8 +10,6 @@ from .models import (
     RiftboundCollectionEntry,
     RiftboundWishlistEntry,
     RiftboundIcon,
-    RiftboundSyncState,
-    RiftboundOpsRun,
 )
 
 
@@ -76,24 +74,3 @@ class RiftboundIconAdmin(admin.ModelAdmin):
     list_display = ("kind", "code", "label")
     list_filter = ("kind",)
     search_fields = ("code", "label")
-
-
-@admin.register(RiftboundSyncState)
-class RiftboundSyncStateAdmin(admin.ModelAdmin):
-    list_display = ("provider", "key", "last_cursor", "last_success_at", "updated_at")
-    search_fields = ("provider", "key")
-    readonly_fields = (
-        "provider", "key", "last_cursor", "last_started_at",
-        "last_success_at", "last_stats", "last_error", "updated_at",
-    )
-
-
-@admin.register(RiftboundOpsRun)
-class RiftboundOpsRunAdmin(admin.ModelAdmin):
-    list_display = ("id", "provider", "kind", "status", "requested_by", "started_at", "duration_ms")
-    list_filter = ("provider", "kind", "status")
-    search_fields = ("command", "requested_by__username", "error")
-    readonly_fields = (
-        "provider", "kind", "command", "status", "requested_by", "args",
-        "started_at", "finished_at", "duration_ms", "output", "error",
-    )

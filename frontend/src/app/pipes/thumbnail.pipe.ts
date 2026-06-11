@@ -1,58 +1,46 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { environment } from '../../environments/environment';
 
 @Pipe({ name: 'thumb', standalone: true })
 export class ThumbnailPipe implements PipeTransform {
   /**
-   * Generates an optimized thumbnail URL via wsrv.nl proxy.
-   * In local development, it returns direct backend URLs to avoid
-   * depending on external image proxy services.
-   * @param url Original image URL
-   * @param width Desired width in pixels (default 150)
+   * Generates an optimized image URL.
+   * - Cloudinary images: apply native Cloudinary transformations.
+   * - Other hosts: keep original URL to avoid proxy bottlenecks.
+   * @param url  Original image URL
+   * @param width  Desired width in pixels (default 150)
    */
   transform(url: string | null | undefined, width: number = 150): string {
     if (!url) return '';
+    const secureUrl = url.trim().replace(/^http:\/\//i, 'https://');
+    if (!secureUrl) return '';
 
-    const normalized = this.normalizeImageUrl(url.trim());
-    if (!normalized) return '';
-
-    // Local mode requested by user: serve direct URLs while developing.
-    if (this.isLocalDevMode()) {
-      return normalized;
+    // Use Cloudinary CDN transforms directly for speed and reliability.
+    if (/res\.cloudinary\.com/i.test(secureUrl)) {
+      return this.cloudinaryThumb(secureUrl, width);
     }
 
-    const q = width <= 100 ? 55 : width <= 150 ? 60 : 70;
-    return `https://wsrv.nl/?url=${encodeURIComponent(normalized)}&w=${width}&output=webp&q=${q}&we`;
+    return secureUrl;
   }
 
-  private isLocalDevMode(): boolean {
-    if (environment.production) return false;
-    if (typeof window === 'undefined') return false;
-    const host = window.location.hostname;
-    return host === 'localhost' || host === '127.0.0.1';
-  }
+  private cloudinaryThumb(url: string, width: number): string {
+    const marker = '/image/upload/';
+    const markerIndex = url.indexOf(marker);
+    if (markerIndex === -1) return url;
 
-  private normalizeImageUrl(raw: string): string {
-    if (!raw) return '';
+    const prefix = url.slice(0, markerIndex + marker.length);
+    const suffix = url.slice(markerIndex + marker.length);
+    const firstSegment = suffix.split('/')[0] ?? '';
 
-    if (raw.startsWith('/')) {
-      return `${this.backendOrigin()}${raw}`;
-    }
+    // If URL already has an explicit transform segment, keep it unchanged.
+    const hasExistingTransform =
+      !/^v\d+$/.test(firstSegment) &&
+      /(^|,)(w_\d+|q_auto|f_auto|c_[a-z]+)/.test(firstSegment);
+    if (hasExistingTransform) return url;
 
-    if (raw.startsWith('//')) {
-      return `https:${raw}`;
-    }
+    const safeWidth = Math.max(40, Math.round(width || 150));
+    const quality = safeWidth <= 120 ? 'q_auto:eco' : 'q_auto:good';
+    const transform = `f_auto,dpr_auto,c_limit,w_${safeWidth},${quality}`;
 
-    // In local development, prefer local media when URL points to production backend.
-    if (!environment.production && raw.includes('iterva.pythonanywhere.com/media/')) {
-      return raw.replace('https://iterva.pythonanywhere.com', 'http://localhost:8000');
-    }
-
-    return raw;
-  }
-
-  private backendOrigin(): string {
-    const api = environment.apiUrl || '';
-    return api.endsWith('/api') ? api.slice(0, -4) : api;
+    return `${prefix}${transform}/${suffix}`;
   }
 }

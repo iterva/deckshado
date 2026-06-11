@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of, shareReplay, tap, map, switchMap, forkJoin, catchError, finalize } from 'rxjs';
+import { Observable, of, shareReplay, tap, map, switchMap, forkJoin, catchError, finalize, timeout } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   RiftboundCard, RiftboundCardLite, RiftboundDeck, RiftboundFormat,
@@ -27,7 +27,7 @@ const RB_CATALOG_CACHE_KEY = 'rb_catalog_cards_v3';
 const RB_CATALOG_CACHE_VERSION = 3;
 const RB_CATALOG_CACHE_TTL_MS = 1000 * 60 * 60 * 6;
 const RB_DEFAULT_PAGE_SIZE = 20;
-const RB_MAX_PAGE_SIZE = 100;
+const RB_MAX_PAGE_SIZE = 250;
 
 @Injectable({ providedIn: 'root' })
 export class RiftboundService {
@@ -170,7 +170,9 @@ export class RiftboundService {
     params = params.set('source', 'riftcodex');
     params = params.set('page', String(page));
     params = params.set('page_size', String(pageSize));
-    return this.http.get<PaginatedResponse<RiftboundCard>>(`${this.base}/cards/`, { params });
+    return this.http.get<PaginatedResponse<RiftboundCard>>(`${this.base}/cards/`, { params }).pipe(
+      timeout(20000),
+    );
   }
 
   private fetchAllCardsFromApi(): Observable<RiftboundCard[]> {

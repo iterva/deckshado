@@ -47,7 +47,7 @@ class RiftboundCardViewSet(viewsets.ReadOnlyModelViewSet):
             size = int(raw)
         except ValueError:
             size = 20
-        return max(1, min(100, size))
+        return max(1, min(250, size))
 
     def _page_number(self) -> int:
         raw = self.request.query_params.get("page") or "1"

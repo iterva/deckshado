@@ -47,9 +47,16 @@
     flex: 1; min-width: 220px;
     h1 {
       margin: 0; font-size: 1.5rem;
-      background: linear-gradient(90deg, #ffbd39, #e94560);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: #f2f6ff;
+      letter-spacing: -0.01em;
+
+      @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+        background: linear-gradient(90deg, #ffbd39, #e94560);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+      }
     }
     .store-handle { margin: 0.1rem 0 0.5rem; color: #888; font-size: 0.85rem; }
     .store-meta {
@@ -580,10 +587,16 @@
 
   .store-info {
     h1 {
-      background: linear-gradient(100deg, var(--ui-text) 0%, color-mix(in srgb, var(--ui-text) 68%, var(--ui-accent) 32%) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: var(--ui-text);
       letter-spacing: -0.01em;
+
+      @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+        background: linear-gradient(100deg, var(--ui-text) 0%, color-mix(in srgb, var(--ui-text) 68%, var(--ui-accent) 32%) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+      }
     }
 
     .store-handle,

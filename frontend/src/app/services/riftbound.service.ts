@@ -44,6 +44,24 @@ export class RiftboundService {
     return this.ensureCatalogReady(force).pipe(map(cards => cards.length));
   }
 
+  hasUsableCatalogSnapshot(): boolean {
+    const inMemory = this.catalogCards();
+    if (inMemory?.length) {
+      return true;
+    }
+    const fromStorage = this.readCatalogFromStorage();
+    return !!fromStorage?.cards?.length;
+  }
+
+  cachedCatalogCountSnapshot(): number {
+    const inMemory = this.catalogCards();
+    if (inMemory?.length) {
+      return inMemory.length;
+    }
+    const fromStorage = this.readCatalogFromStorage();
+    return fromStorage?.cards?.length ?? 0;
+  }
+
   // ── Cartas ──
   listCards(opts: {
     search?: string;

@@ -1,5 +1,5 @@
 import { Component, HostListener, signal, OnInit } from '@angular/core';
-import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
+import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
@@ -29,6 +29,8 @@ export class App implements OnInit {
   searchResults: any = null;
   riftboundCacheLoading = signal(false);
   riftboundCacheCount = signal(0);
+  private needsRiftboundEntryWarmup = signal(false);
+  currentUrl = signal('/');
 
   constructor(
     public auth: AuthService,
@@ -40,11 +42,23 @@ export class App implements OnInit {
     private http: HttpClient,
   ) {
     sessionStorage.removeItem('chunk_reload');
+    this.currentUrl.set(this.router.url || '/');
+    this.router.events.subscribe(event => {
+      if (event instanceof NavigationEnd) {
+        this.currentUrl.set(event.urlAfterRedirects || event.url || '/');
+      }
+    });
   }
 
   ngOnInit() {
     if (this.auth.isAuthenticated()) {
       this.notifs.load();
+    }
+
+    const hasCacheSnapshot = this.riftbound.hasUsableCatalogSnapshot();
+    this.needsRiftboundEntryWarmup.set(!hasCacheSnapshot);
+    if (hasCacheSnapshot) {
+      this.riftboundCacheCount.set(this.riftbound.cachedCatalogCountSnapshot());
     }
 
     this.riftboundCacheLoading.set(true);
@@ -53,6 +67,13 @@ export class App implements OnInit {
       error: () => this.riftboundCacheLoading.set(false),
       complete: () => this.riftboundCacheLoading.set(false),
     });
+  }
+
+  showRiftboundEntryLoader(): boolean {
+    return this.currentUrl().startsWith('/riftbound')
+      && this.needsRiftboundEntryWarmup()
+      && this.riftboundCacheLoading()
+      && this.riftboundCacheCount() === 0;
   }
 
   toggleDropdown() {

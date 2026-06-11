@@ -136,7 +136,16 @@
     </button>
   </div>
 </nav>
-@if (riftboundCacheLoading()) {
+@if (showRiftboundEntryLoader()) {
+  <section class="rb-entry-loader" role="status" aria-live="polite" aria-busy="true">
+    <div class="rb-entry-loader-card">
+      <div class="rb-spinner" aria-hidden="true"></div>
+      <h2>Cargando cartas de Riftbound...</h2>
+      <p>Primera sincronizacion de catalogo. Esto puede tardar unos segundos.</p>
+    </div>
+  </section>
+}
+@if (riftboundCacheLoading() && !showRiftboundEntryLoader()) {
   <div class="rb-cache-loader" role="status" aria-live="polite">
     Sincronizando cartas de Riftbound para carga rapida...
     @if (riftboundCacheCount() > 0) {

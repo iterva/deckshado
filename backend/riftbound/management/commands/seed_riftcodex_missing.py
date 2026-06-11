@@ -7,34 +7,17 @@ Uso:
 """
 from __future__ import annotations
 
-import time
-
-import requests
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils.text import slugify
 
+from riftbound.integrations.riftcodex import (
+    RiftcodexClient,
+    map_card_rarity,
+    map_card_type,
+    normalize_riftbound_card_number,
+)
 from riftbound.models import RiftboundCard, RiftboundSet
-
-
-# Mapeo de tipos de la API a nuestro modelo
-TYPE_MAP = {
-    "Unit": "unit",
-    "Spell": "spell",
-    "Gear": "gear",
-    "Legend": "legend",
-    "Rune": "rune",
-    "Battlefield": "battlefield",
-}
-
-RARITY_MAP = {
-    "Common": "common",
-    "Uncommon": "uncommon",
-    "Rare": "rare",
-    "Epic": "epic",
-    "Showcase": "showcase",
-    "Promo": "promo",
-}
 
 
 class Command(BaseCommand):
@@ -101,8 +84,8 @@ class Command(BaseCommand):
                 media = card.get("media") or {}
                 meta = card.get("metadata") or {}
 
-                card_type = TYPE_MAP.get(cls.get("type", ""), "unit")
-                rarity = RARITY_MAP.get(cls.get("rarity", ""), "common")
+                card_type = map_card_type(cls.get("type"))
+                rarity = map_card_rarity(cls.get("rarity"))
                 colors = [c.lower() for c in (cls.get("domain") or [])]
 
                 # Determine variant
@@ -148,41 +131,13 @@ class Command(BaseCommand):
 
     def _fetch_all_cards(self) -> list[dict]:
         """Fetch all pages from the riftcodex API."""
-        all_cards = []
-        page = 1
-        while True:
-            resp = requests.get(
-                "https://api.riftcodex.com/cards",
-                params={"page": page, "size": 50},
-                timeout=30,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            all_cards.extend(data["items"])
-            if page >= data["pages"]:
-                break
-            page += 1
-            time.sleep(0.3)
-        return all_cards
+        return list(RiftcodexClient().iter_all_cards(size=50, request_pause_seconds=0.3))
 
     def _normalize_id(self, card: dict) -> str:
         """Convert API riftbound_id (e.g. 'unl-060a-219') to our format (e.g. 'UNL-060a')."""
         api_id = card.get("riftbound_id", "")
         meta = card.get("metadata") or {}
-        parts = api_id.split("-")
-
-        if len(parts) >= 3:
-            normalized = f"{parts[0].upper()}-{parts[1]}"
-        elif len(parts) == 2:
-            normalized = f"{parts[0].upper()}-{parts[1]}"
-        else:
-            normalized = api_id.upper()
-
-        # Signature cards have * suffix in our DB
-        if meta.get("signature"):
-            normalized += "*"
-
-        return normalized
+        return normalize_riftbound_card_number(api_id, signature=bool(meta.get("signature")))
 
     def _get_or_create_set(self, card: dict) -> RiftboundSet | None:
         """Get or create the set for a card."""

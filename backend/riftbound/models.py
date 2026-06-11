@@ -310,6 +310,69 @@ class RiftboundWishlistEntry(models.Model):
         return f"{self.user.username} quiere {self.desired_quantity}x {self.card.name}"
 
 
+# ─────────────────────── Sync estado externo ───────────────────────
+
+
+class RiftboundSyncState(models.Model):
+    """Estado de sincronizacion con proveedores externos (ej. Riftcodex)."""
+
+    key = models.CharField(max_length=50, unique=True, db_index=True)
+    provider = models.CharField(max_length=30, default="riftcodex", db_index=True)
+    last_cursor = models.DateTimeField(blank=True, null=True)
+    last_started_at = models.DateTimeField(blank=True, null=True)
+    last_success_at = models.DateTimeField(blank=True, null=True)
+    last_stats = models.JSONField(default=dict, blank=True)
+    last_error = models.TextField(blank=True, default="")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["provider", "key"]
+
+    def __str__(self):
+        return f"[{self.provider}] {self.key}"
+
+
+class RiftboundOpsRun(models.Model):
+    """Historial de ejecuciones operativas Riftcodex (sync/audit)."""
+
+    KIND_SYNC = "sync"
+    KIND_AUDIT = "audit"
+    KIND_CHOICES = [
+        (KIND_SYNC, "Sync"),
+        (KIND_AUDIT, "Audit"),
+    ]
+
+    STATUS_RUNNING = "running"
+    STATUS_SUCCESS = "success"
+    STATUS_ERROR = "error"
+    STATUS_CHOICES = [
+        (STATUS_RUNNING, "Running"),
+        (STATUS_SUCCESS, "Success"),
+        (STATUS_ERROR, "Error"),
+    ]
+
+    provider = models.CharField(max_length=30, default="riftcodex", db_index=True)
+    kind = models.CharField(max_length=20, choices=KIND_CHOICES, db_index=True)
+    command = models.CharField(max_length=80)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_RUNNING, db_index=True)
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="riftbound_ops_runs",
+    )
+    args = models.JSONField(default=dict, blank=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(blank=True, null=True)
+    duration_ms = models.PositiveIntegerField(blank=True, null=True)
+    output = models.TextField(blank=True, default="")
+    error = models.TextField(blank=True, default="")
+
+    class Meta:
+        ordering = ["-started_at"]
+
+    def __str__(self):
+        return f"[{self.provider}] {self.kind} {self.status} #{self.id}"
+
+
 # ─────────────────────── Binder Profile (Tienda) ───────────────────────
 
 

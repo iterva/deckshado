@@ -35,7 +35,7 @@
           },
           "configurations": {
             "production": {
-              "allowedCommonJsDependencies": ["html2canvas"],
+              "allowedCommonJsDependencies": ["html2canvas", "canvg", "raf", "rgbcolor", "core-js"],
               "serviceWorker": "ngsw-config.json",
               "fileReplacements": [
                 {
@@ -51,8 +51,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "30kB",
-                  "maximumError": "40kB"
+                  "maximumWarning": "40kB",
+                  "maximumError": "50kB"
                 }
               ],
               "outputHashing": "all"

@@ -2,10 +2,10 @@ import { Component, OnInit, computed, inject, signal, HostListener } from '@angu
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RiftboundService } from '../../../services/riftbound.service';
-import { RiftboundCard, RiftboundCardLite, RiftboundColor } from '../../../models/riftbound';
+import { RiftboundCard, RiftboundCardLite } from '../../../models/riftbound';
 import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.component';
 
-const COLORS: { code: RiftboundColor; label: string; hex: string }[] = [
+const FALLBACK_COLORS: { code: string; label: string; hex: string }[] = [
   { code: 'fury',  label: 'Fury',  hex: '#e94560' },
   { code: 'calm',  label: 'Calm',  hex: '#4caf50' },
   { code: 'mind',  label: 'Mind',  hex: '#3aa6ff' },
@@ -14,7 +14,7 @@ const COLORS: { code: RiftboundColor; label: string; hex: string }[] = [
   { code: 'order', label: 'Order', hex: '#ff6b7d' },
 ];
 
-const TYPES = [
+const FALLBACK_TYPES = [
   { code: 'unit', label: 'Unidad' },
   { code: 'spell', label: 'Hechizo' },
   { code: 'champion', label: 'Champion' },
@@ -24,7 +24,7 @@ const TYPES = [
   { code: 'rune', label: 'Runa' },
 ];
 
-const RARITIES = [
+const FALLBACK_RARITIES = [
   { code: 'common', label: 'Common' },
   { code: 'uncommon', label: 'Uncommon' },
   { code: 'rare', label: 'Rare' },
@@ -33,6 +33,8 @@ const RARITIES = [
   { code: 'champion', label: 'Champion' },
   { code: 'promo', label: 'Promo' },
 ];
+
+const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 
 @Component({
   selector: 'app-riftbound-cards',
@@ -97,7 +99,7 @@ const RARITIES = [
             <label>Energía</label>
             <select [(ngModel)]="energyFilter" (ngModelChange)="reset()">
               <option [ngValue]="null">Cualquiera</option>
-              @for (n of [0,1,2,3,4,5,6,7,8]; track n) {
+              @for (n of energyOptions; track n) {
                 <option [ngValue]="n">{{ n }}</option>
               }
             </select>
@@ -366,9 +368,10 @@ const RARITIES = [
 export class RiftboundCardsComponent implements OnInit {
   private rb = inject(RiftboundService);
 
-  readonly colors = COLORS;
-  readonly types = TYPES;
-  readonly rarities = RARITIES;
+  colors = [...FALLBACK_COLORS];
+  types = [...FALLBACK_TYPES];
+  rarities = [...FALLBACK_RARITIES];
+  energyOptions = [...FALLBACK_ENERGY];
   // Debe coincidir con DRF PAGE_SIZE (backend/backend/settings.py).
   // Si no coincide, totalPages se calcula mal y quedan cartas inaccesibles.
   readonly pageSize = 20;
@@ -379,7 +382,7 @@ export class RiftboundCardsComponent implements OnInit {
   setFilter = '';
   rarityFilter = '';
   energyFilter: number | null = null;
-  selectedColors = signal(new Set<RiftboundColor>());
+  selectedColors = signal(new Set<string>());
 
   cards = signal<RiftboundCardLite[]>([]);
   sets = signal<{ code: string; name: string }[]>([]);
@@ -398,6 +401,7 @@ export class RiftboundCardsComponent implements OnInit {
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
 
   ngOnInit() {
+    this.loadDynamicIndexes();
     this.rb.listSets().subscribe({
       next: (sets: any) => {
         const arr = Array.isArray(sets) ? sets : (sets?.results ?? []);
@@ -415,11 +419,87 @@ export class RiftboundCardsComponent implements OnInit {
     if (this.searchQuery) this.reset();
   }
 
-  toggleColor(c: RiftboundColor) {
+  toggleColor(c: string) {
     const set = new Set(this.selectedColors());
     if (set.has(c)) set.delete(c); else set.add(c);
     this.selectedColors.set(set);
     this.reset();
+  }
+
+  private loadDynamicIndexes() {
+    this.rb.getRiftcodexIndex('card-types').subscribe({
+      next: (data) => { this.types = this.buildTypeOptions(data.values); },
+    });
+
+    this.rb.getRiftcodexIndex('rarities').subscribe({
+      next: (data) => { this.rarities = this.buildRarityOptions(data.values); },
+    });
+
+    this.rb.getRiftcodexIndex('domains').subscribe({
+      next: (data) => { this.colors = this.buildColorOptions(data.values); },
+    });
+
+    this.rb.getRiftcodexIndex('energy').subscribe({
+      next: (data) => { this.energyOptions = this.buildEnergyOptions(data.values); },
+    });
+  }
+
+  private buildTypeOptions(values: Array<string | number>): { code: string; label: string }[] {
+    const map = new Map(FALLBACK_TYPES.map((x) => [x.code, x.label]));
+    for (const raw of values) {
+      const code = String(raw || '').trim().toLowerCase();
+      if (!code) continue;
+      if (!map.has(code)) map.set(code, this.toLabel(String(raw)));
+    }
+    return Array.from(map.entries()).map(([code, label]) => ({ code, label }));
+  }
+
+  private buildRarityOptions(values: Array<string | number>): { code: string; label: string }[] {
+    const map = new Map(FALLBACK_RARITIES.map((x) => [x.code, x.label]));
+    for (const raw of values) {
+      const code = String(raw || '').trim().toLowerCase();
+      if (!code) continue;
+      if (!map.has(code)) map.set(code, this.toLabel(String(raw)));
+    }
+    return Array.from(map.entries()).map(([code, label]) => ({ code, label }));
+  }
+
+  private buildColorOptions(values: Array<string | number>): { code: string; label: string; hex: string }[] {
+    const map = new Map(FALLBACK_COLORS.map((x) => [x.code, x]));
+    for (const raw of values) {
+      const code = String(raw || '').trim().toLowerCase();
+      if (!code) continue;
+      if (!map.has(code)) {
+        map.set(code, { code, label: this.toLabel(String(raw)), hex: this.pickColorHex(code) });
+      }
+    }
+    return Array.from(map.values());
+  }
+
+  private buildEnergyOptions(values: Array<string | number>): number[] {
+    const energies = new Set<number>();
+    for (const raw of values) {
+      const n = Number(raw);
+      if (Number.isFinite(n) && n >= 0) energies.add(n);
+    }
+    const list = Array.from(energies).sort((a, b) => a - b);
+    return list.length ? list : [...FALLBACK_ENERGY];
+  }
+
+  private toLabel(raw: string): string {
+    return raw
+      .toLowerCase()
+      .replace(/[-_]+/g, ' ')
+      .replace(/\b\w/g, (x) => x.toUpperCase());
+  }
+
+  private pickColorHex(code: string): string {
+    const known = FALLBACK_COLORS.find((x) => x.code === code)?.hex;
+    if (known) return known;
+    let hash = 0;
+    for (let i = 0; i < code.length; i += 1) hash = ((hash << 5) - hash) + code.charCodeAt(i);
+    const hue = Math.abs(hash) % 360;
+    return `hsl(${hue} 72% 56%)`;
   }
 
   onSearchInput() {
@@ -447,6 +527,7 @@ export class RiftboundCardsComponent implements OnInit {
     this.rb.listCards({
       search: this.searchQuery || undefined,
       searchMode: this.searchMode,
+      hybrid: !!this.searchQuery && this.searchMode === 'all',
       type: this.typeFilter || undefined,
       set: this.setFilter || undefined,
       rarity: this.rarityFilter || undefined,

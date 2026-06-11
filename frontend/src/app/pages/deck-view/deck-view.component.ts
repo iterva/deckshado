@@ -854,6 +854,22 @@ export class DeckViewComponent implements OnInit {
     this.handCards = this.drawRandom(this.shufflePool, 8);
   }
 
+  handleDeckImageError(event: Event, originalUrl: string | null | undefined) {
+    const img = event.target as HTMLImageElement | null;
+    if (!img || !originalUrl) return;
+
+    // Avoid fallback loops when the failing URL is already the original source.
+    const current = img.currentSrc || img.src || '';
+    if (current === originalUrl || img.dataset['fallbackApplied'] === '1') {
+      img.onerror = null;
+      return;
+    }
+
+    img.dataset['fallbackApplied'] = '1';
+    img.onerror = null;
+    img.src = originalUrl;
+  }
+
   /** Preload card images in background so they're cached for viewing & export */
   private preloadImages() {
     if (!this.deck) return;

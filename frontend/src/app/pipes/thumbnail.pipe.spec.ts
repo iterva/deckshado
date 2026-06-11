@@ -9,19 +9,27 @@ describe('ThumbnailPipe', () => {
     expect(pipe.transform('')).toBe('');
   });
 
-  it('proxies via wsrv.nl with webp output', () => {
-    const url = 'https://res.cloudinary.com/demo/image/upload/sample.png';
-    const out = pipe.transform(url, 150);
-    expect(out).toContain('https://wsrv.nl/?url=');
-    expect(out).toContain(encodeURIComponent(url));
-    expect(out).toContain('output=webp');
-    expect(out).toContain('w=150');
+  it('keeps direct URL for regular hosts', () => {
+    const url = 'https://example.com/assets/card.png';
+    expect(pipe.transform(url, 150)).toBe(url);
   });
 
-  it('lowers quality for smaller widths', () => {
-    const url = 'https://example.com/x.png';
-    expect(pipe.transform(url, 80)).toContain('q=55');
-    expect(pipe.transform(url, 150)).toContain('q=60');
-    expect(pipe.transform(url, 350)).toContain('q=70');
+  it('normalizes protocol-relative URL', () => {
+    expect(pipe.transform('//cdn.example.com/card.png', 150)).toBe('https://cdn.example.com/card.png');
+  });
+
+  it('normalizes relative media URL to backend origin', () => {
+    expect(pipe.transform('/media/extra_cards/card.png', 150)).toBe('http://localhost:8000/media/extra_cards/card.png');
+  });
+
+  it('rewrites production media origin to local backend in dev mode', () => {
+    const src = 'https://iterva.pythonanywhere.com/media/extra_cards/card.png';
+    expect(pipe.transform(src, 150)).toBe('http://localhost:8000/media/extra_cards/card.png');
+  });
+
+  it('ignores width argument but keeps API compatibility', () => {
+    const url = 'https://res.cloudinary.com/demo/image/upload/sample.png';
+    expect(pipe.transform(url, 80)).toBe(url);
+    expect(pipe.transform(url, 350)).toBe(url);
   });
 });

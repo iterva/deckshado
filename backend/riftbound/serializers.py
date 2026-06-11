@@ -41,7 +41,7 @@ class RiftboundCardSerializer(serializers.ModelSerializer):
         ]
 
     def get_image(self, obj):
-        return obj.cdn_image_url or obj.image_url or obj.image_url_small or ""
+        return obj.image_url or obj.cdn_image_url or obj.image_url_small or ""
 
 
 class RiftboundCardLiteSerializer(serializers.ModelSerializer):
@@ -57,7 +57,7 @@ class RiftboundCardLiteSerializer(serializers.ModelSerializer):
         ]
 
     def get_image(self, obj):
-        return obj.cdn_image_url or obj.image_url or ""
+        return obj.image_url or obj.cdn_image_url or obj.image_url_small or ""
 
 
 class RiftboundFormatSerializer(serializers.ModelSerializer):
@@ -83,7 +83,7 @@ class RiftboundBanlistEntrySerializer(serializers.ModelSerializer):
 
     def get_card_image(self, obj):
         c = obj.card
-        return c.cdn_image_url or c.image_url or c.image_url_small or ""
+        return c.image_url or c.cdn_image_url or c.image_url_small or ""
 
 
 # ───────────── Decks ─────────────

@@ -86,7 +86,7 @@ class CardListSerializer(serializers.ModelSerializer):
         return fallback
 
     def _rewrite_legacy_extra_card_url(self, url):
-        """Map retired Cloudinary extra-card URLs to PA media fallback."""
+        """Map retired Cloudinary extra-card URLs to active Cloudinary account."""
         if not isinstance(url, str) or not url:
             return None
         lower = url.lower()
@@ -98,11 +98,7 @@ class CardListSerializer(serializers.ModelSerializer):
         idx = lower.find(marker)
         if idx == -1:
             return None
-
-        filename = url[idx + len(marker):].strip()
-        if not filename:
-            return None
-        return f"https://iterva.pythonanywhere.com/media/extra_cards/{filename}"
+        return url.replace("res.cloudinary.com/dmvu6tuee", "res.cloudinary.com/drw7y27sm")
 
     def _default_myl_image_url(self, obj):
         edition = getattr(obj, 'edition', None)

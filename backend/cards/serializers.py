@@ -61,6 +61,9 @@ class CardListSerializer(serializers.ModelSerializer):
         # Prefer custom URL for promo/extra cards
         custom = getattr(obj, 'custom_image_url', None)
         if custom:
+            rewritten_extra = self._rewrite_legacy_extra_card_url(custom)
+            if rewritten_extra:
+                return rewritten_extra
             if self._should_fallback_from_non_r2(obj, custom) and fallback:
                 return fallback
             return custom
@@ -74,10 +77,32 @@ class CardListSerializer(serializers.ModelSerializer):
 
         val = getattr(obj, 'image_url', None)
         if val and not callable(val):
+            rewritten_extra = self._rewrite_legacy_extra_card_url(val)
+            if rewritten_extra:
+                return rewritten_extra
             if self._should_fallback_from_non_r2(obj, val) and fallback:
                 return fallback
             return val
         return fallback
+
+    def _rewrite_legacy_extra_card_url(self, url):
+        """Map retired Cloudinary extra-card URLs to PA media fallback."""
+        if not isinstance(url, str) or not url:
+            return None
+        lower = url.lower()
+        legacy_prefix = "https://res.cloudinary.com/dmvu6tuee/"
+        marker = "/deckshado/extra_cards/"
+        if legacy_prefix not in lower or marker not in lower:
+            return None
+
+        idx = lower.find(marker)
+        if idx == -1:
+            return None
+
+        filename = url[idx + len(marker):].strip()
+        if not filename:
+            return None
+        return f"https://iterva.pythonanywhere.com/media/extra_cards/{filename}"
 
     def _default_myl_image_url(self, obj):
         edition = getattr(obj, 'edition', None)

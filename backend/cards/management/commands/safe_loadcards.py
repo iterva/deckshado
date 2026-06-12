@@ -4,6 +4,7 @@ Unlike `loaddata`, this command updates cards individually without
 triggering CASCADE deletes on DeckEntry references.
 """
 import json
+import time
 from django.core.management.base import BaseCommand
 from django.db import transaction, DatabaseError
 from cards.models import Card, Edition, Format, Race, CardType, Rarity, Keyword, BanlistEntry
@@ -45,9 +46,16 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("fixture", help="Path to the JSON fixture file")
+        parser.add_argument(
+            "--progress-every",
+            type=int,
+            default=250,
+            help="Print progress every N objects per model (default: 250)",
+        )
 
     def handle(self, *args, **options):
         fixture_path = options["fixture"]
+        progress_every = max(1, options["progress_every"])
 
         with open(fixture_path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -85,10 +93,15 @@ class Command(BaseCommand):
 
                 fk_map = FK_FIELDS.get(model_label, {})
                 m2m_list = M2M_FIELDS.get(model_label, [])
+                model_created = 0
+                model_updated = 0
+                model_skipped = 0
+                model_total = len(objects)
+                model_start = time.perf_counter()
 
-                self.stdout.write(f"Processing {model_label}: {len(objects)} objects...")
+                self.stdout.write(f"Processing {model_label}: {model_total} objects...")
 
-                for obj in objects:
+                for idx, obj in enumerate(objects, start=1):
                     pk = obj["pk"]
                     fields = dict(obj["fields"])
 
@@ -124,8 +137,10 @@ class Command(BaseCommand):
                                 )
                                 if was_created:
                                     stats["created"] += 1
+                                    model_created += 1
                                 else:
                                     stats["updated"] += 1
+                                    model_updated += 1
                             else:
                                 existing = Model.objects.filter(pk=pk).first()
                                 if existing:
@@ -133,10 +148,12 @@ class Command(BaseCommand):
                                         setattr(existing, k, v)
                                     existing.save()
                                     stats["updated"] += 1
+                                    model_updated += 1
                                 else:
                                     instance = Model(pk=pk, **fields)
                                     instance.save()
                                     stats["created"] += 1
+                                    model_created += 1
 
                             # Handle M2M
                             if m2m_data:
@@ -147,6 +164,25 @@ class Command(BaseCommand):
                     except Exception as e:
                         self.stderr.write(f"  Error on {model_label} pk={pk}: {e}")
                         stats["skipped"] += 1
+                        model_skipped += 1
+
+                    if idx % progress_every == 0 or idx == model_total:
+                        elapsed = time.perf_counter() - model_start
+                        rate = (idx / elapsed) if elapsed > 0 else 0.0
+                        remaining = model_total - idx
+                        eta_seconds = int(remaining / rate) if rate > 0 else -1
+                        eta_text = f"{eta_seconds}s" if eta_seconds >= 0 else "?"
+                        pct = (idx / model_total) * 100 if model_total else 100
+                        self.stdout.write(
+                            f"  [{model_label}] {idx}/{model_total} ({pct:5.1f}%) "
+                            f"| created={model_created} updated={model_updated} skipped={model_skipped} "
+                            f"| {rate:.1f}/s | ETA {eta_text}"
+                        )
+
+                self.stdout.write(
+                    f"Finished {model_label}: created={model_created}, "
+                    f"updated={model_updated}, skipped={model_skipped}"
+                )
 
         self.stdout.write(self.style.SUCCESS(
             f"\nDone! Created: {stats['created']}, Updated: {stats['updated']}, Skipped: {stats['skipped']}"

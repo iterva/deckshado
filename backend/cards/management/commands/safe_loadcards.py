@@ -6,7 +6,7 @@ triggering CASCADE deletes on DeckEntry references.
 import json
 import time
 from django.core.management.base import BaseCommand
-from django.db import transaction, DatabaseError
+from django.db import transaction
 from cards.models import Card, Edition, Format, Race, CardType, Rarity, Keyword, BanlistEntry
 
 
@@ -52,10 +52,16 @@ class Command(BaseCommand):
             default=250,
             help="Print progress every N objects per model (default: 250)",
         )
+        parser.add_argument(
+            "--skip-banlist",
+            action="store_true",
+            help="Skip importing cards.banlistentry objects",
+        )
 
     def handle(self, *args, **options):
         fixture_path = options["fixture"]
         progress_every = max(1, options["progress_every"])
+        skip_banlist = options["skip_banlist"]
 
         with open(fixture_path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -80,108 +86,126 @@ class Command(BaseCommand):
 
         stats = {"created": 0, "updated": 0, "skipped": 0}
 
-        with transaction.atomic():
-            for model_label in order:
-                objects = grouped.get(model_label, [])
-                if not objects:
-                    continue
+        for model_label in order:
+            if skip_banlist and model_label == "cards.banlistentry":
+                self.stdout.write("Skipping cards.banlistentry (--skip-banlist)")
+                continue
 
-                Model = MODEL_MAP.get(model_label)
-                if not Model:
-                    self.stdout.write(f"  Skipping unknown model: {model_label}")
-                    continue
+            objects = grouped.get(model_label, [])
+            if not objects:
+                continue
 
-                fk_map = FK_FIELDS.get(model_label, {})
-                m2m_list = M2M_FIELDS.get(model_label, [])
-                model_created = 0
-                model_updated = 0
-                model_skipped = 0
-                model_total = len(objects)
-                model_start = time.perf_counter()
+            Model = MODEL_MAP.get(model_label)
+            if not Model:
+                self.stdout.write(f"  Skipping unknown model: {model_label}")
+                continue
 
-                self.stdout.write(f"Processing {model_label}: {model_total} objects...")
+            fk_map = FK_FIELDS.get(model_label, {})
+            m2m_list = M2M_FIELDS.get(model_label, [])
+            model_created = 0
+            model_updated = 0
+            model_skipped = 0
+            model_total = len(objects)
+            model_start = time.perf_counter()
+            banlist_fk_nullified = 0
 
-                for idx, obj in enumerate(objects, start=1):
-                    pk = obj["pk"]
-                    fields = dict(obj["fields"])
+            self.stdout.write(f"Processing {model_label}: {model_total} objects...")
 
-                    # Separate M2M fields
-                    m2m_data = {}
-                    for m2m_field in m2m_list:
-                        if m2m_field in fields:
-                            m2m_data[m2m_field] = fields.pop(m2m_field)
+            for idx, obj in enumerate(objects, start=1):
+                pk = obj["pk"]
+                fields = dict(obj["fields"])
 
-                    # Resolve FK references
-                    for field_name, RelatedModel in fk_map.items():
-                        val = fields.get(field_name)
-                        if val is not None:
-                            fields[f"{field_name}_id"] = val
-                        else:
-                            fields[f"{field_name}_id"] = None
-                        fields.pop(field_name, None)
+                # Separate M2M fields
+                m2m_data = {}
+                for m2m_field in m2m_list:
+                    if m2m_field in fields:
+                        m2m_data[m2m_field] = fields.pop(m2m_field)
 
-                    # Use savepoint per object so one error doesn't break the batch
-                    try:
-                        with transaction.atomic():
-                            # BanlistEntry: match by unique constraint, not PK
-                            if model_label == "cards.banlistentry":
-                                lookup = {
-                                    "card_name": fields.get("card_name", ""),
-                                    "format_code": fields.get("format_code", ""),
-                                    "sub_format": fields.get("sub_format", ""),
-                                }
-                                defaults = {k: v for k, v in fields.items()
-                                            if k not in lookup}
-                                _, was_created = Model.objects.update_or_create(
-                                    **lookup, defaults=defaults,
-                                )
-                                if was_created:
-                                    stats["created"] += 1
-                                    model_created += 1
-                                else:
-                                    stats["updated"] += 1
-                                    model_updated += 1
+                # Resolve FK references
+                for field_name, RelatedModel in fk_map.items():
+                    val = fields.get(field_name)
+                    if val is not None:
+                        fields[f"{field_name}_id"] = val
+                    else:
+                        fields[f"{field_name}_id"] = None
+                    fields.pop(field_name, None)
+
+                # Avoid deferred FK failures in SQLite: if referenced card doesn't
+                # exist, nullify banlist FK (field already allows null=True).
+                if model_label == "cards.banlistentry":
+                    card_id = fields.get("card_id")
+                    if card_id and not Card.objects.filter(pk=card_id).exists():
+                        fields["card_id"] = None
+                        banlist_fk_nullified += 1
+
+                # Use savepoint per object so one error doesn't break the batch
+                try:
+                    with transaction.atomic():
+                        # BanlistEntry: match by unique constraint, not PK
+                        if model_label == "cards.banlistentry":
+                            lookup = {
+                                "card_name": fields.get("card_name", ""),
+                                "format_code": fields.get("format_code", ""),
+                                "sub_format": fields.get("sub_format", ""),
+                            }
+                            defaults = {k: v for k, v in fields.items()
+                                        if k not in lookup}
+                            _, was_created = Model.objects.update_or_create(
+                                **lookup, defaults=defaults,
+                            )
+                            if was_created:
+                                stats["created"] += 1
+                                model_created += 1
                             else:
-                                existing = Model.objects.filter(pk=pk).first()
-                                if existing:
-                                    for k, v in fields.items():
-                                        setattr(existing, k, v)
-                                    existing.save()
-                                    stats["updated"] += 1
-                                    model_updated += 1
-                                else:
-                                    instance = Model(pk=pk, **fields)
-                                    instance.save()
-                                    stats["created"] += 1
-                                    model_created += 1
+                                stats["updated"] += 1
+                                model_updated += 1
+                        else:
+                            existing = Model.objects.filter(pk=pk).first()
+                            if existing:
+                                for k, v in fields.items():
+                                    setattr(existing, k, v)
+                                existing.save()
+                                stats["updated"] += 1
+                                model_updated += 1
+                            else:
+                                instance = Model(pk=pk, **fields)
+                                instance.save()
+                                stats["created"] += 1
+                                model_created += 1
 
-                            # Handle M2M
-                            if m2m_data:
-                                instance = Model.objects.get(pk=pk)
-                                for m2m_field, ids in m2m_data.items():
-                                    getattr(instance, m2m_field).set(ids)
+                        # Handle M2M
+                        if m2m_data:
+                            instance = Model.objects.get(pk=pk)
+                            for m2m_field, ids in m2m_data.items():
+                                getattr(instance, m2m_field).set(ids)
 
-                    except Exception as e:
-                        self.stderr.write(f"  Error on {model_label} pk={pk}: {e}")
-                        stats["skipped"] += 1
-                        model_skipped += 1
+                except Exception as e:
+                    self.stderr.write(f"  Error on {model_label} pk={pk}: {e}")
+                    stats["skipped"] += 1
+                    model_skipped += 1
 
-                    if idx % progress_every == 0 or idx == model_total:
-                        elapsed = time.perf_counter() - model_start
-                        rate = (idx / elapsed) if elapsed > 0 else 0.0
-                        remaining = model_total - idx
-                        eta_seconds = int(remaining / rate) if rate > 0 else -1
-                        eta_text = f"{eta_seconds}s" if eta_seconds >= 0 else "?"
-                        pct = (idx / model_total) * 100 if model_total else 100
-                        self.stdout.write(
-                            f"  [{model_label}] {idx}/{model_total} ({pct:5.1f}%) "
-                            f"| created={model_created} updated={model_updated} skipped={model_skipped} "
-                            f"| {rate:.1f}/s | ETA {eta_text}"
-                        )
+                if idx % progress_every == 0 or idx == model_total:
+                    elapsed = time.perf_counter() - model_start
+                    rate = (idx / elapsed) if elapsed > 0 else 0.0
+                    remaining = model_total - idx
+                    eta_seconds = int(remaining / rate) if rate > 0 else -1
+                    eta_text = f"{eta_seconds}s" if eta_seconds >= 0 else "?"
+                    pct = (idx / model_total) * 100 if model_total else 100
+                    self.stdout.write(
+                        f"  [{model_label}] {idx}/{model_total} ({pct:5.1f}%) "
+                        f"| created={model_created} updated={model_updated} skipped={model_skipped} "
+                        f"| {rate:.1f}/s | ETA {eta_text}"
+                    )
 
+            self.stdout.write(
+                f"Finished {model_label}: created={model_created}, "
+                f"updated={model_updated}, skipped={model_skipped}"
+            )
+            if model_label == "cards.banlistentry" and banlist_fk_nullified:
                 self.stdout.write(
-                    f"Finished {model_label}: created={model_created}, "
-                    f"updated={model_updated}, skipped={model_skipped}"
+                    self.style.WARNING(
+                        f"  Banlist entries with missing card FK set to null: {banlist_fk_nullified}"
+                    )
                 )
 
         self.stdout.write(self.style.SUCCESS(

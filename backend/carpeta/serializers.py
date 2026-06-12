@@ -3,6 +3,15 @@ from .models import BinderProfile, CollectionEntry, WishlistEntry
 from cards.serializers import CardListSerializer
 
 
+def _clean_avatar_url(url):
+    if not isinstance(url, str) or not url:
+        return None
+    lower = url.lower()
+    if "res.cloudinary.com/dmvu6tuee/" in lower:
+        return None
+    return url
+
+
 class BinderProfileSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="user.username", read_only=True)
     binder_avatar_url = serializers.SerializerMethodField()
@@ -21,7 +30,7 @@ class BinderProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ["share_token", "store_slug", "binder_avatar_url"]
 
     def get_binder_avatar_url(self, obj):
-        return obj.binder_avatar or None
+        return _clean_avatar_url(obj.binder_avatar)
 
 
 class PublicBinderProfileSerializer(serializers.ModelSerializer):
@@ -42,16 +51,12 @@ class PublicBinderProfileSerializer(serializers.ModelSerializer):
         ]
 
     def get_binder_avatar_url(self, obj):
-        return obj.binder_avatar or None
+        return _clean_avatar_url(obj.binder_avatar)
 
     def get_user_avatar_url(self, obj):
-        request = self.context.get("request")
         profile = getattr(obj.user, "profile", None)
         if profile and getattr(profile, "avatar", None):
-            try:
-                return request.build_absolute_uri(profile.avatar.url) if request else profile.avatar.url
-            except Exception:
-                return None
+            return _clean_avatar_url(profile.avatar)
         return None
 
 

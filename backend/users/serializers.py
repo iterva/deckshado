@@ -4,6 +4,16 @@ from rest_framework import serializers
 from .models import Profile
 
 
+def _clean_avatar_url(url):
+    """Hide broken legacy Cloudinary URLs that now return 401."""
+    if not isinstance(url, str) or not url:
+        return None
+    lower = url.lower()
+    if "res.cloudinary.com/dmvu6tuee/" in lower:
+        return None
+    return url
+
+
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
@@ -54,7 +64,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_avatar_url(self, obj):
         if hasattr(obj, "profile") and obj.profile.avatar:
-            return obj.profile.avatar
+            return _clean_avatar_url(obj.profile.avatar)
         return None
 
     def get_is_admin(self, obj):
@@ -80,7 +90,7 @@ class AdminUserSerializer(serializers.ModelSerializer):
 
     def get_avatar_url(self, obj):
         if hasattr(obj, "profile") and obj.profile.avatar:
-            return obj.profile.avatar
+            return _clean_avatar_url(obj.profile.avatar)
         return None
 
     def get_is_admin(self, obj):

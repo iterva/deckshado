@@ -12,15 +12,9 @@ import json
 import sys
 from pathlib import Path
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from cards.models import Card, Edition, Format, Race, CardType, Rarity
 from ._mapping_health import validate_mapping_urls
-
-PROJECT_ROOT = Path(__file__).resolve().parents[4]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.append(str(PROJECT_ROOT))
-
-from cdn_uploader import upload_file
 
 CLOUDINARY_FOLDER = "deckshado/myl_cards/aydv_mazo_guerreros"
 
@@ -34,6 +28,51 @@ MAPPING_FILE = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     "..", "..", "..", "..", "mazo_guerreros_mapping.json",
 )
+
+
+def _load_upload_file():
+    """Resolve cdn_uploader.upload_file only when upload mode is enabled.
+
+    Some deployments execute this command from different project roots
+    (for example with and without an outer Proyecto-deckshado folder).
+    In --skip-upload mode we should not require cdn_uploader at all.
+    """
+    try:
+        from cdn_uploader import upload_file  # type: ignore
+
+        return upload_file
+    except ModuleNotFoundError:
+        pass
+
+    here = Path(__file__).resolve()
+    checked = set()
+    candidates = []
+    for parent in here.parents:
+        candidates.append(parent)
+        candidates.append(parent / "Proyecto-deckshado")
+
+    for candidate in candidates:
+        if candidate in checked:
+            continue
+        checked.add(candidate)
+        uploader_file = candidate / "cdn_uploader.py"
+        if not uploader_file.exists():
+            continue
+        candidate_str = str(candidate)
+        if candidate_str not in sys.path:
+            sys.path.insert(0, candidate_str)
+        try:
+            from cdn_uploader import upload_file  # type: ignore
+
+            return upload_file
+        except ModuleNotFoundError:
+            continue
+
+    raise CommandError(
+        "No se pudo importar 'cdn_uploader'. "
+        "Si usarás --skip-upload, ese modo ya evita este import. "
+        "Si necesitas subir imágenes, revisa que cdn_uploader.py esté en el proyecto."
+    )
 
 # ── Card data ───────────────────────────────────────────────────────
 MAZO_GUERREROS_CARDS = [
@@ -909,6 +948,7 @@ class Command(BaseCommand):
                 cloudinary_urls = json.load(f)
 
         if not options["skip_upload"]:
+            upload_file = _load_upload_file()
             self.stdout.write(self.style.MIGRATE_HEADING(
                 "\nUploading images to Cloudinary..."
             ))

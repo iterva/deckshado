@@ -17,6 +17,7 @@ Ejemplo con credenciales por argumento (solo para ejecucion puntual):
 """
 from __future__ import annotations
 
+import json
 import os
 import sys
 from dataclasses import dataclass
@@ -58,6 +59,12 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--size", type=int, default=100, help="Tamano de pagina Riftcodex (1..100).")
         parser.add_argument("--pause", type=float, default=0.0, help="Pausa entre requests al API.")
+        parser.add_argument("--file", default="", help="Ruta a JSON de cartas Riftcodex (modo offline).")
+        parser.add_argument(
+            "--skip-sync",
+            action="store_true",
+            help="No sincroniza catálogo; solo ejecuta fase de upload sobre cartas ya existentes en DB.",
+        )
         parser.add_argument("--dry-run", action="store_true", help="No persiste cambios en DB ni CDN.")
 
         parser.add_argument("--skip-upload", action="store_true", help="No subir imagenes al CDN.")
@@ -90,40 +97,53 @@ class Command(BaseCommand):
 
         counters = SyncCounters()
         set_cache: dict[str, RiftboundSet | None] = {}
+        skip_sync = bool(opts["skip_sync"])
+        source_file = (opts.get("file") or "").strip()
 
-        self.stdout.write("Iniciando seed Riftbound desde Riftcodex...")
+        if source_file and skip_sync:
+            raise CommandError("No puedes usar --file junto con --skip-sync.")
+
+        if skip_sync:
+            self.stdout.write("Iniciando seed Riftbound en modo upload-only (sin sync de catálogo)...")
+        elif source_file:
+            self.stdout.write(f"Iniciando seed Riftbound desde archivo local: {source_file}")
+        else:
+            self.stdout.write("Iniciando seed Riftbound desde Riftcodex...")
+
         if dry_run:
             self.stdout.write(self.style.WARNING("Modo dry-run activo (sin persistencia)."))
 
-        client = RiftcodexClient()
+        if not skip_sync:
+            payloads = self._iter_payloads(source_file, page_size, pause_seconds)
+            for payload in payloads:
+                counters.scanned += 1
 
-        for payload in client.iter_all_cards(size=page_size, request_pause_seconds=pause_seconds):
-            counters.scanned += 1
-
-            card_number = normalize_riftbound_card_number(
-                payload.get("riftbound_id") or "",
-                signature=bool((payload.get("metadata") or {}).get("signature")),
-            )
-            if not card_number:
-                counters.invalid_number += 1
-                continue
-
-            set_obj = self._resolve_set(payload.get("set") or {}, set_cache, counters, dry_run)
-            defaults = self._build_card_defaults(payload, set_obj)
-
-            changed = self._upsert_card(
-                card_number=card_number,
-                defaults=defaults,
-                payload=payload,
-                counters=counters,
-                dry_run=dry_run,
-            )
-
-            if changed and counters.scanned % 250 == 0:
-                self.stdout.write(
-                    f"  Procesadas {counters.scanned} cartas "
-                    f"(create={counters.created}, update={counters.updated}, same={counters.unchanged})"
+                card_number = normalize_riftbound_card_number(
+                    payload.get("riftbound_id") or "",
+                    signature=bool((payload.get("metadata") or {}).get("signature")),
                 )
+                if not card_number:
+                    counters.invalid_number += 1
+                    continue
+
+                set_obj = self._resolve_set(payload.get("set") or {}, set_cache, counters, dry_run)
+                defaults = self._build_card_defaults(payload, set_obj)
+
+                changed = self._upsert_card(
+                    card_number=card_number,
+                    defaults=defaults,
+                    payload=payload,
+                    counters=counters,
+                    dry_run=dry_run,
+                )
+
+                if changed and counters.scanned % 250 == 0:
+                    self.stdout.write(
+                        f"  Procesadas {counters.scanned} cartas "
+                        f"(create={counters.created}, update={counters.updated}, same={counters.unchanged})"
+                    )
+        else:
+            self.stdout.write("Sync DB omitido por --skip-sync.")
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -142,6 +162,41 @@ class Command(BaseCommand):
         provider = self._prepare_cdn_env(opts)
         self._upload_card_images(counters, opts, provider)
         self._print_upload_summary(counters)
+
+    def _iter_payloads(self, source_file: str, page_size: int, pause_seconds: float):
+        if source_file:
+            return self._load_cards_from_file(source_file)
+        client = RiftcodexClient()
+        return client.iter_all_cards(size=page_size, request_pause_seconds=pause_seconds)
+
+    def _load_cards_from_file(self, source_file: str) -> list[dict]:
+        path = Path(source_file)
+        if not path.exists():
+            raise CommandError(f"No existe el archivo JSON: {path}")
+
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            raise CommandError(f"No se pudo leer JSON en {path}: {exc}") from exc
+
+        if isinstance(payload, list):
+            cards = payload
+        elif isinstance(payload, dict):
+            cards = None
+            for key in ("items", "results", "cards", "data"):
+                value = payload.get(key)
+                if isinstance(value, list):
+                    cards = value
+                    break
+            if cards is None:
+                raise CommandError(
+                    "Formato JSON no soportado. Usa lista de cartas o un objeto con 'items'/'results'/'cards'/'data'."
+                )
+        else:
+            raise CommandError("Formato JSON no soportado para cartas Riftbound.")
+
+        self.stdout.write(f"Cargadas {len(cards)} cartas desde archivo local.")
+        return cards
 
     def _resolve_set(
         self,
@@ -426,7 +481,7 @@ class Command(BaseCommand):
             return candidate_public_urls, upload_bytes
         except Exception as exc:
             raise CommandError(
-                f"No se pudo importar cdn_uploader.py: {exc}. Ejecuta desde el workspace Proyecto-deckshado."
+                f"No se pudo importar cdn_uploader.py: {exc}. Verifica que ejecutas manage.py desde el backend correcto del proyecto."
             ) from exc
 
     def _print_upload_summary(self, counters: SyncCounters) -> None:

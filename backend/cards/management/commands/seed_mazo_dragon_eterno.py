@@ -12,6 +12,7 @@ import json
 
 from django.core.management.base import BaseCommand
 from cards.models import Card, Edition, Format, Race, CardType, Rarity
+from ._mapping_health import validate_mapping_urls
 
 
 DRAGON_MAPPING_FILE = os.path.join(
@@ -1814,6 +1815,19 @@ MAZO_ETERNO_CARDS = [
 class Command(BaseCommand):
     help = "Seed Mazo Dragón + Mazo Eterno (AYDV edition)"
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--skip-url-check",
+            action="store_true",
+            help="Skip URL accessibility validation before seeding",
+        )
+        parser.add_argument(
+            "--url-check-timeout",
+            type=int,
+            default=10,
+            help="Timeout in seconds for URL accessibility checks",
+        )
+
     def handle(self, *args, **options):
         imp_format = Format.objects.get(code="imp")
 
@@ -1834,6 +1848,21 @@ class Command(BaseCommand):
         if os.path.exists(ETERNO_MAPPING_FILE):
             with open(ETERNO_MAPPING_FILE, "r", encoding="utf-8") as f:
                 eterno_urls = json.load(f)
+
+        validate_mapping_urls(
+            dragon_urls,
+            self,
+            "Mazo Dragón",
+            skip_check=options["skip_url_check"],
+            timeout=max(1, options["url_check_timeout"]),
+        )
+        validate_mapping_urls(
+            eterno_urls,
+            self,
+            "Mazo Eterno",
+            skip_check=options["skip_url_check"],
+            timeout=max(1, options["url_check_timeout"]),
+        )
 
         # ── Seed Dragon ─────────────────────────────────────────────
         dragon_ed, dc = Edition.objects.update_or_create(

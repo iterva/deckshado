@@ -9,19 +9,18 @@ Usage:
 """
 import os
 import json
+import sys
+from pathlib import Path
 
-import cloudinary
-import cloudinary.uploader
 from django.core.management.base import BaseCommand
 from cards.models import Card, Edition, Format, Race, CardType, Rarity
+from ._mapping_health import validate_mapping_urls
 
-# Cloudinary config
-cloudinary.config(
-    cloud_name="dmvu6tuee",
-    api_key="618467334728855",
-    api_secret="egB_Ypv0wdVVBL2oRhUaoHr8bY8",
-    secure=True,
-)
+PROJECT_ROOT = Path(__file__).resolve().parents[4]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))
+
+from cdn_uploader import upload_file
 
 CLOUDINARY_FOLDER = "deckshado/myl_cards/aydv_mazo_guerreros"
 
@@ -872,6 +871,17 @@ class Command(BaseCommand):
             action="store_true",
             help="Skip Cloudinary upload (use existing mapping)",
         )
+        parser.add_argument(
+            "--skip-url-check",
+            action="store_true",
+            help="Skip URL accessibility validation before seeding",
+        )
+        parser.add_argument(
+            "--url-check-timeout",
+            type=int,
+            default=10,
+            help="Timeout in seconds for URL accessibility checks",
+        )
 
     def handle(self, *args, **options):
         # ── 1. Create/get edition ───────────────────────────────────
@@ -922,13 +932,7 @@ class Command(BaseCommand):
 
                 public_id = f"{CLOUDINARY_FOLDER}/{cid}"
                 try:
-                    result = cloudinary.uploader.upload(
-                        filepath,
-                        public_id=public_id,
-                        overwrite=True,
-                        resource_type="image",
-                    )
-                    url = result["secure_url"]
+                    url = upload_file(filepath, public_id=public_id, overwrite=True)
                     cloudinary_urls[cid] = url
                     self.stdout.write(f"  Uploaded: {cid} → {url}")
                 except Exception as e:
@@ -938,6 +942,14 @@ class Command(BaseCommand):
             with open(MAPPING_FILE, "w", encoding="utf-8") as f:
                 json.dump(cloudinary_urls, f, indent=2, ensure_ascii=False)
             self.stdout.write(f"  Mapping saved: {MAPPING_FILE}")
+
+        validate_mapping_urls(
+            cloudinary_urls,
+            self,
+            "Mazo Guerreros",
+            skip_check=options["skip_url_check"],
+            timeout=max(1, options["url_check_timeout"]),
+        )
 
         # ── 3. Create cards ─────────────────────────────────────────
         self.stdout.write(self.style.MIGRATE_HEADING(

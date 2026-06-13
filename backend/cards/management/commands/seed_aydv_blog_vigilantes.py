@@ -12,6 +12,7 @@ import json
 
 from django.core.management.base import BaseCommand
 from cards.models import Card, Edition, Format, Race, CardType, Rarity
+from ._mapping_health import validate_mapping_urls
 
 
 MAPPING_FILE = os.path.join(
@@ -560,6 +561,19 @@ CARDS = [
 class Command(BaseCommand):
     help = "Seed AYDV Blog Vigilantes (Promos, Secretas, Ultra Secretas, Showcase)"
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--skip-url-check",
+            action="store_true",
+            help="Skip URL accessibility validation before seeding",
+        )
+        parser.add_argument(
+            "--url-check-timeout",
+            type=int,
+            default=10,
+            help="Timeout in seconds for URL accessibility checks",
+        )
+
     def handle(self, *args, **options):
         imp_format = Format.objects.get(code="imp")
 
@@ -583,6 +597,14 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING(
                 f"Mapping file not found: {MAPPING_FILE}"
             ))
+
+        validate_mapping_urls(
+            cloudinary_urls,
+            self,
+            "AYDV Blog Vigilantes",
+            skip_check=options["skip_url_check"],
+            timeout=max(1, options["url_check_timeout"]),
+        )
 
         # ── Create/Update AYDV main edition ─────────────────────────
         edition, created = Edition.objects.update_or_create(

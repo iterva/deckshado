@@ -38,7 +38,7 @@ class RiftboundCardViewSet(viewsets.ReadOnlyModelViewSet):
     lookup_field = "card_number"
 
     def _remote_cards_enabled(self) -> bool:
-        source = (self.request.query_params.get("source") or os.environ.get("RIFTBOUND_CARDS_SOURCE") or "riftcodex").strip().lower()
+        source = (self.request.query_params.get("source") or os.environ.get("RIFTBOUND_CARDS_SOURCE") or "local").strip().lower()
         return source in {"riftcodex", "remote", "api"}
 
     def _page_size(self) -> int:

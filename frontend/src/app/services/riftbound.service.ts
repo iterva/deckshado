@@ -1,6 +1,6 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of, shareReplay, tap, map, switchMap, forkJoin, catchError, finalize, timeout } from 'rxjs';
+import { Observable, shareReplay, switchMap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   RiftboundCard, RiftboundCardLite, RiftboundDeck, RiftboundFormat,
@@ -16,19 +16,6 @@ interface PaginatedResponse<T> {
   results: T[];
 }
 
-interface RiftboundCatalogCachePayload {
-  version: number;
-  savedAt: number;
-  total: number;
-  cards: RiftboundCard[];
-}
-
-const RB_CATALOG_CACHE_KEY = 'rb_catalog_cards_v3';
-const RB_CATALOG_CACHE_VERSION = 3;
-const RB_CATALOG_CACHE_TTL_MS = 1000 * 60 * 60 * 6;
-const RB_DEFAULT_PAGE_SIZE = 20;
-const RB_MAX_PAGE_SIZE = 250;
-
 @Injectable({ providedIn: 'root' })
 export class RiftboundService {
   private http = inject(HttpClient);
@@ -37,38 +24,6 @@ export class RiftboundService {
   private formats$: Observable<RiftboundFormat[]> | null = null;
   private sets$: Observable<RiftboundSet[]> | null = null;
   private icons$: Observable<RiftboundIcon[]> | null = null;
-  private catalogCards = signal<RiftboundCard[] | null>(null);
-  private catalogTotal = signal<number>(0);
-  private catalogLoadedAt = signal<number>(0);
-  private catalogWarmup$: Observable<RiftboundCard[]> | null = null;
-
-  preloadCardsCatalog(force = false): Observable<number> {
-    return this.ensureCatalogReady(force).pipe(map(cards => cards.length));
-  }
-
-  hasUsableCatalogSnapshot(): boolean {
-    if (this.catalogTotal() > 0) {
-      return true;
-    }
-    const inMemory = this.catalogCards();
-    if (inMemory?.length) {
-      return true;
-    }
-    const fromStorage = this.readCatalogFromStorage();
-    return (fromStorage?.total ?? 0) > 0 || !!fromStorage?.cards?.length;
-  }
-
-  cachedCatalogCountSnapshot(): number {
-    if (this.catalogTotal() > 0) {
-      return this.catalogTotal();
-    }
-    const inMemory = this.catalogCards();
-    if (inMemory?.length) {
-      return inMemory.length;
-    }
-    const fromStorage = this.readCatalogFromStorage();
-    return fromStorage?.total ?? fromStorage?.cards?.length ?? 0;
-  }
 
   // ── Cartas ──
   listCards(opts: {
@@ -103,7 +58,6 @@ export class RiftboundService {
     excludeBattlefields?: boolean;
   }): Observable<PaginatedResponse<RiftboundCard | RiftboundCardLite>> {
     let params = new HttpParams();
-    params = params.set('source', 'riftcodex');
     if (opts.search) {
       const mode = opts.searchMode ?? 'all';
       if (mode === 'name') params = params.set('name_search', opts.search);
@@ -123,254 +77,8 @@ export class RiftboundService {
     return this.http.get<PaginatedResponse<RiftboundCard | RiftboundCardLite>>(`${this.base}/cards/`, { params });
   }
 
-  private ensureCatalogReady(force = false): Observable<RiftboundCard[]> {
-    if (!force) {
-      const inMemory = this.catalogCards();
-      const loadedAt = this.catalogLoadedAt();
-      if (inMemory?.length && this.isCacheFresh(loadedAt)) {
-        if (this.catalogTotal() <= 0) {
-          this.catalogTotal.set(inMemory.length);
-        }
-        return of(inMemory);
-      }
-
-      const fromStorage = this.readCatalogFromStorage();
-      if (fromStorage?.cards?.length) {
-        this.catalogCards.set(fromStorage.cards);
-        this.catalogTotal.set(fromStorage.total || fromStorage.cards.length);
-        this.catalogLoadedAt.set(fromStorage.savedAt);
-        return of(fromStorage.cards);
-      }
-    }
-
-    if (this.catalogWarmup$) {
-      return this.catalogWarmup$;
-    }
-
-    this.catalogWarmup$ = this.fetchAllCardsFromApi().pipe(
-      tap(cards => this.saveCatalog(cards)),
-      catchError(() => of(this.catalogCards() ?? [])),
-      finalize(() => {
-        this.catalogWarmup$ = null;
-      }),
-      shareReplay({ bufferSize: 1, refCount: false }),
-    );
-    return this.catalogWarmup$;
-  }
-
-  private fetchCardsPage(page: number, pageSize: number): Observable<PaginatedResponse<RiftboundCard>> {
-    let params = new HttpParams();
-    params = params.set('source', 'riftcodex');
-    params = params.set('page', String(page));
-    params = params.set('page_size', String(pageSize));
-    return this.http.get<PaginatedResponse<RiftboundCard>>(`${this.base}/cards/`, { params }).pipe(
-      timeout(20000),
-    );
-  }
-
-  private fetchAllCardsFromApi(): Observable<RiftboundCard[]> {
-    const pageSize = RB_MAX_PAGE_SIZE;
-    return this.fetchCardsPage(1, pageSize).pipe(
-      switchMap(first => {
-        const firstResults = Array.isArray(first.results) ? first.results : [];
-        const total = first.count || firstResults.length;
-        const effectivePageSize = Math.max(1, firstResults.length || pageSize);
-        const pages = Math.max(1, Math.ceil(total / effectivePageSize));
-        if (pages === 1) {
-          return of(this.normalizeCatalog(firstResults));
-        }
-
-        const restRequests: Observable<PaginatedResponse<RiftboundCard>>[] = [];
-        for (let p = 2; p <= pages; p += 1) {
-          restRequests.push(this.fetchCardsPage(p, pageSize));
-        }
-
-        return forkJoin(restRequests).pipe(
-          map(rest => {
-            const all = [...firstResults];
-            for (const chunk of rest) {
-              if (Array.isArray(chunk.results)) {
-                all.push(...chunk.results);
-              }
-            }
-            return this.normalizeCatalog(all);
-          }),
-        );
-      }),
-    );
-  }
-
-  private normalizeCatalog(cards: RiftboundCard[]): RiftboundCard[] {
-    const byId = new Map<number, RiftboundCard>();
-    for (const card of cards) {
-      if (!card || !card.id) continue;
-      byId.set(card.id, card);
-    }
-    return Array.from(byId.values()).sort((a, b) => {
-      const an = (a.card_number || '').toLowerCase();
-      const bn = (b.card_number || '').toLowerCase();
-      return an.localeCompare(bn);
-    });
-  }
-
-  private isCacheFresh(savedAt: number): boolean {
-    if (!savedAt) return false;
-    return Date.now() - savedAt < RB_CATALOG_CACHE_TTL_MS;
-  }
-
-  private readCatalogFromStorage(): RiftboundCatalogCachePayload | null {
-    try {
-      const raw = localStorage.getItem(RB_CATALOG_CACHE_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as RiftboundCatalogCachePayload;
-      if (!parsed || parsed.version !== RB_CATALOG_CACHE_VERSION) return null;
-      if (!Array.isArray(parsed.cards)) return null;
-      if (!this.isCacheFresh(parsed.savedAt)) return null;
-      return parsed;
-    } catch {
-      return null;
-    }
-  }
-
-  private saveCatalog(cards: RiftboundCard[]): void {
-    const now = Date.now();
-    const total = cards.length;
-    this.catalogCards.set(cards);
-    this.catalogTotal.set(total);
-    this.catalogLoadedAt.set(now);
-    try {
-      const payload: RiftboundCatalogCachePayload = {
-        version: RB_CATALOG_CACHE_VERSION,
-        savedAt: now,
-        total,
-        cards,
-      };
-      localStorage.setItem(RB_CATALOG_CACHE_KEY, JSON.stringify(payload));
-    } catch {
-      // localStorage can fail in private mode or when quota is full.
-    }
-  }
-
-  private buildCatalogResponse(
-    cards: RiftboundCard[],
-    opts: {
-      search?: string;
-      searchMode?: 'name' | 'ability' | 'all';
-      type?: string;
-      rarity?: string;
-      colors?: string[];
-      set?: string;
-      energy?: number;
-      page?: number;
-      pageSize?: number;
-      lite?: boolean;
-      subtype?: string;
-      excludeBattlefields?: boolean;
-    },
-  ): PaginatedResponse<RiftboundCard | RiftboundCardLite> {
-    const filtered = this.filterCatalog(cards, opts);
-    const pageSize = Math.max(1, Math.min(RB_MAX_PAGE_SIZE, opts.pageSize ?? RB_DEFAULT_PAGE_SIZE));
-    const page = Math.max(1, opts.page ?? 1);
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    const pageResults = filtered.slice(start, end);
-
-    const results: (RiftboundCard | RiftboundCardLite)[] = opts.lite
-      ? pageResults.map(card => this.toLite(card))
-      : pageResults;
-
-    return {
-      count: filtered.length,
-      next: end < filtered.length ? 'cache' : null,
-      previous: page > 1 ? 'cache' : null,
-      results,
-    };
-  }
-
-  private filterCatalog(
-    cards: RiftboundCard[],
-    opts: {
-      search?: string;
-      searchMode?: 'name' | 'ability' | 'all';
-      type?: string;
-      rarity?: string;
-      colors?: string[];
-      set?: string;
-      energy?: number;
-      subtype?: string;
-      excludeBattlefields?: boolean;
-    },
-  ): RiftboundCard[] {
-    const q = (opts.search || '').trim().toLowerCase();
-    const mode = opts.searchMode ?? 'all';
-    const selectedColors = new Set((opts.colors || []).map(c => c.toLowerCase()));
-    const subtype = (opts.subtype || '').trim().toLowerCase();
-
-    return cards.filter(card => {
-      if (opts.type) {
-        if (opts.type === 'champion') {
-          const namePart = (card.name || '').includes(',')
-            ? (card.name || '').split(',')[0].trim().toLowerCase()
-            : '';
-          const hasChampionSubtype = (card.subtypes || []).some(s => (s || '').toLowerCase() === namePart);
-          if (!(card.card_type === 'unit' && !!namePart && hasChampionSubtype)) {
-            return false;
-          }
-        } else if (card.card_type !== opts.type) {
-          return false;
-        }
-      }
-
-      if (opts.rarity && card.rarity !== opts.rarity) return false;
-      if (opts.set && (card.set?.code || '').toUpperCase() !== opts.set.toUpperCase()) return false;
-      if (opts.energy !== undefined && card.energy !== opts.energy) return false;
-
-      if (subtype) {
-        const hasSubtype = (card.subtypes || []).some(s => (s || '').toLowerCase() === subtype);
-        if (!hasSubtype) return false;
-      }
-
-      if (opts.excludeBattlefields && card.card_type === 'battlefield') return false;
-      if (selectedColors.size > 0) {
-        if (card.card_type === 'battlefield' && !opts.excludeBattlefields) {
-          // Keep battlefields visible when filtering by colors, same as backend.
-        } else {
-          const hasAnyColor = (card.colors || []).some(c => selectedColors.has((c || '').toLowerCase()));
-          if (!hasAnyColor) return false;
-        }
-      }
-
-      if (!q) return true;
-      const name = (card.name || '').toLowerCase();
-      const number = (card.card_number || '').toLowerCase();
-      const text = (card.description || '').toLowerCase();
-
-      if (mode === 'name') return name.includes(q) || number.includes(q);
-      if (mode === 'ability') return text.includes(q);
-      return name.includes(q) || number.includes(q) || text.includes(q);
-    });
-  }
-
-  private toLite(card: RiftboundCard): RiftboundCardLite {
-    return {
-      id: card.id,
-      card_number: card.card_number,
-      name: card.name,
-      card_type: card.card_type,
-      rarity: card.rarity,
-      colors: card.colors,
-      energy: card.energy,
-      power: card.power,
-      might: card.might,
-      image: card.image,
-      description: card.description,
-      subtypes: card.subtypes,
-    };
-  }
-
   getCard(numberOrId: string | number): Observable<RiftboundCard> {
-    const params = new HttpParams().set('source', 'riftcodex');
-    return this.http.get<RiftboundCard>(`${this.base}/cards/${numberOrId}/`, { params });
+    return this.http.get<RiftboundCard>(`${this.base}/cards/${numberOrId}/`);
   }
 
   // ── Sets / formatos / iconos (caché en memoria) ──
@@ -379,7 +87,6 @@ export class RiftboundService {
       this.sets$ = this.http.get<PaginatedResponse<RiftboundSet> | RiftboundSet[]>(
         `${this.base}/sets/`,
       ).pipe(
-        tap(),
         shareReplay({ bufferSize: 1, refCount: false }),
         // normaliza paginado
       ) as unknown as Observable<RiftboundSet[]>;

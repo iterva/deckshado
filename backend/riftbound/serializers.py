@@ -1,3 +1,5 @@
+import os
+
 from rest_framework import serializers
 
 from .models import (
@@ -17,6 +19,52 @@ from .models import (
     ZONE_SIDE,
     ZONE_RUNE,
 )
+
+
+def _imagekit_endpoints() -> list[str]:
+    endpoints: list[str] = []
+
+    primary = (os.environ.get("IMAGEKIT_URL_ENDPOINT") or "").strip().rstrip("/")
+    if primary:
+        endpoints.append(primary)
+
+    csv_endpoints = (os.environ.get("IMAGEKIT_URL_ENDPOINTS") or "").strip()
+    if csv_endpoints:
+        for endpoint in csv_endpoints.split(","):
+            clean = endpoint.strip().rstrip("/")
+            if clean:
+                endpoints.append(clean)
+
+    # Remove duplicates while preserving order.
+    return list(dict.fromkeys(endpoints))
+
+
+def _is_imagekit_url(url: str) -> bool:
+    value = (url or "").strip()
+    if not value:
+        return False
+
+    if "ik.imagekit.io/" in value:
+        return True
+
+    for endpoint in _imagekit_endpoints():
+        if value.startswith(endpoint + "/") or value == endpoint:
+            return True
+
+    return False
+
+
+def _preferred_riftbound_image(cdn_url: str, image_url: str, image_url_small: str = "") -> str:
+    # Riftbound should serve ImageKit when available.
+    if _is_imagekit_url(cdn_url):
+        return cdn_url
+    if _is_imagekit_url(image_url):
+        return image_url
+    if _is_imagekit_url(image_url_small):
+        return image_url_small
+
+    # Fallback to upstream API URLs while migration finishes.
+    return image_url or image_url_small or ""
 
 
 class RiftboundSetSerializer(serializers.ModelSerializer):
@@ -41,7 +89,7 @@ class RiftboundCardSerializer(serializers.ModelSerializer):
         ]
 
     def get_image(self, obj):
-        return obj.image_url or obj.cdn_image_url or obj.image_url_small or ""
+        return _preferred_riftbound_image(obj.cdn_image_url, obj.image_url, obj.image_url_small)
 
 
 class RiftboundCardLiteSerializer(serializers.ModelSerializer):
@@ -57,7 +105,7 @@ class RiftboundCardLiteSerializer(serializers.ModelSerializer):
         ]
 
     def get_image(self, obj):
-        return obj.image_url or obj.cdn_image_url or obj.image_url_small or ""
+        return _preferred_riftbound_image(obj.cdn_image_url, obj.image_url, obj.image_url_small)
 
 
 class RiftboundFormatSerializer(serializers.ModelSerializer):
@@ -83,7 +131,7 @@ class RiftboundBanlistEntrySerializer(serializers.ModelSerializer):
 
     def get_card_image(self, obj):
         c = obj.card
-        return c.image_url or c.cdn_image_url or c.image_url_small or ""
+        return _preferred_riftbound_image(c.cdn_image_url, c.image_url, c.image_url_small)
 
 
 # ───────────── Decks ─────────────
@@ -206,4 +254,4 @@ class RiftboundIconSerializer(serializers.ModelSerializer):
         fields = ["id", "kind", "code", "label", "image_url", "cdn_image_url", "image"]
 
     def get_image(self, obj):
-        return obj.cdn_image_url or obj.image_url
+        return _preferred_riftbound_image(obj.cdn_image_url, obj.image_url)

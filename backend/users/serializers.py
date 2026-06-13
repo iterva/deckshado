@@ -1,17 +1,24 @@
+import re
+
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from .models import Profile
 
 
-def _clean_avatar_url(url):
-    """Hide broken legacy Cloudinary URLs that now return 401."""
+def _normalize_avatar_url(url):
+    """Normalize avatar URLs to the active Cloudinary account."""
     if not isinstance(url, str) or not url:
         return None
-    lower = url.lower()
-    if "res.cloudinary.com/dmvu6tuee/" in lower:
-        return None
-    return url
+    normalized = url.strip()
+    # Legacy account used by older uploads; map to active account.
+    normalized = re.sub(
+        r"res\.cloudinary\.com/dmvu6tuee",
+        "res.cloudinary.com/drw7y27sm",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    return normalized or None
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -64,7 +71,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_avatar_url(self, obj):
         if hasattr(obj, "profile") and obj.profile.avatar:
-            return _clean_avatar_url(obj.profile.avatar)
+            return _normalize_avatar_url(obj.profile.avatar)
         return None
 
     def get_is_admin(self, obj):
@@ -90,7 +97,7 @@ class AdminUserSerializer(serializers.ModelSerializer):
 
     def get_avatar_url(self, obj):
         if hasattr(obj, "profile") and obj.profile.avatar:
-            return _clean_avatar_url(obj.profile.avatar)
+            return _normalize_avatar_url(obj.profile.avatar)
         return None
 
     def get_is_admin(self, obj):
@@ -120,7 +127,10 @@ class ProfileUpdateSerializer(serializers.Serializer):
         profile = instance.profile
         for field in ("first_name", "last_name", "league_code", "avatar"):
             if field in validated_data:
-                setattr(profile, field, validated_data[field])
+                value = validated_data[field]
+                if field == "avatar":
+                    value = _normalize_avatar_url(value) or ""
+                setattr(profile, field, value)
         profile.save()
         return instance
 

@@ -10,6 +10,7 @@ from .serializers import (
     ChangePasswordSerializer,
     AdminUserSerializer,
     _is_admin_user,
+    _normalize_avatar_url,
 )
 
 
@@ -62,6 +63,9 @@ def upload_avatar(request):
     avatar_url = request.data.get("avatar_url", "").strip()
     if not avatar_url:
         return Response({"detail": "No se envió ninguna URL."}, status=status.HTTP_400_BAD_REQUEST)
+    avatar_url = _normalize_avatar_url(avatar_url)
+    if not avatar_url:
+        return Response({"detail": "URL de avatar inválida."}, status=status.HTTP_400_BAD_REQUEST)
     profile = request.user.profile
     profile.avatar = avatar_url
     profile.save()

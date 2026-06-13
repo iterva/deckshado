@@ -16,7 +16,7 @@ import re
 import unicodedata
 
 from django.core.management.base import BaseCommand
-from cards.models import Card, Edition, Format, CardType, Rarity
+from cards.models import Card, Edition, Format, CardType, Rarity, Race
 
 
 MAPPING_FILE = os.path.join(
@@ -52,6 +52,33 @@ CARDS = [
     {"key": "valefor", "name": "Valefor", "type_slug": "aliado"},
     {"key": "wyrm_de_la_plaga", "name": "Wyrm de la Plaga", "type_slug": "aliado"},
 ]
+
+
+# Race mapping provided by user (card-by-card) for BLOG allies.
+RACE_BY_KEY = {
+    "asmodeus": "sombra",
+    "azi_demoniaco": "dragon",
+    "azi_raoioita": "dragon",
+    "azi_del_abismo": "dragon",
+    "azrael": "sombra",
+    "baphomet": "bestia",
+    "belcebu": "sombra",
+    "dagon": "dragon",
+    "demonios_del_abismo": "bestia",
+    "furfur": "bestia",
+    "gran_dragon": "dragon",
+    "lahmu_inmortal": "bestia",
+    "leviathan": "dragon",
+    "lucifer": "sombra",
+    "morgana": "sombra",
+    "nefandos": "bestia/dragon/sombra",
+    "samael": "sombra",
+    "satanas": "bestia",
+    "titan_abismal": "sombra",
+    "titan_nephilim": "sombra",
+    "valefor": "dragon",
+    "wyrm_de_la_plaga": "dragon",
+}
 
 
 def slugify_name(name: str) -> str:
@@ -98,6 +125,7 @@ class Command(BaseCommand):
         created_count = 0
         updated_count = 0
         missing_url = 0
+        missing_race = 0
 
         for idx, card_data in enumerate(CARDS, start=1):
             key = card_data["key"]
@@ -109,6 +137,16 @@ class Command(BaseCommand):
 
             card_type = CardType.objects.filter(slug=card_data["type_slug"]).first()
             slug_base = slugify_name(card_data["name"])
+            race = None
+            if card_data["type_slug"] == "aliado":
+                race_slug = RACE_BY_KEY.get(key)
+                if race_slug:
+                    race = Race.objects.filter(slug=race_slug).first()
+                    if not race:
+                        missing_race += 1
+                        self.stdout.write(self.style.WARNING(
+                            f"  Missing race slug='{race_slug}' for key={key}"
+                        ))
 
             card, was_created = Card.objects.update_or_create(
                 myl_id=f"custom_aydv_blog_{idx:03d}",
@@ -118,7 +156,7 @@ class Command(BaseCommand):
                     "name": card_data["name"],
                     "edition": edition,
                     "rarity": rarity,
-                    "race": None,
+                    "race": race,
                     "card_type": card_type,
                     "cost": None,
                     "damage": None,
@@ -137,5 +175,6 @@ class Command(BaseCommand):
             self.stdout.write(f"  {status}: {card.name} ({card.edid})")
 
         self.stdout.write(self.style.SUCCESS(
-            f"Done. Created={created_count} Updated={updated_count} MissingURL={missing_url}"
+            f"Done. Created={created_count} Updated={updated_count} "
+            f"MissingURL={missing_url} MissingRace={missing_race}"
         ))

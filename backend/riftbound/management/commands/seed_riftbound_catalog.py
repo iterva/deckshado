@@ -18,6 +18,7 @@ Ejemplo con credenciales por argumento (solo para ejecucion puntual):
 from __future__ import annotations
 
 import json
+import importlib.util
 import os
 import sys
 from dataclasses import dataclass
@@ -471,17 +472,40 @@ class Command(BaseCommand):
         try:
             from cdn_uploader import candidate_public_urls, upload_bytes
             return candidate_public_urls, upload_bytes
-        except Exception:
+        except Exception as exc:
+            import_error = exc
+
+        file_errors: list[str] = []
+        for parent in Path(__file__).resolve().parents:
+            candidate_path = parent / "cdn_uploader.py"
+            if not candidate_path.exists():
+                continue
+
+            try:
+                spec = importlib.util.spec_from_file_location("deckshadow_cdn_uploader", candidate_path)
+                if spec is None or spec.loader is None:
+                    file_errors.append(f"{candidate_path} (spec invalido)")
+                    continue
+
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                return module.candidate_public_urls, module.upload_bytes
+            except Exception as exc:
+                file_errors.append(f"{candidate_path} ({exc})")
+
+        paths_tried = " | ".join(file_errors) if file_errors else "sin cdn_uploader.py en directorios padre"
+        try:
             project_root = Path(__file__).resolve().parents[4]
             if str(project_root) not in sys.path:
                 sys.path.insert(0, str(project_root))
-
-        try:
             from cdn_uploader import candidate_public_urls, upload_bytes
             return candidate_public_urls, upload_bytes
         except Exception as exc:
             raise CommandError(
-                f"No se pudo importar cdn_uploader.py: {exc}. Verifica que ejecutas manage.py desde el backend correcto del proyecto."
+                "No se pudo importar cdn_uploader.py. "
+                f"Import directo: {import_error}. "
+                f"Carga por archivo: {paths_tried}. "
+                f"Reintento con sys.path: {exc}."
             ) from exc
 
     def _print_upload_summary(self, counters: SyncCounters) -> None:

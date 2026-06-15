@@ -746,7 +746,7 @@ function typeRank(t?: string): number {
       display: flex; align-items: center; gap: .5rem;
       background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 6px;
       padding: .35rem; transition: all .15s; position: relative;
-      min-width: 0;
+      min-width: 0; overflow: hidden;
     }
     .mini-card:hover { border-color: #e94560; background: #1e1e3a; }
     .mini-card.in-deck { border-color: #ffbd39; background: rgba(255,189,57,.05); }
@@ -781,8 +781,8 @@ function typeRank(t?: string): number {
     }
     .img-wrapper:hover .eye-icon { opacity: 1; }
 
-    .mini-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-    .mini-info app-tcg-price { display: block; margin-top: .2rem; max-width: 100%; }
+    .mini-info { flex: 1; min-width: 0; display: flex; flex-direction: column; padding-right: .15rem; }
+    .mini-info app-tcg-price { display: block; margin-top: .2rem; max-width: 100%; min-width: 0; overflow: hidden; }
     .mini-name { font-size: .85rem; color: #fff; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .mini-type { font-size: .7rem; color: #98a2a8; }
     .mini-num { font-size: .65rem; color: #6a7a88; }
@@ -793,7 +793,7 @@ function typeRank(t?: string): number {
     }
     @media (max-width: 1400px) { .mini-ability { display: none; } }
 
-    .actions-column { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+    .actions-column { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; position: relative; z-index: 1; }
     .mini-actions { display: flex; align-items: center; gap: .25rem; min-width: 72px; justify-content: flex-end; }
     .mini-actions.hidden { display: none; }
     .zone-label { font-size: .65rem; font-weight: 700; width: 12px; text-align: right; }

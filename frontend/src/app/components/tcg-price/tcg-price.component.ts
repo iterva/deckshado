@@ -100,12 +100,12 @@ import { TcgPlayerService, TcgPlayerPrice } from '../../services/tcgplayer.servi
     }
   `,
   styles: [`
-    :host { display: inline-block; }
+    :host { display: inline-block; max-width: 100%; }
 
     .tcg-price { display: inline-flex; align-items: center; gap: 4px; font-size: .82rem; }
     .tcg-price.loading { color: #888; }
     .tcg-price.no-price { color: #666; }
-    .tcg-compact-row { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .tcg-compact-row { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; max-width: 100%; }
 
     .tcg-spinner {
       width: 12px; height: 12px; border: 2px solid #333;
@@ -120,11 +120,18 @@ import { TcgPlayerService, TcgPlayerPrice } from '../../services/tcgplayer.servi
       background: rgba(26, 156, 91, 0.08);
       border: 1px solid rgba(26, 156, 91, 0.2);
       transition: all .15s;
+      max-width: 100%;
+      min-width: 0;
+      white-space: nowrap;
     }
     .tcg-icon { font-size: .9rem; }
     .tcg-label { font-size: .75rem; opacity: .95; }
     .tcg-amount { font-variant-numeric: tabular-nums; }
     .tcg-na { color: #888; font-size: .75rem; }
+    @media (max-width: 640px) {
+      .tcg-price.compact { padding: 2px 5px; font-size: .76rem; }
+      .tcg-label { display: none; }
+    }
 
     .tcg-price.detailed {
       display: flex; flex-direction: column; gap: 6px;

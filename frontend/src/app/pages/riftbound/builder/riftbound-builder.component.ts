@@ -178,7 +178,7 @@ function typeRank(t?: string): number {
                   @if (card.might !== null && card.might !== undefined) { · ⚔️{{ card.might }} }
                 </span>
                 <span class="mini-num">{{ card.card_number }}</span>
-                <app-tcg-price [cardName]="card.name" [compact]="true"></app-tcg-price>
+                <app-tcg-price [cardName]="card.name" [compact]="true" [showLink]="false"></app-tcg-price>
                 @if (card.description) {
                   <p class="mini-ability">{{ card.description }}</p>
                 }
@@ -299,7 +299,7 @@ function typeRank(t?: string): number {
               </div>
             } @else {
               <button class="choose-legend-btn cu-choose" (click)="openChampionUnitPicker()">
-                ⚔️ Elige tu Champion Unit ({{ championName() }})
+                ⚔️ Elige tu Champion Unit @if (championName(); as cn) { ({{ cn }}) }
               </button>
             }
           </div>
@@ -731,7 +731,15 @@ function typeRank(t?: string): number {
       gap: .5rem; margin-top: 1rem;
     }
     @media (max-width: 1100px) { .available-cards { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 600px) { .available-cards { grid-template-columns: repeat(2, 1fr); gap: 0.35rem; } .mini-name { font-size: 0.72rem !important; } .mini-type { font-size: 0.6rem !important; } .mini-num { display: none; } .img-wrapper img, .img-placeholder { width: 42px !important; height: 58px !important; } }
+    @media (max-width: 600px) {
+      .available-cards { grid-template-columns: repeat(2, 1fr); gap: 0.35rem; }
+      .mini-card { align-items: flex-start; }
+      .mini-name { font-size: 0.72rem !important; }
+      .mini-type { font-size: 0.6rem !important; }
+      .mini-num { display: none; }
+      .img-wrapper img, .img-placeholder { width: 42px !important; height: 58px !important; }
+      .mini-actions { min-width: 60px; }
+    }
     @media (max-width: 360px) { .available-cards { grid-template-columns: 1fr; } }
 
     .mini-card {
@@ -774,6 +782,7 @@ function typeRank(t?: string): number {
     .img-wrapper:hover .eye-icon { opacity: 1; }
 
     .mini-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .mini-info app-tcg-price { display: block; margin-top: .2rem; max-width: 100%; }
     .mini-name { font-size: .85rem; color: #fff; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .mini-type { font-size: .7rem; color: #98a2a8; }
     .mini-num { font-size: .65rem; color: #6a7a88; }
@@ -1818,24 +1827,45 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
   /** Carga units cuyo subtype contiene el nombre del champion. */
   private loadChampionUnitsForLegend(legend: RiftboundCardLite) {
     const name = (legend.name || '').includes(',') ? legend.name.split(',')[0].trim() : '';
-    if (!name) return;
+    if (!name) {
+      this.championUnitOptions.set([]);
+      this.loadingChampionUnits.set(false);
+      return;
+    }
     this.loadingChampionUnits.set(true);
-    const all: RiftboundCardLite[] = [];
-    const fetch = (p: number) => {
-      this.rb.listCards({ type: 'unit', subtype: name, lite: true, page: p }).subscribe({
-        next: (resp) => {
-          all.push(...(resp.results as RiftboundCardLite[]));
-          if (resp.next) {
-            fetch(p + 1);
-          } else {
-            this.championUnitOptions.set(all);
-            this.loadingChampionUnits.set(false);
-          }
-        },
-        error: () => this.loadingChampionUnits.set(false),
-      });
+
+    const fetchUnits = (
+      opts: { subtype?: string; search?: string; searchMode?: 'name' | 'ability' | 'all' },
+      done: (cards: RiftboundCardLite[]) => void,
+    ) => {
+      const all: RiftboundCardLite[] = [];
+      const fetchPage = (p: number) => {
+        this.rb.listCards({ type: 'unit', lite: true, page: p, ...opts }).subscribe({
+          next: (resp) => {
+            all.push(...(resp.results as RiftboundCardLite[]));
+            if (resp.next) fetchPage(p + 1);
+            else done(all);
+          },
+          error: () => done([]),
+        });
+      };
+      fetchPage(1);
     };
-    fetch(1);
+
+    fetchUnits({ subtype: name }, (bySubtype) => {
+      if (bySubtype.length > 0) {
+        this.championUnitOptions.set(bySubtype);
+        this.loadingChampionUnits.set(false);
+        return;
+      }
+
+      const prefix = `${name.toLowerCase()},`;
+      fetchUnits({ search: name, searchMode: 'name' }, (byName) => {
+        const byPrefix = byName.filter(u => (u.name || '').toLowerCase().startsWith(prefix));
+        this.championUnitOptions.set(byPrefix);
+        this.loadingChampionUnits.set(false);
+      });
+    });
   }
 
   openChampionUnitPicker() {

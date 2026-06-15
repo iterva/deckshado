@@ -48,15 +48,17 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
       <!-- Filtros -->
       <div class="filter-toolbar">
         <div class="search-bar">
-          <span class="search-icon">🔍</span>
-          <input type="text"
-                 placeholder="Buscar mazos..."
-                 [(ngModel)]="search"
-                 (keyup.enter)="reload()"
-                 aria-label="Buscar mazos" />
-          @if (search) {
-            <button class="search-clear" (click)="search=''; reload()">✕</button>
-          }
+          <div class="search-input-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text"
+                   placeholder="Buscar mazos..."
+                   [(ngModel)]="search"
+                   (keyup.enter)="reload()"
+                   aria-label="Buscar mazos" />
+            @if (search) {
+              <button class="search-clear" (click)="search=''; reload()">✕</button>
+            }
+          </div>
           <button class="btn-search-go" (click)="reload()">Buscar</button>
         </div>
 
@@ -205,18 +207,19 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
     /* Filtros */
     .filter-toolbar { display: flex; flex-direction: column; gap: .6rem; margin-bottom: 1.25rem; }
     .search-bar { position: relative; display: flex; gap: .5rem; align-items: center; }
-    .search-bar .search-icon {
+    .search-input-wrap { position: relative; flex: 1; min-width: 0; }
+    .search-input-wrap .search-icon {
       position: absolute; left: .75rem; top: 50%; transform: translateY(-50%);
       color: #666; pointer-events: none; font-size: .9rem;
     }
-    .search-bar input {
-      flex: 1; padding: .6rem 2.4rem .6rem 2.2rem;
+    .search-input-wrap input {
+      width: 100%; padding: .6rem 2.4rem .6rem 2.2rem;
       border: 1px solid #333; border-radius: 8px; background: #1a1a2e;
       color: #e0e0e0; outline: none; font: inherit;
     }
-    .search-bar input:focus { border-color: #e94560; }
+    .search-input-wrap input:focus { border-color: #e94560; }
     .search-clear {
-      position: absolute; right: 5.6rem; top: 50%; transform: translateY(-50%);
+      position: absolute; right: .45rem; top: 50%; transform: translateY(-50%);
       background: transparent; border: 0; color: #888; cursor: pointer;
       padding: .2rem .4rem; border-radius: 4px;
     }
@@ -224,8 +227,17 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
     .btn-search-go {
       padding: .55rem 1rem; background: #e94560; color: #0f0f23;
       border: none; border-radius: 8px; font-weight: 600; cursor: pointer;
+      white-space: nowrap;
     }
     .btn-search-go:hover { filter: brightness(1.1); }
+    @media (max-width: 600px) {
+      .search-bar { display: grid; grid-template-columns: 1fr auto; }
+      .btn-search-go { padding: .55rem .85rem; }
+    }
+    @media (max-width: 440px) {
+      .search-bar { grid-template-columns: 1fr; }
+      .btn-search-go { width: 100%; }
+    }
 
     .filter-row { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
     .color-chips { display: flex; gap: .35rem; flex-wrap: wrap; align-items: center; }

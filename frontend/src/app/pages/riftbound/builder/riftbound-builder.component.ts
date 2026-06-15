@@ -611,7 +611,7 @@ function typeRank(t?: string): number {
         <div class="legend-picker-box" (click)="$event.stopPropagation()">
           <div class="lp-head">
             <h3>⚔️ Elige tu Champion Unit @if (championName()) { · {{ championName() }} }</h3>
-            <p class="muted">Unidades cuyo subtipo coincide con el nombre del legend. Se añadirá una copia al main si no estaba.</p>
+            <p class="muted">Unidades con tag Champion Unit que además comparten el tag principal del legend. Se añadirá una copia al main si no estaba.</p>
             <input type="search" [ngModel]="championUnitPickerSearch()" (ngModelChange)="championUnitPickerSearch.set($event)"
                    placeholder="Buscar por nombre…" class="lp-search" />
             <button class="lp-skip" (click)="closeChampionUnitPicker()">Cerrar</button>
@@ -1798,24 +1798,52 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
   }
 
   // ── Champion Unit ──
-  /** Nombre del champion derivado del legend ("Annie, Dark Child" → "Annie"). */
+  private readonly NON_CHAMPION_TAGS = new Set([
+    'champion unit', 'champion legend', 'legend', 'unit', 'signature',
+  ]);
+
+  private championKeyFromLegend(legend: RiftboundCardLite | null): string | null {
+    if (!legend) return null;
+    const rawTags = (legend.subtypes || [])
+      .map(t => (t || '').trim())
+      .filter(Boolean);
+
+    const specificTag = rawTags.find(t => !this.NON_CHAMPION_TAGS.has(t.toLowerCase()));
+    if (specificTag) return specificTag;
+
+    // Fallback por nombre para datos legacy sin subtypes útiles.
+    const name = (legend.name || '').trim();
+    if (!name) return null;
+    const [head] = name.split(/[-,]/);
+    const parsed = (head || '').trim();
+    return parsed || null;
+  }
+
+  private isChampionUnitCandidate(card: RiftboundCardLite, championKey: string): boolean {
+    const key = championKey.toLowerCase();
+    const subtypes = (card.subtypes || []).map(s => (s || '').toLowerCase());
+    const hasChampionTag = subtypes.includes(key);
+    if (!hasChampionTag) return false;
+
+    const hasChampionUnitTag = subtypes.includes('champion unit');
+    const name = (card.name || '').toLowerCase();
+    const startsWithChampionName = name.startsWith(`${key},`) || name.startsWith(`${key} -`);
+
+    return hasChampionUnitTag || startsWithChampionName;
+  }
+
+  /** Tag del champion derivado del legend (subtypes -> fallback nombre). */
   championName = computed<string | null>(() => {
-    const L = this.chosenLegend();
-    if (!L) return null;
-    const n = L.name || '';
-    return n.includes(',') ? n.split(',')[0].trim() : null;
+    return this.championKeyFromLegend(this.chosenLegend());
   });
 
-  /** Filtra los champion units por búsqueda. Excluye Signature Units
-   *  (unidades que tienen al champion como subtype pero cuyo nombre no
-   *  empieza con "<champion>,", ej. Tibbers para Annie). */
+  /** Filtra champion units por tag compartido con legend + tag/patrón de Champion Unit. */
   filteredChampionUnits = computed(() => {
     const q = this.championUnitPickerSearch().trim().toLowerCase();
-    const champion = (this.championName() || '').toLowerCase();
+    const champion = this.championName();
     let list = this.championUnitOptions();
     if (champion) {
-      const prefix = champion + ',';
-      list = list.filter(u => (u.name || '').toLowerCase().startsWith(prefix));
+      list = list.filter(u => this.isChampionUnitCandidate(u, champion));
     }
     if (!q) return list;
     return list.filter(u =>
@@ -1824,10 +1852,10 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
     );
   });
 
-  /** Carga units cuyo subtype contiene el nombre del champion. */
+  /** Carga units cuyo subtype contiene el tag del champion. */
   private loadChampionUnitsForLegend(legend: RiftboundCardLite) {
-    const name = (legend.name || '').includes(',') ? legend.name.split(',')[0].trim() : '';
-    if (!name) {
+    const championKey = this.championKeyFromLegend(legend);
+    if (!championKey) {
       this.championUnitOptions.set([]);
       this.loadingChampionUnits.set(false);
       return;
@@ -1852,17 +1880,22 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
       fetchPage(1);
     };
 
-    fetchUnits({ subtype: name }, (bySubtype) => {
-      if (bySubtype.length > 0) {
-        this.championUnitOptions.set(bySubtype);
+    fetchUnits({ subtype: championKey }, (bySubtype) => {
+      const validBySubtype = bySubtype.filter(u => this.isChampionUnitCandidate(u, championKey));
+      if (validBySubtype.length > 0) {
+        this.championUnitOptions.set(validBySubtype);
         this.loadingChampionUnits.set(false);
         return;
       }
 
-      const prefix = `${name.toLowerCase()},`;
-      fetchUnits({ search: name, searchMode: 'name' }, (byName) => {
-        const byPrefix = byName.filter(u => (u.name || '').toLowerCase().startsWith(prefix));
-        this.championUnitOptions.set(byPrefix);
+      if (bySubtype.length > 0) {
+        // Si hubo match de subtype pero ninguno califica como Champion Unit,
+        // intentamos por búsqueda nominal para cubrir datos no normalizados.
+      }
+
+      fetchUnits({ search: championKey, searchMode: 'name' }, (byName) => {
+        const validByName = byName.filter(u => this.isChampionUnitCandidate(u, championKey));
+        this.championUnitOptions.set(validByName);
         this.loadingChampionUnits.set(false);
       });
     });

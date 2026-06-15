@@ -1808,6 +1808,16 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
       .map(t => (t || '').trim())
       .filter(Boolean);
 
+    // Prioriza un tag que aparezca en el nombre del legend (evita escoger region/faccion).
+    const lowerName = (legend.name || '').toLowerCase();
+    const nameMatchedTag = rawTags.find(t => {
+      const tl = t.toLowerCase();
+      return lowerName.startsWith(`${tl} -`)
+        || lowerName.startsWith(`${tl},`)
+        || lowerName === tl;
+    });
+    if (nameMatchedTag) return nameMatchedTag;
+
     const specificTag = rawTags.find(t => !this.NON_CHAMPION_TAGS.has(t.toLowerCase()));
     if (specificTag) return specificTag;
 
@@ -1823,13 +1833,15 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
     const key = championKey.toLowerCase();
     const subtypes = (card.subtypes || []).map(s => (s || '').toLowerCase());
     const hasChampionTag = subtypes.includes(key);
-    if (!hasChampionTag) return false;
-
     const hasChampionUnitTag = subtypes.includes('champion unit');
     const name = (card.name || '').toLowerCase();
     const startsWithChampionName = name.startsWith(`${key},`) || name.startsWith(`${key} -`);
 
-    return hasChampionUnitTag || startsWithChampionName;
+    // Regla principal: comparte tag del legend y tiene semantica de Champion Unit.
+    if (hasChampionTag) return hasChampionUnitTag || startsWithChampionName;
+
+    // Fallback para datos incompletos/legacy sin subtypes fiables en API.
+    return startsWithChampionName;
   }
 
   /** Tag del champion derivado del legend (subtypes -> fallback nombre). */

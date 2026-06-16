@@ -240,6 +240,22 @@ export class ShareImageComponent {
                                   img.addEventListener('error', () => res(), { once: true }); })
     ));
 
+    // Fija un ancho de celda uniforme para cada carta antes de capturar.
+    const grid = el.querySelector<HTMLElement>('.grid');
+    if (grid) {
+      const gridWidth = grid.getBoundingClientRect().width;
+      const gap = parseFloat(getComputedStyle(grid).columnGap || getComputedStyle(grid).gap || '0') || 0;
+      const cols = this.gridCols;
+      const slotWidth = Math.max(1, Math.floor((gridWidth - gap * (cols - 1)) / cols));
+      const cards = Array.from(grid.querySelectorAll<HTMLElement>('.card'));
+      for (const card of cards) {
+        card.style.width = `${slotWidth}px`;
+        card.style.minWidth = `${slotWidth}px`;
+        card.style.maxWidth = `${slotWidth}px`;
+        card.style.justifySelf = 'stretch';
+      }
+    }
+
     // html2canvas puede renderizar distinto padding/aspect-ratio; fijamos alto en px
     // para que todas las cartas queden idénticas en la captura.
     const cardRatio = 1 / 0.715;
@@ -249,6 +265,20 @@ export class ShareImageComponent {
       if (!width) continue;
       wrap.style.paddingTop = '0';
       wrap.style.height = `${Math.round(width * cardRatio)}px`;
+    }
+
+    // Fallback robusto: durante la captura, usamos background-size: cover en el wrap.
+    // Esto evita que html2canvas ignore object-fit en algunos navegadores.
+    for (const img of imgs) {
+      const src = (img as HTMLImageElement).currentSrc || (img as HTMLImageElement).src;
+      if (!src) continue;
+      const wrap = (img as HTMLElement).closest('.img-wrap') as HTMLElement | null;
+      if (!wrap) continue;
+      wrap.style.backgroundImage = `url("${src}")`;
+      wrap.style.backgroundSize = 'cover';
+      wrap.style.backgroundPosition = 'center';
+      wrap.style.backgroundRepeat = 'no-repeat';
+      (img as HTMLElement).style.visibility = 'hidden';
     }
 
     const html2canvas = (await import('html2canvas')).default;

@@ -239,6 +239,18 @@ export class ShareImageComponent {
       new Promise<void>(res => { img.addEventListener('load', () => res(), { once: true });
                                   img.addEventListener('error', () => res(), { once: true }); })
     ));
+
+    // html2canvas puede renderizar distinto padding/aspect-ratio; fijamos alto en px
+    // para que todas las cartas queden idénticas en la captura.
+    const cardRatio = 1 / 0.715;
+    const wraps = Array.from(el.querySelectorAll<HTMLElement>('.img-wrap'));
+    for (const wrap of wraps) {
+      const width = wrap.getBoundingClientRect().width;
+      if (!width) continue;
+      wrap.style.paddingTop = '0';
+      wrap.style.height = `${Math.round(width * cardRatio)}px`;
+    }
+
     const html2canvas = (await import('html2canvas')).default;
     const exportWindowWidth = window.matchMedia('(max-width: 640px)').matches ? 640 : 900;
     return await html2canvas(el, {

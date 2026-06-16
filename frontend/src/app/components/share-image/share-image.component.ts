@@ -170,7 +170,7 @@ export interface ShareImageItem {
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     @media (max-width: 640px) {
-      .card-name { font-size: 15px; }
+      .card-name { font-size: 16px; }
     }
     .price {
       text-align: center; font-size: 14px; font-weight: 800; color: #fff;
@@ -240,13 +240,14 @@ export class ShareImageComponent {
                                   img.addEventListener('error', () => res(), { once: true }); })
     ));
     const html2canvas = (await import('html2canvas')).default;
+    const exportWindowWidth = window.matchMedia('(max-width: 640px)').matches ? 640 : 900;
     return await html2canvas(el, {
       backgroundColor: '#0f1326',
       useCORS: true,
       allowTaint: false,
       scale: 2,
       width: 900,
-      windowWidth: 900,
+      windowWidth: exportWindowWidth,
     });
   }
 

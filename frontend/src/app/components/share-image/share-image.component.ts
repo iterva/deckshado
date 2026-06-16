@@ -127,16 +127,25 @@ export interface ShareImageItem {
     }
     .img-wrap {
       position: relative;
-      aspect-ratio: 0.715; /* proporción carta Riftbound/MYL */
+      width: 100%;
+      height: 0;
+      padding-top: 139.86%; /* 1 / 0.715: fallback robusto para html2canvas */
       border-radius: 10px;
       overflow: hidden;
       background: #1a2040;
       box-shadow: 0 6px 16px rgba(0,0,0,0.5);
     }
     .img-wrap img {
-      width: 100%; height: 100%; object-fit: cover; display: block;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
     .img-fallback {
+      position: absolute;
+      inset: 0;
       display: flex; align-items: center; justify-content: center;
       width: 100%; height: 100%; font-size: 12px; color: #8ea0d0; padding: 8px;
       text-align: center;
@@ -159,6 +168,9 @@ export interface ShareImageItem {
       margin-top: 8px; font-size: 13px; color: #d4dbf2;
       text-align: center; font-weight: 600;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    @media (max-width: 640px) {
+      .card-name { font-size: 15px; }
     }
     .price {
       text-align: center; font-size: 14px; font-weight: 800; color: #fff;

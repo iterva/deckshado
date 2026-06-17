@@ -4,7 +4,11 @@ from typing import BinaryIO
 
 import requests
 
-from .cloudinary_upload import CloudinaryUploadError, upload_image_to_cloudinary
+try:
+    from .cloudinary_upload import CloudinaryUploadError, upload_image_to_cloudinary
+except Exception:  # pragma: no cover - optional legacy fallback module.
+    CloudinaryUploadError = Exception  # type: ignore[assignment]
+    upload_image_to_cloudinary = None  # type: ignore[assignment]
 
 
 class CdnImageUploadError(Exception):
@@ -133,6 +137,10 @@ def upload_image_to_cdn(file_obj: BinaryIO, *, folder: str) -> str:
     if provider == "imagekit":
         return _upload_image_to_imagekit(file_obj, folder=folder)
     if provider == "cloudinary":
+        if upload_image_to_cloudinary is None:
+            raise CdnImageUploadError(
+                "Cloudinary fallback no disponible en este deploy (falta backend/cloudinary_upload.py)."
+            )
         try:
             return upload_image_to_cloudinary(file_obj, folder=folder)
         except CloudinaryUploadError as exc:

@@ -120,6 +120,17 @@ def _upload_image_to_imagekit(file_obj: BinaryIO, *, folder: str) -> str:
             if has_next and "upload limit exceeded" in message.lower():
                 last_error = CdnImageUploadError(message)
                 continue
+            if "upload limit exceeded" in message.lower() and upload_image_to_cloudinary is not None:
+                cloud_key = (os.environ.get("CLOUDINARY_API_KEY") or "").strip()
+                cloud_secret = (os.environ.get("CLOUDINARY_API_SECRET") or "").strip()
+                if cloud_key and cloud_secret:
+                    if hasattr(file_obj, "seek"):
+                        file_obj.seek(0)
+                    try:
+                        return upload_image_to_cloudinary(file_obj, folder=folder)
+                    except Exception:
+                        # Keep original quota error if fallback also fails.
+                        pass
             raise CdnImageUploadError(message)
 
         url = (payload.get("url") or "").strip() if isinstance(payload, dict) else ""

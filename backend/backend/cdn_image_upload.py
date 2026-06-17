@@ -19,6 +19,22 @@ def _provider() -> str:
     return (os.environ.get("CDN_PROVIDER") or "imagekit").strip().lower()
 
 
+def _is_quota_error(detail: str) -> bool:
+    return "upload limit exceeded" in (detail or "").strip().lower()
+
+
+def _is_team_logo_folder(folder: str) -> bool:
+    return "team_logos" in (folder or "").strip().lower()
+
+
+def _stock_image_url() -> str:
+    # Temporary emergency fallback while CDN quota is exhausted.
+    return (
+        (os.environ.get("CDN_STOCK_IMAGE_URL") or "").strip()
+        or "https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg"
+    )
+
+
 def _split_csv_env(name: str) -> list[str]:
     raw = (os.environ.get(name) or "").strip()
     if not raw:
@@ -117,10 +133,10 @@ def _upload_image_to_imagekit(file_obj: BinaryIO, *, folder: str) -> str:
             message = detail or "ImageKit rechazo la subida de la imagen."
 
             has_next = idx < len(keys)
-            if has_next and "upload limit exceeded" in message.lower():
+            if has_next and _is_quota_error(message):
                 last_error = CdnImageUploadError(message)
                 continue
-            if "upload limit exceeded" in message.lower() and upload_image_to_cloudinary is not None:
+            if _is_quota_error(message) and upload_image_to_cloudinary is not None:
                 cloud_key = (os.environ.get("CLOUDINARY_API_KEY") or "").strip()
                 cloud_secret = (os.environ.get("CLOUDINARY_API_SECRET") or "").strip()
                 if cloud_key and cloud_secret:
@@ -146,7 +162,12 @@ def _upload_image_to_imagekit(file_obj: BinaryIO, *, folder: str) -> str:
 def upload_image_to_cdn(file_obj: BinaryIO, *, folder: str) -> str:
     provider = _provider()
     if provider == "imagekit":
-        return _upload_image_to_imagekit(file_obj, folder=folder)
+        try:
+            return _upload_image_to_imagekit(file_obj, folder=folder)
+        except CdnImageUploadError as exc:
+            if _is_quota_error(str(exc)) and not _is_team_logo_folder(folder):
+                return _stock_image_url()
+            raise
     if provider == "cloudinary":
         if upload_image_to_cloudinary is None:
             raise CdnImageUploadError(

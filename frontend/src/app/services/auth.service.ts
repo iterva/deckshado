@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap, switchMap } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthTokens, User } from '../models';
 
@@ -113,12 +113,7 @@ export class AuthService {
   uploadAvatar(file: File): Observable<User> {
     const fd = new FormData();
     fd.append('file', file);
-    fd.append('upload_preset', environment.cloudinaryUploadPreset);
-    fd.append('folder', 'deckshado/avatars');
-    return this.http.post<any>(
-      `https://api.cloudinary.com/v1_1/${environment.cloudinaryCloudName}/image/upload`, fd
-    ).pipe(
-      switchMap(res => this.http.post<User>(`${this.apiUrl}/avatar/`, { avatar_url: res.secure_url })),
+    return this.http.post<User>(`${this.apiUrl}/avatar/`, fd).pipe(
       tap(user => this.currentUser.set(user)),
     );
   }

@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import {
   BinderProfile,
@@ -54,13 +53,7 @@ export class CarpetaService {
   uploadBinderAvatar(file: File): Observable<BinderProfile> {
     const fd = new FormData();
     fd.append('file', file);
-    fd.append('upload_preset', environment.cloudinaryUploadPreset);
-    fd.append('folder', 'deckshado/binder_avatars');
-    return this.http.post<any>(
-      `https://api.cloudinary.com/v1_1/${environment.cloudinaryCloudName}/image/upload`, fd
-    ).pipe(
-      switchMap(res => this.http.post<BinderProfile>(`${this.apiUrl}/profile/avatar/`, { avatar_url: res.secure_url }))
-    );
+    return this.http.post<BinderProfile>(`${this.apiUrl}/profile/avatar/`, fd);
   }
 
   regenerateShareToken(): Observable<{ share_token: string }> {
@@ -80,22 +73,14 @@ export class CarpetaService {
     return this.http.post<CollectionEntry>(`${this.apiUrl}/collection/upsert/`, data);
   }
 
-  /** Sube una foto real de la carta a Cloudinary y la asocia a la entrada (collection_upsert).
+  /** Sube una foto real de la carta via backend y la asocia a la entrada (collection_upsert).
    *  `slot` indica en qué campo guardar (1 = photo_url, 2 = photo_url_2). Por defecto 1. */
   uploadEntryPhoto(cardId: number, file: File, slot: 1 | 2 = 1): Observable<CollectionEntry> {
     const fd = new FormData();
     fd.append('file', file);
-    fd.append('upload_preset', environment.cloudinaryUploadPreset);
-    fd.append('folder', 'deckshado/store_card_photos');
-    const field = slot === 2 ? 'photo_url_2' : 'photo_url';
-    return this.http.post<any>(
-      `https://api.cloudinary.com/v1_1/${environment.cloudinaryCloudName}/image/upload`, fd
-    ).pipe(
-      switchMap(res => this.http.post<CollectionEntry>(
-        `${this.apiUrl}/collection/upsert/`,
-        { card: cardId, [field]: res.secure_url }
-      ))
-    );
+    fd.append('card', String(cardId));
+    fd.append('slot', String(slot));
+    return this.http.post<CollectionEntry>(`${this.apiUrl}/collection/upsert/`, fd);
   }
 
   removeFromCollection(cardId: number): Observable<void> {

@@ -1,7 +1,9 @@
 from rest_framework import generics, permissions, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, parser_classes
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.response import Response
 from django.db.models import Count
+from backend.cdn_image_upload import upload_image_to_cdn, CdnImageUploadError
 from .models import Team, TeamMember, JoinRequest
 from .serializers import (
     TeamListSerializer, TeamDetailSerializer, TeamCreateSerializer,
@@ -184,14 +186,24 @@ def kick_member(request, member_id):
 
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
+@parser_classes([JSONParser, MultiPartParser, FormParser])
 def upload_logo(request):
     try:
         membership = TeamMember.objects.select_related("team").get(user=request.user, role="captain")
     except TeamMember.DoesNotExist:
         return Response({"error": "No eres capitán de ningún equipo"}, status=status.HTTP_403_FORBIDDEN)
+
     logo_url = request.data.get("logo_url", "").strip()
+    file_obj = request.FILES.get("file")
+
+    if not logo_url and file_obj is not None:
+        try:
+            logo_url = upload_image_to_cdn(file_obj, folder="deckshado/team_logos")
+        except CdnImageUploadError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
     if not logo_url:
-        return Response({"error": "No se envió URL de imagen"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "No se envió URL o archivo de imagen"}, status=status.HTTP_400_BAD_REQUEST)
     team = membership.team
     team.logo = logo_url
     team.save()

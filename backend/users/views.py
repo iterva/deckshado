@@ -1,8 +1,9 @@
 from django.contrib.auth.models import User
 from rest_framework import generics, permissions, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
+from backend.cdn_image_upload import upload_image_to_cdn, CdnImageUploadError
 from .serializers import (
     RegisterSerializer,
     UserSerializer,
@@ -59,10 +60,23 @@ def update_profile(request):
 
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
+@parser_classes([JSONParser, MultiPartParser, FormParser])
 def upload_avatar(request):
-    avatar_url = request.data.get("avatar_url", "").strip()
+    avatar_url = (request.data.get("avatar_url") or "").strip()
+    file_obj = request.FILES.get("file")
+
+    if not avatar_url and file_obj is not None:
+        try:
+            avatar_url = upload_image_to_cdn(file_obj, folder="deckshado/avatars")
+        except CdnImageUploadError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
     if not avatar_url:
-        return Response({"detail": "No se envió ninguna URL."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"detail": "No se envio ninguna URL o archivo de avatar."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     avatar_url = _normalize_avatar_url(avatar_url)
     if not avatar_url:
         return Response({"detail": "URL de avatar inválida."}, status=status.HTTP_400_BAD_REQUEST)

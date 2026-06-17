@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { Team, JoinRequest, PaginatedResponse } from '../models';
 
@@ -54,12 +53,6 @@ export class TeamService {
   uploadLogo(file: File): Observable<{ logo_url: string }> {
     const fd = new FormData();
     fd.append('file', file);
-    fd.append('upload_preset', environment.cloudinaryUploadPreset);
-    fd.append('folder', 'deckshado/team_logos');
-    return this.http.post<any>(
-      `https://api.cloudinary.com/v1_1/${environment.cloudinaryCloudName}/image/upload`, fd
-    ).pipe(
-      switchMap(res => this.http.post<{ logo_url: string }>(`${this.apiUrl}/logo/`, { logo_url: res.secure_url }))
-    );
+    return this.http.post<{ logo_url: string }>(`${this.apiUrl}/logo/`, fd);
   }
 }

@@ -2,10 +2,12 @@ import os
 
 from django.db.models import Q
 from rest_framework import viewsets, permissions, status, filters, generics
-from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes, parser_classes
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
+from backend.cdn_image_upload import upload_image_to_cdn, CdnImageUploadError
 
 from .tcgplayer import get_tcg_price, get_tcg_prices_batch
 
@@ -498,6 +500,16 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    @staticmethod
+    def _coerce_bool(value):
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return bool(value)
+        if isinstance(value, str):
+            return value.strip().lower() in {"1", "true", "yes", "on"}
+        return False
+
     def _apply_fields(self, entry, data):
         if "quantity" in data:
             try:
@@ -523,7 +535,7 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
         if "language" in data and data["language"] in dict(RiftboundCollectionEntry.LANGUAGE_CHOICES):
             entry.language = data["language"]
         if "is_foil" in data:
-            entry.is_foil = bool(data["is_foil"])
+            entry.is_foil = self._coerce_bool(data["is_foil"])
         if "notes" in data:
             entry.notes = str(data["notes"] or "")[:200]
         if "photo_url" in data:
@@ -534,9 +546,11 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
             entry.selling_quantity = entry.quantity
 
     @action(detail=False, methods=["post"], url_path="upsert")
+    @parser_classes([JSONParser, MultiPartParser, FormParser])
     def upsert(self, request):
         """Crea o actualiza una entrada por (user, card, is_foil)."""
-        card_id = request.data.get("card")
+        data = request.data.dict() if hasattr(request.data, "dict") else dict(request.data)
+        card_id = data.get("card")
         if not card_id:
             return Response({"detail": "card requerido"}, status=400)
         try:
@@ -544,14 +558,24 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
         except RiftboundCard.DoesNotExist:
             return Response({"detail": "carta no existe"}, status=404)
 
-        is_foil = bool(request.data.get("is_foil", False))
+        file_obj = request.FILES.get("file")
+        if file_obj is not None:
+            slot = str(data.get("slot", "1")).strip()
+            target_field = "photo_url_2" if slot == "2" else "photo_url"
+            try:
+                uploaded_url = upload_image_to_cdn(file_obj, folder="deckshado/riftbound/store_card_photos")
+            except CdnImageUploadError as exc:
+                return Response({"detail": str(exc)}, status=400)
+            data[target_field] = uploaded_url
+
+        is_foil = self._coerce_bool(data.get("is_foil", False))
         entry, created = RiftboundCollectionEntry.objects.get_or_create(
             user=request.user, card=card, is_foil=is_foil,
             defaults={"quantity": 0},
         )
-        if "quantity" not in request.data and created:
+        if "quantity" not in data and created:
             entry.quantity = 1
-        self._apply_fields(entry, request.data)
+        self._apply_fields(entry, data)
 
         if entry.quantity <= 0:
             entry.delete()
@@ -809,10 +833,19 @@ def riftbound_binder_profile_view(request):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
+@parser_classes([JSONParser, MultiPartParser, FormParser])
 def riftbound_upload_binder_avatar(request):
     avatar_url = (request.data.get("avatar_url") or "").strip()
+    file_obj = request.FILES.get("file")
+
+    if not avatar_url and file_obj is not None:
+        try:
+            avatar_url = upload_image_to_cdn(file_obj, folder="deckshado/binder_avatars")
+        except CdnImageUploadError as exc:
+            return Response({"detail": str(exc)}, status=400)
+
     if not avatar_url:
-        return Response({"detail": "No se envió URL"}, status=400)
+        return Response({"detail": "No se envio URL o archivo"}, status=400)
     profile, _ = RiftboundBinderProfile.objects.get_or_create(user=request.user)
     profile.binder_avatar = avatar_url[:500]
     profile.save()

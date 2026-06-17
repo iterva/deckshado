@@ -2,12 +2,14 @@ import re
 import uuid
 
 from rest_framework import generics, permissions, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, parser_classes
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from django.db.models import Q, Count, Sum, F
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from backend.cdn_image_upload import upload_image_to_cdn, CdnImageUploadError
 
 from .models import BinderProfile, CollectionEntry, WishlistEntry
 from .serializers import (
@@ -47,10 +49,22 @@ def binder_profile_view(request):
 
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
+@parser_classes([JSONParser, MultiPartParser, FormParser])
 def upload_binder_avatar(request):
     avatar_url = (request.data.get("avatar_url") or "").strip()
+    file_obj = request.FILES.get("file")
+
+    if not avatar_url and file_obj is not None:
+        try:
+            avatar_url = upload_image_to_cdn(file_obj, folder="deckshado/binder_avatars")
+        except CdnImageUploadError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
     if not avatar_url:
-        return Response({"detail": "No se envió URL de imagen."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"detail": "No se envio URL o archivo de imagen."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     profile, _ = BinderProfile.objects.get_or_create(user=request.user)
     profile.binder_avatar = avatar_url
     profile.save()
@@ -112,19 +126,31 @@ def _apply_collection_fields(entry, data):
 
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
+@parser_classes([JSONParser, MultiPartParser, FormParser])
 def collection_upsert(request):
-    card_id = request.data.get("card")
+    data = request.data.dict() if hasattr(request.data, "dict") else dict(request.data)
+    card_id = data.get("card")
     if not card_id:
         return Response({"detail": "card es requerido."}, status=status.HTTP_400_BAD_REQUEST)
 
+    file_obj = request.FILES.get("file")
+    if file_obj is not None:
+        slot = str(data.get("slot", "1")).strip()
+        target_field = "photo_url_2" if slot == "2" else "photo_url"
+        try:
+            uploaded_url = upload_image_to_cdn(file_obj, folder="deckshado/store_card_photos")
+        except CdnImageUploadError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        data[target_field] = uploaded_url
+
     entry, created = CollectionEntry.objects.get_or_create(
         user=request.user, card_id=card_id,
-        defaults={"quantity": int(request.data.get("quantity", 1) or 1)},
+        defaults={"quantity": int(data.get("quantity", 1) or 1)},
     )
     if created:
-        _apply_collection_fields(entry, request.data)
+        _apply_collection_fields(entry, data)
     else:
-        _apply_collection_fields(entry, request.data)
+        _apply_collection_fields(entry, data)
     entry.save()
 
     entry = CollectionEntry.objects.select_related(

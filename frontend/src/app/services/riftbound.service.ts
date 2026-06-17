@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, shareReplay, switchMap } from 'rxjs';
+import { Observable, shareReplay } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   RiftboundCard, RiftboundCardLite, RiftboundDeck, RiftboundFormat,
@@ -178,24 +178,17 @@ export class RiftboundService {
     return this.http.post<any>(`${this.base}/collection/upsert/`, data);
   }
 
-  /** Sube una foto real de la carta a Cloudinary y la asocia a la entrada Riftbound.
+  /** Sube una foto real de la carta via backend y la asocia a la entrada Riftbound.
    *  `slot` indica en qué campo guardar (1 = photo_url, 2 = photo_url_2). */
   uploadCollectionPhoto(
     cardId: number, file: File, slot: 1 | 2 = 1, isFoil: boolean = false,
   ): Observable<RiftboundCollectionEntry> {
     const fd = new FormData();
     fd.append('file', file);
-    fd.append('upload_preset', environment.cloudinaryUploadPreset);
-    fd.append('folder', 'deckshado/riftbound/store_card_photos');
-    const field = slot === 2 ? 'photo_url_2' : 'photo_url';
-    return this.http.post<any>(
-      `https://api.cloudinary.com/v1_1/${environment.cloudinaryCloudName}/image/upload`, fd,
-    ).pipe(
-      switchMap(res => this.http.post<RiftboundCollectionEntry>(
-        `${this.base}/collection/upsert/`,
-        { card: cardId, is_foil: isFoil, [field]: res.secure_url },
-      )),
-    );
+    fd.append('card', String(cardId));
+    fd.append('slot', String(slot));
+    fd.append('is_foil', isFoil ? '1' : '0');
+    return this.http.post<RiftboundCollectionEntry>(`${this.base}/collection/upsert/`, fd);
   }
 
   deleteCollection(id: number): Observable<void> {
@@ -244,15 +237,7 @@ export class RiftboundService {
   uploadBinderAvatar(file: File): Observable<RiftboundBinderProfile> {
     const fd = new FormData();
     fd.append('file', file);
-    fd.append('upload_preset', environment.cloudinaryUploadPreset);
-    fd.append('folder', 'deckshado/binder_avatars');
-    return this.http.post<any>(
-      `https://api.cloudinary.com/v1_1/${environment.cloudinaryCloudName}/image/upload`, fd,
-    ).pipe(
-      switchMap(res => this.http.post<RiftboundBinderProfile>(
-        `${this.base}/profile/avatar/`, { avatar_url: res.secure_url },
-      )),
-    );
+    return this.http.post<RiftboundBinderProfile>(`${this.base}/profile/avatar/`, fd);
   }
 
   myShareToken(): Observable<{ share_token: string; store_slug: string; is_store_public: boolean }> {

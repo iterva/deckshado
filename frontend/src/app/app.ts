@@ -53,7 +53,19 @@ export class App implements OnInit {
   }
 
   canUseGlobalSearch(): boolean {
-    return !(this.isMobileViewport() && this.router.url.startsWith('/riftbound/cards'));
+    if (!this.isMobileViewport()) {
+      return true;
+    }
+
+    const blockedMobileRoutes = [
+      '/riftbound/cards',
+      '/riftbound/carpeta',
+      '/riftbound/tienda',
+      '/carpeta',
+      '/tienda',
+    ];
+
+    return !blockedMobileRoutes.some(route => this.router.url.startsWith(route));
   }
 
   private isMobileViewport(): boolean {

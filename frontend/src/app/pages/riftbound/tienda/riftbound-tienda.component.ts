@@ -452,7 +452,7 @@ interface RiftboundCartItem {
 
     /* ── Mobile ── */
     @media (max-width: 768px) {
-      .cards-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .7rem; }
+      .cards-grid { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: .55rem; }
       .card-body { padding: .55rem .6rem .65rem; }
       .card-body h4 { font-size: .88rem; }
       .price { font-size: .95rem; }
@@ -472,7 +472,12 @@ interface RiftboundCartItem {
       }
     }
     @media (max-width: 480px) {
-      .cards-grid { grid-template-columns: repeat(2, 1fr); }
+      .cards-grid { grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: .45rem; }
+      .card-body h4 { font-size: .76rem; }
+      .card-meta { display: none; }
+      .price { font-size: .82rem; }
+      .qty { font-size: .74rem; }
+      .btn-add-cart { font-size: .74rem; padding: .4rem .45rem; }
     }
   `],
 })

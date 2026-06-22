@@ -839,15 +839,24 @@ interface DirtyPatch {
     }
     @media (max-width: 600px) {
       .collection-grid, .wishlist-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: .5rem;
+        grid-template-columns: 1fr;
+        gap: .6rem;
       }
       .card-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
         gap: .5rem;
       }
+      .card-item .card-info { padding: .4rem; }
+      .card-item .card-info h4 { font-size: .68rem; }
+      .card-item .card-info .card-type { display: none; }
       .wishlist-card .share-check {
         width: 22px; height: 22px; top: 4px; left: 4px; font-size: .7rem;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .card-grid {
+        grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
       }
     }
 
@@ -1616,9 +1625,10 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
         this.avatarUploading.set(false);
         this.cdr.markForCheck();
       },
-      error: () => {
+      error: err => {
         this.avatarUploading.set(false);
-        alert('No se pudo subir la imagen. Inténtalo de nuevo.');
+        const detail = err?.error?.detail || 'No se pudo subir la imagen. Intentalo de nuevo.';
+        alert(detail);
         this.cdr.markForCheck();
       },
     });

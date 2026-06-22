@@ -1400,11 +1400,11 @@
   }
 
   .card-grid {
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
     gap: 0.5rem;
 
-    .card-item .card-info h4 { font-size: 0.72rem; }
-    .card-item .card-info .card-type { font-size: 0.65rem; }
+    .card-item .card-info h4 { font-size: 0.68rem; }
+    .card-item .card-info .card-type { display: none; }
   }
 
   .collection-grid, .wishlist-grid {
@@ -1508,7 +1508,7 @@
   }
 
   .card-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
   }
 
   .collection-card, .wishlist-card {

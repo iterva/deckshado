@@ -160,12 +160,12 @@
             <span class="export-card-name">{{ entry.card_detail.name }}</span>
             <div class="export-card-imgs">
               @if (entry.quantity >= 3) {
-                <img class="export-shadow es3" [src]="entry.card_detail.image_url | thumb:350" aria-hidden="true" crossorigin="anonymous">
+                <img class="export-shadow es3" [src]="entry.card_detail.image_url | thumb:350" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
               }
               @if (entry.quantity >= 2) {
-                <img class="export-shadow es2" [src]="entry.card_detail.image_url | thumb:350" aria-hidden="true" crossorigin="anonymous">
+                <img class="export-shadow es2" [src]="entry.card_detail.image_url | thumb:350" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
               }
-              <img class="export-top" [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" crossorigin="anonymous">
+              <img class="export-top" [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
               @if (entry.quantity > 1) {
                 <span class="export-qty-badge">x{{ entry.quantity }}</span>
               }
@@ -181,12 +181,12 @@
               <span class="export-card-name">{{ entry.card_detail.name }}</span>
               <div class="export-card-imgs">
                 @if (entry.quantity >= 3) {
-                  <img class="export-shadow es3" [src]="entry.card_detail.image_url | thumb:350" aria-hidden="true" crossorigin="anonymous">
+                  <img class="export-shadow es3" [src]="entry.card_detail.image_url | thumb:350" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
                 }
                 @if (entry.quantity >= 2) {
-                  <img class="export-shadow es2" [src]="entry.card_detail.image_url | thumb:350" aria-hidden="true" crossorigin="anonymous">
+                  <img class="export-shadow es2" [src]="entry.card_detail.image_url | thumb:350" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
                 }
-                <img class="export-top" [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" crossorigin="anonymous">
+                <img class="export-top" [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
                 @if (entry.quantity > 1) {
                   <span class="export-qty-badge">x{{ entry.quantity }}</span>
                 }
@@ -264,7 +264,7 @@
                     <td class="col-qty">{{ entry.quantity }}</td>
                     <td class="col-name">
                       <span class="list-card-link">
-                        <img class="list-thumb" [src]="entry.card_detail.image_url | thumb:60" [alt]="entry.card_detail.name" loading="lazy">
+                        <img class="list-thumb" [src]="entry.card_detail.image_url | thumb:60" [alt]="entry.card_detail.name" loading="lazy" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
                         <span class="list-name">{{ entry.card_detail.name }}</span>
                       </span>
                       @if (getBanStatus(entry.card_detail); as ban) {
@@ -387,13 +387,13 @@
           @for (entry of deck.sideboard_entries; track entry.id) {
             <div class="card-stack" [class.qty-2]="entry.quantity === 2" [class.qty-3]="entry.quantity >= 3">
               @if (entry.quantity >= 3) {
-                <img class="stack-shadow s3" [src]="entry.card_detail.image_url | thumb:80" aria-hidden="true" loading="lazy" fetchpriority="low">
+                <img class="stack-shadow s3" [src]="entry.card_detail.image_url | thumb:80" aria-hidden="true" loading="lazy" fetchpriority="low" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
               }
               @if (entry.quantity >= 2) {
-                <img class="stack-shadow s2" [src]="entry.card_detail.image_url | thumb:80" aria-hidden="true" loading="lazy" fetchpriority="low">
+                <img class="stack-shadow s2" [src]="entry.card_detail.image_url | thumb:80" aria-hidden="true" loading="lazy" fetchpriority="low" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
               }
               <div class="img-wrapper" [class.is-banned]="getBanStatus(entry.card_detail)?.status === 'banned'" [class.is-limited]="getBanStatus(entry.card_detail) && getBanStatus(entry.card_detail)?.status !== 'banned'">
-                <img class="stack-top" [src]="entry.card_detail.image_url | thumb:250" [alt]="entry.card_detail.name" loading="lazy" decoding="async">
+                <img class="stack-top" [src]="entry.card_detail.image_url | thumb:250" [alt]="entry.card_detail.name" loading="lazy" decoding="async" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
                 <button type="button" class="icon-overlay eye-icon" (click)="showPreview(entry.card_detail, $event)" aria-label="Ver detalle">
                   <i class="bi bi-eye-fill"></i>
                 </button>

@@ -540,6 +540,11 @@
     cursor: not-allowed;
     &:hover { transform: none; }
   }
+
+  &.off-format {
+    border-color: #f4a261;
+    background: rgba(244, 162, 97, 0.08);
+  }
 }
 
 .pagination {
@@ -1520,6 +1525,23 @@
   .vh { color: #f87171; font-weight: 600; margin-bottom: 0.3rem; display: flex; align-items: center; gap: 0.35rem; }
   .v-row { color: #ddd; padding: 0.15rem 0; }
   .v-row strong { color: #f87171; }
+
+  &.format-violations {
+    border-color: rgba(244, 162, 97, 0.45);
+    background: rgba(244, 162, 97, 0.08);
+
+    .vh {
+      color: #f4a261;
+    }
+
+    .v-row strong {
+      color: #f4a261;
+    }
+
+    .btn {
+      margin-top: 0.45rem;
+    }
+  }
 }
 
 .deck-entry.has-violation {

@@ -47,6 +47,7 @@ export class DeckViewComponent implements OnInit {
   shareToast = false;
   @ViewChild('deckContent') deckContent!: ElementRef;
   private abilityCache = new Map<number, string>();
+  private readonly deckImagePlaceholder = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="350" height="500" viewBox="0 0 350 500"><rect width="350" height="500" fill="%231a1f3d"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%2396a1c8" font-family="Arial" font-size="20">Sin imagen</text></svg>';
 
   // Hand simulator
   handCards: Card[] = [];
@@ -856,12 +857,21 @@ export class DeckViewComponent implements OnInit {
 
   handleDeckImageError(event: Event, originalUrl: string | null | undefined) {
     const img = event.target as HTMLImageElement | null;
-    if (!img || !originalUrl) return;
+    if (!img) return;
+
+    if (!originalUrl) {
+      img.onerror = null;
+      img.src = this.deckImagePlaceholder;
+      return;
+    }
 
     // Avoid fallback loops when the failing URL is already the original source.
     const current = img.currentSrc || img.src || '';
     if (current === originalUrl || img.dataset['fallbackApplied'] === '1') {
       img.onerror = null;
+      if (current !== this.deckImagePlaceholder) {
+        img.src = this.deckImagePlaceholder;
+      }
       return;
     }
 

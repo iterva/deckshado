@@ -705,11 +705,13 @@ export class DeckBuilderComponent implements OnInit {
   };
 
   private isRaceless(card: Card): boolean {
-    return !card.race_name || card.race_name === 'Sin Raza';
+    const rs = (card.race_slug || '').toLowerCase().trim();
+    const rn = (card.race_name || '').toLowerCase().trim();
+    return (!rs && !rn) || rs === 'noraza' || rn === 'sin raza';
   }
 
   private isAlly(card: Card): boolean {
-    return card.type_name === 'Aliado';
+    return (card.type_name || '').toLowerCase().trim() === 'aliado';
   }
 
   private cardMatchesRace(card: Card, raceSlug: string): boolean {
@@ -767,15 +769,10 @@ export class DeckBuilderComponent implements OnInit {
       return this.isRaceless(card);
     }
 
-    // Specific race: allies of that race are allowed
+    // Specific race: only allies of that race are allowed
     if (this.cardMatchesRace(card, this.selectedRace)) return true;
 
-    // Raceless allies: max 4 across main + side
-    if (this.isRaceless(card)) {
-      return this.getRacelessAllyCount() < 4;
-    }
-
-    // Different race ally: not allowed
+    // Different race ally (or raceless ally in non-totem race): not allowed
     return false;
   }
 
@@ -790,12 +787,76 @@ export class DeckBuilderComponent implements OnInit {
       if (this.selectedRace === 'dream') return true;
       // Tótem: only raceless allies
       if (this.selectedRace === 'totem') return this.isRaceless(card);
-      // Specific race: show matching race + raceless
-      return this.cardMatchesRace(card, this.selectedRace) || this.isRaceless(card);
+      // Specific race: show only matching race allies
+      return this.cardMatchesRace(card, this.selectedRace);
     });
   }
 
+  /** True when the card edition belongs to the selected deck format/scope. */
+  isCardAllowedByFormat(card: Card): boolean {
+    const editionSlug = card.edition_slug;
+    if (!editionSlug) return true;
+
+    if (this.selectedFormat === 'esc') {
+      return this.escEditionSlugs.includes(editionSlug);
+    }
+
+    if ((this.selectedFormat === 'pb' || this.selectedFormat === 'pe') && this.pbEditionScope.length > 0) {
+      return this.pbEditionScope.includes(editionSlug);
+    }
+
+    const edition = this.allEditions.find(e => e.slug === editionSlug);
+    if (!edition?.format_code) return true;
+    return edition.format_code === this.selectedFormat;
+  }
+
+  private formatViolationReason(card: Card): string {
+    if (this.selectedFormat === 'esc') {
+      return `No pertenece a Escuelas Elementales (${card.edition_title})`;
+    }
+    return `No pertenece al formato ${this.formatName} (${card.edition_title})`;
+  }
+
+  get formatViolations(): { card: Card; section: 'main' | 'side'; reason: string }[] {
+    const out: { card: Card; section: 'main' | 'side'; reason: string }[] = [];
+
+    for (const dc of this.deckCards) {
+      if (!this.isCardAllowedByFormat(dc.card)) {
+        out.push({ card: dc.card, section: 'main', reason: this.formatViolationReason(dc.card) });
+      }
+    }
+    for (const dc of this.sideCards) {
+      if (!this.isCardAllowedByFormat(dc.card)) {
+        out.push({ card: dc.card, section: 'side', reason: this.formatViolationReason(dc.card) });
+      }
+    }
+    return out;
+  }
+
+  removeOffFormatCards() {
+    const beforeMain = this.deckCards.length;
+    const beforeSide = this.sideCards.length;
+
+    this.deckCards = this.deckCards.filter(dc => this.isCardAllowedByFormat(dc.card));
+    this.sideCards = this.sideCards.filter(dc => this.isCardAllowedByFormat(dc.card));
+
+    if (this.startingGoldId && !this.deckCards.some(dc => dc.card.id === this.startingGoldId)) {
+      this.startingGoldId = null;
+    }
+
+    const removedMain = beforeMain - this.deckCards.length;
+    const removedSide = beforeSide - this.sideCards.length;
+    if (removedMain > 0 || removedSide > 0) {
+      this.sortDeckCards(this.deckCards);
+      this.sortDeckCards(this.sideCards);
+      this.markDirty();
+      this.showToast(`Se limpiaron ${removedMain} cartas del mazo y ${removedSide} del side por formato.`, 'success');
+    }
+  }
+
   addCard(card: Card) {
+    if (!this.isCardAllowedByFormat(card)) return;
+
     const maxQty = this.getEffectiveMaxCopies(card);
     if (maxQty === 0) return; // banned
 
@@ -844,6 +905,8 @@ export class DeckBuilderComponent implements OnInit {
   }
 
   addToSide(card: Card) {
+    if (!this.isCardAllowedByFormat(card)) return;
+
     const maxQty = this.getEffectiveMaxCopies(card);
     if (maxQty === 0) return;
     if (this.getNameCount(card.name) >= maxQty) return;
@@ -1175,6 +1238,11 @@ export class DeckBuilderComponent implements OnInit {
 
     if (errors.length) {
       this.showToast(errors.join('. '), 'error');
+      return;
+    }
+
+    if (this.formatViolations.length > 0) {
+      this.showToast('Hay cartas fuera de formato. Usa "Limpiar fuera de formato" antes de guardar.', 'error');
       return;
     }
 
@@ -1842,6 +1910,8 @@ export class DeckBuilderComponent implements OnInit {
           if (!card && res.results.length > 0) card = res.results[0];
           if (!card) {
             report.notFound.push(item.name);
+          } else if (!this.isCardAllowedByFormat(card)) {
+            report.notFound.push(`${item.name} (fuera de formato)`);
           } else {
             let actuallyAdded = 0;
             for (let i = 0; i < item.qty; i++) {
@@ -1898,6 +1968,8 @@ export class DeckBuilderComponent implements OnInit {
         next: (card) => {
           if (!card) {
             report.notFound.push(`#${item.id}`);
+          } else if (!this.isCardAllowedByFormat(card)) {
+            report.notFound.push(`${card.name} (fuera de formato)`);
           } else {
             let actuallyAdded = 0;
             for (let i = 0; i < item.qty; i++) {

@@ -148,6 +148,7 @@
              (mouseup)="holdEnd()"
              (mouseleave)="holdCancel()"
              [class.in-deck]="getQuantityInDeck(card.id) > 0"
+             [class.off-format]="!isCardAllowedByFormat(card)"
              [class.banned]="getBanStatus(card)?.status === 'banned'"
              [class.name-taken]="hasDifferentVersion(card)"
              [class.name-maxed]="getNameCount(card.name) >= getEffectiveMaxCopies(card)"
@@ -174,7 +175,7 @@
                 <span class="mini-qty">{{ getQuantityInDeck(card.id) }}</span>
               }
               <button class="circle-btn add" (click)="addCard(card); $event.stopPropagation()"
-                      [disabled]="getBanStatus(card)?.status === 'banned' || getNameCount(card.name) >= getEffectiveMaxCopies(card) || totalDeckCards >= 50 || !isCardAllowedByRace(card)">+</button>
+                      [disabled]="getBanStatus(card)?.status === 'banned' || getNameCount(card.name) >= getEffectiveMaxCopies(card) || totalDeckCards >= 50 || !isCardAllowedByRace(card) || !isCardAllowedByFormat(card)">+</button>
             </div>
             <div class="mini-actions side-actions">
               <span class="side-label">S</span>
@@ -183,7 +184,7 @@
                 <span class="mini-qty">{{ getQuantityInSide(card.id) }}</span>
               }
               <button class="circle-btn add side" (click)="addToSide(card); $event.stopPropagation()"
-                      [disabled]="getBanStatus(card)?.status === 'banned' || getNameCount(card.name) >= getEffectiveMaxCopies(card) || totalSideCards >= 15 || !isCardAllowedByRace(card)">+</button>
+                      [disabled]="getBanStatus(card)?.status === 'banned' || getNameCount(card.name) >= getEffectiveMaxCopies(card) || totalSideCards >= 15 || !isCardAllowedByRace(card) || !isCardAllowedByFormat(card)">+</button>
             </div>
           </div>
           @if (getBanStatus(card); as ban) {
@@ -194,6 +195,9 @@
             } @else if (ban.status === 'limited_2') {
               <span class="ban-badge limited">☢️ Límite 2</span>
             }
+          }
+          @if (!isCardAllowedByFormat(card)) {
+            <span class="ban-badge limited">🚫 Fuera de formato</span>
           }
         </div>
       }
@@ -339,6 +343,18 @@
       </div>
     }
 
+    @if (formatViolations.length > 0) {
+      <div class="violations-panel format-violations">
+        <div class="vh"><i class="bi bi-diagram-3"></i> Cartas fuera de formato</div>
+        @for (v of formatViolations; track v.card.id + '-' + v.section) {
+          <div class="v-row"><strong>{{ v.card.name }}</strong> ({{ v.section === 'main' ? 'Mazo' : 'Side' }}) — {{ v.reason }}</div>
+        }
+        <button type="button" class="btn btn-secondary btn-sm" (click)="removeOffFormatCards()">
+          Limpiar fuera de formato
+        </button>
+      </div>
+    }
+
     @if (typeCounts.length) {
       <div class="type-breakdown">
         @for (tc of typeCounts; track tc.label) {
@@ -396,7 +412,7 @@
               <div class="entry-controls">
                 <button class="ctrl-btn" (click)="removeCard(dc.card.id)">−</button>
                 <span class="entry-qty">{{ dc.quantity }}</span>
-                <button class="ctrl-btn" (click)="addCard(dc.card)" [disabled]="getNameCount(dc.card.name) >= getEffectiveMaxCopies(dc.card) || totalDeckCards >= 50">+</button>
+                <button class="ctrl-btn" (click)="addCard(dc.card)" [disabled]="getNameCount(dc.card.name) >= getEffectiveMaxCopies(dc.card) || totalDeckCards >= 50 || !isCardAllowedByFormat(dc.card)">+</button>
                 <button class="ctrl-btn move-btn" (click)="moveToSide(dc.card.id)" [disabled]="totalSideCards >= 15" title="Mover al sidedeck">
                   <i class="bi bi-arrow-down-short"></i>
                 </button>
@@ -439,7 +455,7 @@
               <div class="entry-controls">
                 <button class="ctrl-btn" (click)="removeFromSide(dc.card.id)">−</button>
                 <span class="entry-qty">{{ dc.quantity }}</span>
-                <button class="ctrl-btn" (click)="addToSide(dc.card)" [disabled]="getNameCount(dc.card.name) >= getEffectiveMaxCopies(dc.card) || totalSideCards >= 15">+</button>
+                <button class="ctrl-btn" (click)="addToSide(dc.card)" [disabled]="getNameCount(dc.card.name) >= getEffectiveMaxCopies(dc.card) || totalSideCards >= 15 || !isCardAllowedByFormat(dc.card)">+</button>
                 <button class="ctrl-btn move-btn" (click)="moveToMain(dc.card.id)" [disabled]="totalDeckCards >= 50" title="Mover al mazo principal">
                   <i class="bi bi-arrow-up-short"></i>
                 </button>

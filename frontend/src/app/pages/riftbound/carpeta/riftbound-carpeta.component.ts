@@ -38,8 +38,11 @@ interface DirtyPatch {
     <!-- Header -->
     <div class="carpeta-header">
       <div class="binder-avatar-wrap">
-        @if (binderProfile()?.binder_avatar_url || binderProfile()?.user_avatar_url) {
-          <img class="binder-avatar" [src]="binderProfile()!.binder_avatar_url || binderProfile()!.user_avatar_url" alt="avatar" />
+        @if ((binderProfile()?.binder_avatar_url || binderProfile()?.user_avatar_url) && !binderAvatarFailed()) {
+          <img class="binder-avatar"
+               [src]="binderProfile()!.binder_avatar_url || binderProfile()!.user_avatar_url"
+               alt="avatar"
+               (error)="onBinderAvatarError()" />
         } @else {
           <div class="binder-avatar-placeholder">📁</div>
         }
@@ -51,7 +54,7 @@ interface DirtyPatch {
         <input #avatarInput type="file" accept="image/*" hidden (change)="onAvatarFileChange($event)" />
       </div>
       <div class="binder-info">
-        <h1>Mi Carpeta · Riftbound</h1>
+        <h1 class="binder-title">Mi Carpeta · Riftbound</h1>
         <p class="binder-user">{{ auth.user()?.username || 'Invitado' }}</p>
       </div>
     </div>
@@ -729,14 +732,14 @@ interface DirtyPatch {
       border: 1px solid #2a3a4a; border-radius: 12px;
     }
     .binder-avatar-wrap {
-      position: relative; width: 72px; height: 72px;
+      position: relative; width: 80px; height: 80px; flex-shrink: 0;
     }
     .binder-avatar {
-      width: 72px; height: 72px; border-radius: 12px;
+      width: 80px; height: 80px; border-radius: 14px;
       border: 2px solid #e94560; object-fit: cover; display: block;
     }
     .binder-avatar-placeholder {
-      width: 72px; height: 72px; border-radius: 12px;
+      width: 80px; height: 80px; border-radius: 14px;
       background: #0f0f23; border: 2px solid #e94560;
       display: flex; align-items: center; justify-content: center;
       font-size: 2rem;
@@ -749,9 +752,17 @@ interface DirtyPatch {
       display: flex; align-items: center; justify-content: center;
     }
     .avatar-edit-btn:hover { background: #e94560; color: #fff; }
-    .binder-info h1 { margin: 0; font-size: 1.6rem; color: #fff;
-      background: linear-gradient(90deg, #e94560, #fff); -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent; background-clip: text; }
+    .binder-info { min-width: 0; }
+    .binder-title {
+      margin: 0;
+      font-size: 1.6rem;
+      font-weight: 700;
+      line-height: 1.15;
+      color: #f2f6ff !important;
+      background: none !important;
+      -webkit-text-fill-color: #f2f6ff !important;
+      word-break: break-word;
+    }
     .binder-user { margin: .25rem 0 0; color: #9ba3b4; font-size: .95rem; }
 
     .tabs {
@@ -1195,6 +1206,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   /** Mensaje personalizable que aparece bajo el titulo en la imagen compartida. */
   wishlistShareMessage = '';
   avatarUploading = signal(false);
+  binderAvatarFailed = signal(false);
   showStoreConfig = signal(false);
   mercadoEntries = signal<RiftboundCollectionEntry[]>([]);
   mercadoLoading = signal(false);
@@ -1598,6 +1610,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   loadBinderProfile() {
     this.rb.getBinderProfile().subscribe(p => {
       this.binderProfile.set(p);
+      this.binderAvatarFailed.set(false);
       this.cdr.markForCheck();
     });
   }
@@ -1605,8 +1618,14 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   patchProfile(patch: Partial<RiftboundBinderProfile>) {
     this.rb.updateBinderProfile(patch).subscribe(p => {
       this.binderProfile.set(p);
+      this.binderAvatarFailed.set(false);
       this.cdr.markForCheck();
     });
+  }
+
+  onBinderAvatarError() {
+    this.binderAvatarFailed.set(true);
+    this.cdr.markForCheck();
   }
 
   onAvatarFileChange(event: Event) {
@@ -1622,6 +1641,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     this.rb.uploadBinderAvatar(file).subscribe({
       next: p => {
         this.binderProfile.set(p);
+        this.binderAvatarFailed.set(false);
         this.avatarUploading.set(false);
         this.cdr.markForCheck();
       },

@@ -67,7 +67,7 @@ function typeRank(t?: string): number {
               <div class="hero-cover hero-cover-empty">⚔️</div>
             }
             <div class="hero-info">
-              <h1 class="page-title">{{ d.name }}</h1>
+              <h1 class="deck-title">{{ d.name }}</h1>
               <div class="deck-chips">
                 <span class="chip chip-owner">👤 {{ d.owner_username }}</span>
                 @for (col of d.primary_colors; track col) {
@@ -569,10 +569,14 @@ function typeRank(t?: string): number {
       color: #2a2a4a; font-size: 3.2rem;
     }
     .hero-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
-    .page-title {
+    .deck-title {
       margin: 0 0 .65rem; font-size: 1.9rem; line-height: 1.15;
       color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.6);
       font-weight: 700; word-break: break-word;
+      background: none !important;
+      -webkit-text-fill-color: #fff !important;
+      -webkit-background-clip: border-box !important;
+      background-clip: border-box !important;
     }
     .deck-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .6rem; }
     .chip {
@@ -599,7 +603,7 @@ function typeRank(t?: string): number {
     @media (max-width: 720px) {
       .hero-content { flex-direction: column; align-items: flex-start; }
       .hero-cover { width: 140px; height: 196px; }
-      .page-title { font-size: 1.5rem; }
+      .deck-title { font-size: 1.5rem; }
     }
 
     /* Action bar */

@@ -41,13 +41,16 @@ interface RiftboundCartItem {
 
     @if (store(); as s) {
       <div class="store-header">
-        @if (s.binder_avatar_url || s.user_avatar_url) {
-          <img class="store-avatar" [src]="s.binder_avatar_url || s.user_avatar_url" alt="avatar" />
+        @if ((s.binder_avatar_url || s.user_avatar_url) && !storeAvatarFailed()) {
+          <img class="store-avatar"
+               [src]="s.binder_avatar_url || s.user_avatar_url"
+               alt="avatar"
+               (error)="onStoreAvatarError()" />
         } @else {
           <div class="store-avatar-placeholder">🏪</div>
         }
         <div class="store-info">
-          <h1>{{ s.display_name || s.username }}</h1>
+          <h1 class="store-title">{{ s.display_name || s.username }}</h1>
           <p class="store-meta">
             @if (s.city) { <span>📍 {{ s.city }}</span> }
             <span>🌎 {{ s.country }}</span>
@@ -301,9 +304,15 @@ interface RiftboundCartItem {
     .store-avatar-placeholder {
       background: #0f0f23; display: flex; align-items: center; justify-content: center; font-size: 2.6rem;
     }
-    .store-info h1 { margin: 0; color: #fff;
-      background: linear-gradient(90deg, #e94560, #fff); -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent; background-clip: text; }
+    .store-info { min-width: 0; }
+    .store-title {
+      margin: 0;
+      color: #f2f6ff !important;
+      background: none !important;
+      -webkit-text-fill-color: #f2f6ff !important;
+      line-height: 1.15;
+      word-break: break-word;
+    }
     .store-meta { display: flex; gap: 1rem; flex-wrap: wrap; color: #9ba3b4; font-size: .9rem; margin: .35rem 0; }
     .store-bio { color: #c8c8da; margin: .35rem 0 .6rem; }
     .store-line { color: #9ba3b4; font-size: .85rem; margin: .2rem 0; }
@@ -495,6 +504,7 @@ export class RiftboundTiendaComponent implements OnInit {
   count = signal(0);
   page = signal(1);
   preview = signal<RiftboundCardLite | null>(null);
+  storeAvatarFailed = signal(false);
 
   // Cart
   cart = signal<RiftboundCartItem[]>([]);
@@ -548,6 +558,7 @@ export class RiftboundTiendaComponent implements OnInit {
         this.entries.set(res.results);
         this.count.set(res.count);
         this.store.set(res.store);
+        this.storeAvatarFailed.set(false);
         this.loading.set(false);
         this.syncCartAvailability();
         this.cdr.markForCheck();
@@ -565,6 +576,11 @@ export class RiftboundTiendaComponent implements OnInit {
 
   cleanWa(v: string): string { return v.replace(/[^0-9]/g, ''); }
   cleanHandle(v: string): string { return v.replace(/^@/, '').trim(); }
+
+  onStoreAvatarError() {
+    this.storeAvatarFailed.set(true);
+    this.cdr.markForCheck();
+  }
 
   // ── Compartir imagen estilo CardIndex ──
   sellerHandle(): string {

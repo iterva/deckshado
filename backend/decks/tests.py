@@ -1,10 +1,16 @@
 """Tests for decks app: visibility, likes, comments."""
+from io import StringIO
+from datetime import date
+
+from django.core.management import call_command
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from django.test import TestCase
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from decks.models import Deck, DeckLike, DeckComment
+from cards.models import Card, Edition, Format
+from decks.models import Deck, DeckLike, DeckComment, DeckEntry
 
 User = get_user_model()
 
@@ -136,3 +142,91 @@ class DeckCommentTests(APITestCase):
         url = reverse("delete-comment", args=[c.id])
         resp = self.client.delete(url)
         self.assertEqual(resp.status_code, 403)
+
+
+class FixDeckEntriesByNameCommandTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(username="owner_fix", password="x")
+
+        cls.fmt_imp = Format.objects.create(code="imp", name="Imperio")
+        cls.fmt_impr = Format.objects.create(code="imp_r", name="Imperio R")
+
+        cls.ed_imp = Edition.objects.create(
+            myl_id="ed_imp",
+            slug="ed-imp",
+            title="Ed IMP",
+            format=cls.fmt_imp,
+            active=True,
+            date_release=date(2026, 1, 1),
+        )
+        cls.ed_impr = Edition.objects.create(
+            myl_id="ed_impr",
+            slug="ed-impr",
+            title="Ed IMPR",
+            format=cls.fmt_impr,
+            active=True,
+            date_release=date(2026, 2, 1),
+        )
+
+        cls.card_imp_shadow = Card.objects.create(
+            myl_id="c_imp_shadow",
+            edid="1",
+            slug="shadow-ban-imp",
+            name="Shadow Ban",
+            edition=cls.ed_imp,
+        )
+        cls.card_impr_shadow = Card.objects.create(
+            myl_id="c_impr_shadow",
+            edid="2",
+            slug="shadow-ban-impr",
+            name="Shadow Ban",
+            edition=cls.ed_impr,
+        )
+        cls.card_impr_unmatched = Card.objects.create(
+            myl_id="c_impr_unmatched",
+            edid="3",
+            slug="sin-equivalente",
+            name="Nombre Sin Equivalente",
+            edition=cls.ed_impr,
+        )
+
+    def test_replaces_and_merges_same_name_into_deck_format(self):
+        deck = Deck.objects.create(owner=self.user, name="Deck Merge", format="imp")
+        DeckEntry.objects.create(deck=deck, card=self.card_imp_shadow, quantity=1, is_sideboard=False)
+        DeckEntry.objects.create(deck=deck, card=self.card_impr_shadow, quantity=2, is_sideboard=False)
+
+        call_command("fix_deck_entries_by_name")
+
+        entries = list(DeckEntry.objects.filter(deck=deck).order_by("id"))
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0].card_id, self.card_imp_shadow.id)
+        self.assertEqual(entries[0].quantity, 3)
+
+    def test_removes_unmatched_off_format_entry_by_default(self):
+        deck = Deck.objects.create(owner=self.user, name="Deck Remove", format="imp")
+        DeckEntry.objects.create(deck=deck, card=self.card_impr_unmatched, quantity=1, is_sideboard=False)
+
+        call_command("fix_deck_entries_by_name")
+
+        self.assertEqual(DeckEntry.objects.filter(deck=deck).count(), 0)
+
+    def test_dry_run_does_not_modify_entries(self):
+        deck = Deck.objects.create(owner=self.user, name="Deck Dry", format="imp")
+        DeckEntry.objects.create(deck=deck, card=self.card_impr_shadow, quantity=2, is_sideboard=False)
+
+        out = StringIO()
+        call_command("fix_deck_entries_by_name", "--dry-run", stdout=out)
+
+        entry = DeckEntry.objects.get(deck=deck)
+        self.assertEqual(entry.card_id, self.card_impr_shadow.id)
+        self.assertIn("(dry-run)", out.getvalue())
+
+    def test_keep_unmatched_preserves_entry(self):
+        deck = Deck.objects.create(owner=self.user, name="Deck Keep", format="imp")
+        DeckEntry.objects.create(deck=deck, card=self.card_impr_unmatched, quantity=1, is_sideboard=False)
+
+        call_command("fix_deck_entries_by_name", "--keep-unmatched")
+
+        entry = DeckEntry.objects.get(deck=deck)
+        self.assertEqual(entry.card_id, self.card_impr_unmatched.id)

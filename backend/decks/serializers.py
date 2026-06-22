@@ -3,6 +3,21 @@ from .models import Deck, DeckEntry, DeckChangeLog, DeckLike, DeckSnapshot, Deck
 from cards.serializers import CardListSerializer
 
 
+ESC_EDITION_SLUGS = {
+    "bushido",
+    "sol-naciente",
+    "dominio",
+    "contraataque",
+    "aguila-imperial",
+    "steampunk",
+    "axis-mundi",
+    "hijos-del-sol",
+    "legado-gotico",
+    "escuelas_elementales",
+    "heroes_de_dharma",
+}
+
+
 class DeckEntrySerializer(serializers.ModelSerializer):
     card_detail = CardListSerializer(source="card", read_only=True)
 
@@ -90,6 +105,50 @@ class DeckCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Deck
         fields = ["id", "name", "description", "is_public", "shared_with_team", "format", "sub_format", "race", "pb_edition", "starting_gold", "cover_card", "entries"]
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+
+        entries_data = attrs.get("entries")
+        if entries_data is None:
+            return attrs
+
+        current_fmt = attrs.get("format")
+        if not current_fmt and self.instance is not None:
+            current_fmt = self.instance.format
+        current_fmt = current_fmt or "imp"
+
+        invalid_cards = []
+        for entry in entries_data:
+            card = entry.get("card")
+            if card is None:
+                continue
+            if not self._card_matches_deck_format(card, current_fmt):
+                invalid_cards.append(card.name)
+
+        if invalid_cards:
+            preview = ", ".join(sorted(set(invalid_cards))[:8])
+            raise serializers.ValidationError({
+                "entries": (
+                    f"Hay cartas fuera del formato '{current_fmt}'. "
+                    f"Revisa: {preview}."
+                )
+            })
+
+        return attrs
+
+    def _card_matches_deck_format(self, card, deck_format):
+        edition = getattr(card, "edition", None)
+        if edition is None:
+            return True
+
+        if deck_format == "esc":
+            return getattr(edition, "slug", "") in ESC_EDITION_SLUGS
+
+        card_format = getattr(getattr(edition, "format", None), "code", None)
+        if not card_format:
+            return True
+        return card_format == deck_format
 
     def create(self, validated_data):
         entries_data = validated_data.pop("entries", [])

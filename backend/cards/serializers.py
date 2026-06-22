@@ -61,9 +61,9 @@ class CardListSerializer(serializers.ModelSerializer):
         # Prefer custom URL for promo/extra cards
         custom = getattr(obj, 'custom_image_url', None)
         if custom:
-            rewritten_extra = self._rewrite_legacy_extra_card_url(custom)
-            if rewritten_extra:
-                return rewritten_extra
+            rewritten_url = self._rewrite_legacy_cloudinary_url(custom)
+            if rewritten_url:
+                return rewritten_url
             if self._should_fallback_from_non_r2(obj, custom) and fallback:
                 return fallback
             return custom
@@ -77,26 +77,32 @@ class CardListSerializer(serializers.ModelSerializer):
 
         val = getattr(obj, 'image_url', None)
         if val and not callable(val):
-            rewritten_extra = self._rewrite_legacy_extra_card_url(val)
-            if rewritten_extra:
-                return rewritten_extra
+            rewritten_url = self._rewrite_legacy_cloudinary_url(val)
+            if rewritten_url:
+                return rewritten_url
             if self._should_fallback_from_non_r2(obj, val) and fallback:
                 return fallback
             return val
         return fallback
 
-    def _rewrite_legacy_extra_card_url(self, url):
-        """Map retired Cloudinary extra-card URLs to active Cloudinary account."""
+    def _rewrite_legacy_cloudinary_url(self, url):
+        """Map retired Cloudinary URLs to the active Cloudinary account.
+
+        We only rewrite known migrated folders to avoid touching unrelated assets.
+        """
         if not isinstance(url, str) or not url:
             return None
         lower = url.lower()
         legacy_prefix = "https://res.cloudinary.com/dmvu6tuee/"
-        marker = "/deckshado/extra_cards/"
-        if legacy_prefix not in lower or marker not in lower:
+        if legacy_prefix not in lower:
             return None
 
-        idx = lower.find(marker)
-        if idx == -1:
+        migrated_markers = (
+            "/deckshado/extra_cards/",
+            "/deckshado/myl_cards/",
+            "/primera_era/",
+        )
+        if not any(marker in lower for marker in migrated_markers):
             return None
         return url.replace("res.cloudinary.com/dmvu6tuee", "res.cloudinary.com/drw7y27sm")
 

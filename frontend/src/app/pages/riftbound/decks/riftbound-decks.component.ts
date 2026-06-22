@@ -30,7 +30,7 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <div class="rb-decks-container">
-      <h1 class="page-title">Mazos Riftbound</h1>
+      <h1 class="page-title rb-page-title">Mazos Riftbound</h1>
 
       @if (auth.isAuthenticated()) {
         <div class="toolbar-row" role="tablist">
@@ -187,7 +187,16 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
   `,
   styles: [`
     .rb-decks-container { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1rem; }
-    .page-title { font-size: 1.6rem; margin: 0 0 1rem; color: #fff; font-weight: 700; }
+    .rb-page-title {
+      font-size: 1.6rem;
+      margin: 0 0 1rem;
+      font-weight: 700;
+      color: #f2f6ff !important;
+      background: none !important;
+      -webkit-text-fill-color: #f2f6ff !important;
+      background-clip: border-box !important;
+      -webkit-background-clip: border-box !important;
+    }
 
     /* Tabs */
     .toolbar-row { display: flex; gap: .75rem; margin-bottom: 1rem; flex-wrap: wrap; }

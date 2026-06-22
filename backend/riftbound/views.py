@@ -10,6 +10,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticate
 from backend.cdn_image_upload import upload_image_to_cdn, CdnImageUploadError
 
 from .tcgplayer import get_tcg_price, get_tcg_prices_batch
+from .tcgmatch import get_tcgmatch_price
 
 from .models import (
     RiftboundCard, RiftboundSet, RiftboundFormat, RiftboundBanlistEntry,
@@ -1048,3 +1049,25 @@ def tcgplayer_prices_batch_view(request):
 
     prices = get_tcg_prices_batch(card_names)
     return Response({"prices": prices})
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def tcgmatch_price_view(request):
+    """Obtiene precio de TCGMatch para una carta por nombre."""
+    card_name = request.query_params.get("card_name", "").strip()
+    if not card_name or len(card_name) < 2:
+        return Response({"error": "card_name is required (min 2 chars)"}, status=400)
+
+    data = get_tcgmatch_price(card_name)
+    if data is None or (
+        data.get("market_price") is None and data.get("low_price") is None
+    ):
+        return Response({
+            "card_name": card_name,
+            "market_price": None,
+            "low_price": None,
+            "currency": "CLP",
+        })
+
+    return Response(data)

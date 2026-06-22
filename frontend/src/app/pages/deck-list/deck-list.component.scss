@@ -2,9 +2,14 @@
 // Deck list - toolbar, tarjetas, mosaicos, skeleton
 // =====================================================
 
-.page-title {
+.myl-page-title {
   font-size: 1.6rem;
   margin-bottom: 1rem;
+  color: #f2f6ff !important;
+  background: none !important;
+  -webkit-text-fill-color: #f2f6ff !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
 }
 
 // Toolbar superior (tabs + comparar)

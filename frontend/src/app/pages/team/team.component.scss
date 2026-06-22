@@ -5,6 +5,18 @@
   align-items: center;
   margin-bottom: 1.5rem;
 
+  .myl-page-title {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #f2f6ff !important;
+    background: none !important;
+    -webkit-text-fill-color: #f2f6ff !important;
+    -webkit-background-clip: border-box !important;
+    background-clip: border-box !important;
+    line-height: 1.15;
+  }
+
   .header-actions {
     display: flex;
     gap: 0.5rem;

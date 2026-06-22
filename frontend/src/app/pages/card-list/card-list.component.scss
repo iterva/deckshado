@@ -35,6 +35,16 @@
   }
 }
 
+.filters {
+  .search-bar input,
+  .filter-row select {
+    border-color: var(--ui-border);
+    border-radius: 11px;
+    background: var(--ui-surface-elevated);
+    color: var(--ui-text);
+  }
+}
+
 .results-bar {
   display: flex;
   align-items: center;
@@ -337,6 +347,138 @@
     &.selected {
       background: rgba(255, 189, 57, 0.12);
       .name-cell { color: #ffbd39; }
+    }
+  }
+}
+
+/* Card-list refresh layer */
+.results-count,
+.loading,
+.pagination {
+  color: var(--ui-text-muted);
+}
+
+.view-toggle {
+  border-color: var(--ui-border);
+  background: color-mix(in srgb, var(--ui-surface) 90%, #ffffff 10%);
+
+  .toggle-btn {
+    color: var(--ui-text-muted);
+
+    &.active {
+      background: var(--ui-accent);
+      color: #fff;
+    }
+
+    &:hover:not(.active) {
+      color: var(--ui-accent);
+    }
+  }
+}
+
+.card-item {
+  border-color: var(--ui-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ui-surface) 93%, #ffffff 7%);
+
+  &:hover {
+    border-color: var(--ui-accent);
+    box-shadow: 0 16px 30px rgba(0, 0, 0, 0.15);
+  }
+
+  &.selected {
+    border-color: var(--ui-accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-accent) 38%, transparent);
+  }
+
+  .card-image {
+    background: color-mix(in srgb, var(--ui-bg-soft) 88%, #ffffff 12%);
+  }
+
+  .card-info {
+    h4 { color: var(--ui-text); }
+    .card-type { color: var(--ui-text-muted); }
+    .card-cost,
+    .card-damage { color: var(--ui-accent); }
+  }
+}
+
+.card-detail-overlay {
+  background: rgba(6, 8, 12, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+.card-detail {
+  border-color: var(--ui-border);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--ui-surface) 94%, #ffffff 6%);
+
+  .close-btn {
+    background: color-mix(in srgb, var(--ui-surface) 82%, #000 18%);
+    border: 1px solid var(--ui-border);
+  }
+
+  .detail-info {
+    h2 {
+      color: var(--ui-text);
+      letter-spacing: -0.01em;
+    }
+
+    .detail-meta .badge {
+      background: color-mix(in srgb, var(--ui-bg-soft) 88%, #ffffff 12%);
+      color: var(--ui-text-muted);
+      border-radius: 999px;
+    }
+
+    .detail-meta .rarity {
+      color: var(--ui-accent);
+      border-color: var(--ui-accent);
+    }
+
+    .detail-stats { color: var(--ui-accent); }
+
+    .detail-ability {
+      h4 { color: var(--ui-text); }
+      p { color: color-mix(in srgb, var(--ui-text) 88%, var(--ui-text-muted) 12%); }
+    }
+
+    .flavour,
+    .detail-edition { color: var(--ui-text-muted); }
+  }
+}
+
+.card-table-wrap {
+  border-color: var(--ui-border);
+  border-radius: 14px;
+}
+
+.card-table {
+  th {
+    background: color-mix(in srgb, var(--ui-surface) 90%, #ffffff 10%);
+    color: var(--ui-text-muted);
+    border-bottom-color: color-mix(in srgb, var(--ui-border) 76%, transparent);
+  }
+
+  td {
+    color: var(--ui-text);
+    border-bottom-color: color-mix(in srgb, var(--ui-border) 62%, transparent);
+  }
+
+  .name-cell {
+    color: var(--ui-text);
+  }
+
+  tbody tr {
+    &:hover {
+      background: color-mix(in srgb, var(--ui-accent) 10%, transparent);
+    }
+
+    &.selected {
+      background: color-mix(in srgb, var(--ui-accent) 16%, transparent);
+
+      .name-cell {
+        color: var(--ui-accent);
+      }
     }
   }
 }

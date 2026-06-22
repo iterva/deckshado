@@ -440,7 +440,7 @@ function typeRank(t?: string): number {
                     <div class="preview-ban" [class.ban-banned]="pbs.status === 'banned'"
                                               [class.ban-limited]="pbs.status !== 'banned'">
                       @if (pbs.status === 'banned') { ⛔ Baneada en Standard }
-                      @else { ⚠️ Limitada a {{ pbs.max_copies ?? 1 }} copia(s) }
+                      @else { ⚠️ Limitada a {{ pbs.max_copies }} copia(s) }
                     </div>
                   }
                   <div class="preview-badges">
@@ -1139,11 +1139,11 @@ export class RiftboundDeckViewComponent implements OnInit {
   }
   banShort(b: RiftboundBanlistEntry): string {
     if (b.status === 'banned') return 'BAN';
-    return `×${b.max_copies ?? 1}`;
+    return `×${b.max_copies}`;
   }
   banTooltip(b: RiftboundBanlistEntry): string {
     if (b.status === 'banned') return 'Baneada';
-    return `Limitada a ${b.max_copies ?? 1} copia(s)`;
+    return `Limitada a ${b.max_copies} copia(s)`;
   }
 
   // ── Acciones owner ──

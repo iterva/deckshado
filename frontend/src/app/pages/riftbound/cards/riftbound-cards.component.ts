@@ -139,14 +139,6 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
             } @else {
               <div class="rb-card-placeholder">{{ card.name }}</div>
             }
-            <div class="rb-card-meta">
-              <strong>{{ card.name }}</strong>
-              <small>{{ card.card_number }}</small>
-              @if (card.description) {
-                <p class="rb-card-ability">{{ card.description }}</p>
-              }
-              <app-tcg-price [cardName]="card.name" [compact]="true" [showLink]="true"></app-tcg-price>
-            </div>
           </button>
         }
       </div>
@@ -275,11 +267,10 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
       .card-grid { grid-template-columns: repeat(auto-fit, minmax(78px, 1fr)); gap: 0.45rem; }
       .rb-card { gap: 0; }
       .rb-card img, .rb-card-placeholder { border-radius: .35rem; }
-      .rb-card-meta { display: none; }
     }
     @media (max-width: 360px) { .card-grid { grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 0.35rem; } }
     .rb-card {
-      text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: .35rem;
+      text-decoration: none; color: inherit; display: flex; flex-direction: column;
       transition: transform .15s;
       background: transparent; border: none; padding: 0; cursor: pointer;
       font: inherit; text-align: left;
@@ -287,14 +278,6 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
     .rb-card:hover { transform: translateY(-3px); }
     .rb-card img { width: 100%; aspect-ratio: 63/88; object-fit: cover; border-radius: .5rem; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
     .rb-card-placeholder { aspect-ratio: 63/88; display: grid; place-items: center; padding: 1rem; text-align: center; background: #16213e; border-radius: .5rem; color: #c8c8da; }
-    .rb-card-meta { display: flex; flex-direction: column; }
-    .rb-card-meta strong { color: #fff; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .rb-card-meta small { opacity: .6; font-size: .75rem; }
-    .rb-card-ability {
-      margin: .25rem 0 0; font-size: .72rem; color: #aaa; line-height: 1.35;
-      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
 
     .search-modes {
       display: flex; background: #16213e; border: 1px solid #2a2a4a;
@@ -367,7 +350,6 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
     :host-context(body.light-theme) .filter-group select,
     :host-context(body.light-theme) .chip { background: #ffffff; border-color: #d4c489; color: #2a1f10; }
     :host-context(body.light-theme) .chip.active { background: #785a28; border-color: #785a28; color: #fff; }
-    :host-context(body.light-theme) .rb-card-meta strong { color: #463714; }
   `],
 })
 export class RiftboundCardsComponent implements OnInit {

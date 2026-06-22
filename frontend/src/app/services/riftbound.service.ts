@@ -147,6 +147,7 @@ export class RiftboundService {
   private fetchCardsHttp(opts: {
     search?: string;
     searchMode?: 'name' | 'ability' | 'all';
+    hybrid?: boolean;
     type?: string;
     rarity?: string;
     colors?: string[];

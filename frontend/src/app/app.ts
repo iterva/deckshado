@@ -1,5 +1,5 @@
 import { Component, HostListener, signal, OnInit } from '@angular/core';
-import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
+import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
@@ -42,6 +42,22 @@ export class App implements OnInit {
     if (this.auth.isAuthenticated()) {
       this.notifs.load();
     }
+
+    this.router.events.subscribe((event) => {
+      if (event instanceof NavigationEnd && !this.canUseGlobalSearch()) {
+        this.showSearch.set(false);
+        this.searchResults = null;
+        this.searchQuery = '';
+      }
+    });
+  }
+
+  canUseGlobalSearch(): boolean {
+    return !(this.isMobileViewport() && this.router.url.startsWith('/riftbound/cards'));
+  }
+
+  private isMobileViewport(): boolean {
+    return typeof window !== 'undefined' && window.innerWidth <= 768;
   }
 
   toggleDropdown() {

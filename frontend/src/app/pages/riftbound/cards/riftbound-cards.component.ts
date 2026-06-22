@@ -269,8 +269,13 @@ const RARITIES = [
       display: grid; gap: 1rem;
       grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     }
-    @media (max-width: 600px) { .card-grid { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; } }
-    @media (max-width: 360px) { .card-grid { grid-template-columns: repeat(2, 1fr); gap: 0.4rem; } .rb-card-meta strong { font-size: 0.78rem !important; } .rb-card-meta small { font-size: 0.65rem !important; } }
+    @media (max-width: 600px) {
+      .card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.45rem; }
+      .rb-card { gap: 0; }
+      .rb-card img, .rb-card-placeholder { border-radius: .35rem; }
+      .rb-card-meta { display: none; }
+    }
+    @media (max-width: 360px) { .card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.35rem; } }
     .rb-card {
       text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: .35rem;
       transition: transform .15s;

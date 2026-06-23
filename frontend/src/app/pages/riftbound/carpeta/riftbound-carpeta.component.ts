@@ -398,6 +398,14 @@ interface DirtyPatch {
             </div>
           }
         </div>
+
+        @if (wishlistTotalPages() > 1) {
+          <div class="pagination">
+            <button class="btn btn-sm" (click)="wishlistPrev()" [disabled]="wishlistPage() <= 1">← Anterior</button>
+            <span>{{ wishlistPage() }} / {{ wishlistTotalPages() }}</span>
+            <button class="btn btn-sm" (click)="wishlistNext()" [disabled]="wishlistPage() >= wishlistTotalPages()">Siguiente →</button>
+          </div>
+        }
       </div>
     }
 
@@ -1211,6 +1219,8 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   wishlistPage = signal(1);
   wishlistSearch = '';
   wishlistLoading = signal(false);
+  private readonly WISHLIST_PAGE_SIZE = 20;
+  wishlistTotalPages = computed(() => Math.max(1, Math.ceil(this.wishlistTotal() / this.WISHLIST_PAGE_SIZE)));
 
   // Stats
   stats = signal<RiftboundCollectionStats | null>(null);
@@ -1562,7 +1572,11 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   // ── Wishlist ──
   loadWishlist() {
     this.wishlistLoading.set(true);
-    this.rb.listWishlist({ search: this.wishlistSearch || undefined, page: this.wishlistPage() }).subscribe({
+    this.rb.listWishlist({
+      search: this.wishlistSearch || undefined,
+      page: this.wishlistPage(),
+      page_size: this.WISHLIST_PAGE_SIZE,
+    }).subscribe({
       next: res => {
         this.wishlistEntries.set(res.results);
         this.wishlistTotal.set(res.count);
@@ -1573,6 +1587,16 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     });
   }
   onWishlistSearch() { this.wishlistPage.set(1); this.loadWishlist(); }
+  wishlistPrev() {
+    if (this.wishlistPage() <= 1) return;
+    this.wishlistPage.update(p => p - 1);
+    this.loadWishlist();
+  }
+  wishlistNext() {
+    if (this.wishlistPage() >= this.wishlistTotalPages()) return;
+    this.wishlistPage.update(p => p + 1);
+    this.loadWishlist();
+  }
 
   updateWishlistQty(entry: RiftboundWishlistEntry, qty: number) {
     if (!qty || qty < 1) return;

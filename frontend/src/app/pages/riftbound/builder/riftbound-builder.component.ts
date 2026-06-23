@@ -1383,7 +1383,7 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
       },
     });
     // Cargar todos los Champion Legends para el wizard
-    this.rb.listCards({ type: 'legend', lite: true, page: 1 }).subscribe({
+    this.rb.listCards({ type: 'legend', lite: true, page: 1, pageSize: this.pageSize }).subscribe({
       next: (resp) => {
         // Cargar todas las páginas (hay ~66 legends)
         const all = (resp.results as RiftboundCardLite[]).slice();
@@ -1397,7 +1397,7 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
             }
             return;
           }
-          this.rb.listCards({ type: 'legend', lite: true, page: p }).subscribe({
+          this.rb.listCards({ type: 'legend', lite: true, page: p, pageSize: this.pageSize }).subscribe({
             next: (r) => { all.push(...(r.results as RiftboundCardLite[])); fetchPage(p + 1); },
           });
         };
@@ -1481,6 +1481,7 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
       energy: this.energyFilter ?? undefined,
       colors: [...this.selectedColors()],
       page: this.page(),
+      pageSize: this.pageSize,
       lite: true,
     }).subscribe({
       next: (resp) => {
@@ -1889,7 +1890,7 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
     ) => {
       const all: RiftboundCardLite[] = [];
       const fetchPage = (p: number) => {
-        this.rb.listCards({ type: 'unit', lite: true, page: p, ...opts }).subscribe({
+        this.rb.listCards({ type: 'unit', lite: true, page: p, pageSize: this.pageSize, ...opts }).subscribe({
           next: (resp) => {
             all.push(...(resp.results as RiftboundCardLite[]));
             if (resp.next) fetchPage(p + 1);

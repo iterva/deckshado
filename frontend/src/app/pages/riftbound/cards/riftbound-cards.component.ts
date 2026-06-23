@@ -523,6 +523,7 @@ export class RiftboundCardsComponent implements OnInit {
       colors: [...this.selectedColors()],
       excludeBattlefields: this.selectedColors().size > 0 && this.typeFilter !== 'battlefield',
       page: this.page(),
+      pageSize: this.pageSize,
       lite: true,
     }).subscribe({
       next: (resp) => {

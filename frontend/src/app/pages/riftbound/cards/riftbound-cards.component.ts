@@ -332,9 +332,10 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
     .desc { white-space: pre-wrap; font-family: inherit; line-height: 1.55; margin: 0; font-size: .92rem; }
     .rb-modal-info app-tcg-price {
       display: block;
-      width: max-content;
+      width: 100%;
+      max-width: 100%;
       margin-top: .9rem;
-      margin-left: auto;
+      margin-left: 0;
     }
     @media (max-width: 720px) {
       .rb-modal-layout { grid-template-columns: 1fr; }

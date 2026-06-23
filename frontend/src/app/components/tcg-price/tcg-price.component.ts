@@ -269,9 +269,18 @@ import { TcgmatchService, TcgmatchPrice } from '../../services/tcgmatch.service'
     }
     .tcg-market-stack {
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      align-items: stretch;
       gap: 8px;
       width: 100%;
+      min-width: 0;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      padding-bottom: 2px;
+    }
+    .tcg-market-stack .tcg-price.detailed {
+      flex: 1 1 0;
       min-width: 190px;
     }
     .tcg-alt-card {
@@ -306,6 +315,7 @@ import { TcgmatchService, TcgmatchPrice } from '../../services/tcgmatch.service'
     }
     .tcg-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
     @media (max-width: 640px) {
+      .tcg-market-stack .tcg-price.detailed { min-width: 165px; }
       .tcg-btn { font-size: .72rem; padding: 3px 7px; }
     }
   `],

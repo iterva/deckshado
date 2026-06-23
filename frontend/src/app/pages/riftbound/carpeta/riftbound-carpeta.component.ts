@@ -42,7 +42,7 @@ interface DirtyPatch {
           <img class="binder-avatar"
                [src]="binderAvatarUrl()"
                alt="avatar"
-               (error)="onBinderAvatarError()" />
+               (error)="onBinderAvatarError($event)" />
         } @else {
           <div class="binder-avatar-placeholder">📁</div>
         }
@@ -1235,6 +1235,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   wishlistShareMessage = '';
   avatarUploading = signal(false);
   binderAvatarFailed = signal(false);
+  private badBinderAvatarUrls = signal<Set<string>>(new Set<string>());
   showStoreConfig = signal(false);
   mercadoEntries = signal<RiftboundCollectionEntry[]>([]);
   mercadoLoading = signal(false);
@@ -1649,11 +1650,30 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     return this.COLORS.find(x => x.code === c)?.hex || '#8896a8';
   }
 
-  binderAvatarUrl(): string {
+  private normalizeBinderAvatarUrl(raw: string): string {
+    const url = (raw || '').trim();
+    if (!url) return '';
+    return url.replace('res.cloudinary.com/dmvu6tuee/', 'res.cloudinary.com/drw7y27sm/');
+  }
+
+  private candidateBinderAvatarUrls(): string[] {
     const profile = this.binderProfile();
-    const raw = (profile?.binder_avatar_url || profile?.user_avatar_url || '').trim();
-    if (!raw) return '';
-    return raw.replace('res.cloudinary.com/dmvu6tuee/', 'res.cloudinary.com/drw7y27sm/');
+    const bad = this.badBinderAvatarUrls();
+    const seen = new Set<string>();
+    const candidates = [
+      this.normalizeBinderAvatarUrl(profile?.binder_avatar_url || ''),
+      this.normalizeBinderAvatarUrl(profile?.user_avatar_url || ''),
+    ];
+
+    return candidates.filter((u) => {
+      if (!u || bad.has(u) || seen.has(u)) return false;
+      seen.add(u);
+      return true;
+    });
+  }
+
+  binderAvatarUrl(): string {
+    return this.candidateBinderAvatarUrls()[0] || '';
   }
 
   // ── Binder profile ──
@@ -1673,8 +1693,20 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     });
   }
 
-  onBinderAvatarError() {
-    this.binderAvatarFailed.set(true);
+  onBinderAvatarError(event?: Event) {
+    const img = event?.target as HTMLImageElement | null;
+    const failedRaw = (img?.currentSrc || img?.src || '').trim();
+    const failed = this.normalizeBinderAvatarUrl(failedRaw);
+
+    if (failed) {
+      this.badBinderAvatarUrls.update(prev => {
+        const next = new Set(prev);
+        next.add(failed);
+        return next;
+      });
+    }
+
+    this.binderAvatarFailed.set(!this.binderAvatarUrl());
     this.cdr.markForCheck();
   }
 

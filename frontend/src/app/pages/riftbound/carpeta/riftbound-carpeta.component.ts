@@ -1201,7 +1201,9 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   selectedType = '';
   selectedRarity = '';
   selectedColors = new Set<string>();
-  codexTotalPages = computed(() => Math.max(1, Math.ceil(this.codexTotal() / 40)));
+  // Debe coincidir con el default del backend en /riftbound/cards (20).
+  private readonly CODEX_PAGE_SIZE = 20;
+  codexTotalPages = computed(() => Math.max(1, Math.ceil(this.codexTotal() / this.CODEX_PAGE_SIZE)));
 
   // Wishlist
   wishlistEntries = signal<RiftboundWishlistEntry[]>([]);
@@ -1500,6 +1502,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
       set: this.selectedSet || undefined,
       colors: this.selectedColors.size ? Array.from(this.selectedColors) : undefined,
       page: this.codexPage(),
+      pageSize: this.CODEX_PAGE_SIZE,
       lite: true,
     }).subscribe({
       next: res => {

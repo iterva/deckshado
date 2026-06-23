@@ -247,6 +247,50 @@ export class ShareImageComponent {
     return 4;
   }
 
+  private sanitizeCloneStyles(root: HTMLElement): void {
+    const nodes: HTMLElement[] = [
+      root,
+      ...Array.from(root.querySelectorAll<HTMLElement>('*')),
+    ];
+    const badColorFn = /\b(?:color|oklab|oklch|lab|lch)\(/i;
+    const colorProps: Array<keyof CSSStyleDeclaration> = [
+      'color',
+      'backgroundColor',
+      'borderColor',
+      'borderTopColor',
+      'borderRightColor',
+      'borderBottomColor',
+      'borderLeftColor',
+      'outlineColor',
+      'textDecorationColor',
+      'caretColor',
+      'columnRuleColor',
+      'fill',
+      'stroke',
+    ];
+
+    for (const node of nodes) {
+      for (const prop of colorProps) {
+        const raw = (node.style as any)[prop];
+        if (typeof raw !== 'string' || !badColorFn.test(raw)) continue;
+        if (prop === 'color' || prop === 'textDecorationColor' || prop === 'caretColor' || prop === 'fill' || prop === 'stroke') {
+          (node.style as any)[prop] = '#d4dbf2';
+        } else if (prop === 'backgroundColor') {
+          (node.style as any)[prop] = 'transparent';
+        } else {
+          (node.style as any)[prop] = 'transparent';
+        }
+      }
+
+      if (typeof node.style.boxShadow === 'string' && badColorFn.test(node.style.boxShadow)) {
+        node.style.boxShadow = 'none';
+      }
+      if (typeof node.style.textShadow === 'string' && badColorFn.test(node.style.textShadow)) {
+        node.style.textShadow = 'none';
+      }
+    }
+  }
+
   private async render(options: { stripImages?: boolean } = {}): Promise<HTMLCanvasElement | null> {
     if (!this.items.length) return null;
     const el = this.exportArea.nativeElement;
@@ -329,14 +373,14 @@ export class ShareImageComponent {
       scale: 2,
       width: 900,
       windowWidth: exportWindowWidth,
-      onclone: options.stripImages
-        ? (doc) => {
-            const root = doc.querySelector(`[data-export-id="${exportId}"]`) as HTMLElement | null;
-            if (!root) return;
-            root.querySelectorAll('.img-wrap img').forEach((img) => (img as HTMLElement).style.display = 'none');
-            root.querySelectorAll('.img-wrap').forEach((wrap) => (wrap as HTMLElement).classList.add('no-export-image'));
-          }
-        : undefined,
+      onclone: (doc) => {
+        const root = doc.querySelector(`[data-export-id="${exportId}"]`) as HTMLElement | null;
+        if (!root) return;
+        this.sanitizeCloneStyles(root);
+        if (!options.stripImages) return;
+        root.querySelectorAll('.img-wrap img').forEach((img) => (img as HTMLElement).style.display = 'none');
+        root.querySelectorAll('.img-wrap').forEach((wrap) => (wrap as HTMLElement).classList.add('no-export-image'));
+      },
       });
     } finally {
       el.removeAttribute('data-export-id');

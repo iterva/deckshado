@@ -1235,6 +1235,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   wishlistShareMessage = '';
   avatarUploading = signal(false);
   binderAvatarFailed = signal(false);
+  private readonly BAD_BINDER_AVATAR_STORAGE_KEY = 'riftbound.bad-binder-avatar-urls';
   private badBinderAvatarUrls = signal<Set<string>>(new Set<string>());
   showStoreConfig = signal(false);
   mercadoEntries = signal<RiftboundCollectionEntry[]>([]);
@@ -1330,6 +1331,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
       this.router.navigate(['/login'], { queryParams: { returnUrl: '/riftbound/carpeta' } });
       return;
     }
+    this.loadBadBinderAvatarUrls();
     this.loadIds();
     this.loadCollection();
     this.loadBinderProfile();
@@ -1656,6 +1658,29 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     return url.replace('res.cloudinary.com/dmvu6tuee/', 'res.cloudinary.com/drw7y27sm/');
   }
 
+  private loadBadBinderAvatarUrls() {
+    try {
+      const raw = localStorage.getItem(this.BAD_BINDER_AVATAR_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return;
+      const items = parsed
+        .map((v) => this.normalizeBinderAvatarUrl(String(v || '')))
+        .filter((v) => !!v);
+      this.badBinderAvatarUrls.set(new Set(items));
+    } catch {
+      // Ignorar errores de parseo/localStorage.
+    }
+  }
+
+  private saveBadBinderAvatarUrls(next: Set<string>) {
+    try {
+      localStorage.setItem(this.BAD_BINDER_AVATAR_STORAGE_KEY, JSON.stringify(Array.from(next)));
+    } catch {
+      // Ignorar errores de cuota/localStorage.
+    }
+  }
+
   private candidateBinderAvatarUrls(): string[] {
     const profile = this.binderProfile();
     const bad = this.badBinderAvatarUrls();
@@ -1702,6 +1727,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
       this.badBinderAvatarUrls.update(prev => {
         const next = new Set(prev);
         next.add(failed);
+        this.saveBadBinderAvatarUrls(next);
         return next;
       });
     }

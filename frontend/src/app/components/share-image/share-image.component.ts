@@ -247,6 +247,152 @@ export class ShareImageComponent {
     return 4;
   }
 
+  private drawRoundedRect(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    r: number,
+  ) {
+    const rr = Math.max(0, Math.min(r, Math.min(w, h) / 2));
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+
+  private ellipsize(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string {
+    if (ctx.measureText(text).width <= maxWidth) return text;
+    const suffix = '...';
+    let lo = 0;
+    let hi = text.length;
+    while (lo < hi) {
+      const mid = Math.ceil((lo + hi) / 2);
+      const t = text.slice(0, mid) + suffix;
+      if (ctx.measureText(t).width <= maxWidth) lo = mid;
+      else hi = mid - 1;
+    }
+    return text.slice(0, lo) + suffix;
+  }
+
+  private renderCanvasFallback(): HTMLCanvasElement | null {
+    if (!this.items.length) return null;
+
+    const scale = 2;
+    const width = 900;
+    const paddingX = 34;
+    const topPad = 36;
+    const cols = this.gridCols;
+    const gap = 18;
+    const cardRatio = 1 / 0.715;
+    const slotW = Math.floor((width - paddingX * 2 - gap * (cols - 1)) / cols);
+    const imgH = Math.round(slotW * cardRatio);
+    const metaH = this.mode === 'selling' ? 52 : 34;
+    const rows = Math.ceil(this.items.length / cols);
+    const headerH = this.contactLine ? 100 : 84;
+    const gridH = rows * (imgH + metaH) + Math.max(0, rows - 1) * gap;
+    const height = topPad + headerH + 22 + gridH + 28;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.scale(scale, scale);
+
+    const bg = ctx.createLinearGradient(0, 0, 0, height);
+    bg.addColorStop(0, '#0f1326');
+    bg.addColorStop(1, '#131a36');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, width, height);
+
+    const icon = this.mode === 'buying' ? 'Search' : 'Sell';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 36px Segoe UI, Arial, sans-serif';
+    const title = this.headlineText || (this.mode === 'buying' ? 'En la mira' : 'Vendiendo');
+    ctx.fillText(`${icon} ${title}`, paddingX, topPad + 32);
+
+    if (this.contactLine) {
+      ctx.fillStyle = '#a9b3d6';
+      ctx.font = '500 15px Segoe UI, Arial, sans-serif';
+      ctx.fillText(this.ellipsize(ctx, this.contactLine, width - paddingX * 2), paddingX, topPad + 60);
+    }
+
+    const gridY = topPad + headerH;
+    this.items.forEach((it, idx) => {
+      const row = Math.floor(idx / cols);
+      const col = idx % cols;
+      const x = paddingX + col * (slotW + gap);
+      const y = gridY + row * (imgH + metaH + gap);
+
+      this.drawRoundedRect(ctx, x, y, slotW, imgH, 10);
+      ctx.fillStyle = '#1a2040';
+      ctx.fill();
+
+      this.drawRoundedRect(ctx, x + 1, y + 1, slotW - 2, imgH - 2, 9);
+      ctx.strokeStyle = '#2a346e';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = '#8ea0d0';
+      ctx.font = '600 12px Segoe UI, Arial, sans-serif';
+      const placeholder = this.ellipsize(ctx, it.name || 'Carta', slotW - 20);
+      ctx.fillText(placeholder, x + 10, y + Math.floor(imgH / 2));
+
+      if ((it.quantity || 1) > 1) {
+        const qty = `x${it.quantity}`;
+        ctx.font = '800 14px Segoe UI, Arial, sans-serif';
+        const badgeW = Math.max(34, Math.ceil(ctx.measureText(qty).width + 16));
+        const badgeH = 24;
+        const bx = x + slotW - badgeW - 8;
+        const by = y + 8;
+        this.drawRoundedRect(ctx, bx, by, badgeW, badgeH, 999);
+        ctx.fillStyle = '#ff7a1a';
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(qty, bx + 8, by + 16);
+      }
+
+      if (it.foil) {
+        const fh = 22;
+        const gy = y + imgH - fh;
+        const foil = ctx.createLinearGradient(x, gy, x + slotW, gy);
+        foil.addColorStop(0, '#f5b400');
+        foil.addColorStop(0.5, '#ffd75e');
+        foil.addColorStop(1, '#f5b400');
+        ctx.fillStyle = foil;
+        ctx.fillRect(x, gy, slotW, fh);
+        ctx.fillStyle = '#20180a';
+        ctx.font = '900 12px Segoe UI, Arial, sans-serif';
+        ctx.fillText('FOIL', x + Math.max(8, Math.floor(slotW / 2) - 16), gy + 15);
+      }
+
+      ctx.fillStyle = '#d4dbf2';
+      ctx.font = '600 13px Segoe UI, Arial, sans-serif';
+      ctx.fillText(this.ellipsize(ctx, it.name || '', slotW), x, y + imgH + 18);
+
+      if (this.mode === 'selling' && it.price != null) {
+        const py = y + imgH + 25;
+        this.drawRoundedRect(ctx, x, py, slotW, 21, 999);
+        ctx.fillStyle = '#1f2a52';
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '800 13px Segoe UI, Arial, sans-serif';
+        const price = `$${Math.round(it.price).toLocaleString('es-CL')}`;
+        ctx.fillText(this.ellipsize(ctx, price, slotW - 14), x + 8, py + 15);
+      }
+    });
+
+    return canvas;
+  }
+
   private sanitizeCloneStyles(root: HTMLElement): void {
     const nodes: HTMLElement[] = [
       root,
@@ -388,12 +534,21 @@ export class ShareImageComponent {
   }
 
   private async renderWithFallback(): Promise<{ canvas: HTMLCanvasElement | null; fallbackUsed: boolean }> {
+    // En modo sin imágenes remotas, evitar html2canvas por completo para no depender de parseo CSS.
+    if (!this.includeCardImages) {
+      return { canvas: this.renderCanvasFallback(), fallbackUsed: true };
+    }
+
     try {
       const canvas = await this.render();
       return { canvas, fallbackUsed: false };
     } catch {
-      const canvas = await this.render({ stripImages: true });
-      return { canvas, fallbackUsed: true };
+      try {
+        const canvas = await this.render({ stripImages: true });
+        return { canvas, fallbackUsed: true };
+      } catch {
+        return { canvas: this.renderCanvasFallback(), fallbackUsed: true };
+      }
     }
   }
 

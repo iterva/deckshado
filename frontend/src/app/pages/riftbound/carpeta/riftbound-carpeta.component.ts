@@ -1046,7 +1046,22 @@ interface DirtyPatch {
       display: grid; grid-template-columns: 1fr 1.2fr; gap: 0; position: relative;
     }
     @media (max-width: 640px) { .modal-detail { grid-template-columns: 1fr; } }
-    .modal-detail .detail-image { width: 100%; height: auto; border-radius: 14px 0 0 14px; display: block; }
+    .modal-detail .detail-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 14px 0 0 14px;
+      display: block;
+      align-self: stretch;
+    }
+    @media (max-width: 640px) {
+      .modal-detail .detail-image {
+        height: auto;
+        max-height: 58vh;
+        object-fit: contain;
+        border-radius: 14px 14px 0 0;
+      }
+    }
     .modal-detail .detail-info { padding: 1.4rem; display: flex; flex-direction: column; gap: .8rem; }
     .modal-detail h2 { margin: 0; color: #fff; }
     .detail-meta { display: flex; gap: .4rem; flex-wrap: wrap; }

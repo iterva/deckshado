@@ -66,7 +66,7 @@ export interface ShareImageItem {
       @for (it of items || []; track $index) {
         <div class="card">
           <div class="img-wrap">
-            @if (it.image) {
+            @if (includeCardImages && it.image) {
               <img [src]="it.image | thumb:400" [alt]="it.name" crossorigin="anonymous" />
             } @else {
               <div class="img-fallback">{{ it.name }}</div>
@@ -221,6 +221,8 @@ export class ShareImageComponent {
   @Input() ctaLabel = 'Descargar imagen';
   @Input() footerTagline = 'ShadowForge · TCG community';
   @Input() canCopy = true;
+  /** Si es false, la imagen se genera sin cargar artes remotas (solo placeholders con nombre). */
+  @Input() includeCardImages = true;
 
   @ViewChild('exportArea', { static: true }) exportArea!: ElementRef<HTMLElement>;
 

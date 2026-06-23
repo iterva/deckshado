@@ -38,9 +38,9 @@ interface DirtyPatch {
     <!-- Header -->
     <div class="carpeta-header">
       <div class="binder-avatar-wrap">
-        @if ((binderProfile()?.binder_avatar_url || binderProfile()?.user_avatar_url) && !binderAvatarFailed()) {
+        @if (binderAvatarUrl() && !binderAvatarFailed()) {
           <img class="binder-avatar"
-               [src]="binderProfile()!.binder_avatar_url || binderProfile()!.user_avatar_url"
+               [src]="binderAvatarUrl()"
                alt="avatar"
                (error)="onBinderAvatarError()" />
         } @else {
@@ -336,6 +336,7 @@ interface DirtyPatch {
                 [customHeadline]="wishlistContactLine()"
                 contactLine=""
                 [items]="wishlistShareItems()"
+                [includeCardImages]="false"
                 ctaLabel="Imagen busco"
                 filenamePrefix="shadowforge-wishlist"
                 footerTagline="ShadowForge · Marketplace TCG">
@@ -1070,7 +1071,7 @@ interface DirtyPatch {
       border: 1px solid #2a3a4a; background: #0f0f23;
     }
     .badge.rarity { background: #c89b3c30; border-color: #c89b3c; color: #c89b3c; }
-    .badge.color { background: color-mix(in srgb, var(--c) 15%, transparent); border-color: var(--c); color: var(--c); }
+    .badge.color { background: rgba(255, 255, 255, .06); border-color: var(--c); color: var(--c); }
     .detail-stats { display: flex; gap: 1rem; flex-wrap: wrap; color: #c8c8da; font-size: .9rem; }
     .detail-ability { background: #0f0f23; border-radius: 8px; padding: .75rem 1rem; border-left: 3px solid #e94560; }
     .detail-ability h4 { margin: 0 0 .35rem; color: #4fc3f7; font-size: .85rem; }
@@ -1619,6 +1620,13 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   }
   colorHex(c: string): string {
     return this.COLORS.find(x => x.code === c)?.hex || '#8896a8';
+  }
+
+  binderAvatarUrl(): string {
+    const profile = this.binderProfile();
+    const raw = (profile?.binder_avatar_url || profile?.user_avatar_url || '').trim();
+    if (!raw) return '';
+    return raw.replace('res.cloudinary.com/dmvu6tuee/', 'res.cloudinary.com/drw7y27sm/');
   }
 
   // ── Binder profile ──

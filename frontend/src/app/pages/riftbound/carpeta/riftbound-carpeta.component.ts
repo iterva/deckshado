@@ -336,7 +336,7 @@ interface DirtyPatch {
                 [customHeadline]="wishlistContactLine()"
                 contactLine=""
                 [items]="wishlistShareItems()"
-                [includeCardImages]="false"
+                [includeCardImages]="true"
                 ctaLabel="Imagen busco"
                 filenamePrefix="shadowforge-wishlist"
                 footerTagline="ShadowForge · Marketplace TCG">

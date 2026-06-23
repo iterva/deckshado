@@ -24,6 +24,7 @@ export class App implements OnInit {
   showNotifs = signal(false);
   showSearch = signal(false);
   showMobileMenu = signal(false);
+  readonly appVersion = environment.appVersion;
   searchQuery = '';
   searchResults: any = null;
 

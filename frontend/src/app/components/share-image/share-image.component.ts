@@ -135,6 +135,25 @@ export interface ShareImageItem {
       background: #1a2040;
       box-shadow: 0 6px 16px rgba(0,0,0,0.5);
     }
+    .img-wrap.no-export-image {
+      background: linear-gradient(135deg, #1a2040 0%, #111733 100%);
+      border: 1px solid #2a346e;
+      box-shadow: none;
+    }
+    .img-wrap.no-export-image::after {
+      content: 'Imagen no disponible';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 10px;
+      font-size: 12px;
+      color: #8ea0d0;
+      font-weight: 600;
+      letter-spacing: .2px;
+    }
     .img-wrap img {
       position: absolute;
       inset: 0;
@@ -226,7 +245,7 @@ export class ShareImageComponent {
     return 4;
   }
 
-  private async render(): Promise<HTMLCanvasElement | null> {
+  private async render(options: { stripImages?: boolean } = {}): Promise<HTMLCanvasElement | null> {
     if (!this.items.length) return null;
     const el = this.exportArea.nativeElement;
     if (!el) return null;
@@ -267,9 +286,23 @@ export class ShareImageComponent {
       wrap.style.height = `${Math.round(width * cardRatio)}px`;
     }
 
-    // Fallback robusto: durante la captura, usamos background-size: cover en el wrap.
+    // Reinicia estilos de una captura previa.
+    for (const wrap of wraps) {
+      wrap.style.backgroundImage = '';
+      wrap.style.backgroundSize = '';
+      wrap.style.backgroundPosition = '';
+      wrap.style.backgroundRepeat = '';
+      wrap.classList.remove('no-export-image');
+    }
+    for (const img of imgs) {
+      (img as HTMLElement).style.visibility = '';
+      (img as HTMLElement).style.display = '';
+    }
+
+    // Fallback robusto: durante la captura normal, usamos background-size: cover en el wrap.
     // Esto evita que html2canvas ignore object-fit en algunos navegadores.
     for (const img of imgs) {
+      if (options.stripImages) break;
       const src = (img as HTMLImageElement).currentSrc || (img as HTMLImageElement).src;
       if (!src) continue;
       const wrap = (img as HTMLElement).closest('.img-wrap') as HTMLElement | null;
@@ -283,21 +316,46 @@ export class ShareImageComponent {
 
     const html2canvas = (await import('html2canvas')).default;
     const exportWindowWidth = window.matchMedia('(max-width: 640px)').matches ? 640 : 900;
-    return await html2canvas(el, {
+    const exportId = `share-export-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    el.setAttribute('data-export-id', exportId);
+
+    try {
+      return await html2canvas(el, {
       backgroundColor: '#0f1326',
       useCORS: true,
       allowTaint: false,
       scale: 2,
       width: 900,
       windowWidth: exportWindowWidth,
-    });
+      onclone: options.stripImages
+        ? (doc) => {
+            const root = doc.querySelector(`[data-export-id="${exportId}"]`) as HTMLElement | null;
+            if (!root) return;
+            root.querySelectorAll('.img-wrap img').forEach((img) => (img as HTMLElement).style.display = 'none');
+            root.querySelectorAll('.img-wrap').forEach((wrap) => (wrap as HTMLElement).classList.add('no-export-image'));
+          }
+        : undefined,
+      });
+    } finally {
+      el.removeAttribute('data-export-id');
+    }
+  }
+
+  private async renderWithFallback(): Promise<{ canvas: HTMLCanvasElement | null; fallbackUsed: boolean }> {
+    try {
+      const canvas = await this.render();
+      return { canvas, fallbackUsed: false };
+    } catch {
+      const canvas = await this.render({ stripImages: true });
+      return { canvas, fallbackUsed: true };
+    }
   }
 
   async download() {
     if (this.busy()) return;
     this.busy.set(true);
     try {
-      const canvas = await this.render();
+      const { canvas, fallbackUsed } = await this.renderWithFallback();
       if (!canvas) return;
       const blob: Blob | null = await new Promise(res => canvas.toBlob(b => res(b), 'image/png'));
       if (!blob) return;
@@ -311,7 +369,7 @@ export class ShareImageComponent {
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      this.flashToast('Imagen descargada');
+      this.flashToast(fallbackUsed ? 'Imagen descargada (sin algunas fotos)' : 'Imagen descargada');
     } catch (e) {
       console.error('share-image download error', e);
       this.flashToast('Error generando imagen');
@@ -329,12 +387,12 @@ export class ShareImageComponent {
     }
     this.busy.set(true);
     try {
-      const canvas = await this.render();
+      const { canvas, fallbackUsed } = await this.renderWithFallback();
       if (!canvas) return;
       const blob: Blob | null = await new Promise(res => canvas.toBlob(b => res(b), 'image/png'));
       if (!blob) return;
       await navigator.clipboard.write([new w.ClipboardItem({ 'image/png': blob })]);
-      this.flashToast('Imagen copiada');
+      this.flashToast(fallbackUsed ? 'Imagen copiada (sin algunas fotos)' : 'Imagen copiada');
     } catch (e) {
       console.error('share-image copy error', e);
       this.flashToast('Error al copiar');

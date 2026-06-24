@@ -68,7 +68,7 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
                    [(ngModel)]="searchQuery"
                    (ngModelChange)="onSearchInput()"
                    [placeholder]="searchMode === 'ability' ? 'Buscar habilidad…' : (searchMode === 'all' ? 'Buscar nombre o habilidad…' : 'Buscar nombre o número…')" />
-            <button class="search-btn" (click)="reload()" title="Buscar">🔍</button>
+            <button class="search-btn" (click)="reload(true)" title="Buscar">🔍</button>
             @if (hasActiveFilter()) {
               <button class="clear-all" (click)="clearAll()" title="Limpiar filtros">Limpiar</button>
             }
@@ -127,7 +127,7 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
         </div>
       </div>
 
-      @if (loading()) {
+      @if (loading() && cards().length === 0) {
         <p class="muted center">Cargando…</p>
       }
 
@@ -188,11 +188,13 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
       }
 
       @if (totalCount() > pageSize) {
-        <nav class="pager">
-          <button (click)="prev()" [disabled]="page() === 1">←</button>
-          <span>Página {{ page() }} de {{ totalPages() }}</span>
-          <button (click)="next()" [disabled]="page() >= totalPages()">→</button>
-        </nav>
+        <div class="infinite-sentinel" aria-hidden="true"></div>
+        @if (loading() && cards().length > 0) {
+          <p class="muted center" style="margin: 1rem 0;">Cargando más...</p>
+        }
+        @if (!hasMoreResults() && cards().length > 0) {
+          <p class="muted center" style="margin: 1rem 0;">— Fin de resultados —</p>
+        }
       }
     </div>
   `,
@@ -291,9 +293,11 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
     .search-modes button:hover { color: #fff; }
     .search-modes button.active { background: #e94560; color: #fff; font-weight: 600; }
 
-    .pager { display: flex; gap: 1rem; align-items: center; justify-content: center; margin: 2rem 0; color: #98a2a8; }
-    .pager button { padding: .45rem 1rem; border: 1px solid #2a3a4a; background: transparent; color: #c8c8da; border-radius: 6px; cursor: pointer; }
-    .pager button:disabled { opacity: .35; cursor: not-allowed; }
+    .infinite-sentinel {
+      width: 100%;
+      height: 1px;
+      margin-top: 1rem;
+    }
 
     /* Modal */
     .rb-modal-overlay {
@@ -380,6 +384,7 @@ export class RiftboundCardsComponent implements OnInit {
   selectedCard = signal<RiftboundCard | null>(null);
   page = signal(1);
   totalCount = signal(0);
+  hasMoreResults = signal(false);
   totalPages = computed(() => Math.max(1, Math.ceil(this.totalCount() / this.pageSize)));
 
   hasActiveFilter = computed(() =>
@@ -506,11 +511,19 @@ export class RiftboundCardsComponent implements OnInit {
   }
 
   reset() {
-    this.page.set(1);
-    this.reload();
+    this.reload(true);
   }
 
-  reload() {
+  reload(reset = true) {
+    if (reset) {
+      this.page.set(1);
+      this.cards.set([]);
+      this.hasMoreResults.set(false);
+    }
+    this.fetchCards(!reset);
+  }
+
+  private fetchCards(append = false) {
     this.loading.set(true);
     this.rb.listCards({
       search: this.searchQuery || undefined,
@@ -527,16 +540,52 @@ export class RiftboundCardsComponent implements OnInit {
       lite: true,
     }).subscribe({
       next: (resp) => {
-        this.cards.set(resp.results as RiftboundCardLite[]);
+        const next = resp.results as RiftboundCardLite[];
+        if (append) {
+          this.cards.update(curr => [...curr, ...next]);
+        } else {
+          this.cards.set(next);
+        }
         this.totalCount.set(resp.count);
+        this.hasMoreResults.set(!!resp.next);
         this.loading.set(false);
+        queueMicrotask(() => this.tryLoadMoreByViewport());
       },
       error: () => this.loading.set(false),
     });
   }
 
-  prev() { if (this.page() > 1) { this.page.update(p => p - 1); this.reload(); } }
-  next() { if (this.page() < this.totalPages()) { this.page.update(p => p + 1); this.reload(); } }
+  prev() { if (this.page() > 1) { this.page.update(p => p - 1); this.fetchCards(false); } }
+  next() { if (this.page() < this.totalPages()) { this.page.update(p => p + 1); this.fetchCards(false); } }
+
+  private loadMoreResults() {
+    if (this.loading() || !this.hasMoreResults()) return;
+    this.page.update(p => p + 1);
+    this.fetchCards(true);
+  }
+
+  @HostListener('window:scroll')
+  onWindowScroll() {
+    this.tryLoadMoreByViewport();
+  }
+
+  @HostListener('window:resize')
+  onWindowResize() {
+    this.tryLoadMoreByViewport();
+  }
+
+  private tryLoadMoreByViewport() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    if (this.loading() || !this.hasMoreResults()) return;
+
+    const doc = document.documentElement;
+    const body = document.body;
+    const scrollTop = window.scrollY || doc.scrollTop || body.scrollTop || 0;
+    const viewport = window.innerHeight || doc.clientHeight || 0;
+    const fullHeight = Math.max(doc.scrollHeight || 0, body.scrollHeight || 0);
+    const nearBottom = scrollTop + viewport >= fullHeight - 320;
+    if (nearBottom) this.loadMoreResults();
+  }
 
   openCard(cardNumber: string) {
     this.modalOpen.set(true);

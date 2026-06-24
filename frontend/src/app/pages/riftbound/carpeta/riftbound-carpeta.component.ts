@@ -270,7 +270,7 @@ interface DirtyPatch {
 
         <p class="results-count">{{ codexCards().length }} de {{ codexTotal() }} cartas</p>
 
-        @if (codexLoading()) { <div class="loading">Cargando...</div> }
+        @if (codexLoading() && codexCards().length === 0) { <div class="loading">Cargando...</div> }
 
         <div class="card-grid">
           @for (card of codexCards(); track card.id) {
@@ -304,11 +304,13 @@ interface DirtyPatch {
         </div>
 
         @if (codexTotalPages() > 1) {
-          <div class="pagination">
-            <button class="btn btn-sm" (click)="codexPrev()" [disabled]="codexPage() === 1">← Anterior</button>
-            <span>{{ codexPage() }} / {{ codexTotalPages() }}</span>
-            <button class="btn btn-sm" (click)="codexNext()" [disabled]="codexPage() >= codexTotalPages()">Siguiente →</button>
-          </div>
+          <div #codexSentinel class="infinite-sentinel" aria-hidden="true"></div>
+          @if (codexLoading() && codexCards().length > 0) {
+            <div class="loading">Cargando más...</div>
+          }
+          @if (!codexHasMore() && codexCards().length > 0) {
+            <p class="results-count" style="margin-top: 1rem;">— Fin del codex —</p>
+          }
         }
       </div>
     }
@@ -355,7 +357,7 @@ interface DirtyPatch {
 
         <p class="results-count">{{ wishlistTotal() }} cartas en tu wishlist</p>
 
-        @if (wishlistLoading()) { <div class="loading">Cargando...</div> }
+        @if (wishlistLoading() && wishlistEntries().length === 0) { <div class="loading">Cargando...</div> }
 
         @if (!wishlistLoading() && wishlistEntries().length === 0) {
           <div class="empty-state">
@@ -400,11 +402,13 @@ interface DirtyPatch {
         </div>
 
         @if (wishlistTotalPages() > 1) {
-          <div class="pagination">
-            <button class="btn btn-sm" (click)="wishlistPrev()" [disabled]="wishlistPage() <= 1">← Anterior</button>
-            <span>{{ wishlistPage() }} / {{ wishlistTotalPages() }}</span>
-            <button class="btn btn-sm" (click)="wishlistNext()" [disabled]="wishlistPage() >= wishlistTotalPages()">Siguiente →</button>
-          </div>
+          <div #wishlistSentinel class="infinite-sentinel" aria-hidden="true"></div>
+          @if (wishlistLoading() && wishlistEntries().length > 0) {
+            <div class="loading">Cargando más...</div>
+          }
+          @if (!wishlistHasMore() && wishlistEntries().length > 0) {
+            <p class="results-count" style="margin-top: 1rem;">— Fin de la wishlist —</p>
+          }
         }
       </div>
     }
@@ -998,10 +1002,10 @@ interface DirtyPatch {
     }
     .card-actions { padding: .4rem .75rem .75rem; display: flex; justify-content: flex-end; }
 
-    /* Pagination */
-    .pagination {
-      display: flex; align-items: center; justify-content: center;
-      gap: 1rem; margin-top: 1.5rem; color: #9ba3b4;
+    .infinite-sentinel {
+      width: 100%;
+      height: 1px;
+      margin-top: 1rem;
     }
 
     /* Stats */
@@ -1204,6 +1208,9 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   codexPage = signal(1);
   codexSearch = '';
   codexLoading = signal(false);
+  codexHasMore = signal(false);
+  @ViewChild('codexSentinel') codexSentinelRef?: ElementRef<HTMLElement>;
+  private codexObserver?: IntersectionObserver;
   sets = signal<RiftboundSet[]>([]);
   selectedSet = '';
   selectedType = '';
@@ -1219,6 +1226,9 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   wishlistPage = signal(1);
   wishlistSearch = '';
   wishlistLoading = signal(false);
+  wishlistHasMore = signal(false);
+  @ViewChild('wishlistSentinel') wishlistSentinelRef?: ElementRef<HTMLElement>;
+  private wishlistObserver?: IntersectionObserver;
   private readonly WISHLIST_PAGE_SIZE = 20;
   private wishlistImageHydrating = new Set<string>();
   wishlistTotalPages = computed(() => Math.max(1, Math.ceil(this.wishlistTotal() / this.WISHLIST_PAGE_SIZE)));
@@ -1346,10 +1356,14 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   ngAfterViewInit() {
     this.setupCollectionObserver();
+    this.setupCodexObserver();
+    this.setupWishlistObserver();
   }
 
   ngOnDestroy() {
     this.collectionObserver?.disconnect();
+    this.codexObserver?.disconnect();
+    this.wishlistObserver?.disconnect();
   }
 
   private setupCollectionObserver() {
@@ -1369,12 +1383,52 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     if (el) this.collectionObserver.observe(el);
   }
 
+  private setupCodexObserver() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    this.codexObserver?.disconnect();
+    this.codexObserver = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting
+            && this.activeTab() === 'codex'
+            && this.codexHasMore()
+            && !this.codexLoading()) {
+          this.loadMoreCodex();
+        }
+      }
+    }, { rootMargin: '300px' });
+    const el = this.codexSentinelRef?.nativeElement;
+    if (el) this.codexObserver.observe(el);
+  }
+
+  private setupWishlistObserver() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    this.wishlistObserver?.disconnect();
+    this.wishlistObserver = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting
+            && this.activeTab() === 'wishlist'
+            && this.wishlistHasMore()
+            && !this.wishlistLoading()) {
+          this.loadMoreWishlist();
+        }
+      }
+    }, { rootMargin: '300px' });
+    const el = this.wishlistSentinelRef?.nativeElement;
+    if (el) this.wishlistObserver.observe(el);
+  }
+
   // ── Tabs ──
   switchTab(t: Tab) {
     this.activeTab.set(t);
     if (t === 'carpeta') this.loadCollection();
-    if (t === 'codex' && this.codexCards().length === 0) this.loadCodex();
-    if (t === 'wishlist') this.loadWishlist();
+    if (t === 'codex') {
+      if (this.codexCards().length === 0) this.loadCodex(true);
+      else queueMicrotask(() => this.setupCodexObserver());
+    }
+    if (t === 'wishlist') {
+      this.loadWishlist(true);
+      queueMicrotask(() => this.setupWishlistObserver());
+    }
     if (t === 'mercado') { this.loadMercado(); }
     if (t === 'stats') this.loadStats();
   }
@@ -1507,7 +1561,22 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   // ── Codex ──
-  loadCodex() {
+  loadCodex(reset = true) {
+    if (reset) {
+      this.codexPage.set(1);
+      this.codexCards.set([]);
+      this.codexHasMore.set(false);
+    }
+    this.fetchCodexPage(!reset);
+  }
+
+  loadMoreCodex() {
+    if (this.codexLoading() || !this.codexHasMore()) return;
+    this.codexPage.update(p => p + 1);
+    this.fetchCodexPage(true);
+  }
+
+  private fetchCodexPage(append = false) {
     this.codexLoading.set(true);
     this.rb.listCards({
       search: this.codexSearch || undefined,
@@ -1520,18 +1589,25 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
       lite: true,
     }).subscribe({
       next: res => {
-        this.codexCards.set(res.results as RiftboundCardLite[]);
+        const next = res.results as RiftboundCardLite[];
+        if (append) {
+          this.codexCards.update(curr => [...curr, ...next]);
+        } else {
+          this.codexCards.set(next);
+        }
         this.codexTotal.set(res.count);
+        this.codexHasMore.set(!!res.next);
         this.codexLoading.set(false);
         this.cdr.markForCheck();
+        queueMicrotask(() => this.setupCodexObserver());
       },
       error: () => { this.codexLoading.set(false); this.cdr.markForCheck(); },
     });
   }
-  onCodexSearch() { this.codexPage.set(1); this.loadCodex(); }
-  onCodexFilter() { this.codexPage.set(1); this.loadCodex(); }
-  codexPrev() { if (this.codexPage() > 1) { this.codexPage.update(p => p - 1); this.loadCodex(); } }
-  codexNext() { if (this.codexPage() < this.codexTotalPages()) { this.codexPage.update(p => p + 1); this.loadCodex(); } }
+  onCodexSearch() { this.loadCodex(true); }
+  onCodexFilter() { this.loadCodex(true); }
+  codexPrev() { if (this.codexPage() > 1) { this.codexPage.update(p => p - 1); this.fetchCodexPage(false); } }
+  codexNext() { if (this.codexPage() < this.codexTotalPages()) { this.codexPage.update(p => p + 1); this.fetchCodexPage(false); } }
 
   toggleColor(c: string) {
     if (this.selectedColors.has(c)) this.selectedColors.delete(c);
@@ -1574,7 +1650,22 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   // ── Wishlist ──
-  loadWishlist() {
+  loadWishlist(reset = true) {
+    if (reset) {
+      this.wishlistPage.set(1);
+      this.wishlistEntries.set([]);
+      this.wishlistHasMore.set(false);
+    }
+    this.fetchWishlistPage(!reset);
+  }
+
+  loadMoreWishlist() {
+    if (this.wishlistLoading() || !this.wishlistHasMore()) return;
+    this.wishlistPage.update(p => p + 1);
+    this.fetchWishlistPage(true);
+  }
+
+  private fetchWishlistPage(append = false) {
     this.wishlistLoading.set(true);
     this.rb.listWishlist({
       search: this.wishlistSearch || undefined,
@@ -1583,25 +1674,31 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     }).subscribe({
       next: res => {
         const normalized = (res.results || []).map((entry) => this.normalizeWishlistEntryImage(entry));
-        this.wishlistEntries.set(normalized);
+        if (append) {
+          this.wishlistEntries.update(curr => [...curr, ...normalized]);
+        } else {
+          this.wishlistEntries.set(normalized);
+        }
         this.wishlistTotal.set(res.count);
+        this.wishlistHasMore.set(!!res.next);
         this.wishlistLoading.set(false);
         this.hydrateWishlistMissingImages(normalized);
         this.cdr.markForCheck();
+        queueMicrotask(() => this.setupWishlistObserver());
       },
       error: () => { this.wishlistLoading.set(false); this.cdr.markForCheck(); },
     });
   }
-  onWishlistSearch() { this.wishlistPage.set(1); this.loadWishlist(); }
+  onWishlistSearch() { this.loadWishlist(true); }
   wishlistPrev() {
     if (this.wishlistPage() <= 1) return;
     this.wishlistPage.update(p => p - 1);
-    this.loadWishlist();
+    this.fetchWishlistPage(false);
   }
   wishlistNext() {
     if (this.wishlistPage() >= this.wishlistTotalPages()) return;
     this.wishlistPage.update(p => p + 1);
-    this.loadWishlist();
+    this.fetchWishlistPage(false);
   }
 
   updateWishlistQty(entry: RiftboundWishlistEntry, qty: number) {

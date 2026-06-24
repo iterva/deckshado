@@ -1,4 +1,15 @@
-import { Component, OnInit, computed, inject, signal, HostListener } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RiftboundService } from '../../../services/riftbound.service';
@@ -188,7 +199,7 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
       }
 
       @if (totalCount() > pageSize) {
-        <div class="infinite-sentinel" aria-hidden="true"></div>
+        <div #cardsSentinel class="infinite-sentinel" aria-hidden="true"></div>
         @if (loading() && cards().length > 0) {
           <p class="muted center" style="margin: 1rem 0;">Cargando más...</p>
         }
@@ -357,8 +368,10 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
     :host-context(body.light-theme) .chip.active { background: #785a28; border-color: #785a28; color: #fff; }
   `],
 })
-export class RiftboundCardsComponent implements OnInit {
+export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy {
   private rb = inject(RiftboundService);
+  @ViewChild('cardsSentinel') cardsSentinelRef?: ElementRef<HTMLElement>;
+  private cardsObserver?: IntersectionObserver;
 
   colors = [...FALLBACK_COLORS];
   types = [...FALLBACK_TYPES];
@@ -402,6 +415,31 @@ export class RiftboundCardsComponent implements OnInit {
       },
     });
     this.reload();
+  }
+
+  ngAfterViewInit() {
+    this.setupCardsObserver();
+    queueMicrotask(() => this.tryLoadMoreByViewport());
+  }
+
+  ngOnDestroy() {
+    this.cardsObserver?.disconnect();
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+  }
+
+  private setupCardsObserver() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    this.cardsObserver?.disconnect();
+    this.cardsObserver = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting && this.hasMoreResults() && !this.loading()) {
+          this.loadMoreResults();
+        }
+      }
+    }, { rootMargin: '300px' });
+
+    const el = this.cardsSentinelRef?.nativeElement;
+    if (el) this.cardsObserver.observe(el);
   }
 
   setType(t: string) { this.typeFilter = t; this.reset(); }
@@ -541,15 +579,24 @@ export class RiftboundCardsComponent implements OnInit {
     }).subscribe({
       next: (resp) => {
         const next = resp.results as RiftboundCardLite[];
+        let loadedCount = next.length;
         if (append) {
-          this.cards.update(curr => [...curr, ...next]);
+          this.cards.update(curr => {
+            loadedCount = curr.length + next.length;
+            return [...curr, ...next];
+          });
         } else {
           this.cards.set(next);
         }
         this.totalCount.set(resp.count);
-        this.hasMoreResults.set(!!resp.next);
+        const moreByNext = !!resp.next;
+        const moreByCount = next.length > 0 && loadedCount < resp.count;
+        this.hasMoreResults.set(moreByNext || moreByCount);
         this.loading.set(false);
-        queueMicrotask(() => this.tryLoadMoreByViewport());
+        queueMicrotask(() => {
+          this.setupCardsObserver();
+          this.tryLoadMoreByViewport();
+        });
       },
       error: () => this.loading.set(false),
     });

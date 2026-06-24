@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -54,7 +54,7 @@ function typeRank(t?: string): number {
   template: `
     <div class="builder-layout">
       <!-- ── Card Browser ── -->
-      <div class="card-browser">
+      <div class="card-browser" #cardBrowser (scroll)="onCardBrowserScroll()">
         <h2>Cartas Riftbound · {{ totalCount() }}</h2>
 
         <div class="browser-filters">
@@ -1282,6 +1282,7 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
   private rb = inject(RiftboundService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  @ViewChild('cardBrowser') cardBrowserRef?: ElementRef<HTMLElement>;
 
   readonly zones: RiftboundZone[] = ['main', 'side', 'rune', 'champion', 'bg'];
   readonly rules = RIFTBOUND_ZONE_RULES;
@@ -1530,9 +1531,22 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
     this.tryLoadMoreByViewport();
   }
 
+  onCardBrowserScroll() {
+    this.tryLoadMoreByViewport();
+  }
+
   private tryLoadMoreByViewport() {
     if (typeof window === 'undefined' || typeof document === 'undefined') return;
     if (this.loading() || !this.hasMoreResults()) return;
+
+    const browserEl = this.cardBrowserRef?.nativeElement;
+    if (browserEl) {
+      const browserNearBottom = browserEl.scrollTop + browserEl.clientHeight >= browserEl.scrollHeight - 320;
+      if (browserNearBottom) {
+        this.loadMoreResults();
+        return;
+      }
+    }
 
     const doc = document.documentElement;
     const body = document.body;

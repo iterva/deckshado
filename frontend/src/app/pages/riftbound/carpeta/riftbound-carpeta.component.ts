@@ -1220,6 +1220,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   wishlistSearch = '';
   wishlistLoading = signal(false);
   private readonly WISHLIST_PAGE_SIZE = 20;
+  private wishlistImageHydrating = new Set<number>();
   wishlistTotalPages = computed(() => Math.max(1, Math.ceil(this.wishlistTotal() / this.WISHLIST_PAGE_SIZE)));
 
   // Stats
@@ -1581,9 +1582,11 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
       page_size: this.WISHLIST_PAGE_SIZE,
     }).subscribe({
       next: res => {
-        this.wishlistEntries.set(res.results);
+        const normalized = (res.results || []).map((entry) => this.normalizeWishlistEntryImage(entry));
+        this.wishlistEntries.set(normalized);
         this.wishlistTotal.set(res.count);
         this.wishlistLoading.set(false);
+        this.hydrateWishlistMissingImages(normalized);
         this.cdr.markForCheck();
       },
       error: () => { this.wishlistLoading.set(false); this.cdr.markForCheck(); },
@@ -1794,13 +1797,84 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     const msg = (this.wishlistShareMessage || '').trim();
     return msg || 'Busco cartas';
   }
+
+  private pickCardImage(...sources: any[]): string {
+    const keys = [
+      'image',
+      'image_url',
+      'image_url_small',
+      'cdn_image_url',
+      'card_image',
+      'card_image_url',
+      'art_url',
+      'art',
+    ];
+
+    for (const source of sources) {
+      if (!source || typeof source !== 'object') continue;
+      for (const key of keys) {
+        const raw = source[key];
+        const value = typeof raw === 'string' ? raw.trim() : '';
+        if (value && value !== 'null' && value !== 'undefined') return value;
+      }
+    }
+    return '';
+  }
+
+  private normalizeWishlistEntryImage(entry: RiftboundWishlistEntry): RiftboundWishlistEntry {
+    const cardData: any = (entry as any)?.card_data || {};
+    const image = this.pickCardImage(cardData, entry as any);
+    if (!image) return entry;
+
+    return {
+      ...entry,
+      card_data: {
+        ...entry.card_data,
+        image,
+      },
+    };
+  }
+
+  private hydrateWishlistMissingImages(entries: RiftboundWishlistEntry[]) {
+    for (const entry of entries) {
+      const cardId = Number(entry.card_data?.id || entry.card || 0);
+      const hasImage = !!this.pickCardImage(entry.card_data);
+      if (!cardId || hasImage || this.wishlistImageHydrating.has(cardId)) continue;
+
+      this.wishlistImageHydrating.add(cardId);
+      this.rb.getCard(cardId).subscribe({
+        next: (card) => {
+          const image = this.pickCardImage(card as any);
+          if (image) {
+            this.wishlistEntries.update(list => list.map((w) => {
+              const wid = Number(w.card_data?.id || w.card || 0);
+              if (wid !== cardId) return w;
+              return {
+                ...w,
+                card_data: {
+                  ...w.card_data,
+                  image,
+                },
+              };
+            }));
+            this.cdr.markForCheck();
+          }
+          this.wishlistImageHydrating.delete(cardId);
+        },
+        error: () => {
+          this.wishlistImageHydrating.delete(cardId);
+        },
+      });
+    }
+  }
+
   wishlistShareItems(): ShareImageItem[] {
     const sel = this.wishlistShareSelection();
     const source = this.wishlistEntries();
     const filtered = sel.size > 0 ? source.filter(w => sel.has(w.id)) : source;
     return filtered.slice(0, 20).map(w => ({
       name: w.card_data?.name || '',
-      image: w.card_data?.image || '',
+      image: this.pickCardImage(w.card_data, w as any),
       quantity: w.desired_quantity || 1,
       foil: false,
       price: null,

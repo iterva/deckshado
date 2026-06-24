@@ -1,6 +1,6 @@
 import {
   Component, OnInit, OnDestroy, AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef,
-  ElementRef, ViewChild, inject, signal, computed,
+  ElementRef, ViewChild, HostListener, inject, signal, computed,
 } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -1358,6 +1358,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     this.setupCollectionObserver();
     this.setupCodexObserver();
     this.setupWishlistObserver();
+    queueMicrotask(() => this.tryAutoLoadMore());
   }
 
   ngOnDestroy() {
@@ -1415,6 +1416,41 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     }, { rootMargin: '300px' });
     const el = this.wishlistSentinelRef?.nativeElement;
     if (el) this.wishlistObserver.observe(el);
+  }
+
+  @HostListener('window:scroll')
+  onWindowScroll() {
+    this.tryAutoLoadMore();
+  }
+
+  @HostListener('window:resize')
+  onWindowResize() {
+    this.tryAutoLoadMore();
+  }
+
+  private tryAutoLoadMore() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+    const doc = document.documentElement;
+    const body = document.body;
+    const scrollTop = window.scrollY || doc.scrollTop || body.scrollTop || 0;
+    const viewport = window.innerHeight || doc.clientHeight || 0;
+    const fullHeight = Math.max(doc.scrollHeight || 0, body.scrollHeight || 0);
+    const nearBottom = scrollTop + viewport >= fullHeight - 320;
+    if (!nearBottom) return;
+
+    const tab = this.activeTab();
+    if (tab === 'carpeta' && this.collectionHasMore() && !this.collectionLoading()) {
+      this.loadMoreCollection();
+      return;
+    }
+    if (tab === 'codex' && this.codexHasMore() && !this.codexLoading()) {
+      this.loadMoreCodex();
+      return;
+    }
+    if (tab === 'wishlist' && this.wishlistHasMore() && !this.wishlistLoading()) {
+      this.loadMoreWishlist();
+    }
   }
 
   // ── Tabs ──
@@ -1478,7 +1514,10 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
         this.collectionLoading.set(false);
         this.cdr.markForCheck();
         // Re-observe sentinel in case DOM cleared it
-        queueMicrotask(() => this.setupCollectionObserver());
+        queueMicrotask(() => {
+          this.setupCollectionObserver();
+          this.tryAutoLoadMore();
+        });
       },
       error: () => { this.collectionLoading.set(false); this.cdr.markForCheck(); },
     });
@@ -1599,7 +1638,10 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
         this.codexHasMore.set(!!res.next);
         this.codexLoading.set(false);
         this.cdr.markForCheck();
-        queueMicrotask(() => this.setupCodexObserver());
+        queueMicrotask(() => {
+          this.setupCodexObserver();
+          this.tryAutoLoadMore();
+        });
       },
       error: () => { this.codexLoading.set(false); this.cdr.markForCheck(); },
     });
@@ -1684,7 +1726,10 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
         this.wishlistLoading.set(false);
         this.hydrateWishlistMissingImages(normalized);
         this.cdr.markForCheck();
-        queueMicrotask(() => this.setupWishlistObserver());
+        queueMicrotask(() => {
+          this.setupWishlistObserver();
+          this.tryAutoLoadMore();
+        });
       },
       error: () => { this.wishlistLoading.set(false); this.cdr.markForCheck(); },
     });

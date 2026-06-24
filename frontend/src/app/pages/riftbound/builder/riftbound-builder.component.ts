@@ -79,7 +79,7 @@ function typeRank(t?: string): number {
                 [(ngModel)]="searchQuery"
                 (ngModelChange)="onSearchInput()"
                 [placeholder]="searchMode === 'ability' ? 'Buscar habilidad…' : (searchMode === 'all' ? 'Buscar nombre o habilidad…' : 'Buscar nombre o número…')" />
-              <button class="search-btn" (click)="reload()" title="Buscar">🔍</button>
+              <button class="search-btn" (click)="reload(true)" title="Buscar">🔍</button>
             </div>
           </div>
 
@@ -99,7 +99,7 @@ function typeRank(t?: string): number {
           <div class="filter-row">
             <div class="multi-filter">
               <label class="filter-label">Set</label>
-              <select [(ngModel)]="setFilter" (ngModelChange)="page.set(1); reload()">
+              <select [(ngModel)]="setFilter" (ngModelChange)="reload(true)">
                 <option value="">Todos los sets</option>
                 @for (s of sets(); track s.code) {
                   <option [value]="s.code">{{ s.code }} — {{ s.name }}</option>
@@ -109,7 +109,7 @@ function typeRank(t?: string): number {
 
             <div class="multi-filter">
               <label class="filter-label">Energía</label>
-              <select [(ngModel)]="energyFilter" (ngModelChange)="page.set(1); reload()">
+              <select [(ngModel)]="energyFilter" (ngModelChange)="reload(true)">
                 <option [ngValue]="null">Cualquiera</option>
                 @for (n of [0,1,2,3,4,5,6,7,8]; track n) {
                   <option [ngValue]="n">{{ n }}</option>
@@ -119,7 +119,7 @@ function typeRank(t?: string): number {
 
             <div class="multi-filter">
               <label class="filter-label">Rareza</label>
-              <select [(ngModel)]="rarityFilter" (ngModelChange)="page.set(1); reload()">
+              <select [(ngModel)]="rarityFilter" (ngModelChange)="reload(true)">
                 <option value="">Todas</option>
                 <option value="common">Common</option>
                 <option value="uncommon">Uncommon</option>
@@ -229,11 +229,13 @@ function typeRank(t?: string): number {
         }
 
         @if (totalPages() > 1) {
-          <div class="pagination">
-            <button class="page-btn" (click)="prev()" [disabled]="page() === 1">←</button>
-            <span>{{ page() }} / {{ totalPages() }}</span>
-            <button class="page-btn" (click)="next()" [disabled]="page() >= totalPages()">→</button>
-          </div>
+          <div class="infinite-sentinel" aria-hidden="true"></div>
+          @if (loading() && displayedResults().length > 0) {
+            <p class="muted center" style="margin: 1rem 0;">Cargando más...</p>
+          }
+          @if (!hasMoreResults() && displayedResults().length > 0) {
+            <p class="muted center" style="margin: 1rem 0;">— Fin de resultados —</p>
+          }
         }
       </div>
 
@@ -823,9 +825,11 @@ function typeRank(t?: string): number {
 
     .mini-qty { font-weight: 700; font-size: .8rem; color: #ffbd39; width: 16px; text-align: center; }
 
-    .pagination { display: flex; gap: 1rem; align-items: center; justify-content: center; margin: 1.25rem 0; color: #98a2a8; }
-    .page-btn { padding: .35rem .9rem; border: 1px solid #2a3a4a; background: transparent; color: #c8c8da; border-radius: 4px; cursor: pointer; }
-    .page-btn:disabled { opacity: .35; cursor: not-allowed; }
+    .infinite-sentinel {
+      width: 100%;
+      height: 1px;
+      margin-top: 1rem;
+    }
 
     /* Deck panel */
     .deck-panel {
@@ -1317,6 +1321,7 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
   loading = signal(false);
   page = signal(1);
   totalCount = signal(0);
+  hasMoreResults = signal(false);
   // Debe coincidir con DRF PAGE_SIZE (backend/backend/settings.py).
   pageSize = 20;
   totalPages = computed(() => Math.max(1, Math.ceil(this.totalCount() / this.pageSize)));
@@ -1441,36 +1446,42 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
   // ── Búsqueda / filtros ──
   onSearchInput() {
     if (this.searchTimer) clearTimeout(this.searchTimer);
-    this.searchTimer = setTimeout(() => { this.page.set(1); this.reload(); }, 300);
+    this.searchTimer = setTimeout(() => this.reload(true), 300);
   }
 
   setType(t: string) {
     this.typeFilter = t;
-    this.page.set(1);
-    this.reload();
+    this.reload(true);
   }
 
   setMode(m: 'name' | 'ability' | 'all') {
     if (this.searchMode === m) return;
     this.searchMode = m;
-    if (this.searchQuery) { this.page.set(1); this.reload(); }
+    if (this.searchQuery) this.reload(true);
   }
 
   toggleColor(c: RiftboundColor) {
     const set = new Set(this.selectedColors());
     if (set.has(c)) set.delete(c); else set.add(c);
     this.selectedColors.set(set);
-    this.page.set(1);
-    this.reload();
+    this.reload(true);
   }
 
   clearColors() {
     this.selectedColors.set(new Set());
-    this.page.set(1);
-    this.reload();
+    this.reload(true);
   }
 
-  reload() {
+  reload(reset = true) {
+    if (reset) {
+      this.page.set(1);
+      this.results.set([]);
+      this.hasMoreResults.set(false);
+    }
+    this.fetchResults(!reset);
+  }
+
+  private fetchResults(append = false) {
     this.loading.set(true);
     this.rb.listCards({
       search: this.searchQuery || undefined,
@@ -1485,16 +1496,52 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
       lite: true,
     }).subscribe({
       next: (resp) => {
-        this.results.set(resp.results as RiftboundCardLite[]);
+        const next = resp.results as RiftboundCardLite[];
+        if (append) {
+          this.results.update(curr => [...curr, ...next]);
+        } else {
+          this.results.set(next);
+        }
         this.totalCount.set(resp.count);
+        this.hasMoreResults.set(!!resp.next);
         this.loading.set(false);
+        queueMicrotask(() => this.tryLoadMoreByViewport());
       },
       error: () => this.loading.set(false),
     });
   }
 
-  prev() { if (this.page() > 1) { this.page.update(p => p - 1); this.reload(); } }
-  next() { if (this.page() < this.totalPages()) { this.page.update(p => p + 1); this.reload(); } }
+  loadMoreResults() {
+    if (this.loading() || !this.hasMoreResults()) return;
+    this.page.update(p => p + 1);
+    this.fetchResults(true);
+  }
+
+  prev() { if (this.page() > 1) { this.page.update(p => p - 1); this.fetchResults(false); } }
+  next() { if (this.page() < this.totalPages()) { this.page.update(p => p + 1); this.fetchResults(false); } }
+
+  @HostListener('window:scroll')
+  onWindowScroll() {
+    this.tryLoadMoreByViewport();
+  }
+
+  @HostListener('window:resize')
+  onWindowResize() {
+    this.tryLoadMoreByViewport();
+  }
+
+  private tryLoadMoreByViewport() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    if (this.loading() || !this.hasMoreResults()) return;
+
+    const doc = document.documentElement;
+    const body = document.body;
+    const scrollTop = window.scrollY || doc.scrollTop || body.scrollTop || 0;
+    const viewport = window.innerHeight || doc.clientHeight || 0;
+    const fullHeight = Math.max(doc.scrollHeight || 0, body.scrollHeight || 0);
+    const nearBottom = scrollTop + viewport >= fullHeight - 320;
+    if (nearBottom) this.loadMoreResults();
+  }
 
   // ── Helpers de zona ──
   zoneCount(z: RiftboundZone): number {

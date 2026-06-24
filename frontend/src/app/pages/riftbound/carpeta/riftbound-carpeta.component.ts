@@ -1220,7 +1220,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   wishlistSearch = '';
   wishlistLoading = signal(false);
   private readonly WISHLIST_PAGE_SIZE = 20;
-  private wishlistImageHydrating = new Set<number>();
+  private wishlistImageHydrating = new Set<string>();
   wishlistTotalPages = computed(() => Math.max(1, Math.ceil(this.wishlistTotal() / this.WISHLIST_PAGE_SIZE)));
 
   // Stats
@@ -1837,18 +1837,21 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   private hydrateWishlistMissingImages(entries: RiftboundWishlistEntry[]) {
     for (const entry of entries) {
+      const cardNumber = String(entry.card_data?.card_number || '').trim();
       const cardId = Number(entry.card_data?.id || entry.card || 0);
+      const hydrateKey = cardNumber || String(cardId || '');
       const hasImage = !!this.pickCardImage(entry.card_data);
-      if (!cardId || hasImage || this.wishlistImageHydrating.has(cardId)) continue;
+      if (!hydrateKey || hasImage || this.wishlistImageHydrating.has(hydrateKey)) continue;
 
-      this.wishlistImageHydrating.add(cardId);
-      this.rb.getCard(cardId).subscribe({
+      this.wishlistImageHydrating.add(hydrateKey);
+      this.rb.getCard(cardNumber || cardId).subscribe({
         next: (card) => {
           const image = this.pickCardImage(card as any);
           if (image) {
             this.wishlistEntries.update(list => list.map((w) => {
+              const wCardNumber = String(w.card_data?.card_number || '').trim();
               const wid = Number(w.card_data?.id || w.card || 0);
-              if (wid !== cardId) return w;
+              if ((cardNumber && wCardNumber !== cardNumber) || (!cardNumber && wid !== cardId)) return w;
               return {
                 ...w,
                 card_data: {
@@ -1859,10 +1862,10 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
             }));
             this.cdr.markForCheck();
           }
-          this.wishlistImageHydrating.delete(cardId);
+          this.wishlistImageHydrating.delete(hydrateKey);
         },
         error: () => {
-          this.wishlistImageHydrating.delete(cardId);
+          this.wishlistImageHydrating.delete(hydrateKey);
         },
       });
     }

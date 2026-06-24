@@ -279,7 +279,25 @@ export class ShareImageComponent {
     return text.slice(0, lo) + suffix;
   }
 
-  private renderCanvasFallback(): HTMLCanvasElement | null {
+  private loadImage(url: string): Promise<HTMLImageElement | null> {
+    return new Promise((resolve) => {
+      const clean = (url || '').trim();
+      if (!clean) {
+        resolve(null);
+        return;
+      }
+
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.decoding = 'async';
+      img.referrerPolicy = 'no-referrer';
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = clean;
+    });
+  }
+
+  private async renderCanvasFallback(options: { includeImages?: boolean } = {}): Promise<HTMLCanvasElement | null> {
     if (!this.items.length) return null;
 
     const scale = 2;
@@ -313,7 +331,21 @@ export class ShareImageComponent {
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, width, height);
 
-    const icon = this.mode === 'buying' ? 'Search' : 'Sell';
+    const includeImages = options.includeImages ?? this.includeCardImages;
+    const uniqueUrls = includeImages
+      ? Array.from(new Set(this.items.map((it) => (it.image || '').trim()).filter(Boolean)))
+      : [];
+
+    const loadedImages = new Map<string, HTMLImageElement>();
+    if (uniqueUrls.length) {
+      const loaded = await Promise.all(uniqueUrls.map((url) => this.loadImage(url)));
+      uniqueUrls.forEach((url, idx) => {
+        const img = loaded[idx];
+        if (img) loadedImages.set(url, img);
+      });
+    }
+
+    const icon = this.mode === 'buying' ? '🔎' : '🛒';
     ctx.fillStyle = '#ffffff';
     ctx.font = '800 36px Segoe UI, Arial, sans-serif';
     const title = this.headlineText || (this.mode === 'buying' ? 'En la mira' : 'Vendiendo');
@@ -336,15 +368,45 @@ export class ShareImageComponent {
       ctx.fillStyle = '#1a2040';
       ctx.fill();
 
+      if (includeImages) {
+        const imgUrl = (it.image || '').trim();
+        const loaded = loadedImages.get(imgUrl);
+        if (loaded) {
+          const ratio = loaded.width / loaded.height;
+          const targetRatio = slotW / imgH;
+          let drawW = slotW;
+          let drawH = imgH;
+          let dx = x;
+          let dy = y;
+
+          if (ratio > targetRatio) {
+            drawW = Math.round(imgH * ratio);
+            dx = x - Math.round((drawW - slotW) / 2);
+          } else {
+            drawH = Math.round(slotW / ratio);
+            dy = y - Math.round((drawH - imgH) / 2);
+          }
+
+          ctx.save();
+          this.drawRoundedRect(ctx, x, y, slotW, imgH, 10);
+          ctx.clip();
+          ctx.drawImage(loaded, dx, dy, drawW, drawH);
+          ctx.restore();
+        }
+      }
+
       this.drawRoundedRect(ctx, x + 1, y + 1, slotW - 2, imgH - 2, 9);
       ctx.strokeStyle = '#2a346e';
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      ctx.fillStyle = '#8ea0d0';
-      ctx.font = '600 12px Segoe UI, Arial, sans-serif';
-      const placeholder = this.ellipsize(ctx, it.name || 'Carta', slotW - 20);
-      ctx.fillText(placeholder, x + 10, y + Math.floor(imgH / 2));
+      const hasRenderedImage = includeImages && loadedImages.has((it.image || '').trim());
+      if (!hasRenderedImage) {
+        ctx.fillStyle = '#8ea0d0';
+        ctx.font = '600 12px Segoe UI, Arial, sans-serif';
+        const placeholder = this.ellipsize(ctx, it.name || 'Carta', slotW - 20);
+        ctx.fillText(placeholder, x + 10, y + Math.floor(imgH / 2));
+      }
 
       if ((it.quantity || 1) > 1) {
         const qty = `x${it.quantity}`;
@@ -536,7 +598,7 @@ export class ShareImageComponent {
   private async renderWithFallback(): Promise<{ canvas: HTMLCanvasElement | null; fallbackUsed: boolean }> {
     // En modo sin imágenes remotas, evitar html2canvas por completo para no depender de parseo CSS.
     if (!this.includeCardImages) {
-      return { canvas: this.renderCanvasFallback(), fallbackUsed: true };
+      return { canvas: await this.renderCanvasFallback({ includeImages: false }), fallbackUsed: true };
     }
 
     try {
@@ -547,7 +609,7 @@ export class ShareImageComponent {
         const canvas = await this.render({ stripImages: true });
         return { canvas, fallbackUsed: true };
       } catch {
-        return { canvas: this.renderCanvasFallback(), fallbackUsed: true };
+        return { canvas: await this.renderCanvasFallback({ includeImages: true }), fallbackUsed: true };
       }
     }
   }

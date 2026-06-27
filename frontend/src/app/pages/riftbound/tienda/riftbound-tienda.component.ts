@@ -524,9 +524,8 @@ export class RiftboundTiendaComponent implements OnInit {
   priceMin: number | null = null;
   priceMax: number | null = null;
   ordering = '-id';
-  readonly pageSize = 20;
 
-  totalPages() { return Math.max(1, Math.ceil(this.count() / this.pageSize)); }
+  totalPages() { return Math.max(1, Math.ceil(this.count() / 20)); }
 
   cartCount() { return this.cart().reduce((s, c) => s + c.qty, 0); }
   cartTotal() { return this.cart().reduce((s, c) => s + (c.price || 0) * c.qty, 0); }
@@ -554,7 +553,6 @@ export class RiftboundTiendaComponent implements OnInit {
       price_max: this.priceMax ?? undefined,
       ordering: this.ordering,
       page: this.page(),
-      page_size: this.pageSize,
     }).subscribe({
       next: res => {
         this.entries.set(res.results);

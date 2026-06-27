@@ -161,7 +161,6 @@ export class RiftboundStoresIndexComponent implements OnInit {
       country: this.country || undefined,
       ordering: this.ordering,
       page: this.page(),
-      page_size: this.pageSize,
     }).subscribe({
       next: res => {
         this.stores.set(res.results);

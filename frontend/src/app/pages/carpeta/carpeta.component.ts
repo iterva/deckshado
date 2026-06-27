@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, ChangeDetectorRef, HostListener } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, signal, ChangeDetectorRef, HostListener, ViewChild, ElementRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
@@ -21,7 +21,7 @@ type Tab = 'carpeta' | 'codex' | 'wishlist' | 'mercado' | 'stats';
   templateUrl: './carpeta.component.html',
   styleUrl: './carpeta.component.scss',
 })
-export class CarpetaComponent implements OnInit {
+export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   activeTab: Tab = 'carpeta';
   binderProfile: BinderProfile | null = null;
 
@@ -49,6 +49,7 @@ export class CarpetaComponent implements OnInit {
   codexPage = 1;
   codexSearch = '';
   codexLoading = false;
+  codexHasMore = false;
   editions: Edition[] = [];
   types: CardType[] = [];
   races: Race[] = [];
@@ -62,6 +63,8 @@ export class CarpetaComponent implements OnInit {
   addQty = 1;
   filtersOpen = true;
   codexOpenFilter: 'edition' | 'type' | 'race' | 'rarity' | null = null;
+  @ViewChild('codexSentinel') codexSentinelRef?: ElementRef<HTMLElement>;
+  private codexObserver?: IntersectionObserver;
 
   // ── Wishlist ──
   wishlistEntries: WishlistEntry[] = [];
@@ -125,6 +128,14 @@ export class CarpetaComponent implements OnInit {
     this.loadFilters();
   }
 
+  ngAfterViewInit() {
+    this.setupCodexObserver();
+  }
+
+  ngOnDestroy() {
+    this.codexObserver?.disconnect();
+  }
+
   switchTab(tab: Tab) {
     this.activeTab = tab;
     if (tab === 'carpeta') this.loadCollection();
@@ -132,6 +143,7 @@ export class CarpetaComponent implements OnInit {
     if (tab === 'wishlist') this.loadWishlist();
     if (tab === 'mercado') this.loadMercado();
     if (tab === 'stats' && !this.stats) this.loadStats();
+    queueMicrotask(() => this.setupCodexObserver());
   }
 
   loadStats() {
@@ -272,7 +284,7 @@ export class CarpetaComponent implements OnInit {
     return this.races.filter(r => r.slug !== 'noraza');
   }
 
-  loadCodex() {
+  loadCodex(append = false) {
     this.codexLoading = true;
     this.cardService.getCards({
       search: this.codexSearch || undefined,
@@ -285,10 +297,12 @@ export class CarpetaComponent implements OnInit {
       page: this.codexPage,
     }).subscribe({
       next: res => {
-        this.codexCards = res.results;
+        this.codexCards = append ? [...this.codexCards, ...res.results] : res.results;
         this.codexTotal = res.count;
+        this.codexHasMore = !!res.next;
         this.codexLoading = false;
         this.cdr.detectChanges();
+        queueMicrotask(() => this.setupCodexObserver());
       },
       error: () => { this.codexLoading = false; this.cdr.detectChanges(); },
     });
@@ -356,6 +370,33 @@ export class CarpetaComponent implements OnInit {
   codexPrev() { if (this.codexPage > 1) { this.codexPage--; this.loadCodex(); } }
   codexNext() { if (this.codexPage * 40 < this.codexTotal) { this.codexPage++; this.loadCodex(); } }
   get codexTotalPages() { return Math.ceil(this.codexTotal / 40); }
+
+  isMobileCodexInfinite(): boolean {
+    return typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
+  }
+
+  loadMoreCodex() {
+    if (!this.isMobileCodexInfinite() || this.activeTab !== 'codex' || this.codexLoading || !this.codexHasMore) return;
+    this.codexPage++;
+    this.loadCodex(true);
+  }
+
+  private setupCodexObserver() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    this.codexObserver?.disconnect();
+    if (!this.isMobileCodexInfinite() || this.activeTab !== 'codex') return;
+    const sentinel = this.codexSentinelRef?.nativeElement;
+    if (!sentinel) return;
+    this.codexObserver = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          this.loadMoreCodex();
+          break;
+        }
+      }
+    }, { rootMargin: '280px 0px' });
+    this.codexObserver.observe(sentinel);
+  }
 
   selectCodexCard(card: Card) {
     this.selectedCard = this.selectedCard?.id === card.id ? null : card;

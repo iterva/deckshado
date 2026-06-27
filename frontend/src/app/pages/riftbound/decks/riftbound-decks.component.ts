@@ -465,7 +465,6 @@ export class RiftboundDecksComponent implements OnInit {
       mine: this.activeTab() === 'mine',
       search: this.search.trim() || undefined,
       page: this.page(),
-      page_size: this.pageSize,
     }).subscribe({
       next: (resp) => {
         let list = resp.results ?? [];

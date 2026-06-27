@@ -1,6 +1,6 @@
 import {
   Component, OnInit, OnDestroy, AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef,
-  ElementRef, ViewChild, HostListener, inject, signal, computed,
+  ElementRef, ViewChild, inject, signal, computed,
 } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -38,11 +38,11 @@ interface DirtyPatch {
     <!-- Header -->
     <div class="carpeta-header">
       <div class="binder-avatar-wrap">
-        @if (binderAvatarUrl() && !binderAvatarFailed()) {
+        @if ((binderProfile()?.binder_avatar_url || binderProfile()?.user_avatar_url) && !binderAvatarFailed()) {
           <img class="binder-avatar"
-               [src]="binderAvatarUrl()"
+               [src]="binderProfile()!.binder_avatar_url || binderProfile()!.user_avatar_url"
                alt="avatar"
-               (error)="onBinderAvatarError($event)" />
+               (error)="onBinderAvatarError()" />
         } @else {
           <div class="binder-avatar-placeholder">📁</div>
         }
@@ -270,7 +270,7 @@ interface DirtyPatch {
 
         <p class="results-count">{{ codexCards().length }} de {{ codexTotal() }} cartas</p>
 
-        @if (codexLoading() && codexCards().length === 0) { <div class="loading">Cargando...</div> }
+        @if (codexLoading()) { <div class="loading">Cargando...</div> }
 
         <div class="card-grid">
           @for (card of codexCards(); track card.id) {
@@ -304,13 +304,11 @@ interface DirtyPatch {
         </div>
 
         @if (codexTotalPages() > 1) {
-          <div #codexSentinel class="infinite-sentinel" aria-hidden="true"></div>
-          @if (codexLoading() && codexCards().length > 0) {
-            <div class="loading">Cargando más...</div>
-          }
-          @if (!codexHasMore() && codexCards().length > 0) {
-            <p class="results-count" style="margin-top: 1rem;">— Fin del codex —</p>
-          }
+          <div class="pagination">
+            <button class="btn btn-sm" (click)="codexPrev()" [disabled]="codexPage() === 1">← Anterior</button>
+            <span>{{ codexPage() }} / {{ codexTotalPages() }}</span>
+            <button class="btn btn-sm" (click)="codexNext()" [disabled]="codexPage() >= codexTotalPages()">Siguiente →</button>
+          </div>
         }
       </div>
     }
@@ -338,7 +336,6 @@ interface DirtyPatch {
                 [customHeadline]="wishlistContactLine()"
                 contactLine=""
                 [items]="wishlistShareItems()"
-                [includeCardImages]="true"
                 ctaLabel="Imagen busco"
                 filenamePrefix="shadowforge-wishlist"
                 footerTagline="ShadowForge · Marketplace TCG">
@@ -357,7 +354,7 @@ interface DirtyPatch {
 
         <p class="results-count">{{ wishlistTotal() }} cartas en tu wishlist</p>
 
-        @if (wishlistLoading() && wishlistEntries().length === 0) { <div class="loading">Cargando...</div> }
+        @if (wishlistLoading()) { <div class="loading">Cargando...</div> }
 
         @if (!wishlistLoading() && wishlistEntries().length === 0) {
           <div class="empty-state">
@@ -400,16 +397,6 @@ interface DirtyPatch {
             </div>
           }
         </div>
-
-        @if (wishlistTotalPages() > 1) {
-          <div #wishlistSentinel class="infinite-sentinel" aria-hidden="true"></div>
-          @if (wishlistLoading() && wishlistEntries().length > 0) {
-            <div class="loading">Cargando más...</div>
-          }
-          @if (!wishlistHasMore() && wishlistEntries().length > 0) {
-            <p class="results-count" style="margin-top: 1rem;">— Fin de la wishlist —</p>
-          }
-        }
       </div>
     }
 
@@ -1002,10 +989,10 @@ interface DirtyPatch {
     }
     .card-actions { padding: .4rem .75rem .75rem; display: flex; justify-content: flex-end; }
 
-    .infinite-sentinel {
-      width: 100%;
-      height: 1px;
-      margin-top: 1rem;
+    /* Pagination */
+    .pagination {
+      display: flex; align-items: center; justify-content: center;
+      gap: 1rem; margin-top: 1.5rem; color: #9ba3b4;
     }
 
     /* Stats */
@@ -1059,22 +1046,7 @@ interface DirtyPatch {
       display: grid; grid-template-columns: 1fr 1.2fr; gap: 0; position: relative;
     }
     @media (max-width: 640px) { .modal-detail { grid-template-columns: 1fr; } }
-    .modal-detail .detail-image {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      border-radius: 14px 0 0 14px;
-      display: block;
-      align-self: stretch;
-    }
-    @media (max-width: 640px) {
-      .modal-detail .detail-image {
-        height: auto;
-        max-height: 58vh;
-        object-fit: contain;
-        border-radius: 14px 14px 0 0;
-      }
-    }
+    .modal-detail .detail-image { width: 100%; height: auto; border-radius: 14px 0 0 14px; display: block; }
     .modal-detail .detail-info { padding: 1.4rem; display: flex; flex-direction: column; gap: .8rem; }
     .modal-detail h2 { margin: 0; color: #fff; }
     .detail-meta { display: flex; gap: .4rem; flex-wrap: wrap; }
@@ -1083,7 +1055,7 @@ interface DirtyPatch {
       border: 1px solid #2a3a4a; background: #0f0f23;
     }
     .badge.rarity { background: #c89b3c30; border-color: #c89b3c; color: #c89b3c; }
-    .badge.color { background: rgba(255, 255, 255, .06); border-color: var(--c); color: var(--c); }
+    .badge.color { background: color-mix(in srgb, var(--c) 15%, transparent); border-color: var(--c); color: var(--c); }
     .detail-stats { display: flex; gap: 1rem; flex-wrap: wrap; color: #c8c8da; font-size: .9rem; }
     .detail-ability { background: #0f0f23; border-radius: 8px; padding: .75rem 1rem; border-left: 3px solid #e94560; }
     .detail-ability h4 { margin: 0 0 .35rem; color: #4fc3f7; font-size: .85rem; }
@@ -1208,17 +1180,12 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   codexPage = signal(1);
   codexSearch = '';
   codexLoading = signal(false);
-  codexHasMore = signal(false);
-  @ViewChild('codexSentinel') codexSentinelRef?: ElementRef<HTMLElement>;
-  private codexObserver?: IntersectionObserver;
   sets = signal<RiftboundSet[]>([]);
   selectedSet = '';
   selectedType = '';
   selectedRarity = '';
   selectedColors = new Set<string>();
-  // Debe coincidir con el default del backend en /riftbound/cards (20).
-  private readonly CODEX_PAGE_SIZE = 20;
-  codexTotalPages = computed(() => Math.max(1, Math.ceil(this.codexTotal() / this.CODEX_PAGE_SIZE)));
+  codexTotalPages = computed(() => Math.max(1, Math.ceil(this.codexTotal() / 40)));
 
   // Wishlist
   wishlistEntries = signal<RiftboundWishlistEntry[]>([]);
@@ -1226,12 +1193,6 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   wishlistPage = signal(1);
   wishlistSearch = '';
   wishlistLoading = signal(false);
-  wishlistHasMore = signal(false);
-  @ViewChild('wishlistSentinel') wishlistSentinelRef?: ElementRef<HTMLElement>;
-  private wishlistObserver?: IntersectionObserver;
-  private readonly WISHLIST_PAGE_SIZE = 20;
-  private wishlistImageHydrating = new Set<string>();
-  wishlistTotalPages = computed(() => Math.max(1, Math.ceil(this.wishlistTotal() / this.WISHLIST_PAGE_SIZE)));
 
   // Stats
   stats = signal<RiftboundCollectionStats | null>(null);
@@ -1246,8 +1207,6 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   wishlistShareMessage = '';
   avatarUploading = signal(false);
   binderAvatarFailed = signal(false);
-  private readonly BAD_BINDER_AVATAR_STORAGE_KEY = 'riftbound.bad-binder-avatar-urls';
-  private badBinderAvatarUrls = signal<Set<string>>(new Set<string>());
   showStoreConfig = signal(false);
   mercadoEntries = signal<RiftboundCollectionEntry[]>([]);
   mercadoLoading = signal(false);
@@ -1342,7 +1301,6 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
       this.router.navigate(['/login'], { queryParams: { returnUrl: '/riftbound/carpeta' } });
       return;
     }
-    this.loadBadBinderAvatarUrls();
     this.loadIds();
     this.loadCollection();
     this.loadBinderProfile();
@@ -1356,15 +1314,10 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   ngAfterViewInit() {
     this.setupCollectionObserver();
-    this.setupCodexObserver();
-    this.setupWishlistObserver();
-    queueMicrotask(() => this.tryAutoLoadMore());
   }
 
   ngOnDestroy() {
     this.collectionObserver?.disconnect();
-    this.codexObserver?.disconnect();
-    this.wishlistObserver?.disconnect();
   }
 
   private setupCollectionObserver() {
@@ -1384,87 +1337,12 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     if (el) this.collectionObserver.observe(el);
   }
 
-  private setupCodexObserver() {
-    if (typeof IntersectionObserver === 'undefined') return;
-    this.codexObserver?.disconnect();
-    this.codexObserver = new IntersectionObserver(entries => {
-      for (const entry of entries) {
-        if (entry.isIntersecting
-            && this.activeTab() === 'codex'
-            && this.codexHasMore()
-            && !this.codexLoading()) {
-          this.loadMoreCodex();
-        }
-      }
-    }, { rootMargin: '300px' });
-    const el = this.codexSentinelRef?.nativeElement;
-    if (el) this.codexObserver.observe(el);
-  }
-
-  private setupWishlistObserver() {
-    if (typeof IntersectionObserver === 'undefined') return;
-    this.wishlistObserver?.disconnect();
-    this.wishlistObserver = new IntersectionObserver(entries => {
-      for (const entry of entries) {
-        if (entry.isIntersecting
-            && this.activeTab() === 'wishlist'
-            && this.wishlistHasMore()
-            && !this.wishlistLoading()) {
-          this.loadMoreWishlist();
-        }
-      }
-    }, { rootMargin: '300px' });
-    const el = this.wishlistSentinelRef?.nativeElement;
-    if (el) this.wishlistObserver.observe(el);
-  }
-
-  @HostListener('window:scroll')
-  onWindowScroll() {
-    this.tryAutoLoadMore();
-  }
-
-  @HostListener('window:resize')
-  onWindowResize() {
-    this.tryAutoLoadMore();
-  }
-
-  private tryAutoLoadMore() {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return;
-
-    const doc = document.documentElement;
-    const body = document.body;
-    const scrollTop = window.scrollY || doc.scrollTop || body.scrollTop || 0;
-    const viewport = window.innerHeight || doc.clientHeight || 0;
-    const fullHeight = Math.max(doc.scrollHeight || 0, body.scrollHeight || 0);
-    const nearBottom = scrollTop + viewport >= fullHeight - 320;
-    if (!nearBottom) return;
-
-    const tab = this.activeTab();
-    if (tab === 'carpeta' && this.collectionHasMore() && !this.collectionLoading()) {
-      this.loadMoreCollection();
-      return;
-    }
-    if (tab === 'codex' && this.codexHasMore() && !this.codexLoading()) {
-      this.loadMoreCodex();
-      return;
-    }
-    if (tab === 'wishlist' && this.wishlistHasMore() && !this.wishlistLoading()) {
-      this.loadMoreWishlist();
-    }
-  }
-
   // ── Tabs ──
   switchTab(t: Tab) {
     this.activeTab.set(t);
     if (t === 'carpeta') this.loadCollection();
-    if (t === 'codex') {
-      if (this.codexCards().length === 0) this.loadCodex(true);
-      else queueMicrotask(() => this.setupCodexObserver());
-    }
-    if (t === 'wishlist') {
-      this.loadWishlist(true);
-      queueMicrotask(() => this.setupWishlistObserver());
-    }
+    if (t === 'codex' && this.codexCards().length === 0) this.loadCodex();
+    if (t === 'wishlist') this.loadWishlist();
     if (t === 'mercado') { this.loadMercado(); }
     if (t === 'stats') this.loadStats();
   }
@@ -1514,10 +1392,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
         this.collectionLoading.set(false);
         this.cdr.markForCheck();
         // Re-observe sentinel in case DOM cleared it
-        queueMicrotask(() => {
-          this.setupCollectionObserver();
-          this.tryAutoLoadMore();
-        });
+        queueMicrotask(() => this.setupCollectionObserver());
       },
       error: () => { this.collectionLoading.set(false); this.cdr.markForCheck(); },
     });
@@ -1600,22 +1475,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   // ── Codex ──
-  loadCodex(reset = true) {
-    if (reset) {
-      this.codexPage.set(1);
-      this.codexCards.set([]);
-      this.codexHasMore.set(false);
-    }
-    this.fetchCodexPage(!reset);
-  }
-
-  loadMoreCodex() {
-    if (this.codexLoading() || !this.codexHasMore()) return;
-    this.codexPage.update(p => p + 1);
-    this.fetchCodexPage(true);
-  }
-
-  private fetchCodexPage(append = false) {
+  loadCodex() {
     this.codexLoading.set(true);
     this.rb.listCards({
       search: this.codexSearch || undefined,
@@ -1624,32 +1484,21 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
       set: this.selectedSet || undefined,
       colors: this.selectedColors.size ? Array.from(this.selectedColors) : undefined,
       page: this.codexPage(),
-      pageSize: this.CODEX_PAGE_SIZE,
       lite: true,
     }).subscribe({
       next: res => {
-        const next = res.results as RiftboundCardLite[];
-        if (append) {
-          this.codexCards.update(curr => [...curr, ...next]);
-        } else {
-          this.codexCards.set(next);
-        }
+        this.codexCards.set(res.results as RiftboundCardLite[]);
         this.codexTotal.set(res.count);
-        this.codexHasMore.set(!!res.next);
         this.codexLoading.set(false);
         this.cdr.markForCheck();
-        queueMicrotask(() => {
-          this.setupCodexObserver();
-          this.tryAutoLoadMore();
-        });
       },
       error: () => { this.codexLoading.set(false); this.cdr.markForCheck(); },
     });
   }
-  onCodexSearch() { this.loadCodex(true); }
-  onCodexFilter() { this.loadCodex(true); }
-  codexPrev() { if (this.codexPage() > 1) { this.codexPage.update(p => p - 1); this.fetchCodexPage(false); } }
-  codexNext() { if (this.codexPage() < this.codexTotalPages()) { this.codexPage.update(p => p + 1); this.fetchCodexPage(false); } }
+  onCodexSearch() { this.codexPage.set(1); this.loadCodex(); }
+  onCodexFilter() { this.codexPage.set(1); this.loadCodex(); }
+  codexPrev() { if (this.codexPage() > 1) { this.codexPage.update(p => p - 1); this.loadCodex(); } }
+  codexNext() { if (this.codexPage() < this.codexTotalPages()) { this.codexPage.update(p => p + 1); this.loadCodex(); } }
 
   toggleColor(c: string) {
     if (this.selectedColors.has(c)) this.selectedColors.delete(c);
@@ -1692,59 +1541,19 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   // ── Wishlist ──
-  loadWishlist(reset = true) {
-    if (reset) {
-      this.wishlistPage.set(1);
-      this.wishlistEntries.set([]);
-      this.wishlistHasMore.set(false);
-    }
-    this.fetchWishlistPage(!reset);
-  }
-
-  loadMoreWishlist() {
-    if (this.wishlistLoading() || !this.wishlistHasMore()) return;
-    this.wishlistPage.update(p => p + 1);
-    this.fetchWishlistPage(true);
-  }
-
-  private fetchWishlistPage(append = false) {
+  loadWishlist() {
     this.wishlistLoading.set(true);
-    this.rb.listWishlist({
-      search: this.wishlistSearch || undefined,
-      page: this.wishlistPage(),
-      page_size: this.WISHLIST_PAGE_SIZE,
-    }).subscribe({
+    this.rb.listWishlist({ search: this.wishlistSearch || undefined, page: this.wishlistPage() }).subscribe({
       next: res => {
-        const normalized = (res.results || []).map((entry) => this.normalizeWishlistEntryImage(entry));
-        if (append) {
-          this.wishlistEntries.update(curr => [...curr, ...normalized]);
-        } else {
-          this.wishlistEntries.set(normalized);
-        }
+        this.wishlistEntries.set(res.results);
         this.wishlistTotal.set(res.count);
-        this.wishlistHasMore.set(!!res.next);
         this.wishlistLoading.set(false);
-        this.hydrateWishlistMissingImages(normalized);
         this.cdr.markForCheck();
-        queueMicrotask(() => {
-          this.setupWishlistObserver();
-          this.tryAutoLoadMore();
-        });
       },
       error: () => { this.wishlistLoading.set(false); this.cdr.markForCheck(); },
     });
   }
-  onWishlistSearch() { this.loadWishlist(true); }
-  wishlistPrev() {
-    if (this.wishlistPage() <= 1) return;
-    this.wishlistPage.update(p => p - 1);
-    this.fetchWishlistPage(false);
-  }
-  wishlistNext() {
-    if (this.wishlistPage() >= this.wishlistTotalPages()) return;
-    this.wishlistPage.update(p => p + 1);
-    this.fetchWishlistPage(false);
-  }
+  onWishlistSearch() { this.wishlistPage.set(1); this.loadWishlist(); }
 
   updateWishlistQty(entry: RiftboundWishlistEntry, qty: number) {
     if (!qty || qty < 1) return;
@@ -1797,55 +1606,6 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     return this.COLORS.find(x => x.code === c)?.hex || '#8896a8';
   }
 
-  private normalizeBinderAvatarUrl(raw: string): string {
-    const url = (raw || '').trim();
-    if (!url) return '';
-    return url.replace('res.cloudinary.com/dmvu6tuee/', 'res.cloudinary.com/drw7y27sm/');
-  }
-
-  private loadBadBinderAvatarUrls() {
-    try {
-      const raw = localStorage.getItem(this.BAD_BINDER_AVATAR_STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return;
-      const items = parsed
-        .map((v) => this.normalizeBinderAvatarUrl(String(v || '')))
-        .filter((v) => !!v);
-      this.badBinderAvatarUrls.set(new Set(items));
-    } catch {
-      // Ignorar errores de parseo/localStorage.
-    }
-  }
-
-  private saveBadBinderAvatarUrls(next: Set<string>) {
-    try {
-      localStorage.setItem(this.BAD_BINDER_AVATAR_STORAGE_KEY, JSON.stringify(Array.from(next)));
-    } catch {
-      // Ignorar errores de cuota/localStorage.
-    }
-  }
-
-  private candidateBinderAvatarUrls(): string[] {
-    const profile = this.binderProfile();
-    const bad = this.badBinderAvatarUrls();
-    const seen = new Set<string>();
-    const candidates = [
-      this.normalizeBinderAvatarUrl(profile?.binder_avatar_url || ''),
-      this.normalizeBinderAvatarUrl(profile?.user_avatar_url || ''),
-    ];
-
-    return candidates.filter((u) => {
-      if (!u || bad.has(u) || seen.has(u)) return false;
-      seen.add(u);
-      return true;
-    });
-  }
-
-  binderAvatarUrl(): string {
-    return this.candidateBinderAvatarUrls()[0] || '';
-  }
-
   // ── Binder profile ──
   loadBinderProfile() {
     this.rb.getBinderProfile().subscribe(p => {
@@ -1863,21 +1623,8 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     });
   }
 
-  onBinderAvatarError(event?: Event) {
-    const img = event?.target as HTMLImageElement | null;
-    const failedRaw = (img?.currentSrc || img?.src || '').trim();
-    const failed = this.normalizeBinderAvatarUrl(failedRaw);
-
-    if (failed) {
-      this.badBinderAvatarUrls.update(prev => {
-        const next = new Set(prev);
-        next.add(failed);
-        this.saveBadBinderAvatarUrls(next);
-        return next;
-      });
-    }
-
-    this.binderAvatarFailed.set(!this.binderAvatarUrl());
+  onBinderAvatarError() {
+    this.binderAvatarFailed.set(true);
     this.cdr.markForCheck();
   }
 
@@ -1939,87 +1686,13 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     const msg = (this.wishlistShareMessage || '').trim();
     return msg || 'Busco cartas';
   }
-
-  private pickCardImage(...sources: any[]): string {
-    const keys = [
-      'image',
-      'image_url',
-      'image_url_small',
-      'cdn_image_url',
-      'card_image',
-      'card_image_url',
-      'art_url',
-      'art',
-    ];
-
-    for (const source of sources) {
-      if (!source || typeof source !== 'object') continue;
-      for (const key of keys) {
-        const raw = source[key];
-        const value = typeof raw === 'string' ? raw.trim() : '';
-        if (value && value !== 'null' && value !== 'undefined') return value;
-      }
-    }
-    return '';
-  }
-
-  private normalizeWishlistEntryImage(entry: RiftboundWishlistEntry): RiftboundWishlistEntry {
-    const cardData: any = (entry as any)?.card_data || {};
-    const image = this.pickCardImage(cardData, entry as any);
-    if (!image) return entry;
-
-    return {
-      ...entry,
-      card_data: {
-        ...entry.card_data,
-        image,
-      },
-    };
-  }
-
-  private hydrateWishlistMissingImages(entries: RiftboundWishlistEntry[]) {
-    for (const entry of entries) {
-      const cardNumber = String(entry.card_data?.card_number || '').trim();
-      const cardId = Number(entry.card_data?.id || entry.card || 0);
-      const hydrateKey = cardNumber || String(cardId || '');
-      const hasImage = !!this.pickCardImage(entry.card_data);
-      if (!hydrateKey || hasImage || this.wishlistImageHydrating.has(hydrateKey)) continue;
-
-      this.wishlistImageHydrating.add(hydrateKey);
-      this.rb.getCard(cardNumber || cardId).subscribe({
-        next: (card) => {
-          const image = this.pickCardImage(card as any);
-          if (image) {
-            this.wishlistEntries.update(list => list.map((w) => {
-              const wCardNumber = String(w.card_data?.card_number || '').trim();
-              const wid = Number(w.card_data?.id || w.card || 0);
-              if ((cardNumber && wCardNumber !== cardNumber) || (!cardNumber && wid !== cardId)) return w;
-              return {
-                ...w,
-                card_data: {
-                  ...w.card_data,
-                  image,
-                },
-              };
-            }));
-            this.cdr.markForCheck();
-          }
-          this.wishlistImageHydrating.delete(hydrateKey);
-        },
-        error: () => {
-          this.wishlistImageHydrating.delete(hydrateKey);
-        },
-      });
-    }
-  }
-
   wishlistShareItems(): ShareImageItem[] {
     const sel = this.wishlistShareSelection();
     const source = this.wishlistEntries();
     const filtered = sel.size > 0 ? source.filter(w => sel.has(w.id)) : source;
     return filtered.slice(0, 20).map(w => ({
       name: w.card_data?.name || '',
-      image: this.pickCardImage(w.card_data, w as any),
+      image: w.card_data?.image || '',
       quantity: w.desired_quantity || 1,
       foil: false,
       price: null,

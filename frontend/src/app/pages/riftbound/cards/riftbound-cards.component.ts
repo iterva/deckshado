@@ -1,15 +1,4 @@
-import {
-  AfterViewInit,
-  Component,
-  ElementRef,
-  HostListener,
-  OnDestroy,
-  OnInit,
-  ViewChild,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, OnInit, computed, inject, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RiftboundService } from '../../../services/riftbound.service';
@@ -79,7 +68,7 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
                    [(ngModel)]="searchQuery"
                    (ngModelChange)="onSearchInput()"
                    [placeholder]="searchMode === 'ability' ? 'Buscar habilidad…' : (searchMode === 'all' ? 'Buscar nombre o habilidad…' : 'Buscar nombre o número…')" />
-            <button class="search-btn" (click)="reload(true)" title="Buscar">🔍</button>
+            <button class="search-btn" (click)="reload()" title="Buscar">🔍</button>
             @if (hasActiveFilter()) {
               <button class="clear-all" (click)="clearAll()" title="Limpiar filtros">Limpiar</button>
             }
@@ -138,7 +127,7 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
         </div>
       </div>
 
-      @if (loading() && cards().length === 0) {
+      @if (loading()) {
         <p class="muted center">Cargando…</p>
       }
 
@@ -199,13 +188,11 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
       }
 
       @if (totalCount() > pageSize) {
-        <div #cardsSentinel class="infinite-sentinel" aria-hidden="true"></div>
-        @if (loading() && cards().length > 0) {
-          <p class="muted center" style="margin: 1rem 0;">Cargando más...</p>
-        }
-        @if (!hasMoreResults() && cards().length > 0) {
-          <p class="muted center" style="margin: 1rem 0;">— Fin de resultados —</p>
-        }
+        <nav class="pager">
+          <button (click)="prev()" [disabled]="page() === 1">←</button>
+          <span>Página {{ page() }} de {{ totalPages() }}</span>
+          <button (click)="next()" [disabled]="page() >= totalPages()">→</button>
+        </nav>
       }
     </div>
   `,
@@ -304,11 +291,9 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
     .search-modes button:hover { color: #fff; }
     .search-modes button.active { background: #e94560; color: #fff; font-weight: 600; }
 
-    .infinite-sentinel {
-      width: 100%;
-      height: 1px;
-      margin-top: 1rem;
-    }
+    .pager { display: flex; gap: 1rem; align-items: center; justify-content: center; margin: 2rem 0; color: #98a2a8; }
+    .pager button { padding: .45rem 1rem; border: 1px solid #2a3a4a; background: transparent; color: #c8c8da; border-radius: 6px; cursor: pointer; }
+    .pager button:disabled { opacity: .35; cursor: not-allowed; }
 
     /* Modal */
     .rb-modal-overlay {
@@ -347,10 +332,9 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
     .desc { white-space: pre-wrap; font-family: inherit; line-height: 1.55; margin: 0; font-size: .92rem; }
     .rb-modal-info app-tcg-price {
       display: block;
-      width: 100%;
-      max-width: 100%;
+      width: max-content;
       margin-top: .9rem;
-      margin-left: 0;
+      margin-left: auto;
     }
     @media (max-width: 720px) {
       .rb-modal-layout { grid-template-columns: 1fr; }
@@ -368,10 +352,8 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
     :host-context(body.light-theme) .chip.active { background: #785a28; border-color: #785a28; color: #fff; }
   `],
 })
-export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy {
+export class RiftboundCardsComponent implements OnInit {
   private rb = inject(RiftboundService);
-  @ViewChild('cardsSentinel') cardsSentinelRef?: ElementRef<HTMLElement>;
-  private cardsObserver?: IntersectionObserver;
 
   colors = [...FALLBACK_COLORS];
   types = [...FALLBACK_TYPES];
@@ -397,7 +379,6 @@ export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy
   selectedCard = signal<RiftboundCard | null>(null);
   page = signal(1);
   totalCount = signal(0);
-  hasMoreResults = signal(false);
   totalPages = computed(() => Math.max(1, Math.ceil(this.totalCount() / this.pageSize)));
 
   hasActiveFilter = computed(() =>
@@ -415,31 +396,6 @@ export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy
       },
     });
     this.reload();
-  }
-
-  ngAfterViewInit() {
-    this.setupCardsObserver();
-    queueMicrotask(() => this.tryLoadMoreByViewport());
-  }
-
-  ngOnDestroy() {
-    this.cardsObserver?.disconnect();
-    if (this.searchTimer) clearTimeout(this.searchTimer);
-  }
-
-  private setupCardsObserver() {
-    if (typeof IntersectionObserver === 'undefined') return;
-    this.cardsObserver?.disconnect();
-    this.cardsObserver = new IntersectionObserver(entries => {
-      for (const entry of entries) {
-        if (entry.isIntersecting && this.hasMoreResults() && !this.loading()) {
-          this.loadMoreResults();
-        }
-      }
-    }, { rootMargin: '300px' });
-
-    const el = this.cardsSentinelRef?.nativeElement;
-    if (el) this.cardsObserver.observe(el);
   }
 
   setType(t: string) { this.typeFilter = t; this.reset(); }
@@ -549,19 +505,11 @@ export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy
   }
 
   reset() {
-    this.reload(true);
+    this.page.set(1);
+    this.reload();
   }
 
-  reload(reset = true) {
-    if (reset) {
-      this.page.set(1);
-      this.cards.set([]);
-      this.hasMoreResults.set(false);
-    }
-    this.fetchCards(!reset);
-  }
-
-  private fetchCards(append = false) {
+  reload() {
     this.loading.set(true);
     this.rb.listCards({
       search: this.searchQuery || undefined,
@@ -574,65 +522,19 @@ export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy
       colors: [...this.selectedColors()],
       excludeBattlefields: this.selectedColors().size > 0 && this.typeFilter !== 'battlefield',
       page: this.page(),
-      pageSize: this.pageSize,
       lite: true,
     }).subscribe({
       next: (resp) => {
-        const next = resp.results as RiftboundCardLite[];
-        let loadedCount = next.length;
-        if (append) {
-          this.cards.update(curr => {
-            loadedCount = curr.length + next.length;
-            return [...curr, ...next];
-          });
-        } else {
-          this.cards.set(next);
-        }
+        this.cards.set(resp.results as RiftboundCardLite[]);
         this.totalCount.set(resp.count);
-        const moreByNext = !!resp.next;
-        const moreByCount = next.length > 0 && loadedCount < resp.count;
-        this.hasMoreResults.set(moreByNext || moreByCount);
         this.loading.set(false);
-        queueMicrotask(() => {
-          this.setupCardsObserver();
-          this.tryLoadMoreByViewport();
-        });
       },
       error: () => this.loading.set(false),
     });
   }
 
-  prev() { if (this.page() > 1) { this.page.update(p => p - 1); this.fetchCards(false); } }
-  next() { if (this.page() < this.totalPages()) { this.page.update(p => p + 1); this.fetchCards(false); } }
-
-  private loadMoreResults() {
-    if (this.loading() || !this.hasMoreResults()) return;
-    this.page.update(p => p + 1);
-    this.fetchCards(true);
-  }
-
-  @HostListener('window:scroll')
-  onWindowScroll() {
-    this.tryLoadMoreByViewport();
-  }
-
-  @HostListener('window:resize')
-  onWindowResize() {
-    this.tryLoadMoreByViewport();
-  }
-
-  private tryLoadMoreByViewport() {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return;
-    if (this.loading() || !this.hasMoreResults()) return;
-
-    const doc = document.documentElement;
-    const body = document.body;
-    const scrollTop = window.scrollY || doc.scrollTop || body.scrollTop || 0;
-    const viewport = window.innerHeight || doc.clientHeight || 0;
-    const fullHeight = Math.max(doc.scrollHeight || 0, body.scrollHeight || 0);
-    const nearBottom = scrollTop + viewport >= fullHeight - 320;
-    if (nearBottom) this.loadMoreResults();
-  }
+  prev() { if (this.page() > 1) { this.page.update(p => p - 1); this.reload(); } }
+  next() { if (this.page() < this.totalPages()) { this.page.update(p => p + 1); this.reload(); } }
 
   openCard(cardNumber: string) {
     this.modalOpen.set(true);

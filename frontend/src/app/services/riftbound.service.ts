@@ -225,13 +225,12 @@ export class RiftboundService {
   }
 
   // ── Mazos ──
-  listDecks(opts: { mine?: boolean; search?: string; page?: number; page_size?: number } = {}):
+  listDecks(opts: { mine?: boolean; search?: string; page?: number } = {}):
     Observable<PaginatedResponse<RiftboundDeck>> {
     let params = new HttpParams();
     if (opts.mine) params = params.set('mine', '1');
     if (opts.search) params = params.set('search', opts.search);
     if (opts.page) params = params.set('page', String(opts.page));
-    if (opts.page_size) params = params.set('page_size', String(opts.page_size));
     return this.http.get<PaginatedResponse<RiftboundDeck>>(`${this.base}/decks/`, { params });
   }
 
@@ -310,11 +309,10 @@ export class RiftboundService {
   }
 
   // ── Wishlist ──
-  listWishlist(opts: { search?: string; page?: number; page_size?: number } = {}): Observable<PaginatedResponse<RiftboundWishlistEntry>> {
+  listWishlist(opts: { search?: string; page?: number } = {}): Observable<PaginatedResponse<RiftboundWishlistEntry>> {
     let params = new HttpParams();
     if (opts.search) params = params.set('search', opts.search);
     if (opts.page) params = params.set('page', String(opts.page));
-    if (opts.page_size) params = params.set('page_size', String(opts.page_size));
     return this.http.get<PaginatedResponse<RiftboundWishlistEntry>>(
       `${this.base}/wishlist/`, { params },
     );
@@ -355,21 +353,20 @@ export class RiftboundService {
     return this.http.post<{ share_token: string }>(`${this.base}/share-token/regenerate/`, {});
   }
 
-  listStores(opts: { search?: string; country?: string; ordering?: string; page?: number; page_size?: number } = {}):
+  listStores(opts: { search?: string; country?: string; ordering?: string; page?: number } = {}):
     Observable<PaginatedResponse<RiftboundPublicBinderProfile>> {
     let params = new HttpParams();
     if (opts.search) params = params.set('search', opts.search);
     if (opts.country) params = params.set('country', opts.country);
     if (opts.ordering) params = params.set('ordering', opts.ordering);
     if (opts.page) params = params.set('page', String(opts.page));
-    if (opts.page_size) params = params.set('page_size', String(opts.page_size));
     return this.http.get<PaginatedResponse<RiftboundPublicBinderProfile>>(`${this.base}/stores/`, { params });
   }
 
   getPublicStore(token: string, opts: {
     search?: string; set?: string; type?: string; rarity?: string;
     condition?: string; foil?: '0' | '1'; price_min?: number; price_max?: number;
-    only_priced?: '1'; ordering?: string; page?: number; page_size?: number;
+    only_priced?: '1'; ordering?: string; page?: number;
   } = {}): Observable<PaginatedResponse<RiftboundCollectionEntry> & {
     store: RiftboundPublicBinderProfile; store_owner: string; store_avatar: string; store_binder_avatar: string;
   }> {
@@ -380,7 +377,7 @@ export class RiftboundService {
     return this.http.get<any>(`${this.base}/store/${token}/`, { params });
   }
 
-  getPublicWishlist(token: string, opts: { search?: string; ordering?: string; page?: number; page_size?: number } = {})
+  getPublicWishlist(token: string, opts: { search?: string; ordering?: string; page?: number } = {})
     : Observable<PaginatedResponse<RiftboundWishlistEntry> & { store: RiftboundPublicBinderProfile }> {
     let params = new HttpParams();
     for (const [k, v] of Object.entries(opts)) {

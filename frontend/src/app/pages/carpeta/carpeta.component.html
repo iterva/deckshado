@@ -540,6 +540,9 @@
         <button class="btn btn-sm btn-share" (click)="copyShareLink()">
           {{ shareLinkCopied ? '✅ Copiado!' : '🔗 Copiar Link Tienda' }}
         </button>
+        <button class="btn btn-sm btn-share" (click)="downloadStoreQr()" [disabled]="qrDownloading">
+          {{ qrDownloading ? '⏳ Generando...' : '📱 Generar QR' }}
+        </button>
         <button class="btn btn-sm btn-pdf" (click)="exportMercadoPdf()" [disabled]="exportingPdf || mercadoEntries.length === 0">
           {{ exportingPdf ? '⏳ Generando...' : '📄 Exportar PDF' }}
         </button>

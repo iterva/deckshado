@@ -7,6 +7,7 @@ import { CarpetaService } from '../../services/carpeta.service';
 import { CardService } from '../../services/card.service';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
 import { ShareImageComponent, ShareImageItem } from '../../components/share-image/share-image.component';
+import QRCode from 'qrcode';
 import {
   Card, CollectionEntry, WishlistEntry, BinderProfile,
   Edition, CardType, Race, Rarity, CarpetaIds,
@@ -86,6 +87,7 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   mercadoDirty = new Map<number, { price?: number | null; selling_quantity?: number }>();
   shareToken = '';
   shareLinkCopied = false;
+  qrDownloading = false;
   batchSaving = false;
   exportingPdf = false;
   mercadoAllEntries: CollectionEntry[] = [];
@@ -559,6 +561,33 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
       this.cdr.detectChanges();
       setTimeout(() => { this.shareLinkCopied = false; this.cdr.detectChanges(); }, 2000);
     });
+  }
+
+  async downloadStoreQr() {
+    if (!this.shareToken) return;
+    const url = `${window.location.origin}/tienda/${this.shareToken}`;
+    this.qrDownloading = true;
+    this.cdr.detectChanges();
+    try {
+      const dataUrl = await QRCode.toDataURL(url, {
+        width: 1024,
+        margin: 2,
+        errorCorrectionLevel: 'M',
+        color: { dark: '#0f172a', light: '#ffffff' },
+      });
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `myl-tienda-qr-${this.auth.user()?.username || 'shadowforge'}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (e) {
+      console.error('QR generation error:', e);
+      alert('No se pudo generar el QR. Intenta de nuevo.');
+    } finally {
+      this.qrDownloading = false;
+      this.cdr.detectChanges();
+    }
   }
 
   removeMercadoEntry(entry: CollectionEntry) {

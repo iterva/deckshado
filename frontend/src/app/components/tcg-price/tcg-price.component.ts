@@ -265,14 +265,21 @@ import { TcgmatchService, TcgmatchPrice } from '../../services/tcgmatch.service'
     .tcg-price.detailed {
       display: flex; flex-direction: column; gap: 6px;
       background: #1a1a2e; border: 1px solid #2a2a4e;
-      border-radius: 8px; padding: 8px 12px; min-width: 150px;
+      border-radius: 8px; padding: 8px 12px; min-width: 0;
+      height: 100%;
+      box-sizing: border-box;
     }
     .tcg-market-stack {
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      align-items: stretch;
       gap: 8px;
       width: 100%;
-      min-width: 190px;
+      min-width: 0;
+    }
+    .tcg-market-stack .tcg-rows {
+      flex: 1;
+      min-height: 0;
     }
     .tcg-alt-card {
       background: #17172a;
@@ -293,6 +300,9 @@ import { TcgmatchService, TcgmatchPrice } from '../../services/tcgmatch.service'
     .tcg-row .tcg-clp { color: #3bc4ff; }
 
     .tcg-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       font-size: .75rem;
       color: #fff;
       text-decoration: none;
@@ -300,12 +310,20 @@ import { TcgmatchService, TcgmatchPrice } from '../../services/tcgmatch.service'
       border: 1px solid rgba(255, 255, 255, .16);
       border-radius: 6px;
       padding: 3px 8px;
+      box-sizing: border-box;
+      text-align: center;
       transition: transform .12s ease, filter .12s ease;
-      max-width: 100%;
-      white-space: nowrap;
+      width: 100%;
+      min-height: 34px;
+      white-space: normal;
     }
+    .tcg-price.detailed .tcg-btn { margin-top: auto; }
     .tcg-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+    @media (max-width: 900px) {
+      .tcg-market-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
     @media (max-width: 640px) {
+      .tcg-market-stack { grid-template-columns: 1fr; }
       .tcg-btn { font-size: .72rem; padding: 3px 7px; }
     }
   `],

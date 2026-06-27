@@ -1,4 +1,15 @@
-import { Component, OnInit, computed, inject, signal, HostListener } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RiftboundService } from '../../../services/riftbound.service';
@@ -127,7 +138,7 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
         </div>
       </div>
 
-      @if (loading()) {
+      @if (loading() && cards().length === 0) {
         <p class="muted center">Cargando…</p>
       }
 
@@ -188,11 +199,13 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
       }
 
       @if (totalCount() > pageSize) {
-        <nav class="pager">
-          <button (click)="prev()" [disabled]="page() === 1">←</button>
-          <span>Página {{ page() }} de {{ totalPages() }}</span>
-          <button (click)="next()" [disabled]="page() >= totalPages()">→</button>
-        </nav>
+        <div #cardsSentinel class="infinite-sentinel" aria-hidden="true"></div>
+        @if (loading() && cards().length > 0) {
+          <p class="muted center" style="margin: 1rem 0;">Cargando más...</p>
+        }
+        @if (!hasMoreResults() && cards().length > 0) {
+          <p class="muted center" style="margin: 1rem 0;">— Fin de resultados —</p>
+        }
       }
     </div>
   `,
@@ -291,9 +304,11 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
     .search-modes button:hover { color: #fff; }
     .search-modes button.active { background: #e94560; color: #fff; font-weight: 600; }
 
-    .pager { display: flex; gap: 1rem; align-items: center; justify-content: center; margin: 2rem 0; color: #98a2a8; }
-    .pager button { padding: .45rem 1rem; border: 1px solid #2a3a4a; background: transparent; color: #c8c8da; border-radius: 6px; cursor: pointer; }
-    .pager button:disabled { opacity: .35; cursor: not-allowed; }
+    .infinite-sentinel {
+      width: 100%;
+      height: 1px;
+      margin-top: 1rem;
+    }
 
     /* Modal */
     .rb-modal-overlay {
@@ -352,8 +367,10 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
     :host-context(body.light-theme) .chip.active { background: #785a28; border-color: #785a28; color: #fff; }
   `],
 })
-export class RiftboundCardsComponent implements OnInit {
+export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy {
   private rb = inject(RiftboundService);
+  @ViewChild('cardsSentinel') cardsSentinelRef?: ElementRef<HTMLElement>;
+  private cardsObserver?: IntersectionObserver;
 
   colors = [...FALLBACK_COLORS];
   types = [...FALLBACK_TYPES];
@@ -379,6 +396,7 @@ export class RiftboundCardsComponent implements OnInit {
   selectedCard = signal<RiftboundCard | null>(null);
   page = signal(1);
   totalCount = signal(0);
+  hasMoreResults = signal(false);
   totalPages = computed(() => Math.max(1, Math.ceil(this.totalCount() / this.pageSize)));
 
   hasActiveFilter = computed(() =>
@@ -396,6 +414,32 @@ export class RiftboundCardsComponent implements OnInit {
       },
     });
     this.reload();
+  }
+
+  ngAfterViewInit() {
+    this.setupCardsObserver();
+  }
+
+  ngOnDestroy() {
+    this.cardsObserver?.disconnect();
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+    document.body.style.overflow = '';
+  }
+
+  private setupCardsObserver() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    this.cardsObserver?.disconnect();
+    this.cardsObserver = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting && this.hasMoreResults() && !this.loading()) {
+          this.loadMoreResults();
+          break;
+        }
+      }
+    }, { rootMargin: '300px' });
+
+    const el = this.cardsSentinelRef?.nativeElement;
+    if (el) this.cardsObserver.observe(el);
   }
 
   setType(t: string) { this.typeFilter = t; this.reset(); }
@@ -506,10 +550,12 @@ export class RiftboundCardsComponent implements OnInit {
 
   reset() {
     this.page.set(1);
+    this.cards.set([]);
+    this.hasMoreResults.set(false);
     this.reload();
   }
 
-  reload() {
+  reload(append = false) {
     this.loading.set(true);
     this.rb.listCards({
       search: this.searchQuery || undefined,
@@ -525,16 +571,26 @@ export class RiftboundCardsComponent implements OnInit {
       lite: true,
     }).subscribe({
       next: (resp) => {
-        this.cards.set(resp.results as RiftboundCardLite[]);
+        const next = resp.results as RiftboundCardLite[];
+        if (append) {
+          this.cards.update(curr => [...curr, ...next]);
+        } else {
+          this.cards.set(next);
+        }
         this.totalCount.set(resp.count);
+        this.hasMoreResults.set(!!resp.next);
         this.loading.set(false);
+        queueMicrotask(() => this.setupCardsObserver());
       },
       error: () => this.loading.set(false),
     });
   }
 
-  prev() { if (this.page() > 1) { this.page.update(p => p - 1); this.reload(); } }
-  next() { if (this.page() < this.totalPages()) { this.page.update(p => p + 1); this.reload(); } }
+  private loadMoreResults() {
+    if (this.loading() || !this.hasMoreResults()) return;
+    this.page.update(p => p + 1);
+    this.reload(true);
+  }
 
   openCard(cardNumber: string) {
     this.modalOpen.set(true);

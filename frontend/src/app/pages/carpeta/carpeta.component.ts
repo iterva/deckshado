@@ -371,12 +371,8 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   codexNext() { if (this.codexPage * 40 < this.codexTotal) { this.codexPage++; this.loadCodex(); } }
   get codexTotalPages() { return Math.ceil(this.codexTotal / 40); }
 
-  isMobileCodexInfinite(): boolean {
-    return typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
-  }
-
   loadMoreCodex() {
-    if (!this.isMobileCodexInfinite() || this.activeTab !== 'codex' || this.codexLoading || !this.codexHasMore) return;
+    if (this.activeTab !== 'codex' || this.codexLoading || !this.codexHasMore) return;
     this.codexPage++;
     this.loadCodex(true);
   }
@@ -384,7 +380,7 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   private setupCodexObserver() {
     if (typeof IntersectionObserver === 'undefined') return;
     this.codexObserver?.disconnect();
-    if (!this.isMobileCodexInfinite() || this.activeTab !== 'codex') return;
+    if (this.activeTab !== 'codex') return;
     const sentinel = this.codexSentinelRef?.nativeElement;
     if (!sentinel) return;
     this.codexObserver = new IntersectionObserver(entries => {

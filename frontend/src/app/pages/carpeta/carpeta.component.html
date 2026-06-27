@@ -347,15 +347,7 @@
         }
       </div>
 
-      @if (codexTotalPages > 1 && !isMobileCodexInfinite()) {
-        <div class="pagination">
-          <button class="btn btn-sm" (click)="codexPrev()" [disabled]="codexPage === 1">← Anterior</button>
-          <span>{{ codexPage }} / {{ codexTotalPages }}</span>
-          <button class="btn btn-sm" (click)="codexNext()" [disabled]="codexPage >= codexTotalPages">Siguiente →</button>
-        </div>
-      }
-
-      @if (codexTotalPages > 1 && isMobileCodexInfinite()) {
+      @if (codexTotalPages > 1) {
         <div #codexSentinel class="infinite-sentinel" aria-hidden="true"></div>
         @if (codexLoading && codexCards.length > 0) {
           <div class="loading">Cargando más...</div>

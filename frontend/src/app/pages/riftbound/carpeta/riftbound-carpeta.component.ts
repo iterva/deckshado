@@ -146,17 +146,17 @@ interface DirtyPatch {
             <div class="collection-card">
               <div class="card-image" (click)="previewCard.set(entry.card_data)">
                 @if (cardImageUrl(entry.card_data) && !isCardImageBroken(entry.card_data)) {
-                  <img [src]="cardImageUrl(entry.card_data)" [alt]="entry.card_data?.name" loading="lazy"
+                  <img [src]="cardImageUrl(entry.card_data)" [alt]="entry.card_data.name" loading="lazy"
                        (error)="onCardImageError(entry.card_data, $event)" />
                 } @else {
-                  <div class="img-fallback">{{ entry.card_data?.card_number }}</div>
+                  <div class="img-fallback">{{ entry.card_data.card_number }}</div>
                 }
                 <div class="eye-overlay"><i class="bi bi-eye-fill"></i></div>
                 @if (entry.is_foil) { <div class="foil-badge">✨ FOIL</div> }
               </div>
               <div class="card-body">
-                <h4>{{ entry.card_data?.name }}</h4>
-                <span class="card-meta">{{ typeLabel(entry.card_data?.card_type) }} · {{ entry.card_data?.card_number }}</span>
+                <h4>{{ entry.card_data.name }}</h4>
+                <span class="card-meta">{{ typeLabel(entry.card_data.card_type) }} · {{ entry.card_data.card_number }}</span>
                 <div class="inline-fields">
                   <div class="field">
                     <label>Tengo</label>
@@ -175,7 +175,7 @@ interface DirtyPatch {
                   </div>
                 </div>
                 <div class="tcg-ref-row">
-                  <app-tcg-price [cardName]="entry.card_data?.name || ''" [compact]="true"></app-tcg-price>
+                  <app-tcg-price [cardName]="entry.card_data.name || ''" [compact]="true"></app-tcg-price>
                 </div>
                 <div class="inline-fields">
                   <div class="field">
@@ -374,22 +374,22 @@ interface DirtyPatch {
               </label>
               <div class="card-image" (click)="previewCard.set(entry.card_data)">
                 @if (cardImageUrl(entry.card_data) && !isCardImageBroken(entry.card_data)) {
-                  <img [src]="cardImageUrl(entry.card_data)" [alt]="entry.card_data?.name" loading="lazy"
+                  <img [src]="cardImageUrl(entry.card_data)" [alt]="entry.card_data.name" loading="lazy"
                        (error)="onCardImageError(entry.card_data, $event)" />
                 } @else {
-                  <div class="img-fallback">{{ entry.card_data?.card_number }}</div>
+                  <div class="img-fallback">{{ entry.card_data.card_number }}</div>
                 }
                 <div class="eye-overlay"><i class="bi bi-eye-fill"></i></div>
               </div>
               <div class="card-info">
-                <h4>{{ entry.card_data?.name }}</h4>
-                <span class="card-meta">{{ typeLabel(entry.card_data?.card_type) }} · {{ entry.card_data?.card_number }}</span>
+                <h4>{{ entry.card_data.name }}</h4>
+                <span class="card-meta">{{ typeLabel(entry.card_data.card_type) }} · {{ entry.card_data.card_number }}</span>
                 <div class="wishlist-qty">
                   <label>Quiero:</label>
                   <input type="number" [value]="entry.desired_quantity" min="1"
                     (change)="updateWishlistQty(entry, $any($event.target).valueAsNumber)" />
                 </div>
-                <app-tcg-price [cardName]="entry.card_data?.name || ''" [compact]="true"></app-tcg-price>
+                <app-tcg-price [cardName]="entry.card_data.name || ''" [compact]="true"></app-tcg-price>
               </div>
               <div class="card-actions">
                 <button class="btn btn-xs btn-danger" (click)="removeFromWishlist(entry)" title="Quitar de wishlist">
@@ -528,16 +528,16 @@ interface DirtyPatch {
             <div class="collection-card">
               <div class="card-image" (click)="previewCard.set(entry.card_data)">
                 @if (cardImageUrl(entry.card_data) && !isCardImageBroken(entry.card_data)) {
-                  <img [src]="cardImageUrl(entry.card_data)" [alt]="entry.card_data?.name" loading="lazy"
+                  <img [src]="cardImageUrl(entry.card_data)" [alt]="entry.card_data.name" loading="lazy"
                        (error)="onCardImageError(entry.card_data, $event)" />
                 } @else {
-                  <div class="img-fallback">{{ entry.card_data?.card_number }}</div>
+                  <div class="img-fallback">{{ entry.card_data.card_number }}</div>
                 }
                 @if (entry.is_foil) { <div class="foil-badge">✨ FOIL</div> }
               </div>
               <div class="card-body">
-                <h4>{{ entry.card_data?.name }}</h4>
-                <span class="card-meta">{{ entry.card_data?.card_number }} · {{ entry.language }}</span>
+                <h4>{{ entry.card_data.name }}</h4>
+                <span class="card-meta">{{ entry.card_data.card_number }} · {{ entry.language }}</span>
                 <div class="inline-fields">
                   <div class="field">
                     <label>Precio</label>
@@ -552,7 +552,7 @@ interface DirtyPatch {
                 </div>
                 <div class="tcg-ref-row">
                   <span class="tcg-ref-label">Ref. TCG:</span>
-                  <app-tcg-price [cardName]="entry.card_data?.name || ''" [compact]="true"></app-tcg-price>
+                  <app-tcg-price [cardName]="entry.card_data.name || ''" [compact]="true"></app-tcg-price>
                 </div>
                 <div class="card-photo-row">
                   <!-- Slot 1 -->
@@ -1649,7 +1649,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   removeFromCollection(entry: RiftboundCollectionEntry) {
-    if (!confirm(`¿Quitar "${entry.card_data?.name}" de tu carpeta?`)) return;
+    if (!confirm(`¿Quitar "${entry.card_data.name}" de tu carpeta?`)) return;
     this.rb.deleteCollection(entry.id).subscribe(() => {
       this.collectionEntries.update(arr => arr.filter(e => e.id !== entry.id));
       this.collectionTotal.update(n => Math.max(0, n - 1));
@@ -1970,8 +1970,8 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     const source = this.wishlistEntries();
     const filtered = sel.size > 0 ? source.filter(w => sel.has(w.id)) : source;
     return filtered.slice(0, 20).map(w => ({
-      name: w.card_data?.name || '',
-      image: w.card_data?.image || '',
+      name: w.card_data.name || '',
+      image: w.card_data.image || '',
       quantity: w.desired_quantity || 1,
       foil: false,
       price: null,

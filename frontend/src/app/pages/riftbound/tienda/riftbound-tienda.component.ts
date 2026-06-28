@@ -138,24 +138,24 @@ interface RiftboundCartItem {
         @for (e of entries(); track e.id) {
           <div class="store-card">
             <div class="card-image" (click)="preview.set(e.card_data)">
-              @if (e.card_data?.image) {
+              @if (e.card_data.image) {
                 <app-card-photo-carousel
                   [cardImage]="e.card_data.image"
                   [photos]="[e.photo_url, e.photo_url_2]"
                   [alt]="e.card_data.name"
                   [thumbWidth]="350">
                 </app-card-photo-carousel>
-              } @else { <div class="img-fallback">{{ e.card_data?.card_number }}</div> }
+              } @else { <div class="img-fallback">{{ e.card_data.card_number }}</div> }
               @if (e.is_foil) { <div class="foil-badge">✨ FOIL</div> }
             </div>
             <div class="card-body">
-              <h4>{{ e.card_data?.name }}</h4>
-              <span class="card-meta">{{ e.card_data?.card_number }} · {{ e.language }}</span>
+              <h4>{{ e.card_data.name }}</h4>
+              <span class="card-meta">{{ e.card_data.card_number }} · {{ e.language }}</span>
               <div class="price-row">
                 <span class="price">{{ e.price != null ? ('$' + (e.price | number)) : 'Consultar' }}</span>
                 <span class="qty">x{{ e.selling_quantity }}</span>
               </div>
-              <app-tcg-price [cardName]="e.card_data?.name || ''" [compact]="true" [showLink]="false" [showMarketPrice]="false"></app-tcg-price>
+              <app-tcg-price [cardName]="e.card_data.name || ''" [compact]="true" [showLink]="false" [showMarketPrice]="false"></app-tcg-price>
               <button class="btn btn-sm btn-primary btn-add-cart"
                       (click)="addToCart(e, $event)"
                       [disabled]="inCart(e.id) >= e.selling_quantity">
@@ -197,17 +197,17 @@ interface RiftboundCartItem {
           @for (w of wishlist(); track w.id) {
             <div class="store-card">
               <div class="card-image" (click)="preview.set(w.card_data)">
-                @if (w.card_data?.image) {
+                @if (w.card_data.image) {
                   <img [src]="w.card_data.image" [alt]="w.card_data.name" loading="lazy" />
-                } @else { <div class="img-fallback">{{ w.card_data?.card_number }}</div> }
+                } @else { <div class="img-fallback">{{ w.card_data.card_number }}</div> }
               </div>
               <div class="card-body">
-                <h4>{{ w.card_data?.name }}</h4>
-                <span class="card-meta">{{ w.card_data?.card_number }}</span>
+                <h4>{{ w.card_data.name }}</h4>
+                <span class="card-meta">{{ w.card_data.card_number }}</span>
                 <div class="price-row">
                   <span class="qty wishlist-qty">❤️ Quiere x{{ w.desired_quantity }}</span>
                 </div>
-                <app-tcg-price [cardName]="w.card_data?.name || ''" [compact]="true" [showLink]="false" [showMarketPrice]="false"></app-tcg-price>
+                <app-tcg-price [cardName]="w.card_data.name || ''" [compact]="true" [showLink]="false" [showMarketPrice]="false"></app-tcg-price>
               </div>
             </div>
           }
@@ -693,8 +693,8 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
   }
   shareStoreItems(): ShareImageItem[] {
     return this.entries().slice(0, 20).map(e => ({
-      name: e.card_data?.name || '',
-      image: e.card_data?.image || '',
+      name: e.card_data.name || '',
+      image: e.card_data.image || '',
       quantity: e.selling_quantity || 1,
       foil: !!e.is_foil,
       price: e.price ?? null,
@@ -702,8 +702,8 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
   }
   shareWishlistItems(): ShareImageItem[] {
     return this.wishlist().slice(0, 20).map(w => ({
-      name: w.card_data?.name || '',
-      image: w.card_data?.image || '',
+      name: w.card_data.name || '',
+      image: w.card_data.image || '',
       quantity: w.desired_quantity || 1,
       foil: false,
       price: null,

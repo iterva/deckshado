@@ -118,13 +118,17 @@ class CardListSerializer(serializers.ModelSerializer):
         if not isinstance(url, str) or not url:
             return False
         lower_url = url.lower()
-        if self._is_r2_url(lower_url):
+        if self._is_supported_cdn_url(lower_url):
             return False
         # Keep Cloudinary for fully custom cards where MYL fallback may not exist.
         myl_id = str(getattr(obj, 'myl_id', '') or '')
         return not myl_id.startswith('custom_')
 
-    def _is_r2_url(self, lower_url):
+    def _is_supported_cdn_url(self, lower_url):
+        if 'ik.imagekit.io/' in lower_url:
+            return True
+        if 'res.cloudinary.com/drw7y27sm/' in lower_url:
+            return True
         if '.r2.dev/' in lower_url or '.r2.cloudflarestorage.com/' in lower_url:
             return True
         return False

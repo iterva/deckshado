@@ -100,9 +100,10 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:4300",
     "http://127.0.0.1:4300",
     "https://shadow-forge-deck.vercel.app",
+    "https://dev-preprod-shadow-forge-deck.vercel.app",
 ] + [o.strip() for o in _cors_extra if o.strip()]
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://shadow-forge-deck.*\.vercel\.app$",
+    r"^https://.*shadow-forge-deck.*\.vercel\.app$",
     r"^https://ik\.imagekit\.io$",
 ] + [r.strip() for r in _cors_regex_extra if r.strip()]
 
@@ -134,6 +135,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://iterva.pythonanywhere.com",
     "https://frontend-cyan-alpha-34.vercel.app",
     "https://shadow-forge-deck.vercel.app",
+    "https://dev-preprod-shadow-forge-deck.vercel.app",
 ]
 
 # MyL API

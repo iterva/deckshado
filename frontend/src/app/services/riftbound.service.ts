@@ -367,12 +367,20 @@ export class RiftboundService {
   getPublicStore(token: string, opts: {
     search?: string; set?: string; type?: string; rarity?: string;
     condition?: string; foil?: '0' | '1'; price_min?: number; price_max?: number;
-    only_priced?: '1'; ordering?: string; page?: number;
+    only_priced?: '1'; ordering?: string; page?: number; page_size?: number;
+    entry_ids?: number[] | string;
   } = {}): Observable<PaginatedResponse<RiftboundCollectionEntry> & {
     store: RiftboundPublicBinderProfile; store_owner: string; store_avatar: string; store_binder_avatar: string;
   }> {
     let params = new HttpParams();
     for (const [k, v] of Object.entries(opts)) {
+      if (Array.isArray(v)) {
+        const values = v
+          .map(x => String(x).trim())
+          .filter(x => x.length > 0);
+        if (values.length) params = params.set(k, values.join(','));
+        continue;
+      }
       if (v !== undefined && v !== null && v !== '') params = params.set(k, String(v));
     }
     return this.http.get<any>(`${this.base}/store/${token}/`, { params });

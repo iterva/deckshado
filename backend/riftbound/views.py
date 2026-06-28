@@ -887,6 +887,25 @@ def _rb_resolve_public_profile(token_or_slug):
 
 
 def _rb_filter_store_qs(qs, params):
+    entry_ids_raw = (params.get("entry_ids") or "").strip()
+    if entry_ids_raw:
+        entry_ids = []
+        for chunk in entry_ids_raw.split(","):
+            chunk = chunk.strip()
+            if not chunk:
+                continue
+            try:
+                value = int(chunk)
+            except ValueError:
+                continue
+            if value > 0:
+                entry_ids.append(value)
+        entry_ids = list(dict.fromkeys(entry_ids))
+        if entry_ids:
+            qs = qs.filter(id__in=entry_ids)
+        else:
+            return qs.none()
+
     search = params.get("search")
     if search:
         qs = qs.filter(card__name__icontains=search)
@@ -931,6 +950,7 @@ def _rb_filter_store_qs(qs, params):
 class RiftboundPublicStoreListView(generics.ListAPIView):
     serializer_class = RiftboundCollectionEntrySerializer
     permission_classes = [AllowAny]
+    pagination_class = RiftboundCollectionPagination
 
     def get_queryset(self):
         profile = _rb_resolve_public_profile(self.kwargs["token"])

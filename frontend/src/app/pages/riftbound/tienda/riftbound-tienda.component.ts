@@ -257,7 +257,7 @@ interface RiftboundCartItem {
             <div class="buyer-form">
               <label>
                 <span>Tu nombre (opcional)</span>
-                <input type="text" [(ngModel)]="buyerName" maxlength="100" placeholder="Ej: Terva" />
+                <input type="text" [(ngModel)]="buyerName" maxlength="100" placeholder="Ej: Jhon Doe" />
               </label>
               <label>
                 <span>WhatsApp (opcional)</span>
@@ -711,30 +711,106 @@ export class RiftboundTiendaComponent implements OnInit {
 
   clearCart() { this.cart.set([]); this.saveCart(); }
 
+  private syncCartWithLatestStock(latestEntries: RiftboundCollectionEntry[]) {
+    const latestByEntry = new Map<number, RiftboundCollectionEntry>();
+    for (const entry of latestEntries) latestByEntry.set(entry.id, entry);
+
+    const removed: string[] = [];
+    const reduced: string[] = [];
+    const nextCart: RiftboundCartItem[] = [];
+
+    for (const item of this.cart()) {
+      const latest = latestByEntry.get(item.entryId);
+      const available = latest?.selling_quantity ?? 0;
+
+      if (available <= 0) {
+        removed.push(item.name);
+        continue;
+      }
+
+      const nextQty = Math.min(item.qty, available);
+      if (nextQty < item.qty) {
+        reduced.push(`${item.name} (${item.qty}->${nextQty})`);
+      }
+
+      nextCart.push({
+        ...item,
+        name: latest?.card_data?.name || item.name,
+        image: latest?.card_data?.image || item.image,
+        price: latest?.price ?? item.price,
+        available,
+        qty: nextQty,
+      });
+    }
+
+    return { nextCart, removed, reduced };
+  }
+
   submitOrder() {
     if (this.orderSubmitting() || this.cart().length === 0) return;
-
-    const payload = {
-      buyer_name: this.buyerName.trim() || undefined,
-      buyer_whatsapp: this.buyerWhatsapp.trim() || undefined,
-      buyer_note: this.buyerNote.trim() || undefined,
-      items: this.cart().map(c => ({ entry_id: c.entryId, quantity: c.qty })),
-    };
 
     this.orderSubmitting.set(true);
     this.orderError.set(null);
     this.orderSuccess.set(null);
-    this.rb.createPublicStoreOrder(this.token, payload).subscribe({
-      next: (order: RiftboundStoreOrder) => {
-        this.orderSubmitting.set(false);
-        this.orderSuccess.set(`Pedido #${order.id} enviado. El vendedor ya tiene la reserva de stock.`);
-        this.clearCart();
-        this.reload();
-        this.cdr.markForCheck();
+
+    const entryIds = Array.from(new Set(this.cart().map(c => c.entryId)));
+    this.rb.getPublicStore(this.token, {
+      entry_ids: entryIds,
+      page_size: Math.max(20, entryIds.length),
+      ordering: 'id',
+    }).subscribe({
+      next: res => {
+        const { nextCart, removed, reduced } = this.syncCartWithLatestStock(res.results);
+        this.cart.set(nextCart);
+        this.saveCart();
+
+        if (removed.length > 0 || reduced.length > 0 || nextCart.length === 0) {
+          const msg: string[] = ['Actualizamos el stock antes de enviar el pedido.'];
+          if (removed.length > 0) {
+            msg.push(`Sin stock: ${removed.slice(0, 3).join(', ')}${removed.length > 3 ? '...' : ''}.`);
+          }
+          if (reduced.length > 0) {
+            msg.push(`Cantidades ajustadas: ${reduced.slice(0, 3).join(', ')}${reduced.length > 3 ? '...' : ''}.`);
+          }
+          if (nextCart.length === 0) {
+            msg.push('El carrito quedo sin items disponibles.');
+          } else {
+            msg.push('Revisa el carrito y confirma nuevamente.');
+          }
+
+          this.orderSubmitting.set(false);
+          this.orderError.set(msg.join(' '));
+          this.orderSuccess.set(null);
+          this.reload();
+          this.cdr.markForCheck();
+          return;
+        }
+
+        const payload = {
+          buyer_name: this.buyerName.trim() || undefined,
+          buyer_whatsapp: this.buyerWhatsapp.trim() || undefined,
+          buyer_note: this.buyerNote.trim() || undefined,
+          items: nextCart.map(c => ({ entry_id: c.entryId, quantity: c.qty })),
+        };
+
+        this.rb.createPublicStoreOrder(this.token, payload).subscribe({
+          next: (order: RiftboundStoreOrder) => {
+            this.orderSubmitting.set(false);
+            this.orderSuccess.set(`Pedido #${order.id} enviado. El vendedor ya tiene la reserva de stock.`);
+            this.clearCart();
+            this.reload();
+            this.cdr.markForCheck();
+          },
+          error: err => {
+            this.orderSubmitting.set(false);
+            this.orderError.set(err?.error?.detail || 'No se pudo crear el pedido. Intenta nuevamente.');
+            this.cdr.markForCheck();
+          },
+        });
       },
       error: err => {
         this.orderSubmitting.set(false);
-        this.orderError.set(err?.error?.detail || 'No se pudo crear el pedido. Intenta nuevamente.');
+        this.orderError.set(err?.error?.detail || 'No se pudo validar stock actualizado. Intenta nuevamente.');
         this.cdr.markForCheck();
       },
     });

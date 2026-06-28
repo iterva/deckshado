@@ -172,26 +172,30 @@ class CardListView(generics.ListAPIView):
         if deck_race and deck_race != "dream":
             # Non-allies (Oro, Arma, Talismán, Tótem) always pass
             non_ally = ~Q(card_type__slug="aliado")
+            # Allies without race should be available for all racial decks.
+            raceless_ally = Q(card_type__slug="aliado") & (Q(race__isnull=True) | Q(race__slug="noraza"))
             if deck_race == "totem":
                 # Only raceless allies
-                qs = qs.filter(non_ally | Q(race__isnull=True) | Q(race__slug="noraza"))
+                qs = qs.filter(non_ally | raceless_ally)
             elif deck_race in ESC_MULTI_RACE:
                 # Multi-race ESC archetypes: allies matching ANY of the races
                 race_q = Q()
                 for r in ESC_MULTI_RACE[deck_race]:
                     race_q |= Q(race__slug__icontains=r)
-                qs = qs.filter(non_ally | race_q)
+                qs = qs.filter(non_ally | raceless_ally | race_q)
             elif deck_race in ("luz", "oscuridad"):
                 # Ability-based: first line of ability starts with Luz / Oscuridad
                 keyword = "Luz" if deck_race == "luz" else "Oscuridad"
                 qs = qs.filter(
                     non_ally
+                    | raceless_ally
                     | Q(ability__istartswith=keyword)
                 )
             else:
                 # Matching race (including sub-races)
                 qs = qs.filter(
                     non_ally
+                    | raceless_ally
                     | Q(race__slug__icontains=deck_race)
                 )
 

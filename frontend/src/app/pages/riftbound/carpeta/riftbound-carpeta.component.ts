@@ -5,6 +5,7 @@ import {
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import QRCode from 'qrcode';
 
 import { RiftboundService } from '../../../services/riftbound.service';
 import { AuthService } from '../../../services/auth.service';
@@ -422,6 +423,9 @@ interface DirtyPatch {
           @if (binderProfile()?.is_store_public && binderProfile()?.share_token) {
             <button class="btn btn-sm" (click)="copyShareLink()">
               <i class="bi bi-link-45deg"></i> Copiar enlace público
+            </button>
+            <button class="btn btn-sm" (click)="downloadStoreQr()" [disabled]="qrDownloading()">
+              <i class="bi bi-qr-code"></i> {{ qrDownloading() ? 'Generando QR...' : 'Generar QR' }}
             </button>
           }
           <button class="btn btn-sm" (click)="exportMercadoPdf()" [disabled]="exportingPdf()">
@@ -1279,6 +1283,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   private contentScrollEl: HTMLElement | null = null;
   mercadoDirty = new Map<number, DirtyPatch>();
   exportingPdf = signal(false);
+  qrDownloading = signal(false);
   onlySelling = signal(false);
 
   // Bulk import
@@ -1952,6 +1957,35 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     navigator.clipboard?.writeText(url).then(() => {
       alert('Enlace copiado:\n' + url);
     }).catch(() => prompt('Copia el enlace:', url));
+  }
+
+  async downloadStoreQr() {
+    const token = this.binderProfile()?.share_token;
+    if (!token || this.qrDownloading()) return;
+    const url = `${window.location.origin}/riftbound/tienda/${token}`;
+
+    this.qrDownloading.set(true);
+    this.cdr.markForCheck();
+    try {
+      const dataUrl = await QRCode.toDataURL(url, {
+        width: 1024,
+        margin: 2,
+        errorCorrectionLevel: 'M',
+        color: { dark: '#0f172a', light: '#ffffff' },
+      });
+
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `riftbound-tienda-qr-${this.auth.user()?.username || 'shadowforge'}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch {
+      alert('No se pudo generar el QR. Intenta de nuevo.');
+    } finally {
+      this.qrDownloading.set(false);
+      this.cdr.markForCheck();
+    }
   }
 
   // ── Compartir wishlist ──

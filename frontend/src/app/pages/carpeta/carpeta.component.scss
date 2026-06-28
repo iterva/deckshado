@@ -406,16 +406,50 @@
 }
 
 .btn-icon {
-  background: none;
-  border: none;
-  font-size: 1.2rem;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(10, 14, 26, 0.84);
+  color: #e5e7eb;
+  font-size: 0.98rem;
   cursor: pointer;
-  padding: 0.3rem;
+  padding: 0;
   border-radius: 50%;
-  transition: transform 0.15s, background 0.15s;
+  transition: transform 0.15s, background 0.15s, border-color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
+  touch-action: manipulation;
 
-  &:hover { transform: scale(1.2); background: rgba(255,255,255,0.1); }
+  &:hover {
+    transform: translateY(-1px) scale(1.05);
+    background: rgba(20, 28, 46, 0.96);
+    border-color: rgba(255, 255, 255, 0.34);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+.btn-icon.btn-add {
+  color: #8be9db;
+}
+
+.btn-icon.btn-add:hover {
+  border-color: #2a8a8a;
+  background: rgba(42, 138, 138, 0.24);
+}
+
+.btn-icon.btn-heart {
+  color: #cbd5e1;
+}
+
+.btn-icon.btn-heart.active {
+  color: #ffd4de;
+  border-color: #e94560;
+  background: rgba(233, 69, 96, 0.28);
 }
 
 .btn-heart-lg {
@@ -847,7 +881,7 @@
     .owned-badge {
       position: absolute;
       top: 6px;
-      right: 6px;
+      left: 6px;
       background: rgba(0, 212, 255, 0.9);
       color: #000;
       font-size: 0.7rem;
@@ -877,7 +911,7 @@
   .card-overlay-actions {
     position: absolute;
     top: 6px;
-    left: 6px;
+    right: 6px;
     display: flex;
     flex-direction: column;
     gap: 0.3rem;
@@ -1641,6 +1675,26 @@
 
   .card-item .card-overlay-actions {
     opacity: 1;
+    top: 6px;
+    right: 6px;
+    left: auto;
+    gap: 0.25rem;
+  }
+
+  .card-item .btn-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 0.9rem;
+    border-color: rgba(255, 255, 255, 0.24);
+    background: rgba(8, 12, 22, 0.88);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  }
+
+  .card-item .card-image .owned-badge {
+    top: 6px;
+    left: 6px;
+    font-size: 0.62rem;
+    padding: 2px 5px;
   }
 
   .collection-card .card-image .eye-overlay,

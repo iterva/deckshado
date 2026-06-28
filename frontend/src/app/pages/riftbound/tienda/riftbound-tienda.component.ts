@@ -501,8 +501,15 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
   page = signal(1);
   hasMore = signal(false);
   preview = signal<RiftboundCardLite | null>(null);
-  @ViewChild('storeSentinel') storeSentinelRef?: ElementRef<HTMLElement>;
+  private storeSentinelRef?: ElementRef<HTMLElement>;
   private storeObserver?: IntersectionObserver;
+  private contentScrollEl: HTMLElement | null = null;
+
+  @ViewChild('storeSentinel')
+  set storeSentinelSetter(el: ElementRef<HTMLElement> | undefined) {
+    this.storeSentinelRef = el;
+    this.setupStoreObserver();
+  }
 
   // Cart
   cart = signal<RiftboundCartItem[]>([]);
@@ -539,10 +546,13 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
 
   ngAfterViewInit() {
     this.setupStoreObserver();
+    this.attachContentScrollListener();
+    this.tryInfiniteScrollFallback();
   }
 
   ngOnDestroy() {
     this.storeObserver?.disconnect();
+    this.detachContentScrollListener();
   }
 
   @HostListener('window:scroll')
@@ -589,7 +599,10 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
         this.loading.set(false);
         this.syncCartAvailability();
         this.cdr.markForCheck();
-        queueMicrotask(() => this.setupStoreObserver());
+        setTimeout(() => {
+          this.setupStoreObserver();
+          this.tryInfiniteScrollFallback();
+        });
       },
       error: err => {
         this.loading.set(false);
@@ -616,12 +629,34 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
     this.storeObserver.observe(el);
   }
 
+  private attachContentScrollListener() {
+    this.detachContentScrollListener();
+    const el = document.querySelector('main.content') as HTMLElement | null;
+    if (!el) return;
+    this.contentScrollEl = el;
+    this.contentScrollEl.addEventListener('scroll', this.onContentScroll, { passive: true });
+  }
+
+  private detachContentScrollListener() {
+    if (!this.contentScrollEl) return;
+    this.contentScrollEl.removeEventListener('scroll', this.onContentScroll);
+    this.contentScrollEl = null;
+  }
+
+  private onContentScroll = () => {
+    this.tryInfiniteScrollFallback();
+  };
+
   private tryInfiniteScrollFallback() {
     if (!this.isNearPageBottom()) return;
     if (this.activeTab() === 'store') this.loadMoreStore();
   }
 
   private isNearPageBottom(offset = 900): boolean {
+    const container = this.contentScrollEl;
+    if (container && container.scrollHeight > container.clientHeight) {
+      return container.scrollTop + container.clientHeight >= container.scrollHeight - 420;
+    }
     const doc = document.documentElement;
     const body = document.body;
     const scrollTop = window.scrollY || doc.scrollTop || 0;
@@ -773,7 +808,12 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
     if (this.activeTab() === tab) return;
     this.activeTab.set(tab);
     if (tab === 'wishlist' && !this.wishlistLoaded()) this.reloadWishlist();
-    if (tab === 'store') queueMicrotask(() => this.setupStoreObserver());
+    if (tab === 'store') {
+      setTimeout(() => {
+        this.setupStoreObserver();
+        this.tryInfiniteScrollFallback();
+      });
+    }
   }
 
   reloadWishlist() {

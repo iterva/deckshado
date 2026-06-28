@@ -74,8 +74,15 @@ export class TiendaComponent implements OnInit, AfterViewInit, OnDestroy {
   orderSubmitting = false;
   orderError = '';
   createdOrderId: number | null = null;
-  @ViewChild('storeSentinel') storeSentinelRef?: ElementRef<HTMLElement>;
+  private storeSentinelRef?: ElementRef<HTMLElement>;
   private storeObserver?: IntersectionObserver;
+  private contentScrollEl: HTMLElement | null = null;
+
+  @ViewChild('storeSentinel')
+  set storeSentinelSetter(el: ElementRef<HTMLElement> | undefined) {
+    this.storeSentinelRef = el;
+    this.setupStoreObserver();
+  }
 
   constructor(
     private route: ActivatedRoute,
@@ -108,10 +115,13 @@ export class TiendaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngAfterViewInit() {
     this.setupStoreObserver();
+    this.attachContentScrollListener();
+    this.tryInfiniteScrollFallback();
   }
 
   ngOnDestroy() {
     this.storeObserver?.disconnect();
+    this.detachContentScrollListener();
   }
 
   loadFilters() {
@@ -132,7 +142,10 @@ export class TiendaComponent implements OnInit, AfterViewInit, OnDestroy {
         this.loading = false;
         this.syncCartAvailability();
         this.cdr.detectChanges();
-        queueMicrotask(() => this.setupStoreObserver());
+        setTimeout(() => {
+          this.setupStoreObserver();
+          this.tryInfiniteScrollFallback();
+        });
       },
       error: () => { this.notFound = true; this.loading = false; this.cdr.detectChanges(); },
     });
@@ -206,12 +219,34 @@ export class TiendaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.storeObserver.observe(sentinel);
   }
 
+  private attachContentScrollListener() {
+    this.detachContentScrollListener();
+    const el = document.querySelector('main.content') as HTMLElement | null;
+    if (!el) return;
+    this.contentScrollEl = el;
+    this.contentScrollEl.addEventListener('scroll', this.onContentScroll, { passive: true });
+  }
+
+  private detachContentScrollListener() {
+    if (!this.contentScrollEl) return;
+    this.contentScrollEl.removeEventListener('scroll', this.onContentScroll);
+    this.contentScrollEl = null;
+  }
+
+  private onContentScroll = () => {
+    this.tryInfiniteScrollFallback();
+  };
+
   private tryInfiniteScrollFallback() {
     if (!this.isNearPageBottom()) return;
     if (this.activeTab === 'store') this.loadMoreStore();
   }
 
   private isNearPageBottom(offset = 900): boolean {
+    const container = this.contentScrollEl;
+    if (container && container.scrollHeight > container.clientHeight) {
+      return container.scrollTop + container.clientHeight >= container.scrollHeight - 420;
+    }
     const doc = document.documentElement;
     const body = document.body;
     const scrollTop = window.scrollY || doc.scrollTop || 0;
@@ -450,7 +485,12 @@ export class TiendaComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.activeTab === tab) return;
     this.activeTab = tab;
     if (tab === 'wishlist' && !this.wishlistLoaded) this.loadWishlist();
-    if (tab === 'store') queueMicrotask(() => this.setupStoreObserver());
+    if (tab === 'store') {
+      setTimeout(() => {
+        this.setupStoreObserver();
+        this.tryInfiniteScrollFallback();
+      });
+    }
   }
 
   loadWishlist() {

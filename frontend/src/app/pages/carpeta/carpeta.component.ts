@@ -30,11 +30,20 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   @HostListener('document:click')
   onDocClick() { this.codexOpenFilter = null; }
 
+  @HostListener('window:scroll')
+  onWindowScroll() { this.tryInfiniteScrollFallback(); }
+
+  @HostListener('window:resize')
+  onWindowResize() { this.tryInfiniteScrollFallback(); }
+
   // ── Carpeta (Collection) ──
   collectionEntries: CollectionEntry[] = [];
   collectionTotal = 0;
   collectionPage = 1;
+  collectionHasMore = false;
   collectionSearch = '';
+  @ViewChild('collectionSentinel') collectionSentinelRef?: ElementRef<HTMLElement>;
+  private collectionObserver?: IntersectionObserver;
 
   // ── Stats ──
   stats: any = null;
@@ -72,8 +81,11 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   wishlistEntries: WishlistEntry[] = [];
   wishlistTotal = 0;
   wishlistPage = 1;
+  wishlistHasMore = false;
   wishlistSearch = '';
   wishlistLoading = false;
+  @ViewChild('wishlistSentinel') wishlistSentinelRef?: ElementRef<HTMLElement>;
+  private wishlistObserver?: IntersectionObserver;
 
   // ── IDs for quick status checks ──
   collectionIds: { [cardId: number]: number } = {};
@@ -83,9 +95,12 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   mercadoEntries: CollectionEntry[] = [];
   mercadoTotal = 0;
   mercadoPage = 1;
+  mercadoHasMore = false;
   mercadoSearch = '';
   mercadoLoading = false;
   mercadoDirty = new Map<number, { price?: number | null; selling_quantity?: number }>();
+  @ViewChild('mercadoSentinel') mercadoSentinelRef?: ElementRef<HTMLElement>;
+  private mercadoObserver?: IntersectionObserver;
   shareToken = '';
   shareLinkCopied = false;
   qrDownloading = false;
@@ -140,11 +155,17 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit() {
+    this.setupCollectionObserver();
     this.setupCodexObserver();
+    this.setupWishlistObserver();
+    this.setupMercadoObserver();
   }
 
   ngOnDestroy() {
+    this.collectionObserver?.disconnect();
     this.codexObserver?.disconnect();
+    this.wishlistObserver?.disconnect();
+    this.mercadoObserver?.disconnect();
   }
 
   switchTab(tab: Tab) {
@@ -156,7 +177,12 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
     if (tab === 'pedidos') this.loadPendingOrders();
     if (tab === 'historial') this.loadHistoryOrders();
     if (tab === 'stats' && !this.stats) this.loadStats();
-    queueMicrotask(() => this.setupCodexObserver());
+    queueMicrotask(() => {
+      this.setupCollectionObserver();
+      this.setupCodexObserver();
+      this.setupWishlistObserver();
+      this.setupMercadoObserver();
+    });
   }
 
   loadStats() {
@@ -215,6 +241,20 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ── Collection ──
   loadCollection() {
+    this.collectionPage = 1;
+    this.collectionEntries = [];
+    this.collectionHasMore = false;
+    this.fetchCollectionPage();
+  }
+
+  onCollectionSearch() { this.collectionPage = 1; this.loadCollection(); }
+  toggleSellingFilter() { this.showSellingOnly = !this.showSellingOnly; this.collectionPage = 1; this.loadCollection(); }
+  loadMoreCollection() {
+    if (this.activeTab !== 'carpeta' || this.collectionLoading || !this.collectionHasMore) return;
+    this.collectionPage++;
+    this.fetchCollectionPage(true);
+  }
+  private fetchCollectionPage(append = false) {
     this.collectionLoading = true;
     this.carpetaService.getCollection(
       this.collectionPage,
@@ -222,17 +262,16 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
       this.showSellingOnly,
     ).subscribe({
       next: res => {
-        this.collectionEntries = res.results;
+        this.collectionEntries = append ? [...this.collectionEntries, ...res.results] : res.results;
         this.collectionTotal = res.count;
+        this.collectionHasMore = !!res.next;
         this.collectionLoading = false;
         this.cdr.detectChanges();
+        queueMicrotask(() => this.setupCollectionObserver());
       },
       error: () => { this.collectionLoading = false; this.cdr.detectChanges(); },
     });
   }
-
-  onCollectionSearch() { this.collectionPage = 1; this.loadCollection(); }
-  toggleSellingFilter() { this.showSellingOnly = !this.showSellingOnly; this.collectionPage = 1; this.loadCollection(); }
   collectionPrev() { if (this.collectionPage > 1) { this.collectionPage--; this.loadCollection(); } }
   collectionNext() { if (this.collectionPage * 40 < this.collectionTotal) { this.collectionPage++; this.loadCollection(); } }
   get collectionTotalPages() { return Math.ceil(this.collectionTotal / 40); }
@@ -407,6 +446,23 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.codexObserver.observe(sentinel);
   }
 
+  private setupCollectionObserver() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    this.collectionObserver?.disconnect();
+    if (this.activeTab !== 'carpeta') return;
+    const sentinel = this.collectionSentinelRef?.nativeElement;
+    if (!sentinel) return;
+    this.collectionObserver = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          this.loadMoreCollection();
+          break;
+        }
+      }
+    }, { rootMargin: '280px 0px' });
+    this.collectionObserver.observe(sentinel);
+  }
+
   selectCodexCard(card: Card) {
     this.selectedCard = this.selectedCard?.id === card.id ? null : card;
     this.addQty = 1;
@@ -443,22 +499,86 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ── Wishlist ──
   loadWishlist() {
+    this.wishlistPage = 1;
+    this.wishlistEntries = [];
+    this.wishlistHasMore = false;
+    this.fetchWishlistPage();
+  }
+
+  onWishlistSearch() { this.wishlistPage = 1; this.loadWishlist(); }
+  loadMoreWishlist() {
+    if (this.activeTab !== 'wishlist' || this.wishlistLoading || !this.wishlistHasMore) return;
+    this.wishlistPage++;
+    this.fetchWishlistPage(true);
+  }
+  private fetchWishlistPage(append = false) {
     this.wishlistLoading = true;
     this.carpetaService.getWishlist(this.wishlistPage, this.wishlistSearch || undefined).subscribe({
       next: res => {
-        this.wishlistEntries = res.results;
+        this.wishlistEntries = append ? [...this.wishlistEntries, ...res.results] : res.results;
         this.wishlistTotal = res.count;
+        this.wishlistHasMore = !!res.next;
         this.wishlistLoading = false;
         this.cdr.detectChanges();
+        queueMicrotask(() => this.setupWishlistObserver());
       },
       error: () => { this.wishlistLoading = false; this.cdr.detectChanges(); },
     });
   }
-
-  onWishlistSearch() { this.wishlistPage = 1; this.loadWishlist(); }
   wishlistPrev() { if (this.wishlistPage > 1) { this.wishlistPage--; this.loadWishlist(); } }
   wishlistNext() { if (this.wishlistPage * 40 < this.wishlistTotal) { this.wishlistPage++; this.loadWishlist(); } }
   get wishlistTotalPages() { return Math.ceil(this.wishlistTotal / 40); }
+
+  private setupWishlistObserver() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    this.wishlistObserver?.disconnect();
+    if (this.activeTab !== 'wishlist') return;
+    const sentinel = this.wishlistSentinelRef?.nativeElement;
+    if (!sentinel) return;
+    this.wishlistObserver = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          this.loadMoreWishlist();
+          break;
+        }
+      }
+    }, { rootMargin: '280px 0px' });
+    this.wishlistObserver.observe(sentinel);
+  }
+
+  private setupMercadoObserver() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    this.mercadoObserver?.disconnect();
+    if (this.activeTab !== 'mercado') return;
+    const sentinel = this.mercadoSentinelRef?.nativeElement;
+    if (!sentinel) return;
+    this.mercadoObserver = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          this.loadMoreMercado();
+          break;
+        }
+      }
+    }, { rootMargin: '280px 0px' });
+    this.mercadoObserver.observe(sentinel);
+  }
+
+  private tryInfiniteScrollFallback() {
+    if (!this.isNearPageBottom()) return;
+    if (this.activeTab === 'carpeta') this.loadMoreCollection();
+    if (this.activeTab === 'codex') this.loadMoreCodex();
+    if (this.activeTab === 'wishlist') this.loadMoreWishlist();
+    if (this.activeTab === 'mercado') this.loadMoreMercado();
+  }
+
+  private isNearPageBottom(offset = 900): boolean {
+    const doc = document.documentElement;
+    const body = document.body;
+    const scrollTop = window.scrollY || doc.scrollTop || 0;
+    const viewport = window.innerHeight || doc.clientHeight || 0;
+    const fullHeight = Math.max(doc.scrollHeight, body?.scrollHeight || 0);
+    return scrollTop + viewport >= fullHeight - offset;
+  }
 
   updateWishlistQty(entry: WishlistEntry, qty: number) {
     if (qty < 1) return;
@@ -509,6 +629,20 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ── Mercado ──
   loadMercado() {
+    this.mercadoPage = 1;
+    this.mercadoEntries = [];
+    this.mercadoHasMore = false;
+    this.mercadoSelected.clear();
+    this.fetchMercadoPage();
+  }
+
+  loadMoreMercado() {
+    if (this.activeTab !== 'mercado' || this.mercadoLoading || !this.mercadoHasMore) return;
+    this.mercadoPage++;
+    this.fetchMercadoPage(true);
+  }
+
+  private fetchMercadoPage(append = false) {
     this.mercadoLoading = true;
     this.carpetaService.getCollection(
       this.mercadoPage,
@@ -516,11 +650,13 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
       true, // selling only
     ).subscribe({
       next: res => {
-        this.mercadoEntries = res.results;
+        this.mercadoEntries = append ? [...this.mercadoEntries, ...res.results] : res.results;
         this.mercadoTotal = res.count;
+        this.mercadoHasMore = !!res.next;
         this.mercadoLoading = false;
-        this.loadAssignedSummary();
+        if (!append) this.loadAssignedSummary();
         this.cdr.detectChanges();
+        queueMicrotask(() => this.setupMercadoObserver());
       },
       error: () => { this.mercadoLoading = false; this.cdr.detectChanges(); },
     });
@@ -547,6 +683,24 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   mercadoPrev() { if (this.mercadoPage > 1) { this.mercadoPage--; this.loadMercado(); } }
   mercadoNext() { if (this.mercadoPage * 40 < this.mercadoTotal) { this.mercadoPage++; this.loadMercado(); } }
   get mercadoTotalPages() { return Math.ceil(this.mercadoTotal / 40); }
+
+  get showFloatingSaveButton(): boolean {
+    return (this.activeTab === 'carpeta' && this.dirtyEntries.size > 0)
+      || (this.activeTab === 'mercado' && this.mercadoDirty.size > 0);
+  }
+
+  get floatingSaveLabel(): string {
+    if (this.batchSaving) return '⏳ Guardando...';
+    if (this.activeTab === 'carpeta') return `💾 Guardar carpeta (${this.dirtyEntries.size})`;
+    if (this.activeTab === 'mercado') return `💾 Guardar tienda (${this.mercadoDirty.size})`;
+    return '💾 Guardar cambios';
+  }
+
+  onFloatingSaveClick() {
+    if (this.batchSaving) return;
+    if (this.activeTab === 'carpeta') { this.saveAllChanges(); return; }
+    if (this.activeTab === 'mercado') { this.saveMercadoChanges(); }
+  }
 
   onMercadoFieldChange(entry: CollectionEntry, field: string, value: number) {
     let pending = this.mercadoDirty.get(entry.id) || {};

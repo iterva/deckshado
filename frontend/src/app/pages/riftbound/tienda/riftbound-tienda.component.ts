@@ -1,4 +1,7 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, inject, signal } from '@angular/core';
+import {
+  Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef,
+  ElementRef, ViewChild, HostListener, inject, signal,
+} from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -7,7 +10,7 @@ import { RiftboundService } from '../../../services/riftbound.service';
 import { AuthService } from '../../../services/auth.service';
 import {
   RiftboundCollectionEntry, RiftboundCardLite, RiftboundPublicBinderProfile,
-  RiftboundWishlistEntry, RiftboundStoreOrder,
+  RiftboundWishlistEntry,
 } from '../../../models/riftbound';
 import { ShareImageComponent, ShareImageItem } from '../../../components/share-image/share-image.component';
 import { CardPhotoCarouselComponent } from '../../../components/card-photo-carousel/card-photo-carousel.component';
@@ -41,16 +44,13 @@ interface RiftboundCartItem {
 
     @if (store(); as s) {
       <div class="store-header">
-        @if ((s.binder_avatar_url || s.user_avatar_url) && !storeAvatarFailed()) {
-          <img class="store-avatar"
-               [src]="s.binder_avatar_url || s.user_avatar_url"
-               alt="avatar"
-               (error)="onStoreAvatarError()" />
+        @if (s.binder_avatar_url || s.user_avatar_url) {
+          <img class="store-avatar" [src]="s.binder_avatar_url || s.user_avatar_url" alt="avatar" />
         } @else {
           <div class="store-avatar-placeholder">🏪</div>
         }
         <div class="store-info">
-          <h1 class="store-title">{{ s.display_name || s.username }}</h1>
+          <h1>{{ s.display_name || s.username }}</h1>
           <p class="store-meta">
             @if (s.city) { <span>📍 {{ s.city }}</span> }
             <span>🌎 {{ s.country }}</span>
@@ -138,24 +138,24 @@ interface RiftboundCartItem {
         @for (e of entries(); track e.id) {
           <div class="store-card">
             <div class="card-image" (click)="preview.set(e.card_data)">
-              @if (e.card_data.image) {
+              @if (e.card_data?.image) {
                 <app-card-photo-carousel
                   [cardImage]="e.card_data.image"
                   [photos]="[e.photo_url, e.photo_url_2]"
                   [alt]="e.card_data.name"
                   [thumbWidth]="350">
                 </app-card-photo-carousel>
-              } @else { <div class="img-fallback">{{ e.card_data.card_number }}</div> }
+              } @else { <div class="img-fallback">{{ e.card_data?.card_number }}</div> }
               @if (e.is_foil) { <div class="foil-badge">✨ FOIL</div> }
             </div>
             <div class="card-body">
-              <h4>{{ e.card_data.name }}</h4>
-              <span class="card-meta">{{ e.card_data.card_number }} · {{ e.language }}</span>
+              <h4>{{ e.card_data?.name }}</h4>
+              <span class="card-meta">{{ e.card_data?.card_number }} · {{ e.language }}</span>
               <div class="price-row">
                 <span class="price">{{ e.price != null ? ('$' + (e.price | number)) : 'Consultar' }}</span>
                 <span class="qty">x{{ e.selling_quantity }}</span>
               </div>
-              <app-tcg-price [cardName]="e.card_data.name || ''" [compact]="true"></app-tcg-price>
+              <app-tcg-price [cardName]="e.card_data?.name || ''" [compact]="true" [showMarketPrice]="false"></app-tcg-price>
               <button class="btn btn-sm btn-primary btn-add-cart"
                       (click)="addToCart(e, $event)"
                       [disabled]="inCart(e.id) >= e.selling_quantity">
@@ -170,12 +170,14 @@ interface RiftboundCartItem {
         }
       </div>
 
-      @if (totalPages() > 1) {
-        <div class="pagination">
-          <button class="btn btn-sm" (click)="prev()" [disabled]="page() === 1">← Anterior</button>
-          <span>{{ page() }} / {{ totalPages() }}</span>
-          <button class="btn btn-sm" (click)="next()" [disabled]="page() >= totalPages()">Siguiente →</button>
-        </div>
+      @if (hasMore()) {
+        <div #storeSentinel class="infinite-sentinel" aria-hidden="true"></div>
+      }
+      @if (loading() && entries().length > 0) {
+        <div class="loading">Cargando más...</div>
+      }
+      @if (!hasMore() && !loading() && entries().length > 0) {
+        <p class="results-count" style="margin-top: 1rem;">— Fin de la tienda —</p>
       }
       } @else if (activeTab() === 'wishlist') {
         <div class="filter-row">
@@ -195,17 +197,17 @@ interface RiftboundCartItem {
           @for (w of wishlist(); track w.id) {
             <div class="store-card">
               <div class="card-image" (click)="preview.set(w.card_data)">
-                @if (w.card_data.image) {
+                @if (w.card_data?.image) {
                   <img [src]="w.card_data.image" [alt]="w.card_data.name" loading="lazy" />
-                } @else { <div class="img-fallback">{{ w.card_data.card_number }}</div> }
+                } @else { <div class="img-fallback">{{ w.card_data?.card_number }}</div> }
               </div>
               <div class="card-body">
-                <h4>{{ w.card_data.name }}</h4>
-                <span class="card-meta">{{ w.card_data.card_number }}</span>
+                <h4>{{ w.card_data?.name }}</h4>
+                <span class="card-meta">{{ w.card_data?.card_number }}</span>
                 <div class="price-row">
                   <span class="qty wishlist-qty">❤️ Quiere x{{ w.desired_quantity }}</span>
                 </div>
-                <app-tcg-price [cardName]="w.card_data.name || ''" [compact]="true"></app-tcg-price>
+                <app-tcg-price [cardName]="w.card_data?.name || ''" [compact]="true" [showMarketPrice]="false"></app-tcg-price>
               </div>
             </div>
           }
@@ -254,28 +256,9 @@ interface RiftboundCartItem {
               <strong>\${{ cartTotal() | number }}</strong>
               @if (cartHasUnpriced()) { <small class="warn">⚠ Hay cartas sin precio, consulta al vendedor.</small> }
             </div>
-            <div class="buyer-form">
-              <label>
-                <span>Tu nombre (opcional)</span>
-                <input type="text" [(ngModel)]="buyerName" maxlength="100" placeholder="Ej: Jhon Doe" />
-              </label>
-              <label>
-                <span>WhatsApp (opcional)</span>
-                <input type="text" [(ngModel)]="buyerWhatsapp" maxlength="30" placeholder="Ej: +56912345678" />
-              </label>
-              <label>
-                <span>Nota para vendedor (opcional)</span>
-                <textarea rows="2" [(ngModel)]="buyerNote" maxlength="800" placeholder="Ej: retiro en metro / prefiero envío"></textarea>
-              </label>
-            </div>
-            @if (orderError()) { <p class="order-msg error">{{ orderError() }}</p> }
-            @if (orderSuccess()) { <p class="order-msg ok">{{ orderSuccess() }}</p> }
             <div class="cart-actions">
-              <button class="btn btn-primary" (click)="submitOrder()" [disabled]="orderSubmitting() || cart().length === 0">
-                {{ orderSubmitting() ? '⏳ Enviando pedido...' : '✅ Crear pedido' }}
-              </button>
               @if (store()?.whatsapp) {
-                <button class="btn btn-sm" (click)="sendWhatsApp()">📱 Enviar también por WhatsApp</button>
+                <button class="btn btn-primary" (click)="sendWhatsApp()">📱 Enviar pedido por WhatsApp</button>
               }
               <button class="btn btn-sm" (click)="copyOrder()">📋 Copiar pedido</button>
               <button class="btn btn-sm" (click)="clearCart()">🗑️ Vaciar</button>
@@ -294,7 +277,7 @@ interface RiftboundCartItem {
             <h2>{{ pc.name }}</h2>
             <p class="card-meta">{{ pc.card_number }}</p>
             @if (pc.description) { <p>{{ pc.description }}</p> }
-            <app-tcg-price [cardName]="pc.name" [compact]="false" [showLink]="true"></app-tcg-price>
+            <app-tcg-price [cardName]="pc.name" [compact]="false" [showLink]="true" [showMarketPrice]="false"></app-tcg-price>
           </div>
         </div>
       </div>
@@ -323,15 +306,9 @@ interface RiftboundCartItem {
     .store-avatar-placeholder {
       background: #0f0f23; display: flex; align-items: center; justify-content: center; font-size: 2.6rem;
     }
-    .store-info { min-width: 0; }
-    .store-title {
-      margin: 0;
-      color: #f2f6ff !important;
-      background: none !important;
-      -webkit-text-fill-color: #f2f6ff !important;
-      line-height: 1.15;
-      word-break: break-word;
-    }
+    .store-info h1 { margin: 0; color: #fff;
+      background: linear-gradient(90deg, #e94560, #fff); -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent; background-clip: text; }
     .store-meta { display: flex; gap: 1rem; flex-wrap: wrap; color: #9ba3b4; font-size: .9rem; margin: .35rem 0; }
     .store-bio { color: #c8c8da; margin: .35rem 0 .6rem; }
     .store-line { color: #9ba3b4; font-size: .85rem; margin: .2rem 0; }
@@ -408,7 +385,7 @@ interface RiftboundCartItem {
     .btn:disabled { opacity: .5; cursor: not-allowed; }
     .btn-sm { padding: .35rem .65rem; font-size: .85rem; }
     .btn-primary { background: #e94560; border-color: #e94560; color: #fff; }
-    .pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1.5rem; color: #9ba3b4; }
+    .infinite-sentinel { width: 100%; height: 1px; margin-top: .5rem; }
 
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.85);
       display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
@@ -475,17 +452,6 @@ interface RiftboundCartItem {
     }
     .cart-total strong { color: #e94560; font-size: 1.1rem; }
     .cart-total .warn { width: 100%; color: #c89b3c; font-size: .8rem; }
-    .buyer-form { display: grid; gap: .45rem; margin: .5rem 0 .2rem; }
-    .buyer-form label { display: flex; flex-direction: column; gap: .2rem; }
-    .buyer-form span { font-size: .78rem; color: #9ba3b4; }
-    .buyer-form input, .buyer-form textarea {
-      background: #0f0f23; color: #c8c8da; border: 1px solid #2a3a4a;
-      border-radius: 6px; padding: .45rem .55rem; font-size: .85rem;
-    }
-    .buyer-form input:focus, .buyer-form textarea:focus { outline: none; border-color: #e94560; }
-    .order-msg { margin: .45rem 0 0; font-size: .83rem; }
-    .order-msg.error { color: #fda4af; }
-    .order-msg.ok { color: #86efac; }
     .cart-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .6rem; }
     .cart-actions .btn-primary { flex: 1 1 100%; }
 
@@ -520,7 +486,7 @@ interface RiftboundCartItem {
     }
   `],
 })
-export class RiftboundTiendaComponent implements OnInit {
+export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly rb = inject(RiftboundService);
   readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
@@ -533,18 +499,14 @@ export class RiftboundTiendaComponent implements OnInit {
   entries = signal<RiftboundCollectionEntry[]>([]);
   count = signal(0);
   page = signal(1);
+  hasMore = signal(false);
   preview = signal<RiftboundCardLite | null>(null);
-  storeAvatarFailed = signal(false);
+  @ViewChild('storeSentinel') storeSentinelRef?: ElementRef<HTMLElement>;
+  private storeObserver?: IntersectionObserver;
 
   // Cart
   cart = signal<RiftboundCartItem[]>([]);
   showCart = signal(false);
-  orderSubmitting = signal(false);
-  orderError = signal<string | null>(null);
-  orderSuccess = signal<string | null>(null);
-  buyerName = '';
-  buyerWhatsapp = '';
-  buyerNote = '';
 
   // Tabs / wishlist
   activeTab = signal<'store' | 'wishlist'>('store');
@@ -561,8 +523,6 @@ export class RiftboundTiendaComponent implements OnInit {
   priceMax: number | null = null;
   ordering = '-id';
 
-  totalPages() { return Math.max(1, Math.ceil(this.count() / 20)); }
-
   cartCount() { return this.cart().reduce((s, c) => s + c.qty, 0); }
   cartTotal() { return this.cart().reduce((s, c) => s + (c.price || 0) * c.qty, 0); }
   cartHasUnpriced() { return this.cart().some(c => c.price == null); }
@@ -577,7 +537,34 @@ export class RiftboundTiendaComponent implements OnInit {
     if (this.activeTab() === 'wishlist') this.reloadWishlist();
   }
 
+  ngAfterViewInit() {
+    this.setupStoreObserver();
+  }
+
+  ngOnDestroy() {
+    this.storeObserver?.disconnect();
+  }
+
+  @HostListener('window:scroll')
+  onWindowScroll() { this.tryInfiniteScrollFallback(); }
+
+  @HostListener('window:resize')
+  onWindowResize() { this.tryInfiniteScrollFallback(); }
+
   reload() {
+    this.page.set(1);
+    this.entries.set([]);
+    this.hasMore.set(false);
+    this.fetchStorePage();
+  }
+
+  loadMoreStore() {
+    if (this.activeTab() !== 'store' || this.loading() || !this.hasMore()) return;
+    this.page.update(p => p + 1);
+    this.fetchStorePage(true);
+  }
+
+  private fetchStorePage(append = false) {
     this.loading.set(true);
     this.errorMsg.set(null);
     this.rb.getPublicStore(this.token, {
@@ -591,13 +578,18 @@ export class RiftboundTiendaComponent implements OnInit {
       page: this.page(),
     }).subscribe({
       next: res => {
-        this.entries.set(res.results);
+        if (append) {
+          this.entries.update(curr => [...curr, ...res.results]);
+        } else {
+          this.entries.set(res.results);
+        }
         this.count.set(res.count);
+        this.hasMore.set(!!res.next);
         this.store.set(res.store);
-        this.storeAvatarFailed.set(false);
         this.loading.set(false);
         this.syncCartAvailability();
         this.cdr.markForCheck();
+        queueMicrotask(() => this.setupStoreObserver());
       },
       error: err => {
         this.loading.set(false);
@@ -607,16 +599,39 @@ export class RiftboundTiendaComponent implements OnInit {
     });
   }
 
-  prev() { if (this.page() > 1) { this.page.update(p => p - 1); this.reload(); } }
-  next() { if (this.page() < this.totalPages()) { this.page.update(p => p + 1); this.reload(); } }
+  private setupStoreObserver() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    this.storeObserver?.disconnect();
+    if (this.activeTab() !== 'store') return;
+    const el = this.storeSentinelRef?.nativeElement;
+    if (!el) return;
+    this.storeObserver = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          this.loadMoreStore();
+          break;
+        }
+      }
+    }, { rootMargin: '320px 0px' });
+    this.storeObserver.observe(el);
+  }
+
+  private tryInfiniteScrollFallback() {
+    if (!this.isNearPageBottom()) return;
+    if (this.activeTab() === 'store') this.loadMoreStore();
+  }
+
+  private isNearPageBottom(offset = 900): boolean {
+    const doc = document.documentElement;
+    const body = document.body;
+    const scrollTop = window.scrollY || doc.scrollTop || 0;
+    const viewport = window.innerHeight || doc.clientHeight || 0;
+    const fullHeight = Math.max(doc.scrollHeight, body?.scrollHeight || 0);
+    return scrollTop + viewport >= fullHeight - offset;
+  }
 
   cleanWa(v: string): string { return v.replace(/[^0-9]/g, ''); }
   cleanHandle(v: string): string { return v.replace(/^@/, '').trim(); }
-
-  onStoreAvatarError() {
-    this.storeAvatarFailed.set(true);
-    this.cdr.markForCheck();
-  }
 
   // ── Compartir imagen estilo CardIndex ──
   sellerHandle(): string {
@@ -631,8 +646,8 @@ export class RiftboundTiendaComponent implements OnInit {
   }
   shareStoreItems(): ShareImageItem[] {
     return this.entries().slice(0, 20).map(e => ({
-      name: e.card_data.name || '',
-      image: e.card_data.image || '',
+      name: e.card_data?.name || '',
+      image: e.card_data?.image || '',
       quantity: e.selling_quantity || 1,
       foil: !!e.is_foil,
       price: e.price ?? null,
@@ -640,8 +655,8 @@ export class RiftboundTiendaComponent implements OnInit {
   }
   shareWishlistItems(): ShareImageItem[] {
     return this.wishlist().slice(0, 20).map(w => ({
-      name: w.card_data.name || '',
-      image: w.card_data.image || '',
+      name: w.card_data?.name || '',
+      image: w.card_data?.image || '',
       quantity: w.desired_quantity || 1,
       foil: false,
       price: null,
@@ -690,8 +705,6 @@ export class RiftboundTiendaComponent implements OnInit {
       });
     }
     this.cart.set(list);
-    this.orderError.set(null);
-    this.orderSuccess.set(null);
     this.saveCart();
     this.cdr.markForCheck();
   }
@@ -710,111 +723,6 @@ export class RiftboundTiendaComponent implements OnInit {
   }
 
   clearCart() { this.cart.set([]); this.saveCart(); }
-
-  private syncCartWithLatestStock(latestEntries: RiftboundCollectionEntry[]) {
-    const latestByEntry = new Map<number, RiftboundCollectionEntry>();
-    for (const entry of latestEntries) latestByEntry.set(entry.id, entry);
-
-    const removed: string[] = [];
-    const reduced: string[] = [];
-    const nextCart: RiftboundCartItem[] = [];
-
-    for (const item of this.cart()) {
-      const latest = latestByEntry.get(item.entryId);
-      const available = latest?.selling_quantity ?? 0;
-
-      if (available <= 0) {
-        removed.push(item.name);
-        continue;
-      }
-
-      const nextQty = Math.min(item.qty, available);
-      if (nextQty < item.qty) {
-        reduced.push(`${item.name} (${item.qty}->${nextQty})`);
-      }
-
-      nextCart.push({
-        ...item,
-        name: latest?.card_data?.name || item.name,
-        image: latest?.card_data?.image || item.image,
-        price: latest?.price ?? item.price,
-        available,
-        qty: nextQty,
-      });
-    }
-
-    return { nextCart, removed, reduced };
-  }
-
-  submitOrder() {
-    if (this.orderSubmitting() || this.cart().length === 0) return;
-
-    this.orderSubmitting.set(true);
-    this.orderError.set(null);
-    this.orderSuccess.set(null);
-
-    const entryIds = Array.from(new Set(this.cart().map(c => c.entryId)));
-    this.rb.getPublicStore(this.token, {
-      entry_ids: entryIds,
-      page_size: Math.max(20, entryIds.length),
-      ordering: 'id',
-    }).subscribe({
-      next: res => {
-        const { nextCart, removed, reduced } = this.syncCartWithLatestStock(res.results);
-        this.cart.set(nextCart);
-        this.saveCart();
-
-        if (removed.length > 0 || reduced.length > 0 || nextCart.length === 0) {
-          const msg: string[] = ['Actualizamos el stock antes de enviar el pedido.'];
-          if (removed.length > 0) {
-            msg.push(`Sin stock: ${removed.slice(0, 3).join(', ')}${removed.length > 3 ? '...' : ''}.`);
-          }
-          if (reduced.length > 0) {
-            msg.push(`Cantidades ajustadas: ${reduced.slice(0, 3).join(', ')}${reduced.length > 3 ? '...' : ''}.`);
-          }
-          if (nextCart.length === 0) {
-            msg.push('El carrito quedo sin items disponibles.');
-          } else {
-            msg.push('Revisa el carrito y confirma nuevamente.');
-          }
-
-          this.orderSubmitting.set(false);
-          this.orderError.set(msg.join(' '));
-          this.orderSuccess.set(null);
-          this.reload();
-          this.cdr.markForCheck();
-          return;
-        }
-
-        const payload = {
-          buyer_name: this.buyerName.trim() || undefined,
-          buyer_whatsapp: this.buyerWhatsapp.trim() || undefined,
-          buyer_note: this.buyerNote.trim() || undefined,
-          items: nextCart.map(c => ({ entry_id: c.entryId, quantity: c.qty })),
-        };
-
-        this.rb.createPublicStoreOrder(this.token, payload).subscribe({
-          next: (order: RiftboundStoreOrder) => {
-            this.orderSubmitting.set(false);
-            this.orderSuccess.set(`Pedido #${order.id} enviado. El vendedor ya tiene la reserva de stock.`);
-            this.clearCart();
-            this.reload();
-            this.cdr.markForCheck();
-          },
-          error: err => {
-            this.orderSubmitting.set(false);
-            this.orderError.set(err?.error?.detail || 'No se pudo crear el pedido. Intenta nuevamente.');
-            this.cdr.markForCheck();
-          },
-        });
-      },
-      error: err => {
-        this.orderSubmitting.set(false);
-        this.orderError.set(err?.error?.detail || 'No se pudo validar stock actualizado. Intenta nuevamente.');
-        this.cdr.markForCheck();
-      },
-    });
-  }
 
   buildOrderText(): string {
     const s = this.store();
@@ -865,6 +773,7 @@ export class RiftboundTiendaComponent implements OnInit {
     if (this.activeTab() === tab) return;
     this.activeTab.set(tab);
     if (tab === 'wishlist' && !this.wishlistLoaded()) this.reloadWishlist();
+    if (tab === 'store') queueMicrotask(() => this.setupStoreObserver());
   }
 
   reloadWishlist() {

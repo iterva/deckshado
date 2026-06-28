@@ -176,12 +176,14 @@
         }
       </div>
 
-      @if (collectionTotalPages > 1) {
-        <div class="pagination">
-          <button class="btn btn-sm" (click)="collectionPrev()" [disabled]="collectionPage === 1">← Anterior</button>
-          <span>{{ collectionPage }} / {{ collectionTotalPages }}</span>
-          <button class="btn btn-sm" (click)="collectionNext()" [disabled]="collectionPage >= collectionTotalPages">Siguiente →</button>
-        </div>
+      @if (collectionHasMore) {
+        <div #collectionSentinel class="infinite-sentinel" aria-hidden="true"></div>
+      }
+      @if (collectionLoading && collectionEntries.length > 0) {
+        <div class="loading">Cargando más...</div>
+      }
+      @if (!collectionHasMore && collectionEntries.length > 0) {
+        <p class="results-count" style="margin-top: 1rem;">— Fin de la colección —</p>
       }
     </div>
   }
@@ -423,12 +425,14 @@
         }
       </div>
 
-      @if (wishlistTotalPages > 1) {
-        <div class="pagination">
-          <button class="btn btn-sm" (click)="wishlistPrev()" [disabled]="wishlistPage === 1">← Anterior</button>
-          <span>{{ wishlistPage }} / {{ wishlistTotalPages }}</span>
-          <button class="btn btn-sm" (click)="wishlistNext()" [disabled]="wishlistPage >= wishlistTotalPages">Siguiente →</button>
-        </div>
+      @if (wishlistHasMore) {
+        <div #wishlistSentinel class="infinite-sentinel" aria-hidden="true"></div>
+      }
+      @if (wishlistLoading && wishlistEntries.length > 0) {
+        <div class="loading">Cargando más...</div>
+      }
+      @if (!wishlistHasMore && wishlistEntries.length > 0) {
+        <p class="results-count" style="margin-top: 1rem;">— Fin de la wishlist —</p>
       }
     </div>
   }
@@ -676,12 +680,14 @@
         }
       </div>
 
-      @if (mercadoTotalPages > 1) {
-        <div class="pagination">
-          <button class="btn btn-sm" (click)="mercadoPrev()" [disabled]="mercadoPage === 1">← Anterior</button>
-          <span>{{ mercadoPage }} / {{ mercadoTotalPages }}</span>
-          <button class="btn btn-sm" (click)="mercadoNext()" [disabled]="mercadoPage >= mercadoTotalPages">Siguiente →</button>
-        </div>
+      @if (mercadoHasMore) {
+        <div #mercadoSentinel class="infinite-sentinel" aria-hidden="true"></div>
+      }
+      @if (mercadoLoading && mercadoEntries.length > 0) {
+        <div class="loading">Cargando más...</div>
+      }
+      @if (!mercadoHasMore && mercadoEntries.length > 0) {
+        <p class="results-count" style="margin-top: 1rem;">— Fin del mercado —</p>
       }
     </div>
   }
@@ -804,6 +810,12 @@
         }
       </div>
     </div>
+  }
+
+  @if (showFloatingSaveButton) {
+    <button class="floating-save-btn" (click)="onFloatingSaveClick()" [disabled]="batchSaving">
+      {{ floatingSaveLabel }}
+    </button>
   }
 
   <!-- Hidden export area for PDF -->

@@ -1,11 +1,10 @@
 import {
   Component, OnInit, OnDestroy, AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef,
-  ElementRef, ViewChild, inject, signal, computed,
+  ElementRef, ViewChild, HostListener, inject, signal, computed,
 } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import QRCode from 'qrcode';
+import { Router } from '@angular/router';
 
 import { RiftboundService } from '../../../services/riftbound.service';
 import { AuthService } from '../../../services/auth.service';
@@ -14,10 +13,10 @@ import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.compo
 import {
   RiftboundCard, RiftboundCardLite, RiftboundCollectionEntry, RiftboundWishlistEntry,
   RiftboundSet, RiftboundCollectionStats, RiftboundBinderProfile, RiftboundBulkImportResult,
-  RiftboundCondition, RiftboundLanguage, RiftboundStoreOrder, RiftboundStoreOrderStatus,
+  RiftboundCondition, RiftboundLanguage,
 } from '../../../models/riftbound';
 
-type Tab = 'carpeta' | 'codex' | 'wishlist' | 'mercado' | 'pedidos' | 'historial' | 'stats';
+type Tab = 'carpeta' | 'codex' | 'wishlist' | 'mercado' | 'stats';
 
 interface DirtyPatch {
   quantity?: number;
@@ -39,11 +38,8 @@ interface DirtyPatch {
     <!-- Header -->
     <div class="carpeta-header">
       <div class="binder-avatar-wrap">
-        @if ((binderProfile()?.binder_avatar_url || binderProfile()?.user_avatar_url) && !binderAvatarFailed()) {
-          <img class="binder-avatar"
-               [src]="binderProfile()!.binder_avatar_url || binderProfile()!.user_avatar_url"
-               alt="avatar"
-               (error)="onBinderAvatarError()" />
+        @if (binderProfile()?.binder_avatar_url || binderProfile()?.user_avatar_url) {
+          <img class="binder-avatar" [src]="binderProfile()!.binder_avatar_url || binderProfile()!.user_avatar_url" alt="avatar" />
         } @else {
           <div class="binder-avatar-placeholder">📁</div>
         }
@@ -55,7 +51,7 @@ interface DirtyPatch {
         <input #avatarInput type="file" accept="image/*" hidden (change)="onAvatarFileChange($event)" />
       </div>
       <div class="binder-info">
-        <h1 class="binder-title">Mi Carpeta · Riftbound</h1>
+        <h1>Mi Carpeta · Riftbound</h1>
         <p class="binder-user">{{ auth.user()?.username || 'Invitado' }}</p>
       </div>
     </div>
@@ -73,12 +69,6 @@ interface DirtyPatch {
       </button>
       <button class="tab" [class.active]="activeTab() === 'mercado'" (click)="switchTab('mercado')">
         <i class="bi bi-shop"></i> MERCADO
-      </button>
-      <button class="tab" [class.active]="activeTab() === 'pedidos'" (click)="switchTab('pedidos')">
-        <i class="bi bi-bag-check-fill"></i> PEDIDOS
-      </button>
-      <button class="tab" [class.active]="activeTab() === 'historial'" (click)="switchTab('historial')">
-        <i class="bi bi-clock-history"></i> HISTORIAL
       </button>
       <button class="tab" [class.active]="activeTab() === 'stats'" (click)="switchTab('stats')">
         <i class="bi bi-bar-chart-fill"></i> STATS
@@ -155,17 +145,17 @@ interface DirtyPatch {
           @for (entry of collectionEntries(); track entry.id) {
             <div class="collection-card">
               <div class="card-image" (click)="previewCard.set(entry.card_data)">
-                @if (entry.card_data.image) {
+                @if (entry.card_data?.image) {
                   <img [src]="entry.card_data.image" [alt]="entry.card_data.name" loading="lazy" />
                 } @else {
-                  <div class="img-fallback">{{ entry.card_data.card_number }}</div>
+                  <div class="img-fallback">{{ entry.card_data?.card_number }}</div>
                 }
                 <div class="eye-overlay"><i class="bi bi-eye-fill"></i></div>
                 @if (entry.is_foil) { <div class="foil-badge">✨ FOIL</div> }
               </div>
               <div class="card-body">
-                <h4>{{ entry.card_data.name }}</h4>
-                <span class="card-meta">{{ typeLabel(entry.card_data.card_type) }} · {{ entry.card_data.card_number }}</span>
+                <h4>{{ entry.card_data?.name }}</h4>
+                <span class="card-meta">{{ typeLabel(entry.card_data?.card_type) }} · {{ entry.card_data?.card_number }}</span>
                 <div class="inline-fields">
                   <div class="field">
                     <label>Tengo</label>
@@ -184,7 +174,7 @@ interface DirtyPatch {
                   </div>
                 </div>
                 <div class="tcg-ref-row">
-                  <app-tcg-price [cardName]="entry.card_data.name || ''" [compact]="true"></app-tcg-price>
+                  <app-tcg-price [cardName]="entry.card_data?.name || ''" [compact]="true"></app-tcg-price>
                 </div>
                 <div class="inline-fields">
                   <div class="field">
@@ -310,12 +300,14 @@ interface DirtyPatch {
           }
         </div>
 
-        @if (codexTotalPages() > 1) {
-          <div class="pagination">
-            <button class="btn btn-sm" (click)="codexPrev()" [disabled]="codexPage() === 1">← Anterior</button>
-            <span>{{ codexPage() }} / {{ codexTotalPages() }}</span>
-            <button class="btn btn-sm" (click)="codexNext()" [disabled]="codexPage() >= codexTotalPages()">Siguiente →</button>
-          </div>
+        @if (codexHasMore()) {
+          <div #codexSentinel class="infinite-sentinel" aria-hidden="true"></div>
+        }
+        @if (codexLoading() && codexCards().length > 0) {
+          <div class="loading">Cargando más...</div>
+        }
+        @if (!codexHasMore() && !codexLoading() && codexCards().length > 0) {
+          <p class="results-count" style="margin-top: 1rem;">— Fin de la colección —</p>
         }
       </div>
     }
@@ -379,22 +371,22 @@ interface DirtyPatch {
                 <i class="bi bi-camera-fill"></i>
               </label>
               <div class="card-image" (click)="previewCard.set(entry.card_data)">
-                @if (entry.card_data.image) {
+                @if (entry.card_data?.image) {
                   <img [src]="entry.card_data.image" [alt]="entry.card_data.name" loading="lazy" />
                 } @else {
-                  <div class="img-fallback">{{ entry.card_data.card_number }}</div>
+                  <div class="img-fallback">{{ entry.card_data?.card_number }}</div>
                 }
                 <div class="eye-overlay"><i class="bi bi-eye-fill"></i></div>
               </div>
               <div class="card-info">
-                <h4>{{ entry.card_data.name }}</h4>
-                <span class="card-meta">{{ typeLabel(entry.card_data.card_type) }} · {{ entry.card_data.card_number }}</span>
+                <h4>{{ entry.card_data?.name }}</h4>
+                <span class="card-meta">{{ typeLabel(entry.card_data?.card_type) }} · {{ entry.card_data?.card_number }}</span>
                 <div class="wishlist-qty">
                   <label>Quiero:</label>
                   <input type="number" [value]="entry.desired_quantity" min="1"
                     (change)="updateWishlistQty(entry, $any($event.target).valueAsNumber)" />
                 </div>
-                <app-tcg-price [cardName]="entry.card_data.name || ''" [compact]="true"></app-tcg-price>
+                <app-tcg-price [cardName]="entry.card_data?.name || ''" [compact]="true"></app-tcg-price>
               </div>
               <div class="card-actions">
                 <button class="btn btn-xs btn-danger" (click)="removeFromWishlist(entry)" title="Quitar de wishlist">
@@ -404,6 +396,16 @@ interface DirtyPatch {
             </div>
           }
         </div>
+
+        @if (wishlistHasMore()) {
+          <div #wishlistSentinel class="infinite-sentinel" aria-hidden="true"></div>
+        }
+        @if (wishlistLoading() && wishlistEntries().length > 0) {
+          <div class="loading">Cargando más...</div>
+        }
+        @if (!wishlistHasMore() && !wishlistLoading() && wishlistEntries().length > 0) {
+          <p class="results-count" style="margin-top: 1rem;">— Fin de la wishlist —</p>
+        }
       </div>
     }
 
@@ -417,9 +419,6 @@ interface DirtyPatch {
           @if (binderProfile()?.is_store_public && binderProfile()?.share_token) {
             <button class="btn btn-sm" (click)="copyShareLink()">
               <i class="bi bi-link-45deg"></i> Copiar enlace público
-            </button>
-            <button class="btn btn-sm" (click)="downloadStoreQr()" [disabled]="qrDownloading()">
-              <i class="bi bi-qr-code"></i> {{ qrDownloading() ? 'Generando...' : 'Generar QR' }}
             </button>
           }
           <button class="btn btn-sm" (click)="exportMercadoPdf()" [disabled]="exportingPdf()">
@@ -525,16 +524,16 @@ interface DirtyPatch {
           @for (entry of mercadoEntries(); track entry.id) {
             <div class="collection-card">
               <div class="card-image" (click)="previewCard.set(entry.card_data)">
-                @if (entry.card_data.image) {
+                @if (entry.card_data?.image) {
                   <img [src]="entry.card_data.image" [alt]="entry.card_data.name" loading="lazy" />
                 } @else {
-                  <div class="img-fallback">{{ entry.card_data.card_number }}</div>
+                  <div class="img-fallback">{{ entry.card_data?.card_number }}</div>
                 }
                 @if (entry.is_foil) { <div class="foil-badge">✨ FOIL</div> }
               </div>
               <div class="card-body">
-                <h4>{{ entry.card_data.name }}</h4>
-                <span class="card-meta">{{ entry.card_data.card_number }} · {{ entry.language }}</span>
+                <h4>{{ entry.card_data?.name }}</h4>
+                <span class="card-meta">{{ entry.card_data?.card_number }} · {{ entry.language }}</span>
                 <div class="inline-fields">
                   <div class="field">
                     <label>Precio</label>
@@ -546,14 +545,10 @@ interface DirtyPatch {
                     <input type="number" [value]="entry.selling_quantity" min="0" [max]="entry.quantity"
                       (input)="onMercadoFieldChange(entry, 'selling_quantity', $any($event.target).valueAsNumber)" />
                   </div>
-                  <div class="field">
-                    <label>Asignadas</label>
-                    <input type="number" [value]="assignedForEntry(entry.id)" readonly />
-                  </div>
                 </div>
                 <div class="tcg-ref-row">
                   <span class="tcg-ref-label">Ref. TCG:</span>
-                  <app-tcg-price [cardName]="entry.card_data.name || ''" [compact]="true"></app-tcg-price>
+                  <app-tcg-price [cardName]="entry.card_data?.name || ''" [compact]="true"></app-tcg-price>
                 </div>
                 <div class="card-photo-row">
                   <!-- Slot 1 -->
@@ -599,132 +594,16 @@ interface DirtyPatch {
             </div>
           }
         </div>
-      </div>
-    }
 
-    <!-- ═══ TAB: PEDIDOS ═══ -->
-    @if (activeTab() === 'pedidos') {
-      <div class="tab-content">
-        <div class="orders-toolbar">
-          <button class="btn btn-sm" (click)="loadOrders()">🔄 Recargar</button>
-        </div>
-
-        @if (ordersLoading()) { <div class="loading">Cargando pedidos...</div> }
-        @if (!ordersLoading() && orders().length === 0) {
-          <div class="empty-state">
-            <p>No hay pedidos para este filtro.</p>
-          </div>
+        @if (mercadoHasMore()) {
+          <div #mercadoSentinel class="infinite-sentinel" aria-hidden="true"></div>
         }
-
-        <div class="orders-grid">
-          @for (o of orders(); track o.id) {
-            <div class="order-card">
-              <div class="order-head">
-                <h4>Pedido #{{ o.id }}</h4>
-                <span class="order-status" [class.pending]="o.status === 'pending'" [class.accepted]="o.status === 'accepted'" [class.cancelled]="o.status === 'cancelled'">
-                  {{ orderStatusLabel(o.status) }}
-                </span>
-              </div>
-              <p class="order-meta">
-                Comprador: <strong>{{ o.buyer_name || o.buyer_username || 'Anónimo' }}</strong>
-                @if (o.buyer_whatsapp) { · {{ o.buyer_whatsapp }} }
-              </p>
-              <p class="order-meta">Creado: {{ o.created_at | date:'short' }}</p>
-              @if (o.total_estimated != null) {
-                <p class="order-meta">Total estimado: <strong>\${{ o.total_estimated | number }}</strong></p>
-              }
-              @if (o.buyer_note) {
-                <p class="order-note">📝 {{ o.buyer_note }}</p>
-              }
-
-              <div class="order-items">
-                @for (it of o.items; track it.id) {
-                  <div class="order-item-row">
-                    <span>{{ it.quantity }}x {{ it.card_name || it.card_data?.name || ('Carta #' + it.card) }}</span>
-                    <span>
-                      @if (it.line_total != null) {
-                        \${{ it.line_total | number }}
-                      } @else {
-                        —
-                      }
-                    </span>
-                  </div>
-                }
-              </div>
-
-              @if (o.status === 'pending') {
-                <div class="order-actions">
-                  <button class="btn btn-sm btn-primary" (click)="acceptOrder(o)">✅ Aceptar</button>
-                  <button class="btn btn-sm btn-danger" (click)="cancelOrder(o)">❌ Cancelar</button>
-                </div>
-              }
-            </div>
-          }
-        </div>
-      </div>
-    }
-
-    <!-- ═══ TAB: HISTORIAL ═══ -->
-    @if (activeTab() === 'historial') {
-      <div class="tab-content">
-        <div class="orders-toolbar">
-          <select [value]="historyStatusFilter()" (change)="onHistoryFilterChange($any($event.target).value)">
-            <option value="">Todos</option>
-            <option value="accepted">Aceptados</option>
-            <option value="cancelled">Cancelados</option>
-          </select>
-          <button class="btn btn-sm" (click)="loadHistoryOrders()">🔄 Recargar</button>
-        </div>
-
-        @if (historyLoading()) { <div class="loading">Cargando historial...</div> }
-        @if (!historyLoading() && historyOrders().length === 0) {
-          <div class="empty-state">
-            <p>No hay pedidos en historial para este filtro.</p>
-          </div>
+        @if (mercadoLoading() && mercadoEntries().length > 0) {
+          <div class="loading">Cargando más...</div>
         }
-
-        <div class="orders-grid">
-          @for (o of historyOrders(); track o.id) {
-            <div class="order-card">
-              <div class="order-head">
-                <h4>Pedido #{{ o.id }}</h4>
-                <span class="order-status" [class.pending]="o.status === 'pending'" [class.accepted]="o.status === 'accepted'" [class.cancelled]="o.status === 'cancelled'">
-                  {{ orderStatusLabel(o.status) }}
-                </span>
-              </div>
-              <p class="order-meta">
-                Comprador: <strong>{{ o.buyer_name || o.buyer_username || 'Anónimo' }}</strong>
-                @if (o.buyer_whatsapp) { · {{ o.buyer_whatsapp }} }
-              </p>
-              <p class="order-meta">Creado: {{ o.created_at | date:'short' }}</p>
-              <p class="order-meta">Cierre: {{ o.responded_at ? (o.responded_at | date:'short') : '—' }}</p>
-              @if (o.total_estimated != null) {
-                <p class="order-meta">Total estimado: <strong>\${{ o.total_estimated | number }}</strong></p>
-              }
-              @if (o.buyer_note) {
-                <p class="order-note">📝 {{ o.buyer_note }}</p>
-              }
-              @if (o.seller_note) {
-                <p class="order-note">Nota vendedor: {{ o.seller_note }}</p>
-              }
-
-              <div class="order-items">
-                @for (it of o.items; track it.id) {
-                  <div class="order-item-row">
-                    <span>{{ it.quantity }}x {{ it.card_name || it.card_data?.name || ('Carta #' + it.card) }}</span>
-                    <span>
-                      @if (it.line_total != null) {
-                        \${{ it.line_total | number }}
-                      } @else {
-                        —
-                      }
-                    </span>
-                  </div>
-                }
-              </div>
-            </div>
-          }
-        </div>
+        @if (!mercadoHasMore() && !mercadoLoading() && mercadoEntries().length > 0) {
+          <p class="results-count" style="margin-top: 1rem;">— Fin del mercado —</p>
+        }
       </div>
     }
 
@@ -804,6 +683,12 @@ interface DirtyPatch {
       </div>
     }
 
+    @if (showFloatingSaveButton()) {
+      <button class="floating-save-btn" (click)="onFloatingSaveClick()" [disabled]="batchSaving()">
+        {{ floatingSaveLabel() }}
+      </button>
+    }
+
     <!-- ═══ MODAL: Preview ═══ -->
     @if (previewCard(); as pc) {
       <div class="modal-overlay" (click)="previewCard.set(null)">
@@ -872,14 +757,14 @@ interface DirtyPatch {
       border: 1px solid #2a3a4a; border-radius: 12px;
     }
     .binder-avatar-wrap {
-      position: relative; width: 80px; height: 80px; flex-shrink: 0;
+      position: relative; width: 72px; height: 72px;
     }
     .binder-avatar {
-      width: 80px; height: 80px; border-radius: 14px;
+      width: 72px; height: 72px; border-radius: 12px;
       border: 2px solid #e94560; object-fit: cover; display: block;
     }
     .binder-avatar-placeholder {
-      width: 80px; height: 80px; border-radius: 14px;
+      width: 72px; height: 72px; border-radius: 12px;
       background: #0f0f23; border: 2px solid #e94560;
       display: flex; align-items: center; justify-content: center;
       font-size: 2rem;
@@ -892,17 +777,9 @@ interface DirtyPatch {
       display: flex; align-items: center; justify-content: center;
     }
     .avatar-edit-btn:hover { background: #e94560; color: #fff; }
-    .binder-info { min-width: 0; }
-    .binder-title {
-      margin: 0;
-      font-size: 1.6rem;
-      font-weight: 700;
-      line-height: 1.15;
-      color: #f2f6ff !important;
-      background: none !important;
-      -webkit-text-fill-color: #f2f6ff !important;
-      word-break: break-word;
-    }
+    .binder-info h1 { margin: 0; font-size: 1.6rem; color: #fff;
+      background: linear-gradient(90deg, #e94560, #fff); -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent; background-clip: text; }
     .binder-user { margin: .25rem 0 0; color: #9ba3b4; font-size: .95rem; }
 
     .tabs {
@@ -1129,10 +1006,10 @@ interface DirtyPatch {
     }
     .card-actions { padding: .4rem .75rem .75rem; display: flex; justify-content: flex-end; }
 
-    /* Pagination */
-    .pagination {
-      display: flex; align-items: center; justify-content: center;
-      gap: 1rem; margin-top: 1.5rem; color: #9ba3b4;
+    .infinite-sentinel {
+      width: 100%;
+      height: 1px;
+      margin-top: .5rem;
     }
 
     /* Stats */
@@ -1245,11 +1122,6 @@ interface DirtyPatch {
 
     /* Mercado */
     .mercado-toolbar { display: flex; gap: .6rem; flex-wrap: wrap; margin-bottom: 1rem; }
-    .orders-toolbar { display: flex; gap: .6rem; flex-wrap: wrap; margin-bottom: 1rem; }
-    .orders-toolbar select {
-      padding: .45rem .6rem; background: #0f0f23; color: #c8c8da;
-      border: 1px solid #2a3a4a; border-radius: 6px; min-width: 150px;
-    }
     .store-config-panel {
       background: #16213e; border: 1px solid #2a3a4a; border-radius: 10px;
       padding: 1rem; margin-bottom: 1rem;
@@ -1284,34 +1156,31 @@ interface DirtyPatch {
     .token-row { display: flex; gap: .6rem; align-items: center; color: #9ba3b4; font-size: .85rem; flex-wrap: wrap; }
     .token-row code { background: #0f0f23; padding: .25rem .5rem; border-radius: 4px; color: #4fc3f7; }
 
-    .orders-grid { display: grid; gap: .8rem; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-    .order-card { background: #16213e; border: 1px solid #2a3a4a; border-radius: 10px; padding: .8rem; }
-    .order-head { display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
-    .order-head h4 { margin: 0; color: #fff; }
-    .order-status { font-size: .76rem; font-weight: 700; border-radius: 999px; padding: .2rem .55rem; border: 1px solid #2a3a4a; }
-    .order-status.pending { color: #fbbf24; border-color: #fbbf24; }
-    .order-status.accepted { color: #34d399; border-color: #34d399; }
-    .order-status.cancelled { color: #f87171; border-color: #f87171; }
-    .order-meta { margin: .35rem 0; color: #9ba3b4; font-size: .82rem; }
-    .order-note { margin: .45rem 0; color: #c8c8da; font-size: .85rem; }
-    .order-items { margin-top: .45rem; border-top: 1px dashed #2a3a4a; padding-top: .45rem; display: grid; gap: .3rem; }
-    .order-item-row { display: flex; align-items: center; justify-content: space-between; gap: .5rem; font-size: .83rem; color: #c8c8da; }
-    .order-actions { display: flex; gap: .45rem; margin-top: .6rem; }
-
-    @media (max-width: 640px) {
-      .orders-toolbar { width: 100%; }
-      .orders-toolbar select { width: 100%; min-width: 0; }
-      .orders-grid { grid-template-columns: 1fr; }
-      .order-actions { flex-direction: column; }
-      .order-actions .btn { width: 100%; }
+    .floating-save-btn {
+      position: fixed;
+      right: 1rem;
+      bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+      z-index: 220;
+      min-height: 44px;
+      padding: .65rem .95rem;
+      border-radius: 999px;
+      border: 1px solid #e94560;
+      background: linear-gradient(135deg, #e94560, #c89b3c);
+      color: #fff;
+      font-weight: 800;
+      font-size: .86rem;
+      box-shadow: 0 10px 24px rgba(0,0,0,.35);
+      cursor: pointer;
+      transition: transform .15s ease, filter .15s ease;
     }
+    .floating-save-btn:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.05); }
+    .floating-save-btn:disabled { opacity: .7; cursor: not-allowed; }
   `],
 })
 export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly rb = inject(RiftboundService);
   readonly auth = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
   private readonly cdr = inject(ChangeDetectorRef);
 
   readonly COLORS = [
@@ -1348,12 +1217,15 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   codexPage = signal(1);
   codexSearch = '';
   codexLoading = signal(false);
+  codexHasMore = signal(false);
+  private readonly CODEX_PAGE_SIZE = 40;
+  @ViewChild('codexSentinel') codexSentinelRef?: ElementRef<HTMLElement>;
+  private codexObserver?: IntersectionObserver;
   sets = signal<RiftboundSet[]>([]);
   selectedSet = '';
   selectedType = '';
   selectedRarity = '';
   selectedColors = new Set<string>();
-  codexTotalPages = computed(() => Math.max(1, Math.ceil(this.codexTotal() / 40)));
 
   // Wishlist
   wishlistEntries = signal<RiftboundWishlistEntry[]>([]);
@@ -1361,6 +1233,9 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   wishlistPage = signal(1);
   wishlistSearch = '';
   wishlistLoading = signal(false);
+  wishlistHasMore = signal(false);
+  @ViewChild('wishlistSentinel') wishlistSentinelRef?: ElementRef<HTMLElement>;
+  private wishlistObserver?: IntersectionObserver;
 
   // Stats
   stats = signal<RiftboundCollectionStats | null>(null);
@@ -1374,22 +1249,16 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   /** Mensaje personalizable que aparece bajo el titulo en la imagen compartida. */
   wishlistShareMessage = '';
   avatarUploading = signal(false);
-  binderAvatarFailed = signal(false);
   showStoreConfig = signal(false);
   mercadoEntries = signal<RiftboundCollectionEntry[]>([]);
   mercadoLoading = signal(false);
+  mercadoPage = signal(1);
+  mercadoHasMore = signal(false);
+  @ViewChild('mercadoSentinel') mercadoSentinelRef?: ElementRef<HTMLElement>;
+  private mercadoObserver?: IntersectionObserver;
   mercadoDirty = new Map<number, DirtyPatch>();
   exportingPdf = signal(false);
-  qrDownloading = signal(false);
   onlySelling = signal(false);
-  assignedByEntry = signal<Record<number, number>>({});
-
-  // Pedidos de vendedor
-  orders = signal<RiftboundStoreOrder[]>([]);
-  ordersLoading = signal(false);
-  historyOrders = signal<RiftboundStoreOrder[]>([]);
-  historyLoading = signal(false);
-  historyStatusFilter = signal<'' | RiftboundStoreOrderStatus>('');
 
   // Bulk import
   showBulkImport = signal(false);
@@ -1473,6 +1342,12 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   closePhotoModal() { this.viewPhotoUrl.set(null); }
 
+  @HostListener('window:scroll')
+  onWindowScroll() { this.tryInfiniteScrollFallback(); }
+
+  @HostListener('window:resize')
+  onWindowResize() { this.tryInfiniteScrollFallback(); }
+
   ngOnInit() {
     if (!this.auth.isAuthenticated()) {
       this.router.navigate(['/login'], { queryParams: { returnUrl: '/riftbound/carpeta' } });
@@ -1481,12 +1356,6 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     this.loadIds();
     this.loadCollection();
     this.loadBinderProfile();
-
-    const queryTab = (this.route.snapshot.queryParamMap.get('tab') || '').toLowerCase();
-    if (queryTab === 'pedidos') {
-      this.switchTab('pedidos');
-    }
-
     this.rb.listSets().subscribe(s => {
       // listSets returns paginated or array depending on backend
       const arr = Array.isArray(s) ? s : (s as any).results || [];
@@ -1497,10 +1366,16 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   ngAfterViewInit() {
     this.setupCollectionObserver();
+    this.setupCodexObserver();
+    this.setupWishlistObserver();
+    this.setupMercadoObserver();
   }
 
   ngOnDestroy() {
     this.collectionObserver?.disconnect();
+    this.codexObserver?.disconnect();
+    this.wishlistObserver?.disconnect();
+    this.mercadoObserver?.disconnect();
   }
 
   private setupCollectionObserver() {
@@ -1520,6 +1395,74 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     if (el) this.collectionObserver.observe(el);
   }
 
+  private setupCodexObserver() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    this.codexObserver?.disconnect();
+    this.codexObserver = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting
+            && this.activeTab() === 'codex'
+            && this.codexHasMore()
+            && !this.codexLoading()) {
+          this.loadMoreCodex();
+        }
+      }
+    }, { rootMargin: '300px' });
+    const el = this.codexSentinelRef?.nativeElement;
+    if (el) this.codexObserver.observe(el);
+  }
+
+  private setupWishlistObserver() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    this.wishlistObserver?.disconnect();
+    this.wishlistObserver = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting
+            && this.activeTab() === 'wishlist'
+            && this.wishlistHasMore()
+            && !this.wishlistLoading()) {
+          this.loadMoreWishlist();
+        }
+      }
+    }, { rootMargin: '300px' });
+    const el = this.wishlistSentinelRef?.nativeElement;
+    if (el) this.wishlistObserver.observe(el);
+  }
+
+  private setupMercadoObserver() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    this.mercadoObserver?.disconnect();
+    this.mercadoObserver = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting
+            && this.activeTab() === 'mercado'
+            && this.mercadoHasMore()
+            && !this.mercadoLoading()) {
+          this.loadMoreMercado();
+        }
+      }
+    }, { rootMargin: '300px' });
+    const el = this.mercadoSentinelRef?.nativeElement;
+    if (el) this.mercadoObserver.observe(el);
+  }
+
+  private tryInfiniteScrollFallback() {
+    if (!this.isNearPageBottom()) return;
+    if (this.activeTab() === 'carpeta') this.loadMoreCollection();
+    if (this.activeTab() === 'codex') this.loadMoreCodex();
+    if (this.activeTab() === 'wishlist') this.loadMoreWishlist();
+    if (this.activeTab() === 'mercado') this.loadMoreMercado();
+  }
+
+  private isNearPageBottom(offset = 900): boolean {
+    const doc = document.documentElement;
+    const body = document.body;
+    const scrollTop = window.scrollY || doc.scrollTop || 0;
+    const viewport = window.innerHeight || doc.clientHeight || 0;
+    const fullHeight = Math.max(doc.scrollHeight, body?.scrollHeight || 0);
+    return scrollTop + viewport >= fullHeight - offset;
+  }
+
   // ── Tabs ──
   switchTab(t: Tab) {
     this.activeTab.set(t);
@@ -1527,9 +1470,13 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     if (t === 'codex' && this.codexCards().length === 0) this.loadCodex();
     if (t === 'wishlist') this.loadWishlist();
     if (t === 'mercado') { this.loadMercado(); }
-    if (t === 'pedidos') this.loadOrders();
-    if (t === 'historial') this.loadHistoryOrders();
     if (t === 'stats') this.loadStats();
+    queueMicrotask(() => {
+      this.setupCollectionObserver();
+      this.setupCodexObserver();
+      this.setupWishlistObserver();
+      this.setupMercadoObserver();
+    });
   }
 
   // ── IDs ──
@@ -1649,7 +1596,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   removeFromCollection(entry: RiftboundCollectionEntry) {
-    if (!confirm(`¿Quitar "${entry.card_data.name}" de tu carpeta?`)) return;
+    if (!confirm(`¿Quitar "${entry.card_data?.name}" de tu carpeta?`)) return;
     this.rb.deleteCollection(entry.id).subscribe(() => {
       this.collectionEntries.update(arr => arr.filter(e => e.id !== entry.id));
       this.collectionTotal.update(n => Math.max(0, n - 1));
@@ -1660,7 +1607,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   // ── Codex ──
-  loadCodex() {
+  loadCodex(append = false) {
     this.codexLoading.set(true);
     this.rb.listCards({
       search: this.codexSearch || undefined,
@@ -1669,21 +1616,42 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
       set: this.selectedSet || undefined,
       colors: this.selectedColors.size ? Array.from(this.selectedColors) : undefined,
       page: this.codexPage(),
+      pageSize: this.CODEX_PAGE_SIZE,
       lite: true,
     }).subscribe({
       next: res => {
-        this.codexCards.set(res.results as RiftboundCardLite[]);
+        const nextCards = res.results as RiftboundCardLite[];
+        if (append) {
+          this.codexCards.update(curr => [...curr, ...nextCards]);
+        } else {
+          this.codexCards.set(nextCards);
+        }
         this.codexTotal.set(res.count);
+        this.codexHasMore.set(!!res.next);
         this.codexLoading.set(false);
         this.cdr.markForCheck();
+        queueMicrotask(() => this.setupCodexObserver());
       },
       error: () => { this.codexLoading.set(false); this.cdr.markForCheck(); },
     });
   }
-  onCodexSearch() { this.codexPage.set(1); this.loadCodex(); }
-  onCodexFilter() { this.codexPage.set(1); this.loadCodex(); }
-  codexPrev() { if (this.codexPage() > 1) { this.codexPage.update(p => p - 1); this.loadCodex(); } }
-  codexNext() { if (this.codexPage() < this.codexTotalPages()) { this.codexPage.update(p => p + 1); this.loadCodex(); } }
+  onCodexSearch() {
+    this.codexPage.set(1);
+    this.codexCards.set([]);
+    this.codexHasMore.set(false);
+    this.loadCodex();
+  }
+  onCodexFilter() {
+    this.codexPage.set(1);
+    this.codexCards.set([]);
+    this.codexHasMore.set(false);
+    this.loadCodex();
+  }
+  loadMoreCodex() {
+    if (this.codexLoading() || !this.codexHasMore()) return;
+    this.codexPage.update(p => p + 1);
+    this.loadCodex(true);
+  }
 
   toggleColor(c: string) {
     if (this.selectedColors.has(c)) this.selectedColors.delete(c);
@@ -1727,18 +1695,42 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   // ── Wishlist ──
   loadWishlist() {
+    this.wishlistPage.set(1);
+    this.wishlistEntries.set([]);
+    this.wishlistHasMore.set(false);
+    this.fetchWishlistPage();
+  }
+
+  loadMoreWishlist() {
+    if (this.wishlistLoading() || !this.wishlistHasMore()) return;
+    this.wishlistPage.update(p => p + 1);
+    this.fetchWishlistPage(true);
+  }
+
+  private fetchWishlistPage(append = false) {
     this.wishlistLoading.set(true);
     this.rb.listWishlist({ search: this.wishlistSearch || undefined, page: this.wishlistPage() }).subscribe({
       next: res => {
-        this.wishlistEntries.set(res.results);
+        if (append) {
+          this.wishlistEntries.update(arr => [...arr, ...res.results]);
+        } else {
+          this.wishlistEntries.set(res.results);
+        }
         this.wishlistTotal.set(res.count);
+        this.wishlistHasMore.set(!!res.next);
         this.wishlistLoading.set(false);
         this.cdr.markForCheck();
+        queueMicrotask(() => this.setupWishlistObserver());
       },
       error: () => { this.wishlistLoading.set(false); this.cdr.markForCheck(); },
     });
   }
-  onWishlistSearch() { this.wishlistPage.set(1); this.loadWishlist(); }
+  onWishlistSearch() {
+    this.wishlistPage.set(1);
+    this.wishlistEntries.set([]);
+    this.wishlistHasMore.set(false);
+    this.loadWishlist();
+  }
 
   updateWishlistQty(entry: RiftboundWishlistEntry, qty: number) {
     if (!qty || qty < 1) return;
@@ -1795,7 +1787,6 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   loadBinderProfile() {
     this.rb.getBinderProfile().subscribe(p => {
       this.binderProfile.set(p);
-      this.binderAvatarFailed.set(false);
       this.cdr.markForCheck();
     });
   }
@@ -1803,14 +1794,8 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   patchProfile(patch: Partial<RiftboundBinderProfile>) {
     this.rb.updateBinderProfile(patch).subscribe(p => {
       this.binderProfile.set(p);
-      this.binderAvatarFailed.set(false);
       this.cdr.markForCheck();
     });
-  }
-
-  onBinderAvatarError() {
-    this.binderAvatarFailed.set(true);
-    this.cdr.markForCheck();
   }
 
   onAvatarFileChange(event: Event) {
@@ -1826,7 +1811,6 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     this.rb.uploadBinderAvatar(file).subscribe({
       next: p => {
         this.binderProfile.set(p);
-        this.binderAvatarFailed.set(false);
         this.avatarUploading.set(false);
         this.cdr.markForCheck();
       },
@@ -1858,33 +1842,6 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     navigator.clipboard?.writeText(url).then(() => {
       alert('Enlace copiado:\n' + url);
     }).catch(() => prompt('Copia el enlace:', url));
-  }
-
-  async downloadStoreQr() {
-    const token = this.binderProfile()?.share_token;
-    if (!token) return;
-    const url = `${window.location.origin}/riftbound/tienda/${token}`;
-    this.qrDownloading.set(true);
-    try {
-      const dataUrl = await QRCode.toDataURL(url, {
-        width: 1024,
-        margin: 2,
-        errorCorrectionLevel: 'M',
-        color: { dark: '#0f172a', light: '#ffffff' },
-      });
-      const a = document.createElement('a');
-      a.href = dataUrl;
-      a.download = `riftbound-tienda-qr-${this.auth.user()?.username || 'shadowforge'}.png`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    } catch (e) {
-      console.error('QR generation error:', e);
-      alert('No se pudo generar el QR. Intenta de nuevo.');
-    } finally {
-      this.qrDownloading.set(false);
-      this.cdr.markForCheck();
-    }
   }
 
   // ── Compartir wishlist ──
@@ -1936,33 +1893,34 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   // ── Mercado ──
   loadMercado() {
+    this.mercadoPage.set(1);
+    this.mercadoEntries.set([]);
+    this.mercadoHasMore.set(false);
+    this.fetchMercadoPage();
+  }
+
+  loadMoreMercado() {
+    if (this.mercadoLoading() || !this.mercadoHasMore()) return;
+    this.mercadoPage.update(p => p + 1);
+    this.fetchMercadoPage(true);
+  }
+
+  private fetchMercadoPage(append = false) {
     this.mercadoLoading.set(true);
-    this.rb.listCollection({ selling: true, page: 1 }).subscribe({
+    this.rb.listCollection({ selling: true, page: this.mercadoPage() }).subscribe({
       next: res => {
-        this.mercadoEntries.set(res.results);
+        if (append) {
+          this.mercadoEntries.update(arr => [...arr, ...res.results]);
+        } else {
+          this.mercadoEntries.set(res.results);
+        }
+        this.mercadoHasMore.set(!!res.next);
         this.mercadoLoading.set(false);
-        this.loadAssignedSummary();
         this.cdr.markForCheck();
+        queueMicrotask(() => this.setupMercadoObserver());
       },
       error: () => { this.mercadoLoading.set(false); this.cdr.markForCheck(); },
     });
-  }
-
-  loadAssignedSummary() {
-    this.rb.getMyOrderAssignedSummary().subscribe({
-      next: res => {
-        this.assignedByEntry.set(res.assigned_by_entry || {});
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.assignedByEntry.set({});
-        this.cdr.markForCheck();
-      },
-    });
-  }
-
-  assignedForEntry(entryId: number): number {
-    return this.assignedByEntry()[entryId] || 0;
   }
 
   onMercadoFieldChange(entry: RiftboundCollectionEntry, field: keyof DirtyPatch, value: any) {
@@ -1987,80 +1945,6 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
         this.loadMercado();
       },
       error: () => { this.batchSaving.set(false); this.cdr.markForCheck(); },
-    });
-  }
-
-  // ── Pedidos ──
-  loadOrders() {
-    this.ordersLoading.set(true);
-    this.rb.listMyStoreOrders({ status: 'pending', page: 1 }).subscribe({
-      next: res => {
-        this.orders.set(res.results || []);
-        this.ordersLoading.set(false);
-        this.loadAssignedSummary();
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.ordersLoading.set(false);
-        this.cdr.markForCheck();
-      },
-    });
-  }
-
-  onHistoryFilterChange(value: string) {
-    const next = (value === 'accepted' || value === 'cancelled') ? value : '';
-    this.historyStatusFilter.set(next);
-    this.loadHistoryOrders();
-  }
-
-  loadHistoryOrders() {
-    this.historyLoading.set(true);
-    const status = this.historyStatusFilter() || undefined;
-    this.rb.listMyStoreOrders({ status, page: 1 }).subscribe({
-      next: res => {
-        const items = (res.results || []).filter(o => o.status !== 'pending');
-        this.historyOrders.set(items);
-        this.historyLoading.set(false);
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.historyLoading.set(false);
-        this.cdr.markForCheck();
-      },
-    });
-  }
-
-  orderStatusLabel(status: RiftboundStoreOrderStatus): string {
-    if (status === 'pending') return 'Pendiente';
-    if (status === 'accepted') return 'Aceptado';
-    return 'Cancelado';
-  }
-
-  acceptOrder(order: RiftboundStoreOrder) {
-    if (!confirm(`¿Aceptar pedido #${order.id}? El stock asignado se descontará del stock real.`)) return;
-    this.rb.acceptStoreOrder(order.id).subscribe({
-      next: () => {
-        this.loadOrders();
-        this.loadHistoryOrders();
-        this.loadMercado();
-      },
-      error: err => {
-        alert(err?.error?.detail || 'No se pudo aceptar el pedido.');
-      },
-    });
-  }
-
-  cancelOrder(order: RiftboundStoreOrder) {
-    if (!confirm(`¿Cancelar pedido #${order.id}? Las cartas reservadas volverán a stock en venta.`)) return;
-    this.rb.cancelStoreOrder(order.id).subscribe({
-      next: () => {
-        this.loadOrders();
-        this.loadHistoryOrders();
-        this.loadMercado();
-      },
-      error: err => {
-        alert(err?.error?.detail || 'No se pudo cancelar el pedido.');
-      },
     });
   }
 
@@ -2113,5 +1997,23 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
         this.cdr.markForCheck();
       },
     });
+  }
+
+  showFloatingSaveButton(): boolean {
+    return (this.activeTab() === 'carpeta' && this.dirtyEntries.size > 0)
+      || (this.activeTab() === 'mercado' && this.mercadoDirty.size > 0);
+  }
+
+  floatingSaveLabel(): string {
+    if (this.batchSaving()) return '⏳ Guardando...';
+    if (this.activeTab() === 'carpeta') return `💾 Guardar carpeta (${this.dirtyEntries.size})`;
+    if (this.activeTab() === 'mercado') return `💾 Guardar tienda (${this.mercadoDirty.size})`;
+    return '💾 Guardar cambios';
+  }
+
+  onFloatingSaveClick() {
+    if (this.batchSaving()) return;
+    if (this.activeTab() === 'carpeta') { this.saveAllChanges(); return; }
+    if (this.activeTab() === 'mercado') { this.saveMercadoChanges(); }
   }
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, HostListener } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectorRef, HostListener, ElementRef, ViewChild } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
@@ -37,12 +37,13 @@ interface CartItem {
   templateUrl: './tienda.component.html',
   styleUrl: './tienda.component.scss',
 })
-export class TiendaComponent implements OnInit {
+export class TiendaComponent implements OnInit, AfterViewInit, OnDestroy {
   token = '';
   store: PublicBinderProfile | null = null;
   entries: CollectionEntry[] = [];
   total = 0;
   loading = false;
+  storeHasMore = false;
   notFound = false;
   previewCard: Card | null = null;
   viewPhotoUrl: string | null = null;
@@ -73,6 +74,8 @@ export class TiendaComponent implements OnInit {
   orderSubmitting = false;
   orderError = '';
   createdOrderId: number | null = null;
+  @ViewChild('storeSentinel') storeSentinelRef?: ElementRef<HTMLElement>;
+  private storeObserver?: IntersectionObserver;
 
   constructor(
     private route: ActivatedRoute,
@@ -84,6 +87,12 @@ export class TiendaComponent implements OnInit {
 
   @HostListener('document:click')
   onDocClick() { this.openFilter = null; }
+
+  @HostListener('window:scroll')
+  onWindowScroll() { this.tryInfiniteScrollFallback(); }
+
+  @HostListener('window:resize')
+  onWindowResize() { this.tryInfiniteScrollFallback(); }
 
   ngOnInit() {
     this.token = this.route.snapshot.paramMap.get('token') || this.route.snapshot.paramMap.get('slug') || '';
@@ -97,6 +106,14 @@ export class TiendaComponent implements OnInit {
     if (this.activeTab === 'wishlist') this.loadWishlist();
   }
 
+  ngAfterViewInit() {
+    this.setupStoreObserver();
+  }
+
+  ngOnDestroy() {
+    this.storeObserver?.disconnect();
+  }
+
   loadFilters() {
     this.cardService.getEditions().subscribe(d => { this.editions = d; this.cdr.detectChanges(); });
     this.cardService.getRaces().subscribe(d => { this.races = d; this.cdr.detectChanges(); });
@@ -104,28 +121,37 @@ export class TiendaComponent implements OnInit {
     this.cardService.getTypes().subscribe(d => { this.types = d; this.cdr.detectChanges(); });
   }
 
-  loadStore() {
+  loadStore(append = false) {
     this.loading = true;
     this.carpetaService.getPublicStore(this.token, this.filters).subscribe({
       next: res => {
-        this.entries = res.results;
+        this.entries = append ? [...this.entries, ...res.results] : res.results;
         this.total = res.count;
+        this.storeHasMore = !!res.next;
         this.store = res.store;
         this.loading = false;
         this.syncCartAvailability();
         this.cdr.detectChanges();
+        queueMicrotask(() => this.setupStoreObserver());
       },
       error: () => { this.notFound = true; this.loading = false; this.cdr.detectChanges(); },
     });
   }
 
-  applyFilter() { this.filters.page = 1; this.loadStore(); }
+  applyFilter() {
+    this.filters.page = 1;
+    this.entries = [];
+    this.storeHasMore = false;
+    this.loadStore();
+  }
 
   get isOwner(): boolean {
     return !!this.store?.username && this.store.username === this.auth.user()?.username;
   }
   resetFilters() {
     this.filters = { page: 1, ordering: '-id' };
+    this.entries = [];
+    this.storeHasMore = false;
     this.loadStore();
   }
 
@@ -157,9 +183,42 @@ export class TiendaComponent implements OnInit {
     this.openFilter = null;
     this.applyFilter();
   }
-  prevPage() { if ((this.filters.page || 1) > 1) { this.filters.page = (this.filters.page || 1) - 1; this.loadStore(); } }
-  nextPage() { if ((this.filters.page || 1) * 40 < this.total) { this.filters.page = (this.filters.page || 1) + 1; this.loadStore(); } }
-  get totalPages() { return Math.ceil(this.total / 40); }
+  loadMoreStore() {
+    if (this.activeTab !== 'store' || this.loading || !this.storeHasMore) return;
+    this.filters.page = (this.filters.page || 1) + 1;
+    this.loadStore(true);
+  }
+
+  private setupStoreObserver() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    this.storeObserver?.disconnect();
+    if (this.activeTab !== 'store') return;
+    const sentinel = this.storeSentinelRef?.nativeElement;
+    if (!sentinel) return;
+    this.storeObserver = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          this.loadMoreStore();
+          break;
+        }
+      }
+    }, { rootMargin: '320px 0px' });
+    this.storeObserver.observe(sentinel);
+  }
+
+  private tryInfiniteScrollFallback() {
+    if (!this.isNearPageBottom()) return;
+    if (this.activeTab === 'store') this.loadMoreStore();
+  }
+
+  private isNearPageBottom(offset = 900): boolean {
+    const doc = document.documentElement;
+    const body = document.body;
+    const scrollTop = window.scrollY || doc.scrollTop || 0;
+    const viewport = window.innerHeight || doc.clientHeight || 0;
+    const fullHeight = Math.max(doc.scrollHeight, body?.scrollHeight || 0);
+    return scrollTop + viewport >= fullHeight - offset;
+  }
 
   // ── Cart ──
   cartKey(): string { return `tienda-cart::${this.token}`; }
@@ -391,6 +450,7 @@ export class TiendaComponent implements OnInit {
     if (this.activeTab === tab) return;
     this.activeTab = tab;
     if (tab === 'wishlist' && !this.wishlistLoaded) this.loadWishlist();
+    if (tab === 'store') queueMicrotask(() => this.setupStoreObserver());
   }
 
   loadWishlist() {

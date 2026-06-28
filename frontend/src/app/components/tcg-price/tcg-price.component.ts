@@ -8,7 +8,15 @@ import { TcgmatchService, TcgmatchPrice } from '../../services/tcgmatch.service'
   standalone: true,
   imports: [CommonModule],
   template: `
-    @if (loading()) {
+    @if (!showMarketPrice) {
+      @if (showLink) {
+        <a class="tcg-btn"
+           [href]="price()?.product_url || tcgSearchUrl"
+           target="_blank" rel="noopener noreferrer">
+          Ir a TCGPlayer
+        </a>
+      }
+    } @else if (loading()) {
       <span class="tcg-price loading" [class.compact]="compact">
         <span class="tcg-spinner"></span>
       </span>
@@ -332,6 +340,7 @@ export class TcgPriceComponent implements OnChanges {
   @Input({ required: true }) cardName!: string;
   @Input() compact = true;
   @Input() showLink = true;
+  @Input() showMarketPrice = true;
   @Input() hideIfEmpty = false;
   @Input() showExternalMarkets = true;
 
@@ -358,7 +367,14 @@ export class TcgPriceComponent implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if ((changes['cardName'] || changes['compact'] || changes['showExternalMarkets']) && this.cardName) {
+    if ((changes['cardName'] || changes['compact'] || changes['showExternalMarkets'] || changes['showMarketPrice']) && this.cardName) {
+      if (!this.showMarketPrice) {
+        this.loading.set(false);
+        this.price.set(null);
+        this.tcgmatchLoading.set(false);
+        this.tcgmatchPrice.set(null);
+        return;
+      }
       this.retried = false;
       this.fetchPrice();
 

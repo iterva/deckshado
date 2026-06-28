@@ -279,12 +279,14 @@
       }
     </div>
 
-    @if (totalPages > 1) {
-      <div class="pagination">
-        <button class="btn btn-sm" (click)="prevPage()" [disabled]="(filters.page || 1) === 1">← Anterior</button>
-        <span>{{ filters.page || 1 }} / {{ totalPages }}</span>
-        <button class="btn btn-sm" (click)="nextPage()" [disabled]="(filters.page || 1) >= totalPages">Siguiente →</button>
-      </div>
+    @if (storeHasMore) {
+      <div #storeSentinel class="infinite-sentinel" aria-hidden="true"></div>
+    }
+    @if (loading && entries.length > 0) {
+      <div class="loading">Cargando más...</div>
+    }
+    @if (!storeHasMore && !loading && entries.length > 0) {
+      <p class="loading" style="padding-top: 1rem;">— Fin de la tienda —</p>
     }
   <app-share-image
           mode="buying"

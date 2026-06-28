@@ -155,7 +155,7 @@ interface RiftboundCartItem {
                 <span class="price">{{ e.price != null ? ('$' + (e.price | number)) : 'Consultar' }}</span>
                 <span class="qty">x{{ e.selling_quantity }}</span>
               </div>
-              <app-tcg-price [cardName]="e.card_data?.name || ''" [compact]="true" [showMarketPrice]="false"></app-tcg-price>
+              <app-tcg-price [cardName]="e.card_data?.name || ''" [compact]="true" [showLink]="false" [showMarketPrice]="false"></app-tcg-price>
               <button class="btn btn-sm btn-primary btn-add-cart"
                       (click)="addToCart(e, $event)"
                       [disabled]="inCart(e.id) >= e.selling_quantity">
@@ -207,7 +207,7 @@ interface RiftboundCartItem {
                 <div class="price-row">
                   <span class="qty wishlist-qty">❤️ Quiere x{{ w.desired_quantity }}</span>
                 </div>
-                <app-tcg-price [cardName]="w.card_data?.name || ''" [compact]="true" [showMarketPrice]="false"></app-tcg-price>
+                <app-tcg-price [cardName]="w.card_data?.name || ''" [compact]="true" [showLink]="false" [showMarketPrice]="false"></app-tcg-price>
               </div>
             </div>
           }
@@ -277,7 +277,7 @@ interface RiftboundCartItem {
             <h2>{{ pc.name }}</h2>
             <p class="card-meta">{{ pc.card_number }}</p>
             @if (pc.description) { <p>{{ pc.description }}</p> }
-            <app-tcg-price [cardName]="pc.name" [compact]="false" [showLink]="true" [showMarketPrice]="false"></app-tcg-price>
+            <app-tcg-price [cardName]="pc.name" [compact]="false" [showLink]="false" [showMarketPrice]="false"></app-tcg-price>
           </div>
         </div>
       </div>

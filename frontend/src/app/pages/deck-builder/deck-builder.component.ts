@@ -1,4 +1,14 @@
-import { Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef, HostListener, signal } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  OnDestroy,
+  OnInit,
+  ChangeDetectorRef,
+  ViewChild,
+  ElementRef,
+  HostListener,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject } from 'rxjs';
@@ -44,7 +54,7 @@ function normalizeName(name: string): string {
   templateUrl: './deck-builder.component.html',
   styleUrl: './deck-builder.component.scss',
 })
-export class DeckBuilderComponent implements OnInit {
+export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
   // Deck info
   deckId: number | null = null;
   deckName = '';
@@ -151,7 +161,9 @@ export class DeckBuilderComponent implements OnInit {
   /** Slugs de edición a los que se restringe la búsqueda de cartas. */
   private pbEditionScope: string[] = [];
   currentPage = 1;
+  readonly pageSize = 20;
   totalCards = 0;
+  hasMoreCards = false;
   loading = false;
   saving = false;
 
@@ -184,6 +196,22 @@ export class DeckBuilderComponent implements OnInit {
   private searchSubject = new Subject<void>();
 
   @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('builderCardsSentinel')
+  set builderCardsSentinelSetter(el: ElementRef<HTMLElement> | undefined) {
+    this.builderCardsSentinelRef = el;
+    this.setupBuilderCardsObserver();
+  }
+  private builderCardsSentinelRef?: ElementRef<HTMLElement>;
+  private builderCardsObserver?: IntersectionObserver;
+
+  @ViewChild('cardBrowser')
+  set cardBrowserSetter(el: ElementRef<HTMLElement> | undefined) {
+    this.cardBrowserRef = el;
+    this.attachBrowserScrollListener();
+  }
+  private cardBrowserRef?: ElementRef<HTMLElement>;
+  private browserScrollEl: HTMLElement | null = null;
+  private contentScrollEl: HTMLElement | null = null;
 
   constructor(
     private cardService: CardService,
@@ -272,7 +300,7 @@ export class DeckBuilderComponent implements OnInit {
         this.cdr.detectChanges();
       });
       this.loadBanlist();
-      this.loadCards();
+      this.reloadAvailableCards();
 
       const id = this.route.snapshot.paramMap.get('id');
       if (id && id !== 'new') {
@@ -387,7 +415,7 @@ export class DeckBuilderComponent implements OnInit {
           });
           this.filterEditions();
           this.loadBanlist();
-          this.loadCards();
+          this.reloadAvailableCards();
         }
 
         this.loadSuggestions();
@@ -396,7 +424,20 @@ export class DeckBuilderComponent implements OnInit {
     });
   }
 
-  loadCards() {
+  ngAfterViewInit() {
+    this.setupBuilderCardsObserver();
+    this.attachBrowserScrollListener();
+    this.attachContentScrollListener();
+    this.tryBuilderInfiniteScrollFallback();
+  }
+
+  ngOnDestroy() {
+    this.builderCardsObserver?.disconnect();
+    this.detachBrowserScrollListener();
+    this.detachContentScrollListener();
+  }
+
+  loadCards(append = false) {
     this.loading = true;
     // Si hay restricción PB/PE por edición, fusionamos con la selección del usuario.
     let editionParam = this.selectedEdition || '';
@@ -420,16 +461,34 @@ export class DeckBuilderComponent implements OnInit {
       exclude_editions: this.getSeasonExclusions() || undefined,
     }).subscribe({
       next: (res) => {
-        this.availableCards = res.results;
+        this.availableCards = append ? [...this.availableCards, ...res.results] : res.results;
         this.totalCards = res.count;
+        this.hasMoreCards = !!res.next;
         this.loading = false;
         this.cdr.detectChanges();
+        queueMicrotask(() => {
+          this.setupBuilderCardsObserver();
+          this.tryBuilderInfiniteScrollFallback();
+        });
       },
       error: () => {
         this.loading = false;
         this.cdr.detectChanges();
       },
     });
+  }
+
+  reloadAvailableCards() {
+    this.currentPage = 1;
+    this.availableCards = [];
+    this.hasMoreCards = false;
+    this.loadCards();
+  }
+
+  loadMoreCards() {
+    if (this.loading || !this.hasMoreCards) return;
+    this.currentPage++;
+    this.loadCards(true);
   }
 
   onSearch() {
@@ -445,8 +504,7 @@ export class DeckBuilderComponent implements OnInit {
       this.search = q;
       this.abilitySearch = q;
     }
-    this.currentPage = 1;
-    this.loadCards();
+    this.reloadAvailableCards();
   }
 
   setSearchMode(mode: 'name' | 'ability' | 'all') {
@@ -574,13 +632,11 @@ export class DeckBuilderComponent implements OnInit {
   }
 
   onFilterChange() {
-    this.currentPage = 1;
-    this.loadCards();
+    this.reloadAvailableCards();
   }
 
   onSeasonChange() {
-    this.currentPage = 1;
-    this.loadCards();
+    this.reloadAvailableCards();
   }
 
   /** Devuelve los slugs de ediciones excluidas por la temporada actual (CSV). */
@@ -600,20 +656,6 @@ export class DeckBuilderComponent implements OnInit {
     }
   }
 
-  nextPage() {
-    if (this.currentPage * 20 < this.totalCards) {
-      this.currentPage++;
-      this.loadCards();
-    }
-  }
-
-  prevPage() {
-    if (this.currentPage > 1) {
-      this.currentPage--;
-      this.loadCards();
-    }
-  }
-
   loadBanlist() {
     this.cardService.getBanlist(this.selectedFormat, this.selectedSubFormat).subscribe(entries => {
       this.banlistEntries = entries;
@@ -630,10 +672,97 @@ export class DeckBuilderComponent implements OnInit {
   }
 
   onSubFormatChange() {
-    this.currentPage = 1;
     this.selectedRarity = '';  // reset rarity filter since options change per sub-format
     this.loadBanlist();
-    this.loadCards();
+    this.reloadAvailableCards();
+  }
+
+  @HostListener('window:scroll')
+  onWindowScroll() {
+    this.tryBuilderInfiniteScrollFallback();
+  }
+
+  @HostListener('window:resize')
+  onWindowResize() {
+    this.tryBuilderInfiniteScrollFallback();
+  }
+
+  private setupBuilderCardsObserver() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    this.builderCardsObserver?.disconnect();
+    const sentinel = this.builderCardsSentinelRef?.nativeElement;
+    if (!sentinel) return;
+    this.builderCardsObserver = new IntersectionObserver(
+      entries => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            this.loadMoreCards();
+            break;
+          }
+        }
+      },
+      {
+        root: this.browserScrollEl,
+        rootMargin: '320px 0px',
+      },
+    );
+    this.builderCardsObserver.observe(sentinel);
+  }
+
+  private attachBrowserScrollListener() {
+    this.detachBrowserScrollListener();
+    const el = this.cardBrowserRef?.nativeElement;
+    if (!el) return;
+    this.browserScrollEl = el;
+    this.browserScrollEl.addEventListener('scroll', this.onBrowserScroll, { passive: true });
+  }
+
+  private detachBrowserScrollListener() {
+    if (!this.browserScrollEl) return;
+    this.browserScrollEl.removeEventListener('scroll', this.onBrowserScroll);
+    this.browserScrollEl = null;
+  }
+
+  private attachContentScrollListener() {
+    this.detachContentScrollListener();
+    const el = document.querySelector('main.content') as HTMLElement | null;
+    if (!el) return;
+    this.contentScrollEl = el;
+    this.contentScrollEl.addEventListener('scroll', this.onContentScroll, { passive: true });
+  }
+
+  private detachContentScrollListener() {
+    if (!this.contentScrollEl) return;
+    this.contentScrollEl.removeEventListener('scroll', this.onContentScroll);
+    this.contentScrollEl = null;
+  }
+
+  private onBrowserScroll = () => {
+    this.tryBuilderInfiniteScrollFallback();
+  };
+
+  private onContentScroll = () => {
+    this.tryBuilderInfiniteScrollFallback();
+  };
+
+  private tryBuilderInfiniteScrollFallback() {
+    if (!this.isNearBuilderBottom()) return;
+    this.loadMoreCards();
+  }
+
+  private isNearBuilderBottom(offset = 900): boolean {
+    if (this.browserScrollEl && this.browserScrollEl.scrollHeight > this.browserScrollEl.clientHeight) {
+      return this.browserScrollEl.scrollTop + this.browserScrollEl.clientHeight >= this.browserScrollEl.scrollHeight - 420;
+    }
+    if (this.contentScrollEl && this.contentScrollEl.scrollHeight > this.contentScrollEl.clientHeight) {
+      return this.contentScrollEl.scrollTop + this.contentScrollEl.clientHeight >= this.contentScrollEl.scrollHeight - 420;
+    }
+    const doc = document.documentElement;
+    const body = document.body;
+    const scrollTop = window.scrollY || doc.scrollTop || 0;
+    const viewport = window.innerHeight || doc.clientHeight || 0;
+    const fullHeight = Math.max(doc.scrollHeight, body?.scrollHeight || 0);
+    return scrollTop + viewport >= fullHeight - offset;
   }
 
   getBanStatus(card: Card): BanlistEntry | null {
@@ -1204,7 +1333,7 @@ export class DeckBuilderComponent implements OnInit {
   }
 
   get totalPages(): number {
-    return Math.ceil(this.totalCards / 20);
+    return Math.ceil(this.totalCards / this.pageSize);
   }
 
   /** VCR only shows promo, real, vasallo, cortesano */

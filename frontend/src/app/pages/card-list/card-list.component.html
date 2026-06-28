@@ -132,11 +132,13 @@
     </div>
   }
 
-  @if (totalPages > 1) {
-    <div class="pagination">
-      <button class="btn btn-secondary btn-sm" (click)="prevPage()" [disabled]="currentPage === 1">← Anterior</button>
-      <span>Página {{ currentPage }} de {{ totalPages }}</span>
-      <button class="btn btn-secondary btn-sm" (click)="nextPage()" [disabled]="currentPage >= totalPages">Siguiente →</button>
-    </div>
-  }
+  <div class="infinite-status">
+    <div #cardsSentinel class="cards-sentinel" aria-hidden="true"></div>
+    @if (loading && hasMore) {
+      <p class="status-text">Cargando más cartas...</p>
+    }
+    @if (!hasMore && cards.length > 0) {
+      <p class="status-text status-end">Fin de cartas</p>
+    }
+  </div>
 </div>

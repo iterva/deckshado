@@ -1,6 +1,6 @@
 <div class="builder-layout">
   <!-- Left panel: Card Browser -->
-  <div class="card-browser">
+  <div class="card-browser" #cardBrowser>
     <h2>Cartas Disponibles · {{ formatName }}@if (pbEditionName) { · {{ pbEditionName }} }@if (selectedSubFormat === 'vcr') { · VCR }@if (raceName) { · {{ raceName }} }</h2>
     <div class="browser-filters">
       @if (selectedFormat === 'imp') {
@@ -203,13 +203,15 @@
       }
     </div>
 
-    @if (totalPages > 1) {
-      <div class="pagination">
-        <button class="btn btn-secondary btn-sm" (click)="prevPage()" [disabled]="currentPage === 1">←</button>
-        <span>{{ currentPage }}/{{ totalPages }}</span>
-        <button class="btn btn-secondary btn-sm" (click)="nextPage()" [disabled]="currentPage >= totalPages">→</button>
-      </div>
-    }
+    <div class="infinite-status" aria-live="polite">
+      <div #builderCardsSentinel class="cards-sentinel" aria-hidden="true"></div>
+      @if (loading && hasMoreCards) {
+        <p class="status-text">Cargando más cartas...</p>
+      }
+      @if (!hasMoreCards && availableCards.length > 0) {
+        <p class="status-text status-end">Fin de cartas</p>
+      }
+    </div>
   </div>
 
   <!-- Right panel: Deck -->

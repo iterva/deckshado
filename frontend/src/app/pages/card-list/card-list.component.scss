@@ -1,3 +1,9 @@
+.page-title {
+  background: none !important;
+  -webkit-text-fill-color: currentColor !important;
+  color: var(--ui-text) !important;
+}
+
 .filters {
   margin-bottom: 1.5rem;
 

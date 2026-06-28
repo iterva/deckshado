@@ -1256,6 +1256,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   mercadoHasMore = signal(false);
   @ViewChild('mercadoSentinel') mercadoSentinelRef?: ElementRef<HTMLElement>;
   private mercadoObserver?: IntersectionObserver;
+  private contentScrollEl: HTMLElement | null = null;
   mercadoDirty = new Map<number, DirtyPatch>();
   exportingPdf = signal(false);
   onlySelling = signal(false);
@@ -1369,6 +1370,8 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     this.setupCodexObserver();
     this.setupWishlistObserver();
     this.setupMercadoObserver();
+    this.attachContentScrollListener();
+    this.tryInfiniteScrollFallback();
   }
 
   ngOnDestroy() {
@@ -1376,7 +1379,26 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     this.codexObserver?.disconnect();
     this.wishlistObserver?.disconnect();
     this.mercadoObserver?.disconnect();
+    this.detachContentScrollListener();
   }
+
+  private attachContentScrollListener() {
+    this.detachContentScrollListener();
+    const el = document.querySelector('main.content') as HTMLElement | null;
+    if (!el) return;
+    this.contentScrollEl = el;
+    this.contentScrollEl.addEventListener('scroll', this.onContentScroll, { passive: true });
+  }
+
+  private detachContentScrollListener() {
+    if (!this.contentScrollEl) return;
+    this.contentScrollEl.removeEventListener('scroll', this.onContentScroll);
+    this.contentScrollEl = null;
+  }
+
+  private onContentScroll = () => {
+    this.tryInfiniteScrollFallback();
+  };
 
   private setupCollectionObserver() {
     if (typeof IntersectionObserver === 'undefined') return;
@@ -1455,6 +1477,10 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   private isNearPageBottom(offset = 900): boolean {
+    const container = this.contentScrollEl;
+    if (container && container.scrollHeight > container.clientHeight) {
+      return container.scrollTop + container.clientHeight >= container.scrollHeight - 420;
+    }
     const doc = document.documentElement;
     const body = document.body;
     const scrollTop = window.scrollY || doc.scrollTop || 0;
@@ -1476,6 +1502,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
       this.setupCodexObserver();
       this.setupWishlistObserver();
       this.setupMercadoObserver();
+      this.tryInfiniteScrollFallback();
     });
   }
 
@@ -1524,7 +1551,10 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
         this.collectionLoading.set(false);
         this.cdr.markForCheck();
         // Re-observe sentinel in case DOM cleared it
-        queueMicrotask(() => this.setupCollectionObserver());
+        queueMicrotask(() => {
+          this.setupCollectionObserver();
+          this.tryInfiniteScrollFallback();
+        });
       },
       error: () => { this.collectionLoading.set(false); this.cdr.markForCheck(); },
     });
@@ -1630,7 +1660,10 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
         this.codexHasMore.set(!!res.next);
         this.codexLoading.set(false);
         this.cdr.markForCheck();
-        queueMicrotask(() => this.setupCodexObserver());
+        queueMicrotask(() => {
+          this.setupCodexObserver();
+          this.tryInfiniteScrollFallback();
+        });
       },
       error: () => { this.codexLoading.set(false); this.cdr.markForCheck(); },
     });
@@ -1720,7 +1753,10 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
         this.wishlistHasMore.set(!!res.next);
         this.wishlistLoading.set(false);
         this.cdr.markForCheck();
-        queueMicrotask(() => this.setupWishlistObserver());
+        queueMicrotask(() => {
+          this.setupWishlistObserver();
+          this.tryInfiniteScrollFallback();
+        });
       },
       error: () => { this.wishlistLoading.set(false); this.cdr.markForCheck(); },
     });
@@ -1917,7 +1953,10 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
         this.mercadoHasMore.set(!!res.next);
         this.mercadoLoading.set(false);
         this.cdr.markForCheck();
-        queueMicrotask(() => this.setupMercadoObserver());
+        queueMicrotask(() => {
+          this.setupMercadoObserver();
+          this.tryInfiniteScrollFallback();
+        });
       },
       error: () => { this.mercadoLoading.set(false); this.cdr.markForCheck(); },
     });

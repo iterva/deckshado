@@ -1,4 +1,15 @@
-import { Component, HostListener, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -228,12 +239,14 @@ function typeRank(t?: string): number {
           <p class="muted center">Sin resultados.</p>
         }
 
-        @if (totalPages() > 1) {
-          <div class="pagination">
-            <button class="page-btn" (click)="prev()" [disabled]="page() === 1">←</button>
-            <span>{{ page() }} / {{ totalPages() }}</span>
-            <button class="page-btn" (click)="next()" [disabled]="page() >= totalPages()">→</button>
-          </div>
+        @if (hasMore()) {
+          <div #cardsSentinel class="infinite-sentinel" aria-hidden="true"></div>
+        }
+        @if (loading() && displayedResults().length > 0) {
+          <p class="muted center">Cargando más...</p>
+        }
+        @if (!hasMore() && !loading() && displayedResults().length > 0) {
+          <p class="muted center" style="margin-top: .9rem;">— Fin de cartas —</p>
         }
       </div>
 
@@ -823,6 +836,7 @@ function typeRank(t?: string): number {
 
     .mini-qty { font-weight: 700; font-size: .8rem; color: #ffbd39; width: 16px; text-align: center; }
 
+    .infinite-sentinel { width: 100%; height: 1px; margin-top: .5rem; }
     .pagination { display: flex; gap: 1rem; align-items: center; justify-content: center; margin: 1.25rem 0; color: #98a2a8; }
     .page-btn { padding: .35rem .9rem; border: 1px solid #2a3a4a; background: transparent; color: #c8c8da; border-radius: 4px; cursor: pointer; }
     .page-btn:disabled { opacity: .35; cursor: not-allowed; }
@@ -1274,7 +1288,7 @@ function typeRank(t?: string): number {
     :host-context(body.light-theme) .zone-empty { color: #6a5a3a; }
   `],
 })
-export class RiftboundBuilderComponent implements OnInit, OnDestroy {
+export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
   private rb = inject(RiftboundService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -1305,6 +1319,7 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
   selectedColors = signal(new Set<RiftboundColor>());
 
   results = signal<RiftboundCardLite[]>([]);
+  hasMore = signal(false);
 
   /** Cartas mostradas en el listado: oculta los demás legends cuando ya hay
    *  uno seleccionado (un mazo solo puede tener 1 Champion Legend). */
@@ -1320,6 +1335,15 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
   // Debe coincidir con DRF PAGE_SIZE (backend/backend/settings.py).
   pageSize = 20;
   totalPages = computed(() => Math.max(1, Math.ceil(this.totalCount() / this.pageSize)));
+  private cardsSentinelRef?: ElementRef<HTMLElement>;
+  private cardsObserver?: IntersectionObserver;
+  private contentScrollEl: HTMLElement | null = null;
+
+  @ViewChild('cardsSentinel')
+  set cardsSentinelSetter(el: ElementRef<HTMLElement> | undefined) {
+    this.cardsSentinelRef = el;
+    this.setupCardsObserver();
+  }
 
   sets = signal<{ code: string; name: string }[]>([]);
 
@@ -1354,6 +1378,12 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
   previewLoading = signal(false);
 
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
+
+  @HostListener('window:scroll')
+  onWindowScroll() { this.tryInfiniteScrollFallback(); }
+
+  @HostListener('window:resize')
+  onWindowResize() { this.tryInfiniteScrollFallback(); }
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
@@ -1405,6 +1435,12 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
       },
     });
     this.reload();
+  }
+
+  ngAfterViewInit() {
+    this.setupCardsObserver();
+    this.attachContentScrollListener();
+    this.tryInfiniteScrollFallback();
   }
 
   loadFromDeck(deck: RiftboundDeck) {
@@ -1471,6 +1507,19 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
   }
 
   reload() {
+    this.page.set(1);
+    this.results.set([]);
+    this.hasMore.set(false);
+    this.fetchCardsPage();
+  }
+
+  loadMoreResults() {
+    if (this.loading() || !this.hasMore()) return;
+    this.page.update(p => p + 1);
+    this.fetchCardsPage(true);
+  }
+
+  private fetchCardsPage(append = false) {
     this.loading.set(true);
     this.rb.listCards({
       search: this.searchQuery || undefined,
@@ -1481,19 +1530,78 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
       energy: this.energyFilter ?? undefined,
       colors: [...this.selectedColors()],
       page: this.page(),
+      pageSize: this.pageSize,
       lite: true,
     }).subscribe({
       next: (resp) => {
-        this.results.set(resp.results as RiftboundCardLite[]);
+        if (append) {
+          this.results.update(curr => [...curr, ...(resp.results as RiftboundCardLite[])]);
+        } else {
+          this.results.set(resp.results as RiftboundCardLite[]);
+        }
         this.totalCount.set(resp.count);
+        this.hasMore.set(!!resp.next);
         this.loading.set(false);
+        setTimeout(() => {
+          this.setupCardsObserver();
+          this.tryInfiniteScrollFallback();
+        });
       },
       error: () => this.loading.set(false),
     });
   }
 
-  prev() { if (this.page() > 1) { this.page.update(p => p - 1); this.reload(); } }
-  next() { if (this.page() < this.totalPages()) { this.page.update(p => p + 1); this.reload(); } }
+  private setupCardsObserver() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    this.cardsObserver?.disconnect();
+    const sentinel = this.cardsSentinelRef?.nativeElement;
+    if (!sentinel) return;
+    this.cardsObserver = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          this.loadMoreResults();
+          break;
+        }
+      }
+    }, { rootMargin: '320px 0px' });
+    this.cardsObserver.observe(sentinel);
+  }
+
+  private attachContentScrollListener() {
+    this.detachContentScrollListener();
+    const el = document.querySelector('main.content') as HTMLElement | null;
+    if (!el) return;
+    this.contentScrollEl = el;
+    this.contentScrollEl.addEventListener('scroll', this.onContentScroll, { passive: true });
+  }
+
+  private detachContentScrollListener() {
+    if (!this.contentScrollEl) return;
+    this.contentScrollEl.removeEventListener('scroll', this.onContentScroll);
+    this.contentScrollEl = null;
+  }
+
+  private onContentScroll = () => {
+    this.tryInfiniteScrollFallback();
+  };
+
+  private tryInfiniteScrollFallback() {
+    if (!this.isNearPageBottom()) return;
+    this.loadMoreResults();
+  }
+
+  private isNearPageBottom(offset = 900): boolean {
+    const container = this.contentScrollEl;
+    if (container && container.scrollHeight > container.clientHeight) {
+      return container.scrollTop + container.clientHeight >= container.scrollHeight - 420;
+    }
+    const doc = document.documentElement;
+    const body = document.body;
+    const scrollTop = window.scrollY || doc.scrollTop || 0;
+    const viewport = window.innerHeight || doc.clientHeight || 0;
+    const fullHeight = Math.max(doc.scrollHeight, body?.scrollHeight || 0);
+    return scrollTop + viewport >= fullHeight - offset;
+  }
 
   // ── Helpers de zona ──
   zoneCount(z: RiftboundZone): number {
@@ -2084,6 +2192,8 @@ export class RiftboundBuilderComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.cardsObserver?.disconnect();
+    this.detachContentScrollListener();
     if (this.hasDraftContent()) this.saveDraft();
   }
 

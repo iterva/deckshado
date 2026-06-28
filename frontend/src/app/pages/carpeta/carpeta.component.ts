@@ -101,6 +101,7 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   mercadoDirty = new Map<number, { price?: number | null; selling_quantity?: number }>();
   @ViewChild('mercadoSentinel') mercadoSentinelRef?: ElementRef<HTMLElement>;
   private mercadoObserver?: IntersectionObserver;
+  private contentScrollEl: HTMLElement | null = null;
   shareToken = '';
   shareLinkCopied = false;
   qrDownloading = false;
@@ -159,6 +160,8 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.setupCodexObserver();
     this.setupWishlistObserver();
     this.setupMercadoObserver();
+    this.attachContentScrollListener();
+    this.tryInfiniteScrollFallback();
   }
 
   ngOnDestroy() {
@@ -166,7 +169,26 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.codexObserver?.disconnect();
     this.wishlistObserver?.disconnect();
     this.mercadoObserver?.disconnect();
+    this.detachContentScrollListener();
   }
+
+  private attachContentScrollListener() {
+    this.detachContentScrollListener();
+    const el = document.querySelector('main.content') as HTMLElement | null;
+    if (!el) return;
+    this.contentScrollEl = el;
+    this.contentScrollEl.addEventListener('scroll', this.onContentScroll, { passive: true });
+  }
+
+  private detachContentScrollListener() {
+    if (!this.contentScrollEl) return;
+    this.contentScrollEl.removeEventListener('scroll', this.onContentScroll);
+    this.contentScrollEl = null;
+  }
+
+  private onContentScroll = () => {
+    this.tryInfiniteScrollFallback();
+  };
 
   switchTab(tab: Tab) {
     this.activeTab = tab;
@@ -182,6 +204,7 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
       this.setupCodexObserver();
       this.setupWishlistObserver();
       this.setupMercadoObserver();
+      this.tryInfiniteScrollFallback();
     });
   }
 
@@ -267,7 +290,10 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
         this.collectionHasMore = !!res.next;
         this.collectionLoading = false;
         this.cdr.detectChanges();
-        queueMicrotask(() => this.setupCollectionObserver());
+        queueMicrotask(() => {
+          this.setupCollectionObserver();
+          this.tryInfiniteScrollFallback();
+        });
       },
       error: () => { this.collectionLoading = false; this.cdr.detectChanges(); },
     });
@@ -354,7 +380,10 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
         this.codexHasMore = !!res.next;
         this.codexLoading = false;
         this.cdr.detectChanges();
-        queueMicrotask(() => this.setupCodexObserver());
+        queueMicrotask(() => {
+          this.setupCodexObserver();
+          this.tryInfiniteScrollFallback();
+        });
       },
       error: () => { this.codexLoading = false; this.cdr.detectChanges(); },
     });
@@ -520,7 +549,10 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
         this.wishlistHasMore = !!res.next;
         this.wishlistLoading = false;
         this.cdr.detectChanges();
-        queueMicrotask(() => this.setupWishlistObserver());
+        queueMicrotask(() => {
+          this.setupWishlistObserver();
+          this.tryInfiniteScrollFallback();
+        });
       },
       error: () => { this.wishlistLoading = false; this.cdr.detectChanges(); },
     });
@@ -572,6 +604,10 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private isNearPageBottom(offset = 900): boolean {
+    const container = this.contentScrollEl;
+    if (container && container.scrollHeight > container.clientHeight) {
+      return container.scrollTop + container.clientHeight >= container.scrollHeight - 420;
+    }
     const doc = document.documentElement;
     const body = document.body;
     const scrollTop = window.scrollY || doc.scrollTop || 0;
@@ -656,7 +692,10 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
         this.mercadoLoading = false;
         if (!append) this.loadAssignedSummary();
         this.cdr.detectChanges();
-        queueMicrotask(() => this.setupMercadoObserver());
+        queueMicrotask(() => {
+          this.setupMercadoObserver();
+          this.tryInfiniteScrollFallback();
+        });
       },
       error: () => { this.mercadoLoading = false; this.cdr.detectChanges(); },
     });

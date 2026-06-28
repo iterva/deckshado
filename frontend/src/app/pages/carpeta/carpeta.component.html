@@ -32,6 +32,12 @@
     <button class="tab" [class.active]="activeTab === 'mercado'" (click)="switchTab('mercado')">
       🏪 MERCADO
     </button>
+    <button class="tab" [class.active]="activeTab === 'pedidos'" (click)="switchTab('pedidos')">
+      🧾 PEDIDOS
+    </button>
+    <button class="tab" [class.active]="activeTab === 'historial'" (click)="switchTab('historial')">
+      🕘 HISTORIAL
+    </button>
     <button class="tab" [class.active]="activeTab === 'stats'" (click)="switchTab('stats')">
       📊 STATS
     </button>
@@ -605,6 +611,10 @@
                   <input type="number" [value]="entry.selling_quantity" min="0" [max]="entry.quantity"
                     (input)="onMercadoFieldChange(entry, 'selling_quantity', $any($event.target).valueAsNumber)" />
                 </div>
+                <div class="field">
+                  <label>Asignadas</label>
+                  <input type="number" [value]="assignedForEntry(entry.id)" readonly />
+                </div>
               </div>
               <div class="card-action-row">
                 @if (mercadoDirty.has(entry.id)) {
@@ -668,6 +678,126 @@
           <button class="btn btn-sm" (click)="mercadoNext()" [disabled]="mercadoPage >= mercadoTotalPages">Siguiente →</button>
         </div>
       }
+    </div>
+  }
+
+  <!-- ═══ TAB: PEDIDOS (Pendientes) ═══ -->
+  @if (activeTab === 'pedidos') {
+    <div class="tab-content">
+      <div class="orders-toolbar">
+        <button class="btn btn-sm" (click)="loadPendingOrders()">🔄 Recargar</button>
+      </div>
+
+      @if (ordersLoading) {
+        <div class="loading">Cargando pedidos...</div>
+      }
+
+      @if (!ordersLoading && pendingOrders.length === 0) {
+        <div class="empty-state">
+          <p>No tienes pedidos pendientes.</p>
+        </div>
+      }
+
+      <div class="orders-grid">
+        @for (o of pendingOrders; track o.id) {
+          <div class="order-card">
+            <div class="order-head">
+              <h4>Pedido #{{ o.id }}</h4>
+              <span class="order-status pending">{{ orderStatusLabel(o.status) }}</span>
+            </div>
+            <p class="order-meta">Comprador: <strong>{{ o.buyer_name || o.buyer_username || 'Anónimo' }}</strong></p>
+            <p class="order-meta">WhatsApp: <strong>{{ o.buyer_whatsapp || '—' }}</strong></p>
+            <p class="order-meta">Creado: {{ o.created_at | date:'short' }}</p>
+            @if (o.total_estimated != null) {
+              <p class="order-meta">Total estimado: <strong>${{ o.total_estimated | number:'1.0-0':'es-CL' }}</strong></p>
+            }
+            @if (o.buyer_note) {
+              <p class="order-note">📝 {{ o.buyer_note }}</p>
+            }
+            <div class="order-items">
+              @for (it of o.items; track it.id) {
+                <div class="order-item-row">
+                  <span>{{ it.quantity }}x {{ it.card_name || it.card_detail?.name || ('Carta #' + it.card) }}</span>
+                  <span>
+                    @if (it.line_total != null) {
+                      ${{ it.line_total | number:'1.0-0':'es-CL' }}
+                    } @else {
+                      —
+                    }
+                  </span>
+                </div>
+              }
+            </div>
+            <div class="order-actions">
+              <button class="btn btn-sm btn-primary" (click)="acceptOrder(o)">✅ Aceptar</button>
+              <button class="btn btn-sm btn-danger" (click)="cancelOrder(o)">❌ Cancelar</button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ═══ TAB: HISTORIAL (Aceptados/Cancelados) ═══ -->
+  @if (activeTab === 'historial') {
+    <div class="tab-content">
+      <div class="orders-toolbar">
+        <select [value]="historyStatusFilter" (change)="onHistoryFilterChange($any($event.target).value)">
+          <option value="">Todos</option>
+          <option value="accepted">Aceptados</option>
+          <option value="cancelled">Cancelados</option>
+        </select>
+        <button class="btn btn-sm" (click)="loadHistoryOrders()">🔄 Recargar</button>
+      </div>
+
+      @if (historyLoading) {
+        <div class="loading">Cargando historial...</div>
+      }
+
+      @if (!historyLoading && historyOrders.length === 0) {
+        <div class="empty-state">
+          <p>No hay pedidos en historial para este filtro.</p>
+        </div>
+      }
+
+      <div class="orders-grid history-grid">
+        @for (o of historyOrders; track o.id) {
+          <div class="order-card">
+            <div class="order-head">
+              <h4>Pedido #{{ o.id }}</h4>
+              <span class="order-status" [class.accepted]="o.status === 'accepted'" [class.cancelled]="o.status === 'cancelled'">
+                {{ orderStatusLabel(o.status) }}
+              </span>
+            </div>
+            <p class="order-meta">Comprador: <strong>{{ o.buyer_name || o.buyer_username || 'Anónimo' }}</strong></p>
+            <p class="order-meta">Creado: {{ o.created_at | date:'short' }}</p>
+            <p class="order-meta">Cierre: {{ o.responded_at ? (o.responded_at | date:'short') : '—' }}</p>
+            @if (o.total_estimated != null) {
+              <p class="order-meta">Total estimado: <strong>${{ o.total_estimated | number:'1.0-0':'es-CL' }}</strong></p>
+            }
+            @if (o.buyer_note) {
+              <p class="order-note">📝 {{ o.buyer_note }}</p>
+            }
+            @if (o.seller_note) {
+              <p class="order-note">Nota vendedor: {{ o.seller_note }}</p>
+            }
+            <div class="order-items">
+              @for (it of o.items; track it.id) {
+                <div class="order-item-row">
+                  <span>{{ it.quantity }}x {{ it.card_name || it.card_detail?.name || ('Carta #' + it.card) }}</span>
+                  <span>
+                    @if (it.line_total != null) {
+                      ${{ it.line_total | number:'1.0-0':'es-CL' }}
+                    } @else {
+                      —
+                    }
+                  </span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
     </div>
   }
 

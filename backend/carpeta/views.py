@@ -6,12 +6,13 @@ from rest_framework.decorators import api_view, permission_classes, parser_class
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
+from django.db import transaction
 from django.db.models import Q, Count, Sum, F
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from backend.cdn_image_upload import upload_image_to_cdn, CdnImageUploadError
 
-from .models import BinderProfile, CollectionEntry, WishlistEntry
+from .models import BinderProfile, CollectionEntry, WishlistEntry, StoreOrder, StoreOrderItem
 from .serializers import (
     BinderProfileSerializer,
     PublicBinderProfileSerializer,
@@ -19,6 +20,8 @@ from .serializers import (
     CollectionEntryWriteSerializer,
     WishlistEntrySerializer,
     WishlistEntryWriteSerializer,
+    StoreOrderSerializer,
+    StoreOrderCreateSerializer,
 )
 
 
@@ -529,6 +532,234 @@ class PublicStoreIndexView(generics.ListAPIView):
         if ordering in allowed:
             qs = qs.order_by(ordering)
         return qs
+
+
+def _create_store_order(profile, buyer_user, payload):
+    items = payload.get("items") or []
+    if not items:
+        raise ValueError("Debes enviar al menos una carta en el pedido.")
+
+    requested_by_entry = {}
+    for row in items:
+        entry_id = int(row["entry_id"])
+        qty = int(row["quantity"])
+        requested_by_entry[entry_id] = requested_by_entry.get(entry_id, 0) + qty
+
+    entry_ids = list(requested_by_entry.keys())
+    with transaction.atomic():
+        entries_qs = (
+            CollectionEntry.objects.select_for_update()
+            .filter(user=profile.user, id__in=entry_ids)
+            .select_related("card")
+        )
+        entry_map = {e.id: e for e in entries_qs}
+
+        missing_ids = [eid for eid in entry_ids if eid not in entry_map]
+        if missing_ids:
+            raise ValueError("Algunas cartas ya no estan disponibles en la tienda.")
+
+        for entry_id, qty in requested_by_entry.items():
+            entry = entry_map[entry_id]
+            if entry.selling_quantity <= 0:
+                raise ValueError(f"{entry.card.name} ya no esta disponible.")
+            if qty > entry.selling_quantity:
+                raise ValueError(
+                    f"Stock insuficiente para {entry.card.name}: pediste {qty}, disponible {entry.selling_quantity}."
+                )
+
+        buyer_name = (str(payload.get("buyer_name") or "").strip())[:100]
+        buyer_whatsapp = (str(payload.get("buyer_whatsapp") or "").strip())[:30]
+        buyer_note = (str(payload.get("buyer_note") or "").strip())[:800]
+
+        if not buyer_name and buyer_user is not None:
+            buyer_name = buyer_user.username
+
+        order = StoreOrder.objects.create(
+            store_profile=profile,
+            buyer_user=buyer_user,
+            buyer_name=buyer_name,
+            buyer_whatsapp=buyer_whatsapp,
+            buyer_note=buyer_note,
+            status=StoreOrder.STATUS_PENDING,
+        )
+
+        total_estimated = 0
+        has_priced_items = False
+
+        for entry_id, qty in requested_by_entry.items():
+            entry = entry_map[entry_id]
+            unit_price = entry.price
+            line_total = unit_price * qty if unit_price is not None else None
+
+            StoreOrderItem.objects.create(
+                order=order,
+                collection_entry=entry,
+                card=entry.card,
+                quantity=qty,
+                unit_price=unit_price,
+                line_total=line_total,
+                card_name=entry.card.name,
+                card_edid=entry.card.edid,
+                language=entry.language,
+                is_foil=entry.is_foil,
+            )
+
+            # Reserva de stock: sale de "en venta" y queda asignado al pedido.
+            entry.selling_quantity = max(0, entry.selling_quantity - qty)
+            entry.save(update_fields=["selling_quantity"])
+
+            if line_total is not None:
+                total_estimated += line_total
+                has_priced_items = True
+
+        if has_priced_items:
+            order.total_estimated = total_estimated
+            order.save(update_fields=["total_estimated"])
+
+    return (
+        StoreOrder.objects.select_related("store_profile", "store_profile__user", "buyer_user")
+        .prefetch_related("items", "items__card")
+        .get(pk=order.pk)
+    )
+
+
+class PublicStoreOrderCreateView(generics.GenericAPIView):
+    permission_classes = [permissions.AllowAny]
+    serializer_class = StoreOrderCreateSerializer
+
+    def post(self, request, *args, **kwargs):
+        profile = _resolve_public_profile(self.kwargs["token"])
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        buyer_user = request.user if request.user.is_authenticated else None
+        try:
+            order = _create_store_order(profile, buyer_user, serializer.validated_data)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            StoreOrderSerializer(order, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class MyStoreOrderListView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = StoreOrderSerializer
+
+    def get_queryset(self):
+        qs = (
+            StoreOrder.objects.filter(store_profile__user=self.request.user)
+            .select_related("store_profile", "store_profile__user", "buyer_user")
+            .prefetch_related("items", "items__card")
+        )
+        status_filter = (self.request.query_params.get("status") or "").strip().lower()
+        if status_filter == "history":
+            return qs.filter(status__in=[StoreOrder.STATUS_ACCEPTED, StoreOrder.STATUS_CANCELLED])
+        allowed = {
+            StoreOrder.STATUS_PENDING,
+            StoreOrder.STATUS_ACCEPTED,
+            StoreOrder.STATUS_CANCELLED,
+        }
+        if status_filter in allowed:
+            qs = qs.filter(status=status_filter)
+        return qs
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def my_order_assignments(request):
+    rows = (
+        StoreOrderItem.objects.filter(
+            order__store_profile__user=request.user,
+            order__status=StoreOrder.STATUS_PENDING,
+            collection_entry__isnull=False,
+        )
+        .values("collection_entry_id")
+        .annotate(assigned=Sum("quantity"))
+    )
+    return Response({
+        "assigned_by_entry": {
+            int(row["collection_entry_id"]): int(row["assigned"] or 0)
+            for row in rows
+            if row["collection_entry_id"] is not None
+        }
+    })
+
+
+def _update_order_status(request, order_id, new_status):
+    if new_status not in {StoreOrder.STATUS_ACCEPTED, StoreOrder.STATUS_CANCELLED}:
+        return Response({"detail": "Estado invalido."}, status=status.HTTP_400_BAD_REQUEST)
+
+    with transaction.atomic():
+        try:
+            order = (
+                StoreOrder.objects.select_for_update()
+                .select_related("store_profile", "store_profile__user", "buyer_user")
+                .prefetch_related("items")
+                .get(pk=order_id, store_profile__user=request.user)
+            )
+        except StoreOrder.DoesNotExist:
+            return Response({"detail": "Pedido no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+        if order.status != StoreOrder.STATUS_PENDING:
+            return Response({"detail": "Solo puedes gestionar pedidos pendientes."}, status=status.HTTP_400_BAD_REQUEST)
+
+        items = list(order.items.all())
+        entry_ids = [it.collection_entry_id for it in items if it.collection_entry_id]
+        entry_map = {}
+        if entry_ids:
+            entry_map = {
+                e.id: e
+                for e in CollectionEntry.objects.select_for_update().filter(
+                    id__in=entry_ids,
+                    user=request.user,
+                )
+            }
+
+        for item in items:
+            if not item.collection_entry_id:
+                continue
+            entry = entry_map.get(item.collection_entry_id)
+            if not entry:
+                continue
+
+            qty = max(0, int(item.quantity or 0))
+            if new_status == StoreOrder.STATUS_CANCELLED:
+                # Devuelve la reserva al stock visible en tienda.
+                entry.selling_quantity = min(entry.quantity, entry.selling_quantity + qty)
+                entry.save(update_fields=["selling_quantity"])
+            else:
+                # Consolida venta: baja stock real y limpia exceso en venta.
+                entry.quantity = max(0, entry.quantity - qty)
+                if entry.selling_quantity > entry.quantity:
+                    entry.selling_quantity = entry.quantity
+                entry.save(update_fields=["quantity", "selling_quantity"])
+
+        order.status = new_status
+        order.responded_at = timezone.now()
+        order.seller_note = str((request.data or {}).get("seller_note") or "").strip()[:800]
+        order.save(update_fields=["status", "responded_at", "seller_note", "updated_at"])
+
+    payload = (
+        StoreOrder.objects.select_related("store_profile", "store_profile__user", "buyer_user")
+        .prefetch_related("items", "items__card")
+        .get(pk=order.pk)
+    )
+    return Response(StoreOrderSerializer(payload, context={"request": request}).data)
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def accept_store_order(request, order_id):
+    return _update_order_status(request, order_id, StoreOrder.STATUS_ACCEPTED)
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def cancel_store_order(request, order_id):
+    return _update_order_status(request, order_id, StoreOrder.STATUS_CANCELLED)
 
 
 @api_view(["GET"])

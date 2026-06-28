@@ -5,7 +5,7 @@ from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from cards.models import Edition, Card
-from carpeta.models import CollectionEntry, WishlistEntry, BinderProfile
+from carpeta.models import CollectionEntry, WishlistEntry, BinderProfile, StoreOrder
 
 User = get_user_model()
 
@@ -141,3 +141,108 @@ class ShareTokenTests(CarpetaSetupMixin, APITestCase):
     def test_anonymous_cannot_access_share_token(self):
         resp = self.client.get(reverse("share-token"))
         self.assertEqual(resp.status_code, 401)
+
+
+class StoreOrderTests(CarpetaSetupMixin, APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.seller = cls.other
+        cls.profile = BinderProfile.objects.create(user=cls.seller, is_store_public=True)
+        cls.entry = CollectionEntry.objects.create(
+            user=cls.seller,
+            card=cls.card,
+            quantity=5,
+            price=1000,
+            selling_quantity=4,
+            condition="NM",
+            language="ES",
+            is_foil=False,
+        )
+
+    def _create_order(self):
+        payload = {
+            "buyer_name": "Comprador Test",
+            "buyer_whatsapp": "+56911111111",
+            "buyer_note": "Retiro en metro",
+            "items": [{"entry_id": self.entry.id, "quantity": 2}],
+        }
+        create_url = reverse("public-store-orders", args=[str(self.profile.share_token)])
+        return self.client.post(create_url, payload, format="json")
+
+    def test_public_create_order_reserves_selling_stock(self):
+        resp = self._create_order()
+        self.assertEqual(resp.status_code, 201)
+        self.entry.refresh_from_db()
+        self.assertEqual(self.entry.quantity, 5)
+        self.assertEqual(self.entry.selling_quantity, 2)
+        self.assertEqual(resp.data["status"], StoreOrder.STATUS_PENDING)
+
+    def test_owner_list_only_returns_own_orders(self):
+        self._create_order()
+
+        _auth(self.client, self.seller)
+        mine = self.client.get(reverse("my-store-orders"))
+        self.assertEqual(mine.status_code, 200)
+        mine_results = mine.data.get("results", mine.data)
+        self.assertEqual(len(mine_results), 1)
+
+        _auth(self.client, self.user)
+        other = self.client.get(reverse("my-store-orders"))
+        self.assertEqual(other.status_code, 200)
+        other_results = other.data.get("results", other.data)
+        self.assertEqual(len(other_results), 0)
+
+    def test_accept_order_discounts_real_stock(self):
+        created = self._create_order()
+        order_id = created.data["id"]
+
+        _auth(self.client, self.seller)
+        resp = self.client.post(reverse("accept-store-order", args=[order_id]), {}, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["status"], StoreOrder.STATUS_ACCEPTED)
+
+        self.entry.refresh_from_db()
+        self.assertEqual(self.entry.quantity, 3)
+        self.assertEqual(self.entry.selling_quantity, 2)
+        self.assertIsNotNone(resp.data["responded_at"])
+
+    def test_cancel_order_restores_reserved_selling_stock(self):
+        created = self._create_order()
+        order_id = created.data["id"]
+
+        _auth(self.client, self.seller)
+        resp = self.client.post(reverse("cancel-store-order", args=[order_id]), {}, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["status"], StoreOrder.STATUS_CANCELLED)
+
+        self.entry.refresh_from_db()
+        self.assertEqual(self.entry.quantity, 5)
+        self.assertEqual(self.entry.selling_quantity, 4)
+        self.assertIsNotNone(resp.data["responded_at"])
+
+    def test_assigned_summary_counts_only_pending_orders(self):
+        created = self._create_order()
+        order_id = created.data["id"]
+
+        _auth(self.client, self.seller)
+        summary = self.client.get(reverse("my-store-order-assignments"))
+        self.assertEqual(summary.status_code, 200)
+        assigned_map = summary.data["assigned_by_entry"]
+        assigned = assigned_map.get(self.entry.id, assigned_map.get(str(self.entry.id)))
+        self.assertEqual(assigned, 2)
+
+        self.client.post(reverse("accept-store-order", args=[order_id]), {}, format="json")
+        summary_after = self.client.get(reverse("my-store-order-assignments"))
+        self.assertEqual(summary_after.status_code, 200)
+        key_set = set(summary_after.data["assigned_by_entry"].keys())
+        self.assertNotIn(self.entry.id, key_set)
+        self.assertNotIn(str(self.entry.id), key_set)
+
+    def test_non_owner_cannot_manage_order(self):
+        created = self._create_order()
+        order_id = created.data["id"]
+
+        _auth(self.client, self.user)
+        resp = self.client.post(reverse("accept-store-order", args=[order_id]), {}, format="json")
+        self.assertEqual(resp.status_code, 404)

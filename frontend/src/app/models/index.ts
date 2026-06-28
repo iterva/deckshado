@@ -246,3 +246,54 @@ export interface CarpetaIds {
   collection: { [cardId: number]: number };
   wishlist: number[];
 }
+
+export type StoreOrderStatus = 'pending' | 'accepted' | 'cancelled';
+
+export interface StoreOrderItem {
+  id: number;
+  collection_entry: number | null;
+  card: number;
+  card_detail?: Card;
+  quantity: number;
+  unit_price: number | null;
+  line_total: number | null;
+  card_name: string;
+  card_edid: string;
+  language: CardLanguage;
+  is_foil: boolean;
+}
+
+export interface StoreOrder {
+  id: number;
+  store_profile: number;
+  store_owner: string;
+  buyer_user: number | null;
+  buyer_username?: string;
+  buyer_name: string;
+  buyer_whatsapp: string;
+  buyer_note: string;
+  seller_note: string;
+  status: StoreOrderStatus;
+  total_estimated: number | null;
+  total_items: number;
+  responded_at: string | null;
+  created_at: string;
+  updated_at: string;
+  items: StoreOrderItem[];
+}
+
+export interface StoreOrderCreateItem {
+  entry_id: number;
+  quantity: number;
+}
+
+export interface StoreOrderCreatePayload {
+  buyer_name: string;
+  buyer_whatsapp: string;
+  buyer_note?: string;
+  items: StoreOrderCreateItem[];
+}
+
+export interface StoreOrderAssignedSummary {
+  assigned_by_entry: Record<number, number>;
+}

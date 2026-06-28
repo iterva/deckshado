@@ -7,7 +7,7 @@ import { RiftboundService } from '../../../services/riftbound.service';
 import { AuthService } from '../../../services/auth.service';
 import {
   RiftboundCollectionEntry, RiftboundCardLite, RiftboundPublicBinderProfile,
-  RiftboundWishlistEntry,
+  RiftboundWishlistEntry, RiftboundStoreOrder,
 } from '../../../models/riftbound';
 import { ShareImageComponent, ShareImageItem } from '../../../components/share-image/share-image.component';
 import { CardPhotoCarouselComponent } from '../../../components/card-photo-carousel/card-photo-carousel.component';
@@ -251,9 +251,28 @@ interface RiftboundCartItem {
               <strong>\${{ cartTotal() | number }}</strong>
               @if (cartHasUnpriced()) { <small class="warn">⚠ Hay cartas sin precio, consulta al vendedor.</small> }
             </div>
+            <div class="buyer-form">
+              <label>
+                <span>Tu nombre (opcional)</span>
+                <input type="text" [(ngModel)]="buyerName" maxlength="100" placeholder="Ej: Terva" />
+              </label>
+              <label>
+                <span>WhatsApp (opcional)</span>
+                <input type="text" [(ngModel)]="buyerWhatsapp" maxlength="30" placeholder="Ej: +56912345678" />
+              </label>
+              <label>
+                <span>Nota para vendedor (opcional)</span>
+                <textarea rows="2" [(ngModel)]="buyerNote" maxlength="800" placeholder="Ej: retiro en metro / prefiero envío"></textarea>
+              </label>
+            </div>
+            @if (orderError()) { <p class="order-msg error">{{ orderError() }}</p> }
+            @if (orderSuccess()) { <p class="order-msg ok">{{ orderSuccess() }}</p> }
             <div class="cart-actions">
+              <button class="btn btn-primary" (click)="submitOrder()" [disabled]="orderSubmitting() || cart().length === 0">
+                {{ orderSubmitting() ? '⏳ Enviando pedido...' : '✅ Crear pedido' }}
+              </button>
               @if (store()?.whatsapp) {
-                <button class="btn btn-primary" (click)="sendWhatsApp()">📱 Enviar pedido por WhatsApp</button>
+                <button class="btn btn-sm" (click)="sendWhatsApp()">📱 Enviar también por WhatsApp</button>
               }
               <button class="btn btn-sm" (click)="copyOrder()">📋 Copiar pedido</button>
               <button class="btn btn-sm" (click)="clearCart()">🗑️ Vaciar</button>
@@ -447,6 +466,17 @@ interface RiftboundCartItem {
     }
     .cart-total strong { color: #e94560; font-size: 1.1rem; }
     .cart-total .warn { width: 100%; color: #c89b3c; font-size: .8rem; }
+    .buyer-form { display: grid; gap: .45rem; margin: .5rem 0 .2rem; }
+    .buyer-form label { display: flex; flex-direction: column; gap: .2rem; }
+    .buyer-form span { font-size: .78rem; color: #9ba3b4; }
+    .buyer-form input, .buyer-form textarea {
+      background: #0f0f23; color: #c8c8da; border: 1px solid #2a3a4a;
+      border-radius: 6px; padding: .45rem .55rem; font-size: .85rem;
+    }
+    .buyer-form input:focus, .buyer-form textarea:focus { outline: none; border-color: #e94560; }
+    .order-msg { margin: .45rem 0 0; font-size: .83rem; }
+    .order-msg.error { color: #fda4af; }
+    .order-msg.ok { color: #86efac; }
     .cart-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .6rem; }
     .cart-actions .btn-primary { flex: 1 1 100%; }
 
@@ -499,6 +529,12 @@ export class RiftboundTiendaComponent implements OnInit {
   // Cart
   cart = signal<RiftboundCartItem[]>([]);
   showCart = signal(false);
+  orderSubmitting = signal(false);
+  orderError = signal<string | null>(null);
+  orderSuccess = signal<string | null>(null);
+  buyerName = '';
+  buyerWhatsapp = '';
+  buyerNote = '';
 
   // Tabs / wishlist
   activeTab = signal<'store' | 'wishlist'>('store');
@@ -638,6 +674,8 @@ export class RiftboundTiendaComponent implements OnInit {
       });
     }
     this.cart.set(list);
+    this.orderError.set(null);
+    this.orderSuccess.set(null);
     this.saveCart();
     this.cdr.markForCheck();
   }
@@ -656,6 +694,35 @@ export class RiftboundTiendaComponent implements OnInit {
   }
 
   clearCart() { this.cart.set([]); this.saveCart(); }
+
+  submitOrder() {
+    if (this.orderSubmitting() || this.cart().length === 0) return;
+
+    const payload = {
+      buyer_name: this.buyerName.trim() || undefined,
+      buyer_whatsapp: this.buyerWhatsapp.trim() || undefined,
+      buyer_note: this.buyerNote.trim() || undefined,
+      items: this.cart().map(c => ({ entry_id: c.entryId, quantity: c.qty })),
+    };
+
+    this.orderSubmitting.set(true);
+    this.orderError.set(null);
+    this.orderSuccess.set(null);
+    this.rb.createPublicStoreOrder(this.token, payload).subscribe({
+      next: (order: RiftboundStoreOrder) => {
+        this.orderSubmitting.set(false);
+        this.orderSuccess.set(`Pedido #${order.id} enviado. El vendedor ya tiene la reserva de stock.`);
+        this.clearCart();
+        this.reload();
+        this.cdr.markForCheck();
+      },
+      error: err => {
+        this.orderSubmitting.set(false);
+        this.orderError.set(err?.error?.detail || 'No se pudo crear el pedido. Intenta nuevamente.');
+        this.cdr.markForCheck();
+      },
+    });
+  }
 
   buildOrderText(): string {
     const s = this.store();

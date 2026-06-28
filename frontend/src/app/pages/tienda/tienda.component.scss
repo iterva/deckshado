@@ -93,6 +93,16 @@
 .flex-spacer { flex: 1; }
 .wishlist-card .qty-tag { background: #c0392b22; color: #ff7e7e; }
 
+.order-created-banner {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid rgba(110, 231, 183, 0.5);
+  background: rgba(16, 185, 129, 0.12);
+  color: #bbf7d0;
+  font-size: 0.86rem;
+}
+
 // ── Filters bar ──
 .filters-bar {
   display: flex; gap: 0.4rem; flex-wrap: wrap;
@@ -411,6 +421,63 @@
     display: flex; flex-wrap: wrap; gap: 0.4rem;
     .btn-primary { flex: 1 1 100%; padding: 0.7rem; font-weight: 700; }
   }
+
+  .buyer-form {
+    margin-top: 0.75rem;
+    padding: 0.7rem;
+    border-radius: 8px;
+    border: 1px solid #2a2a4a;
+    background: #15152a;
+
+    h4 {
+      margin: 0 0 0.45rem;
+      color: #93c5fd;
+      font-size: 0.9rem;
+    }
+
+    .buyer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+
+      label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+
+        span {
+          color: #aab3c2;
+          font-size: 0.75rem;
+        }
+
+        input,
+        textarea {
+          width: 100%;
+          border: 1px solid #333;
+          border-radius: 6px;
+          background: #101024;
+          color: #f3f4f6;
+          padding: 0.4rem 0.55rem;
+          font-size: 0.82rem;
+
+          &:focus {
+            outline: none;
+            border-color: #00d4ff;
+          }
+        }
+      }
+
+      .full {
+        grid-column: 1 / -1;
+      }
+    }
+
+    .order-error {
+      margin: 0.45rem 0 0;
+      color: #fca5a5;
+      font-size: 0.8rem;
+    }
+  }
 }
 
 // ── Contact modal ──
@@ -558,6 +625,10 @@
   .cart-modal {
     padding: 0.9rem;
     max-height: 88vh;
+
+    .buyer-form .buyer-grid {
+      grid-template-columns: 1fr;
+    }
   }
 }
 

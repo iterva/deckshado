@@ -911,6 +911,106 @@
   font-style: italic;
 }
 
+.orders-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.8rem;
+
+  select {
+    min-width: 150px;
+    padding: 0.4rem 0.55rem;
+    border-radius: 6px;
+    border: 1px solid #333;
+    background: #1e1e3a;
+    color: #e0e0e0;
+    font-size: 0.82rem;
+
+    &:focus {
+      outline: none;
+      border-color: #00d4ff;
+    }
+  }
+}
+
+.orders-grid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.history-grid {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.order-card {
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 10px;
+  padding: 0.8rem;
+
+  .order-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+
+    h4 {
+      margin: 0;
+      color: #fff;
+      font-size: 0.95rem;
+    }
+  }
+
+  .order-status {
+    border-radius: 999px;
+    border: 1px solid #2a2a4a;
+    padding: 0.15rem 0.55rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+
+    &.pending { color: #fbbf24; border-color: #fbbf24; }
+    &.accepted { color: #34d399; border-color: #34d399; }
+    &.cancelled { color: #f87171; border-color: #f87171; }
+  }
+
+  .order-meta {
+    margin: 0.35rem 0;
+    color: #9ca3af;
+    font-size: 0.82rem;
+  }
+
+  .order-note {
+    margin: 0.4rem 0;
+    color: #d1d5db;
+    font-size: 0.83rem;
+  }
+
+  .order-items {
+    margin-top: 0.45rem;
+    border-top: 1px dashed #2a2a4a;
+    padding-top: 0.45rem;
+    display: grid;
+    gap: 0.3rem;
+  }
+
+  .order-item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    color: #d1d5db;
+    font-size: 0.82rem;
+  }
+
+  .order-actions {
+    margin-top: 0.6rem;
+    display: flex;
+    gap: 0.45rem;
+  }
+}
+
 .mercado-card {
   border-left: 3px solid #ffbd39;
   position: relative;
@@ -1493,6 +1593,28 @@
     font-size: 0.8rem;
 
     .btn { font-size: 0.75rem; }
+  }
+
+  .orders-toolbar {
+    select {
+      flex: 1 1 100%;
+      min-width: 0;
+    }
+  }
+
+  .orders-grid,
+  .history-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .order-card {
+    .order-actions {
+      flex-direction: column;
+
+      .btn {
+        width: 100%;
+      }
+    }
   }
 }
 

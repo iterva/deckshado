@@ -8,6 +8,9 @@ import {
   CollectionEntry,
   WishlistEntry,
   CarpetaIds,
+  StoreOrder,
+  StoreOrderCreatePayload,
+  StoreOrderAssignedSummary,
   PaginatedResponse,
 } from '../models';
 
@@ -153,6 +156,34 @@ export class CarpetaService {
     });
     return this.http.get<PaginatedResponse<WishlistEntry> & { store: PublicBinderProfile }>(
       `${this.apiUrl}/wishlist-public/${tokenOrSlug}/`, { params });
+  }
+
+  createPublicStoreOrder(tokenOrSlug: string, payload: StoreOrderCreatePayload): Observable<StoreOrder> {
+    return this.http.post<StoreOrder>(`${this.apiUrl}/store/${tokenOrSlug}/orders/`, payload);
+  }
+
+  listMyStoreOrders(opts: { status?: 'pending' | 'accepted' | 'cancelled' | 'history'; page?: number } = {})
+    : Observable<PaginatedResponse<StoreOrder>> {
+    let params = new HttpParams();
+    if (opts.status) params = params.set('status', opts.status);
+    if (opts.page) params = params.set('page', String(opts.page));
+    return this.http.get<PaginatedResponse<StoreOrder>>(`${this.apiUrl}/orders/mine/`, { params });
+  }
+
+  acceptStoreOrder(orderId: number, sellerNote?: string): Observable<StoreOrder> {
+    return this.http.post<StoreOrder>(`${this.apiUrl}/orders/${orderId}/accept/`, {
+      seller_note: sellerNote || '',
+    });
+  }
+
+  cancelStoreOrder(orderId: number, sellerNote?: string): Observable<StoreOrder> {
+    return this.http.post<StoreOrder>(`${this.apiUrl}/orders/${orderId}/cancel/`, {
+      seller_note: sellerNote || '',
+    });
+  }
+
+  getMyOrderAssignedSummary(): Observable<StoreOrderAssignedSummary> {
+    return this.http.get<StoreOrderAssignedSummary>(`${this.apiUrl}/orders/mine/assigned-summary/`);
   }
 
   // ── Stats ──

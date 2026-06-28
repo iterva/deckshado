@@ -6,7 +6,17 @@ import { CarpetaService, StoreFilters } from '../../services/carpeta.service';
 import { CardService } from '../../services/card.service';
 import { AuthService } from '../../services/auth.service';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
-import { CollectionEntry, Card, PublicBinderProfile, Edition, Race, Rarity, CardType, WishlistEntry } from '../../models';
+import {
+  CollectionEntry,
+  Card,
+  PublicBinderProfile,
+  Edition,
+  Race,
+  Rarity,
+  CardType,
+  WishlistEntry,
+  StoreOrderCreatePayload,
+} from '../../models';
 import { ShareImageComponent, ShareImageItem } from '../../components/share-image/share-image.component';
 import { CardPhotoCarouselComponent } from '../../components/card-photo-carousel/card-photo-carousel.component';
 
@@ -57,6 +67,12 @@ export class TiendaComponent implements OnInit {
 
   // Cart (localStorage scoped per token/slug)
   cart: CartItem[] = [];
+  buyerName = '';
+  buyerWhatsapp = '';
+  buyerNote = '';
+  orderSubmitting = false;
+  orderError = '';
+  createdOrderId: number | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -75,6 +91,7 @@ export class TiendaComponent implements OnInit {
     const dt = this.route.snapshot.data?.['defaultTab'];
     if (dt === 'wishlist') this.activeTab = 'wishlist';
     this.loadCart();
+    this.buyerName = this.auth.user()?.username || '';
     this.loadFilters();
     this.loadStore();
     if (this.activeTab === 'wishlist') this.loadWishlist();
@@ -184,6 +201,8 @@ export class TiendaComponent implements OnInit {
       });
     }
     this.saveCart();
+    this.createdOrderId = null;
+    this.orderError = '';
     this.cdr.detectChanges();
   }
 
@@ -201,6 +220,13 @@ export class TiendaComponent implements OnInit {
   }
 
   clearCart() { this.cart = []; this.saveCart(); }
+
+  canSubmitOrder(): boolean {
+    return this.cart.length > 0
+      && !this.orderSubmitting
+      && !!this.buyerName.trim()
+      && !!this.buyerWhatsapp.trim();
+  }
 
   get cartCount(): number { return this.cart.reduce((s, c) => s + c.qty, 0); }
   get cartTotal(): number {
@@ -236,6 +262,35 @@ export class TiendaComponent implements OnInit {
 
   copyOrder() {
     navigator.clipboard.writeText(this.buildOrderText());
+  }
+
+  createOrder() {
+    if (!this.canSubmitOrder()) return;
+    this.orderSubmitting = true;
+    this.orderError = '';
+
+    const payload: StoreOrderCreatePayload = {
+      buyer_name: this.buyerName.trim(),
+      buyer_whatsapp: this.buyerWhatsapp.trim(),
+      buyer_note: (this.buyerNote || '').trim(),
+      items: this.cart.map((item) => ({ entry_id: item.entryId, quantity: item.qty })),
+    };
+
+    this.carpetaService.createPublicStoreOrder(this.token, payload).subscribe({
+      next: (order) => {
+        this.createdOrderId = order.id;
+        this.orderSubmitting = false;
+        this.clearCart();
+        this.showCart = false;
+        this.loadStore();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.orderSubmitting = false;
+        this.orderError = err?.error?.detail || 'No se pudo crear el pedido. Revisa stock y vuelve a intentar.';
+        this.cdr.detectChanges();
+      },
+    });
   }
 
   // ── Tabs / Wishlist ──

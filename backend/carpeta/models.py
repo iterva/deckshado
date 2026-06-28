@@ -115,3 +115,68 @@ class WishlistEntry(models.Model):
 
     def __str__(self):
         return f"{self.user.username} quiere {self.desired_quantity}x {self.card.name}"
+
+
+class StoreOrder(models.Model):
+    STATUS_PENDING = "pending"
+    STATUS_ACCEPTED = "accepted"
+    STATUS_CANCELLED = "cancelled"
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pendiente"),
+        (STATUS_ACCEPTED, "Aceptado"),
+        (STATUS_CANCELLED, "Cancelado"),
+    ]
+
+    store_profile = models.ForeignKey(BinderProfile, on_delete=models.CASCADE, related_name="store_orders")
+    buyer_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="myl_store_orders",
+    )
+    buyer_name = models.CharField(max_length=100, blank=True, default="")
+    buyer_whatsapp = models.CharField(max_length=30, blank=True, default="")
+    buyer_note = models.TextField(max_length=800, blank=True, default="")
+    seller_note = models.TextField(max_length=800, blank=True, default="")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING, db_index=True)
+    total_estimated = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Total estimado en moneda local (sumatoria de line_total con precio conocido).",
+    )
+    responded_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        buyer = self.buyer_name or (self.buyer_user.username if self.buyer_user_id else "Comprador")
+        return f"Pedido #{self.id} {buyer} -> {self.store_profile.user.username} ({self.status})"
+
+
+class StoreOrderItem(models.Model):
+    order = models.ForeignKey(StoreOrder, on_delete=models.CASCADE, related_name="items")
+    collection_entry = models.ForeignKey(
+        CollectionEntry,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="order_items",
+    )
+    card = models.ForeignKey("cards.Card", on_delete=models.PROTECT, related_name="store_order_items")
+    quantity = models.PositiveIntegerField(default=1)
+    unit_price = models.PositiveIntegerField(null=True, blank=True)
+    line_total = models.PositiveIntegerField(null=True, blank=True)
+    card_name = models.CharField(max_length=200, blank=True, default="")
+    card_edid = models.CharField(max_length=20, blank=True, default="")
+    language = models.CharField(max_length=4, choices=LANGUAGE_CHOICES, default="ES")
+    is_foil = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["id"]
+
+    def __str__(self):
+        return f"{self.quantity}x {self.card_name or self.card.name} (pedido #{self.order_id})"

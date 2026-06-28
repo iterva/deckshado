@@ -9,6 +9,8 @@ from .models import (
     RiftboundDeckEntry,
     RiftboundCollectionEntry,
     RiftboundWishlistEntry,
+    RiftboundStoreOrder,
+    RiftboundStoreOrderItem,
     RiftboundIcon,
 )
 
@@ -67,6 +69,22 @@ class RiftboundWishlistEntryAdmin(admin.ModelAdmin):
     list_display = ("user", "card", "desired_quantity")
     search_fields = ("user__username", "card__name")
     autocomplete_fields = ("card",)
+
+
+class StoreOrderItemInline(admin.TabularInline):
+    model = RiftboundStoreOrderItem
+    extra = 0
+    autocomplete_fields = ("card", "collection_entry")
+    readonly_fields = ("card_name", "card_number", "unit_price", "line_total", "language", "is_foil")
+
+
+@admin.register(RiftboundStoreOrder)
+class RiftboundStoreOrderAdmin(admin.ModelAdmin):
+    list_display = ("id", "store_profile", "status", "buyer_name", "buyer_user", "total_estimated", "created_at")
+    list_filter = ("status", "created_at")
+    search_fields = ("buyer_name", "buyer_whatsapp", "store_profile__user__username")
+    inlines = [StoreOrderItemInline]
+    readonly_fields = ("created_at", "updated_at", "responded_at")
 
 
 @admin.register(RiftboundIcon)

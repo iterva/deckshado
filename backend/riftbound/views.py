@@ -1,6 +1,8 @@
 import os
 
-from django.db.models import Q
+from django.db import transaction
+from django.db.models import Q, Count, Sum
+from django.utils import timezone
 from rest_framework import viewsets, permissions, status, filters, generics
 from rest_framework.decorators import action, api_view, permission_classes, parser_classes
 from rest_framework.pagination import PageNumberPagination
@@ -14,7 +16,7 @@ from .tcgplayer import get_tcg_price, get_tcg_prices_batch
 from .models import (
     RiftboundCard, RiftboundSet, RiftboundFormat, RiftboundBanlistEntry,
     RiftboundDeck, RiftboundCollectionEntry, RiftboundWishlistEntry, RiftboundIcon,
-    RiftboundBinderProfile,
+    RiftboundBinderProfile, RiftboundStoreOrder, RiftboundStoreOrderItem,
 )
 from .serializers import (
     RiftboundCardSerializer, RiftboundCardLiteSerializer,
@@ -23,8 +25,10 @@ from .serializers import (
     RiftboundCollectionEntrySerializer, RiftboundWishlistEntrySerializer,
     RiftboundIconSerializer,
     RiftboundBinderProfileSerializer, RiftboundPublicBinderProfileSerializer,
+    RiftboundStoreOrderSerializer, RiftboundStoreOrderCreateSerializer,
 )
 from .integrations.riftcodex import RiftcodexClient, map_card_type, map_card_rarity, normalize_riftbound_card_number
+from users.models import Notification
 
 
 class RiftboundCardViewSet(viewsets.ReadOnlyModelViewSet):
@@ -809,7 +813,6 @@ class RiftboundWishlistViewSet(viewsets.ModelViewSet):
 
 import uuid as _uuid
 from django.shortcuts import get_object_or_404
-from django.db.models import Count, Sum
 
 
 RB_WRITABLE_PROFILE_FIELDS = {
@@ -1016,6 +1019,256 @@ class RiftboundPublicStoreIndexView(generics.ListAPIView):
         if ordering in allowed:
             qs = qs.order_by(ordering)
         return qs
+
+
+def _rb_create_store_order(profile, buyer_user, payload):
+    items = payload.get("items") or []
+    if not items:
+        raise ValueError("Debes enviar al menos una carta en el pedido.")
+
+    requested_by_entry = {}
+    for row in items:
+        entry_id = int(row["entry_id"])
+        qty = int(row["quantity"])
+        requested_by_entry[entry_id] = requested_by_entry.get(entry_id, 0) + qty
+
+    entry_ids = list(requested_by_entry.keys())
+    with transaction.atomic():
+        entries_qs = (
+            RiftboundCollectionEntry.objects.select_for_update()
+            .filter(user=profile.user, id__in=entry_ids)
+            .select_related("card")
+        )
+        entry_map = {e.id: e for e in entries_qs}
+
+        missing_ids = [eid for eid in entry_ids if eid not in entry_map]
+        if missing_ids:
+            raise ValueError("Algunas cartas ya no estan disponibles en la tienda.")
+
+        for entry_id, qty in requested_by_entry.items():
+            entry = entry_map[entry_id]
+            if entry.selling_quantity <= 0:
+                raise ValueError(f"{entry.card.name} ya no esta disponible.")
+            if qty > entry.selling_quantity:
+                raise ValueError(
+                    f"Stock insuficiente para {entry.card.name}: pediste {qty}, disponible {entry.selling_quantity}."
+                )
+
+        buyer_name = (str(payload.get("buyer_name") or "").strip())[:100]
+        buyer_whatsapp = (str(payload.get("buyer_whatsapp") or "").strip())[:30]
+        buyer_note = (str(payload.get("buyer_note") or "").strip())[:800]
+
+        if not buyer_name and buyer_user is not None:
+            buyer_name = buyer_user.username
+
+        order = RiftboundStoreOrder.objects.create(
+            store_profile=profile,
+            buyer_user=buyer_user,
+            buyer_name=buyer_name,
+            buyer_whatsapp=buyer_whatsapp,
+            buyer_note=buyer_note,
+            status=RiftboundStoreOrder.STATUS_PENDING,
+        )
+
+        total_estimated = 0
+        has_priced_items = False
+
+        for entry_id, qty in requested_by_entry.items():
+            entry = entry_map[entry_id]
+            unit_price = entry.price
+            line_total = unit_price * qty if unit_price is not None else None
+
+            RiftboundStoreOrderItem.objects.create(
+                order=order,
+                collection_entry=entry,
+                card=entry.card,
+                quantity=qty,
+                unit_price=unit_price,
+                line_total=line_total,
+                card_name=entry.card.name,
+                card_number=entry.card.card_number,
+                language=entry.language,
+                is_foil=entry.is_foil,
+            )
+
+            # Reserva de stock: sale de "en venta" y queda asignado al pedido.
+            entry.selling_quantity = max(0, entry.selling_quantity - qty)
+            entry.save(update_fields=["selling_quantity"])
+
+            if line_total is not None:
+                total_estimated += line_total
+                has_priced_items = True
+
+        if has_priced_items:
+            order.total_estimated = total_estimated
+            order.save(update_fields=["total_estimated"])
+
+    total_items = sum(requested_by_entry.values())
+    buyer_label = order.buyer_name or (buyer_user.username if buyer_user is not None else "Comprador")
+    try:
+        Notification.objects.create(
+            user=profile.user,
+            notif_type="general",
+            message=f"Nuevo pedido Riftbound de {buyer_label} ({total_items} cartas)",
+            link="/riftbound/carpeta?tab=pedidos",
+        )
+    except Exception:
+        pass
+
+    return (
+        RiftboundStoreOrder.objects.select_related("store_profile", "store_profile__user", "buyer_user")
+        .prefetch_related("items", "items__card")
+        .get(pk=order.pk)
+    )
+
+
+class RiftboundPublicStoreOrderCreateView(generics.GenericAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = RiftboundStoreOrderCreateSerializer
+
+    def post(self, request, *args, **kwargs):
+        profile = _rb_resolve_public_profile(self.kwargs["token"])
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        buyer_user = request.user if request.user.is_authenticated else None
+        try:
+            order = _rb_create_store_order(profile, buyer_user, serializer.validated_data)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=400)
+
+        return Response(
+            RiftboundStoreOrderSerializer(order, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class RiftboundMyStoreOrderListView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = RiftboundStoreOrderSerializer
+
+    def get_queryset(self):
+        qs = (
+            RiftboundStoreOrder.objects.filter(store_profile__user=self.request.user)
+            .select_related("store_profile", "store_profile__user", "buyer_user")
+            .prefetch_related("items", "items__card")
+        )
+        status_filter = (self.request.query_params.get("status") or "").strip().lower()
+        allowed = {
+            RiftboundStoreOrder.STATUS_PENDING,
+            RiftboundStoreOrder.STATUS_ACCEPTED,
+            RiftboundStoreOrder.STATUS_CANCELLED,
+        }
+        if status_filter in allowed:
+            qs = qs.filter(status=status_filter)
+        return qs
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def riftbound_my_order_assignments(request):
+    rows = (
+        RiftboundStoreOrderItem.objects.filter(
+            order__store_profile__user=request.user,
+            order__status=RiftboundStoreOrder.STATUS_PENDING,
+            collection_entry__isnull=False,
+        )
+        .values("collection_entry_id")
+        .annotate(assigned=Sum("quantity"))
+    )
+    return Response({
+        "assigned_by_entry": {
+            int(row["collection_entry_id"]): int(row["assigned"] or 0)
+            for row in rows
+            if row["collection_entry_id"] is not None
+        }
+    })
+
+
+def _rb_update_order_status(request, order_id, new_status):
+    if new_status not in {RiftboundStoreOrder.STATUS_ACCEPTED, RiftboundStoreOrder.STATUS_CANCELLED}:
+        return Response({"detail": "Estado invalido."}, status=400)
+
+    with transaction.atomic():
+        try:
+            order = (
+                RiftboundStoreOrder.objects.select_for_update()
+                .select_related("store_profile", "store_profile__user", "buyer_user")
+                .prefetch_related("items")
+                .get(pk=order_id, store_profile__user=request.user)
+            )
+        except RiftboundStoreOrder.DoesNotExist:
+            return Response({"detail": "Pedido no encontrado."}, status=404)
+
+        if order.status != RiftboundStoreOrder.STATUS_PENDING:
+            return Response({"detail": "Solo puedes gestionar pedidos pendientes."}, status=400)
+
+        items = list(order.items.all())
+        entry_ids = [it.collection_entry_id for it in items if it.collection_entry_id]
+        entry_map = {}
+        if entry_ids:
+            entry_map = {
+                e.id: e
+                for e in RiftboundCollectionEntry.objects.select_for_update().filter(
+                    id__in=entry_ids,
+                    user=request.user,
+                )
+            }
+
+        for item in items:
+            if not item.collection_entry_id:
+                continue
+            entry = entry_map.get(item.collection_entry_id)
+            if not entry:
+                continue
+
+            qty = max(0, int(item.quantity or 0))
+            if new_status == RiftboundStoreOrder.STATUS_CANCELLED:
+                # Devuelve la reserva al stock visible en tienda.
+                entry.selling_quantity = min(entry.quantity, entry.selling_quantity + qty)
+                entry.save(update_fields=["selling_quantity"])
+            else:
+                # Consolida venta: baja stock real y limpia exceso en venta.
+                entry.quantity = max(0, entry.quantity - qty)
+                if entry.selling_quantity > entry.quantity:
+                    entry.selling_quantity = entry.quantity
+                entry.save(update_fields=["quantity", "selling_quantity"])
+
+        order.status = new_status
+        order.responded_at = timezone.now()
+        order.seller_note = str((request.data or {}).get("seller_note") or "").strip()[:800]
+        order.save(update_fields=["status", "responded_at", "seller_note", "updated_at"])
+
+    try:
+        if order.buyer_user_id:
+            msg = "Tu pedido Riftbound fue aceptado." if new_status == RiftboundStoreOrder.STATUS_ACCEPTED else "Tu pedido Riftbound fue cancelado."
+            Notification.objects.create(
+                user=order.buyer_user,
+                notif_type="general",
+                message=msg,
+                link=f"/riftbound/tienda/{order.store_profile.share_token}",
+            )
+    except Exception:
+        pass
+
+    payload = (
+        RiftboundStoreOrder.objects.select_related("store_profile", "store_profile__user", "buyer_user")
+        .prefetch_related("items", "items__card")
+        .get(pk=order.pk)
+    )
+    return Response(RiftboundStoreOrderSerializer(payload, context={"request": request}).data)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def riftbound_accept_store_order(request, order_id):
+    return _rb_update_order_status(request, order_id, RiftboundStoreOrder.STATUS_ACCEPTED)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def riftbound_cancel_store_order(request, order_id):
+    return _rb_update_order_status(request, order_id, RiftboundStoreOrder.STATUS_CANCELLED)
 
 
 # ─── TCGPlayer Price Proxy ───────────────────────────────────────────────────

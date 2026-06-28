@@ -169,6 +169,57 @@ export interface RiftboundPublicBinderProfile extends RiftboundBinderProfile {
   wishlist_count?: number;
 }
 
+export type RiftboundStoreOrderStatus = 'pending' | 'accepted' | 'cancelled';
+
+export interface RiftboundStoreOrderItem {
+  id: number;
+  collection_entry: number | null;
+  card: number;
+  card_data?: RiftboundCardLite;
+  quantity: number;
+  unit_price: number | null;
+  line_total: number | null;
+  card_name: string;
+  card_number: string;
+  language: RiftboundLanguage;
+  is_foil: boolean;
+}
+
+export interface RiftboundStoreOrder {
+  id: number;
+  store_profile: number;
+  store_owner: string;
+  buyer_user: number | null;
+  buyer_username?: string;
+  buyer_name: string;
+  buyer_whatsapp: string;
+  buyer_note: string;
+  seller_note: string;
+  status: RiftboundStoreOrderStatus;
+  total_estimated: number | null;
+  total_items: number;
+  responded_at: string | null;
+  created_at: string;
+  updated_at: string;
+  items: RiftboundStoreOrderItem[];
+}
+
+export interface RiftboundStoreOrderCreateItem {
+  entry_id: number;
+  quantity: number;
+}
+
+export interface RiftboundStoreOrderCreatePayload {
+  buyer_name?: string;
+  buyer_whatsapp?: string;
+  buyer_note?: string;
+  items: RiftboundStoreOrderCreateItem[];
+}
+
+export interface RiftboundStoreOrderAssignedSummary {
+  assigned_by_entry: Record<number, number>;
+}
+
 export interface RiftboundBulkImportResult {
   added: number;
   updated: number;

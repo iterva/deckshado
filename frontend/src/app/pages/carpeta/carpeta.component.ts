@@ -1,6 +1,6 @@
 import { Component, OnInit, signal, ChangeDetectorRef, HostListener } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { DecimalPipe } from '@angular/common';
+import { DecimalPipe, DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { CarpetaService } from '../../services/carpeta.service';
@@ -10,14 +10,15 @@ import { ShareImageComponent, ShareImageItem } from '../../components/share-imag
 import {
   Card, CollectionEntry, WishlistEntry, BinderProfile,
   Edition, CardType, Race, Rarity, CarpetaIds,
+  StoreOrder, StoreOrderStatus,
 } from '../../models';
 
-type Tab = 'carpeta' | 'codex' | 'wishlist' | 'mercado' | 'stats';
+type Tab = 'carpeta' | 'codex' | 'wishlist' | 'mercado' | 'pedidos' | 'historial' | 'stats';
 
 @Component({
   selector: 'app-carpeta',
   standalone: true,
-  imports: [FormsModule, ThumbnailPipe, DecimalPipe, RouterLink, ShareImageComponent],
+  imports: [FormsModule, ThumbnailPipe, DecimalPipe, DatePipe, RouterLink, ShareImageComponent],
   templateUrl: './carpeta.component.html',
   styleUrl: './carpeta.component.scss',
 })
@@ -88,6 +89,14 @@ export class CarpetaComponent implements OnInit {
   mercadoAllEntries: CollectionEntry[] = [];
   mercadoSelected = new Map<number, CollectionEntry>();
 
+  // ── Pedidos de vendedor ──
+  pendingOrders: StoreOrder[] = [];
+  historyOrders: StoreOrder[] = [];
+  ordersLoading = false;
+  historyLoading = false;
+  historyStatusFilter: '' | StoreOrderStatus = '';
+  assignedByEntry: Record<number, number> = {};
+
   // Foto real de la carta (por entry.id + slot)
   uploadingPhotoFor: number | null = null;
   uploadingPhotoSlot: 1 | 2 | null = null;
@@ -131,6 +140,8 @@ export class CarpetaComponent implements OnInit {
     if (tab === 'codex' && !this.codexCards.length) this.loadCodex();
     if (tab === 'wishlist') this.loadWishlist();
     if (tab === 'mercado') this.loadMercado();
+    if (tab === 'pedidos') this.loadPendingOrders();
+    if (tab === 'historial') this.loadHistoryOrders();
     if (tab === 'stats' && !this.stats) this.loadStats();
   }
 
@@ -469,10 +480,28 @@ export class CarpetaComponent implements OnInit {
         this.mercadoEntries = res.results;
         this.mercadoTotal = res.count;
         this.mercadoLoading = false;
+        this.loadAssignedSummary();
         this.cdr.detectChanges();
       },
       error: () => { this.mercadoLoading = false; this.cdr.detectChanges(); },
     });
+  }
+
+  loadAssignedSummary() {
+    this.carpetaService.getMyOrderAssignedSummary().subscribe({
+      next: (res) => {
+        this.assignedByEntry = res.assigned_by_entry || {};
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.assignedByEntry = {};
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  assignedForEntry(entryId: number): number {
+    return this.assignedByEntry[entryId] || 0;
   }
 
   onMercadoSearch() { this.mercadoPage = 1; this.loadMercado(); }
@@ -509,8 +538,80 @@ export class CarpetaComponent implements OnInit {
         this.mercadoDirty.clear();
         this.batchSaving = false;
         this.loadMercado();
+        this.loadPendingOrders();
       },
       error: () => { this.batchSaving = false; this.cdr.detectChanges(); },
+    });
+  }
+
+  loadPendingOrders() {
+    this.ordersLoading = true;
+    this.carpetaService.listMyStoreOrders({ status: 'pending', page: 1 }).subscribe({
+      next: (res) => {
+        this.pendingOrders = res.results || [];
+        this.ordersLoading = false;
+        this.loadAssignedSummary();
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.ordersLoading = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  loadHistoryOrders() {
+    this.historyLoading = true;
+    const status = this.historyStatusFilter || 'history';
+    this.carpetaService.listMyStoreOrders({ status, page: 1 }).subscribe({
+      next: (res) => {
+        this.historyOrders = (res.results || []).filter(o => o.status !== 'pending');
+        this.historyLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.historyLoading = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  onHistoryFilterChange(value: string) {
+    this.historyStatusFilter = value === 'accepted' || value === 'cancelled' ? value : '';
+    this.loadHistoryOrders();
+  }
+
+  orderStatusLabel(status: StoreOrderStatus): string {
+    if (status === 'pending') return 'Pendiente';
+    if (status === 'accepted') return 'Aceptado';
+    return 'Cancelado';
+  }
+
+  acceptOrder(order: StoreOrder) {
+    if (!confirm(`¿Aceptar pedido #${order.id}? Se descontará del stock real.`)) return;
+    this.carpetaService.acceptStoreOrder(order.id).subscribe({
+      next: () => {
+        this.loadPendingOrders();
+        this.loadHistoryOrders();
+        this.loadMercado();
+      },
+      error: (err) => {
+        alert(err?.error?.detail || 'No se pudo aceptar el pedido.');
+      },
+    });
+  }
+
+  cancelOrder(order: StoreOrder) {
+    if (!confirm(`¿Cancelar pedido #${order.id}? Se devolverá la reserva a stock en venta.`)) return;
+    this.carpetaService.cancelStoreOrder(order.id).subscribe({
+      next: () => {
+        this.loadPendingOrders();
+        this.loadHistoryOrders();
+        this.loadMercado();
+      },
+      error: (err) => {
+        alert(err?.error?.detail || 'No se pudo cancelar el pedido.');
+      },
     });
   }
 

@@ -7,6 +7,7 @@ import {
   RiftboundBanlistEntry, RiftboundIcon, RiftboundSet, RiftboundCollectionEntry,
   RiftboundWishlistEntry, RiftboundCarpetaIds, RiftboundCollectionStats,
   RiftboundBinderProfile, RiftboundPublicBinderProfile, RiftboundBulkImportResult,
+  RiftboundStoreOrder, RiftboundStoreOrderCreatePayload, RiftboundStoreOrderAssignedSummary,
 } from '../models/riftbound';
 
 interface PaginatedResponse<T> {
@@ -279,5 +280,33 @@ export class RiftboundService {
       if (v !== undefined && v !== null && v !== '') params = params.set(k, String(v));
     }
     return this.http.get<any>(`${this.base}/wishlist-public/${token}/`, { params });
+  }
+
+  createPublicStoreOrder(token: string, payload: RiftboundStoreOrderCreatePayload): Observable<RiftboundStoreOrder> {
+    return this.http.post<RiftboundStoreOrder>(`${this.base}/store/${token}/orders/`, payload);
+  }
+
+  listMyStoreOrders(opts: { status?: 'pending' | 'accepted' | 'cancelled'; page?: number } = {})
+    : Observable<PaginatedResponse<RiftboundStoreOrder>> {
+    let params = new HttpParams();
+    if (opts.status) params = params.set('status', opts.status);
+    if (opts.page) params = params.set('page', String(opts.page));
+    return this.http.get<PaginatedResponse<RiftboundStoreOrder>>(`${this.base}/orders/mine/`, { params });
+  }
+
+  acceptStoreOrder(orderId: number, seller_note?: string): Observable<RiftboundStoreOrder> {
+    return this.http.post<RiftboundStoreOrder>(`${this.base}/orders/${orderId}/accept/`, {
+      seller_note: seller_note || '',
+    });
+  }
+
+  cancelStoreOrder(orderId: number, seller_note?: string): Observable<RiftboundStoreOrder> {
+    return this.http.post<RiftboundStoreOrder>(`${this.base}/orders/${orderId}/cancel/`, {
+      seller_note: seller_note || '',
+    });
+  }
+
+  getMyOrderAssignedSummary(): Observable<RiftboundStoreOrderAssignedSummary> {
+    return this.http.get<RiftboundStoreOrderAssignedSummary>(`${this.base}/orders/mine/assigned-summary/`);
   }
 }

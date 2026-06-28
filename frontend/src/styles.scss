@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap');
 
 // Override font-display para Bootstrap Icons (jsdelivr no expone &display=swap).
 // Esto evita FOIT y mejora FCP. La regla coincide por src de la fuente.
@@ -460,9 +460,15 @@ input, select, textarea {
   font-size: 1.8rem;
   font-weight: 700;
   margin-bottom: 1.5rem;
-  background: linear-gradient(90deg, #e94560, #ffbd39);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #f2f6ff;
+
+  @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+    background: linear-gradient(90deg, #e94560, #ffbd39);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
 }
 
 // Shimmer placeholder for loading images
@@ -476,6 +482,11 @@ input, select, textarea {
 .export-card {
   background: linear-gradient(90deg, #16213e 25%, #1e2d50 50%, #16213e 75%);
   background-size: 200% 100%;
+}
+
+.card-image.is-loading,
+.img-wrapper.is-loading,
+.export-card.is-loading {
   animation: shimmer 1.5s ease-in-out infinite;
 }
 
@@ -486,49 +497,480 @@ input, select, textarea {
 }
 
 // ─────────────────────── Modo Riftbound ───────────────────────
-// Cuando el usuario cambia al "modo Riftbound" se aplica `body.mode-riftbound`.
-// Solo retoca acentos visuales (logo, navbar, hover, footer) para que la
-// estética se sienta como un sub-portal dorado/azul de Riot, sin tocar la
-// estructura ni los componentes existentes.
+// Riftbound ahora comparte exactamente la misma estética global.
 body.mode-riftbound {
-  .navbar {
-    background: linear-gradient(135deg, #0a1428 0%, #091428 60%, #0a323c 100%) !important;
-    box-shadow: 0 2px 12px rgba(200, 155, 60, 0.25) !important;
-
-    .logo-text {
-      background: linear-gradient(120deg, #c89b3c, #f0e6d2) !important;
-      -webkit-background-clip: text !important;
-      -webkit-text-fill-color: transparent !important;
-    }
-
-    .navbar-links a {
-      &:hover, &.active { color: #c89b3c !important; }
-      &.nav-riftbound { display: none !important; }   // ya estamos dentro
-    }
+  a.rb-btn-primary,
+  .rb-btn-primary {
+    background: var(--ui-accent) !important;
+    color: #fff !important;
   }
 
-  .bottom-nav {
-    background: linear-gradient(135deg, #0a1428 0%, #0a323c 100%) !important;
-    box-shadow: 0 -2px 12px rgba(200, 155, 60, 0.2) !important;
-    a, button {
-      &:hover, &.active { color: #c89b3c !important; }
-    }
+  .hero {
+    background: color-mix(in srgb, var(--ui-bg-soft) 90%, #ffffff 10%) !important;
+    border-bottom-color: var(--ui-border) !important;
   }
 
-  .footer { color: #aaa !important; }
+  .hero-title {
+    background: none !important;
+    -webkit-text-fill-color: var(--ui-text) !important;
+    color: var(--ui-text) !important;
+  }
 
-  // Acento dorado para botones primarios y enlaces dentro de /riftbound/*
-  a.rb-btn-primary, .rb-btn-primary { background: #c89b3c !important; color: #0a1428 !important; }
+  .hero-subtitle,
+  .hero-stats .stat-label,
+  .feature-card p,
+  .seo-content p,
+  .seo-content li,
+  .seo-content details p {
+    color: var(--ui-text-muted) !important;
+  }
+
+  .hero-stats .stat-number,
+  .feature-card h3,
+  .seo-content h2,
+  .seo-content summary {
+    color: var(--ui-text) !important;
+  }
+
+  .feature-card,
+  .feature-card.highlight,
+  .ban-card,
+  .card-browser,
+  .deck-panel,
+  .table-wrap,
+  .rb-pager,
+  .seo-content details,
+  .rb-modal,
+  .rb-card,
+  .search-row input,
+  .filter-group select,
+  .chip,
+  .stats > div,
+  .badge {
+    background: color-mix(in srgb, var(--ui-surface) 94%, #ffffff 6%) !important;
+    border-color: var(--ui-border) !important;
+    box-shadow: none !important;
+  }
+
+  .feature-card.highlight {
+    border-color: var(--ui-accent) !important;
+  }
+
+  .seo-content strong,
+  .seo-links a,
+  .seo-content summary::before,
+  .rb-card-meta strong,
+  .cart-total .warn,
+  .contact-chip.tr,
+  .trade-badge {
+    color: var(--ui-accent) !important;
+    border-color: var(--ui-accent) !important;
+  }
+
+  .badge.rarity,
+  .trade-badge,
+  .contact-chip.tr {
+    background: color-mix(in srgb, var(--ui-accent) 18%, transparent) !important;
+  }
+
+  .rb-modal-close:hover,
+  .rb-pager button:hover:not(:disabled) {
+    background: var(--ui-accent) !important;
+    border-color: var(--ui-accent) !important;
+    color: #fff !important;
+  }
+
+  .chip.active {
+    background: var(--ui-accent) !important;
+    border-color: var(--ui-accent) !important;
+    color: #fff !important;
+  }
 }
 
-body.mode-riftbound.light-theme {
-  .navbar {
-    background: linear-gradient(135deg, #f0e6d2 0%, #e8d8a8 100%) !important;
-    .logo-text { -webkit-text-fill-color: transparent !important; }
-    .navbar-links a { color: #555 !important; &:hover, &.active { color: #785a28 !important; } }
+/* Design refresh layer: clean, simple, functional */
+:root {
+  --ui-font: 'Manrope', 'Inter', 'Segoe UI', sans-serif;
+  --ui-bg: #0f1115;
+  --ui-bg-soft: #151922;
+  --ui-surface: #1a1f29;
+  --ui-surface-elevated: #202633;
+  --ui-border: #2d3647;
+  --ui-text: #edf1f7;
+  --ui-text-muted: #a8b3c5;
+  --ui-accent: #8ab4ff;
+  --ui-accent-strong: #6b9cff;
+  --ui-success: #24a26a;
+  --ui-danger: #cc5f6a;
+  --ui-radius-sm: 10px;
+  --ui-radius-md: 14px;
+  --ui-shadow-sm: 0 10px 30px rgba(0, 0, 0, 0.22);
+}
+
+body.light-theme {
+  --ui-bg: #f5f5f7;
+  --ui-bg-soft: #eef1f6;
+  --ui-surface: #ffffff;
+  --ui-surface-elevated: #ffffff;
+  --ui-border: #d9deea;
+  --ui-text: #171b24;
+  --ui-text-muted: #647086;
+  --ui-accent: #3f6ed9;
+  --ui-accent-strong: #2f56b7;
+  --ui-success: #1b8b5a;
+  --ui-danger: #b8505b;
+}
+
+html,
+body {
+  font-family: var(--ui-font) !important;
+  color: var(--ui-text) !important;
+  background:
+    radial-gradient(1300px 650px at -5% -15%, rgba(138, 180, 255, 0.12), transparent 60%),
+    radial-gradient(1000px 700px at 110% 0%, rgba(138, 180, 255, 0.08), transparent 62%),
+    var(--ui-bg) !important;
+}
+
+input,
+select,
+textarea {
+  border-radius: var(--ui-radius-sm) !important;
+  border-color: var(--ui-border) !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--ui-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-accent) 24%, transparent);
+}
+
+.btn,
+.btn-primary,
+.btn-secondary {
+  border-radius: 999px !important;
+  font-weight: 600 !important;
+}
+
+.btn-primary {
+  background: var(--ui-accent) !important;
+  color: #fff !important;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--ui-accent-strong) !important;
+}
+
+.btn-secondary {
+  background: color-mix(in srgb, var(--ui-surface) 92%, #ffffff 8%) !important;
+  border: 1px solid var(--ui-border) !important;
+  color: var(--ui-text) !important;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--ui-accent) !important;
+  color: var(--ui-accent) !important;
+}
+
+.auth-card,
+.deck-card,
+.card-item,
+.store-card,
+.collection-card,
+.wishlist-card,
+.team-card,
+.format-card,
+.race-card,
+.table-wrapper,
+.modal,
+.modal-content {
+  background: color-mix(in srgb, var(--ui-surface) 94%, #ffffff 6%) !important;
+  border: 1px solid var(--ui-border) !important;
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.page-title {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--ui-text) !important;
+}
+
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .page-title {
+    background: linear-gradient(96deg, var(--ui-text) 0%, color-mix(in srgb, var(--ui-text) 72%, var(--ui-accent) 28%) 100%) !important;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent !important;
   }
-  .bottom-nav {
-    background: linear-gradient(135deg, #f0e6d2 0%, #e8d8a8 100%) !important;
-    a, button { color: #555 !important; &:hover, &.active { color: #785a28 !important; } }
+}
+
+/* Project-wide polish layer (remaining pages) */
+.auth-card,
+.profile-card,
+.edit-card,
+.team-card,
+.create-form,
+.format-card,
+.race-card,
+.store-card,
+.deck-col-head,
+.summary-card,
+.format-section,
+.stat-box,
+.wordle-page .result-box,
+.wordle-page .hint-box,
+.wordle-page .leaderboard,
+.wordle-page .toast,
+.card-browser,
+.deck-panel,
+.deck-hero,
+.action-bar,
+.social-btn,
+.carpeta-header,
+.carpeta-container .tabs {
+  border-color: var(--ui-border) !important;
+}
+
+.auth-card h2,
+.profile-header .username,
+.card-header h1,
+.team-header h2,
+.team-header h3,
+.format-select-page h1,
+.banlist-article h1,
+.banlist-article h2,
+.wordle-header h1,
+.deck-hero .page-title,
+.carpeta-header .binder-info h1 {
+  color: var(--ui-text) !important;
+}
+
+.auth-subtitle,
+.auth-link,
+.auth-hint,
+.loading-text,
+.empty-text,
+.team-desc,
+.my-role,
+.section-title,
+.format-select-page .subtitle,
+.race-desc,
+.stores-page .page-header p,
+.stores-page .loading,
+.stores-page .empty,
+.compare-page .loading,
+.compare-page .warning,
+.banlist-article,
+.banlist-article .article-meta,
+.banlist-article .fmt-desc,
+.wordle-page .meta,
+.wordle-page .length-badge,
+.wordle-page .attempts-badge,
+.wordle-page .hint-box,
+.deck-meta,
+.hero-description,
+.carpeta-header .binder-user,
+.card-meta,
+.results-count,
+.loading,
+.empty-state,
+.pagination {
+  color: var(--ui-text-muted) !important;
+}
+
+.compare-page .warning {
+  background: color-mix(in srgb, var(--ui-danger) 12%, transparent) !important;
+  border-color: color-mix(in srgb, var(--ui-danger) 48%, transparent) !important;
+}
+
+.wordle-page .tile.tile-correct,
+.wordle-page .kb-key.kb-correct {
+  background: var(--ui-success) !important;
+  border-color: var(--ui-success) !important;
+}
+
+.wordle-page .tile.tile-present,
+.wordle-page .kb-key.kb-present,
+.wordle-page .hint-btn.revealed,
+.wordle-page .winner-banner {
+  background: color-mix(in srgb, var(--ui-accent) 36%, #f6d67a 64%) !important;
+  border-color: color-mix(in srgb, var(--ui-accent) 50%, #f6d67a 50%) !important;
+  color: #111 !important;
+}
+
+.wordle-page .tile.tile-absent,
+.wordle-page .kb-key.kb-absent {
+  background: color-mix(in srgb, var(--ui-text-muted) 38%, transparent) !important;
+  border-color: color-mix(in srgb, var(--ui-text-muted) 38%, transparent) !important;
+}
+
+.team-card:hover,
+.store-card:hover,
+.format-card:hover,
+.race-card:hover,
+.deck-card:hover,
+.card-item:hover,
+.summary-card:hover,
+.decks-header .deck-col-head:hover {
+  border-color: var(--ui-accent) !important;
+}
+
+.btn-filter.active,
+.tab.active,
+.tabs .tab.active,
+.tabs-bar .tab-btn.active,
+.search-modes button.active,
+.view-toggle .toggle-btn.active,
+.wordle-page .share-btn,
+.wordle-page .copy-btn {
+  background: var(--ui-accent) !important;
+  border-color: var(--ui-accent) !important;
+  color: #fff !important;
+}
+
+.back-link,
+.btn-back,
+.auth-link a,
+.seo-links a,
+.banlist-article a,
+.stores-page .btn,
+.section-toggle,
+.action-btn,
+.social-btn {
+  color: var(--ui-accent) !important;
+}
+
+.builder-layout .card-browser,
+.builder-layout .deck-panel,
+.table-section .table-wrap,
+.card-table-wrap,
+.output-box {
+  background: color-mix(in srgb, var(--ui-surface) 94%, #ffffff 6%) !important;
+  border-color: var(--ui-border) !important;
+}
+
+.mobile-menu,
+.notif-dropdown,
+.avatar-dropdown,
+.search-results,
+.tienda-multi-popover,
+.modal,
+.cart-modal,
+.contact-modal,
+.preview-modal {
+  border-color: var(--ui-border) !important;
+  background: color-mix(in srgb, var(--ui-surface-elevated) 94%, #ffffff 6%) !important;
+}
+
+/* Micro-detail pass: accessibility and mobile comfort */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role='button']:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--ui-accent) !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-accent) 24%, transparent) !important;
+}
+
+button,
+.btn,
+.btn-primary,
+.btn-secondary,
+.search-btn,
+.action-btn,
+.tab,
+.tabs .tab,
+.tab-btn,
+.social-btn,
+.kb-key,
+.hint-btn,
+.toggle-classic,
+.avatar-upload-btn {
+  min-height: 40px;
+}
+
+input,
+select,
+textarea {
+  min-height: 40px;
+}
+
+@media (max-width: 700px) {
+  .auth-page,
+  .profile-container,
+  .edit-container,
+  .team-page,
+  .format-select-page,
+  .stores-page,
+  .banlist-article,
+  .wordle-page,
+  .carpeta-container,
+  .compare-page {
+    padding-left: 0.85rem !important;
+    padding-right: 0.85rem !important;
+  }
+
+  .auth-card,
+  .profile-card,
+  .edit-card,
+  .team-card,
+  .create-form,
+  .format-section,
+  .store-card,
+  .deck-col-head,
+  .summary-card {
+    border-radius: 12px !important;
+  }
+
+  .tabs .tab,
+  .tab-btn,
+  .view-toggle .toggle-btn,
+  .search-modes button {
+    min-height: 38px;
+    padding-top: 0.45rem !important;
+    padding-bottom: 0.45rem !important;
+  }
+
+  .wordle-page .kb-key {
+    height: 44px;
+  }
+}
+
+/* Title rendering safety: avoid white bars when gradient text is used in page-level headings. */
+.page-title,
+.hero-title,
+.content h1,
+.page-head h1,
+.rb-page-head h1,
+.hero h1,
+.store-info h1,
+.binder-info h1,
+.title-row h1,
+.page-header h1,
+.article-header h1 {
+  display: inline-block !important;
+  max-width: 100% !important;
+  background-repeat: no-repeat !important;
+  background-size: 100% 100% !important;
+}
+
+@supports not (-webkit-background-clip: text) {
+  .page-title,
+  .hero-title,
+  .content h1,
+  .page-head h1,
+  .rb-page-head h1,
+  .hero h1,
+  .store-info h1,
+  .binder-info h1,
+  .title-row h1,
+  .page-header h1,
+  .article-header h1 {
+    background: none !important;
+    color: var(--ui-text) !important;
+    -webkit-text-fill-color: currentColor !important;
   }
 }

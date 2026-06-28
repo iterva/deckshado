@@ -178,10 +178,6 @@ function typeRank(t?: string): number {
                   @if (card.might !== null && card.might !== undefined) { · ⚔️{{ card.might }} }
                 </span>
                 <span class="mini-num">{{ card.card_number }}</span>
-                <app-tcg-price [cardName]="card.name" [compact]="true" [showLink]="false"></app-tcg-price>
-                @if (card.description) {
-                  <p class="mini-ability">{{ card.description }}</p>
-                }
               </div>
               <div class="actions-column">
                 <!-- M (main) -->
@@ -738,7 +734,17 @@ function typeRank(t?: string): number {
       .mini-type { font-size: 0.6rem !important; }
       .mini-num { display: none; }
       .img-wrapper img, .img-placeholder { width: 42px !important; height: 58px !important; }
-      .mini-actions { min-width: 60px; }
+      .mini-actions { min-width: 68px; }
+      .circle-btn {
+        inline-size: 26px;
+        block-size: 26px;
+        min-inline-size: 26px;
+        min-block-size: 26px;
+        max-inline-size: 26px;
+        max-block-size: 26px;
+        flex: 0 0 26px;
+        font-size: .95rem;
+      }
     }
     @media (max-width: 360px) { .available-cards { grid-template-columns: 1fr; } }
 
@@ -782,18 +788,11 @@ function typeRank(t?: string): number {
     .img-wrapper:hover .eye-icon { opacity: 1; }
 
     .mini-info { flex: 1; min-width: 0; display: flex; flex-direction: column; padding-right: .15rem; }
-    .mini-info app-tcg-price { display: block; margin-top: .2rem; max-width: 100%; min-width: 0; overflow: hidden; }
     .mini-name { font-size: .85rem; color: #fff; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .mini-type { font-size: .7rem; color: #98a2a8; }
     .mini-num { font-size: .65rem; color: #6a7a88; }
-    .mini-ability {
-      margin: .25rem 0 0; font-size: .68rem; color: #aaa; line-height: 1.35;
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-    @media (max-width: 1400px) { .mini-ability { display: none; } }
 
-    .actions-column { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; position: relative; z-index: 1; }
+    .actions-column { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; position: relative; z-index: 1; min-width: 84px; }
     .mini-actions { display: flex; align-items: center; gap: .25rem; min-width: 72px; justify-content: flex-end; }
     .mini-actions.hidden { display: none; }
     .zone-label { font-size: .65rem; font-weight: 700; width: 12px; text-align: right; }
@@ -803,9 +802,19 @@ function typeRank(t?: string): number {
     .side-actions { border-top: 1px solid #333; padding-top: 2px; }
 
     .circle-btn {
-      width: 24px; height: 24px; border-radius: 50%;
+      inline-size: 28px;
+      block-size: 28px;
+      min-inline-size: 28px;
+      min-block-size: 28px;
+      max-inline-size: 28px;
+      max-block-size: 28px;
+      flex: 0 0 28px;
+      aspect-ratio: 1 / 1;
+      padding: 0 !important;
+      margin: 0;
+      border-radius: 999px !important;
       border: 1px solid #444; background: #1a1a2e; color: #ccc;
-      font-size: 1rem; line-height: 1; display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; font-weight: 700; line-height: 1; display: inline-flex; align-items: center; justify-content: center;
       cursor: pointer; transition: all .15s;
     }
     .circle-btn.add:hover:not(:disabled) { border-color: #4caf50; color: #4caf50; background: rgba(76,175,80,.1); }

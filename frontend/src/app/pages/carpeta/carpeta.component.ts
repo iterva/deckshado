@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, ChangeDetectorRef, HostListener } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, signal, ChangeDetectorRef, HostListener, ViewChild, ElementRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
@@ -7,6 +7,7 @@ import { CarpetaService } from '../../services/carpeta.service';
 import { CardService } from '../../services/card.service';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
 import { ShareImageComponent, ShareImageItem } from '../../components/share-image/share-image.component';
+import QRCode from 'qrcode';
 import {
   Card, CollectionEntry, WishlistEntry, BinderProfile,
   Edition, CardType, Race, Rarity, CarpetaIds,
@@ -22,7 +23,7 @@ type Tab = 'carpeta' | 'codex' | 'wishlist' | 'mercado' | 'pedidos' | 'historial
   templateUrl: './carpeta.component.html',
   styleUrl: './carpeta.component.scss',
 })
-export class CarpetaComponent implements OnInit {
+export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   activeTab: Tab = 'carpeta';
   binderProfile: BinderProfile | null = null;
 
@@ -50,6 +51,7 @@ export class CarpetaComponent implements OnInit {
   codexPage = 1;
   codexSearch = '';
   codexLoading = false;
+  codexHasMore = false;
   editions: Edition[] = [];
   types: CardType[] = [];
   races: Race[] = [];
@@ -63,6 +65,8 @@ export class CarpetaComponent implements OnInit {
   addQty = 1;
   filtersOpen = true;
   codexOpenFilter: 'edition' | 'type' | 'race' | 'rarity' | null = null;
+  @ViewChild('codexSentinel') codexSentinelRef?: ElementRef<HTMLElement>;
+  private codexObserver?: IntersectionObserver;
 
   // ── Wishlist ──
   wishlistEntries: WishlistEntry[] = [];
@@ -84,6 +88,7 @@ export class CarpetaComponent implements OnInit {
   mercadoDirty = new Map<number, { price?: number | null; selling_quantity?: number }>();
   shareToken = '';
   shareLinkCopied = false;
+  qrDownloading = false;
   batchSaving = false;
   exportingPdf = false;
   mercadoAllEntries: CollectionEntry[] = [];
@@ -134,6 +139,14 @@ export class CarpetaComponent implements OnInit {
     this.loadFilters();
   }
 
+  ngAfterViewInit() {
+    this.setupCodexObserver();
+  }
+
+  ngOnDestroy() {
+    this.codexObserver?.disconnect();
+  }
+
   switchTab(tab: Tab) {
     this.activeTab = tab;
     if (tab === 'carpeta') this.loadCollection();
@@ -143,6 +156,7 @@ export class CarpetaComponent implements OnInit {
     if (tab === 'pedidos') this.loadPendingOrders();
     if (tab === 'historial') this.loadHistoryOrders();
     if (tab === 'stats' && !this.stats) this.loadStats();
+    queueMicrotask(() => this.setupCodexObserver());
   }
 
   loadStats() {
@@ -283,7 +297,7 @@ export class CarpetaComponent implements OnInit {
     return this.races.filter(r => r.slug !== 'noraza');
   }
 
-  loadCodex() {
+  loadCodex(append = false) {
     this.codexLoading = true;
     this.cardService.getCards({
       search: this.codexSearch || undefined,
@@ -296,10 +310,12 @@ export class CarpetaComponent implements OnInit {
       page: this.codexPage,
     }).subscribe({
       next: res => {
-        this.codexCards = res.results;
+        this.codexCards = append ? [...this.codexCards, ...res.results] : res.results;
         this.codexTotal = res.count;
+        this.codexHasMore = !!res.next;
         this.codexLoading = false;
         this.cdr.detectChanges();
+        queueMicrotask(() => this.setupCodexObserver());
       },
       error: () => { this.codexLoading = false; this.cdr.detectChanges(); },
     });
@@ -367,6 +383,29 @@ export class CarpetaComponent implements OnInit {
   codexPrev() { if (this.codexPage > 1) { this.codexPage--; this.loadCodex(); } }
   codexNext() { if (this.codexPage * 40 < this.codexTotal) { this.codexPage++; this.loadCodex(); } }
   get codexTotalPages() { return Math.ceil(this.codexTotal / 40); }
+
+  loadMoreCodex() {
+    if (this.activeTab !== 'codex' || this.codexLoading || !this.codexHasMore) return;
+    this.codexPage++;
+    this.loadCodex(true);
+  }
+
+  private setupCodexObserver() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    this.codexObserver?.disconnect();
+    if (this.activeTab !== 'codex') return;
+    const sentinel = this.codexSentinelRef?.nativeElement;
+    if (!sentinel) return;
+    this.codexObserver = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          this.loadMoreCodex();
+          break;
+        }
+      }
+    }, { rootMargin: '280px 0px' });
+    this.codexObserver.observe(sentinel);
+  }
 
   selectCodexCard(card: Card) {
     this.selectedCard = this.selectedCard?.id === card.id ? null : card;
@@ -623,6 +662,33 @@ export class CarpetaComponent implements OnInit {
       this.cdr.detectChanges();
       setTimeout(() => { this.shareLinkCopied = false; this.cdr.detectChanges(); }, 2000);
     });
+  }
+
+  async downloadStoreQr() {
+    if (!this.shareToken) return;
+    const url = `${window.location.origin}/tienda/${this.shareToken}`;
+    this.qrDownloading = true;
+    this.cdr.detectChanges();
+    try {
+      const dataUrl = await QRCode.toDataURL(url, {
+        width: 1024,
+        margin: 2,
+        errorCorrectionLevel: 'M',
+        color: { dark: '#0f172a', light: '#ffffff' },
+      });
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `myl-tienda-qr-${this.auth.user()?.username || 'shadowforge'}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (e) {
+      console.error('QR generation error:', e);
+      alert('No se pudo generar el QR. Intenta de nuevo.');
+    } finally {
+      this.qrDownloading = false;
+      this.cdr.detectChanges();
+    }
   }
 
   removeMercadoEntry(entry: CollectionEntry) {

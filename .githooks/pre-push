@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+set -e
+
+LAST_MSG=$(git log -1 --pretty=%s 2>/dev/null || echo "")
+
+case "$LAST_MSG" in
+  chore\(version\):\ v*)
+    exit 0
+    ;;
+esac
+
+if [ -n "$(git status --porcelain)" ]; then
+  echo "No se puede auto-incrementar version con cambios sin commit."
+  echo "Haz commit de tus cambios y vuelve a ejecutar push."
+  exit 1
+fi
+
+node scripts/bump-version.mjs
+
+echo "Version incrementada automaticamente (+0.0.1)."
+echo "Se creo un commit chore(version). Ejecuta git push de nuevo para enviarlo."
+exit 1

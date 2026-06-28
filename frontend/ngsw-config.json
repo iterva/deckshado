@@ -35,13 +35,24 @@
       "resources": {
         "urls": [
           "https://wsrv.nl/**",
-          "https://api.myl.cl/static/**",
-          "https://res.cloudinary.com/drw7y27sm/**"
+          "https://api.myl.cl/static/**"
         ]
       }
     }
   ],
   "dataGroups": [
+    {
+      "name": "cloudinary-media",
+      "urls": [
+        "https://res.cloudinary.com/drw7y27sm/**"
+      ],
+      "cacheConfig": {
+        "strategy": "performance",
+        "maxSize": 500,
+        "maxAge": "30d",
+        "timeout": "10s"
+      }
+    },
     {
       "name": "cards-api",
       "urls": [

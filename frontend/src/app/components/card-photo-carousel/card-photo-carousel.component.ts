@@ -250,7 +250,7 @@ export class CardPhotoCarouselComponent implements OnChanges {
   onImgError(ev: Event, original: string | null | undefined) {
     const el = ev.target as HTMLImageElement;
     if (original && el && el.src !== original) {
-      // fallback a URL original si la thumb (wsrv.nl) falla
+      // fallback a URL original si la miniatura optimizada falla
       el.src = original;
     }
   }

@@ -17,6 +17,106 @@ interface PaginatedResponse<T> {
   results: T[];
 }
 
+export interface RiftcodexSyncStatus {
+  provider: string;
+  key: string;
+  configured: boolean;
+  status: 'ok' | 'error' | 'never_run' | string;
+  message?: string;
+  last_cursor?: string | null;
+  last_started_at?: string | null;
+  last_success_at?: string | null;
+  last_success_age_hours?: number | null;
+  last_stats?: Record<string, any>;
+  last_error?: string;
+  updated_at?: string | null;
+}
+
+export interface RiftcodexIndexPayload {
+  type: string;
+  total: number;
+  values: Array<string | number>;
+  source?: 'cache' | 'remote' | 'local-fallback' | string;
+  generated_at?: string;
+  upstream_error?: string;
+}
+
+export interface RiftcodexAuditStatus {
+  provider: string;
+  key: string;
+  configured: boolean;
+  status: 'ok' | 'error' | 'never_run' | string;
+  message?: string;
+  last_started_at?: string | null;
+  last_success_at?: string | null;
+  last_stats?: Record<string, any>;
+  last_error?: string;
+  updated_at?: string | null;
+}
+
+export interface RiftcodexOperationResult {
+  ok: boolean;
+  command: string;
+  output: string;
+  error?: string;
+  run_id?: number;
+  rerun_of?: number;
+}
+
+export interface RiftcodexOpsRunItem {
+  id: number;
+  kind: 'sync' | 'audit' | string;
+  command: string;
+  status: 'running' | 'success' | 'error' | string;
+  started_at?: string | null;
+  finished_at?: string | null;
+  duration_ms?: number | null;
+  requested_by?: string | null;
+  args?: Record<string, any>;
+  error?: string;
+  output?: string;
+  output_excerpt?: string;
+}
+
+export interface RiftcodexOpsPagination {
+  page: number;
+  page_size: number;
+  total: number;
+  total_pages: number;
+  has_prev: boolean;
+  has_next: boolean;
+  kind?: string | null;
+  status?: string | null;
+  q?: string | null;
+}
+
+export interface RiftcodexOpsOverview {
+  sync: {
+    provider?: string;
+    key?: string;
+    configured?: boolean;
+    status: string;
+    last_cursor?: string | null;
+    last_success_at?: string | null;
+    last_started_at?: string | null;
+    last_success_age_hours?: number | null;
+    last_stats?: Record<string, any>;
+    last_error?: string;
+  };
+  audit: {
+    provider?: string;
+    key?: string;
+    configured?: boolean;
+    status: string;
+    last_success_at?: string | null;
+    last_started_at?: string | null;
+    last_stats?: Record<string, any>;
+    last_error?: string;
+  };
+  runs: RiftcodexOpsRunItem[];
+  runs_pagination?: RiftcodexOpsPagination;
+}
+
 @Injectable({ providedIn: 'root' })
 export class RiftboundService {
   private http = inject(HttpClient);
@@ -30,6 +130,7 @@ export class RiftboundService {
   listCards(opts: {
     search?: string;
     searchMode?: 'name' | 'ability' | 'all';
+    hybrid?: boolean;
     type?: string;
     rarity?: string;
     colors?: string[];
@@ -47,6 +148,7 @@ export class RiftboundService {
   private fetchCardsHttp(opts: {
     search?: string;
     searchMode?: 'name' | 'ability' | 'all';
+    hybrid?: boolean;
     type?: string;
     rarity?: string;
     colors?: string[];
@@ -63,7 +165,10 @@ export class RiftboundService {
       const mode = opts.searchMode ?? 'all';
       if (mode === 'name') params = params.set('name_search', opts.search);
       else if (mode === 'ability') params = params.set('ability_search', opts.search);
-      else params = params.set('search', opts.search);
+      else {
+        params = params.set('search', opts.search);
+        if (opts.hybrid) params = params.set('hybrid', '1');
+      }
     }
     if (opts.type) params = params.set('type', opts.type);
     if (opts.rarity) params = params.set('rarity', opts.rarity);
@@ -308,5 +413,59 @@ export class RiftboundService {
 
   getMyOrderAssignedSummary(): Observable<RiftboundStoreOrderAssignedSummary> {
     return this.http.get<RiftboundStoreOrderAssignedSummary>(`${this.base}/orders/mine/assigned-summary/`);
+  }
+
+  getSyncStatus(): Observable<RiftcodexSyncStatus> {
+    return this.http.get<RiftcodexSyncStatus>(`${this.base}/sync/status/`);
+  }
+
+  getRiftcodexIndex(indexType: string): Observable<RiftcodexIndexPayload> {
+    return this.http.get<RiftcodexIndexPayload>(`${this.base}/index/${encodeURIComponent(indexType)}/`);
+  }
+
+  getAuditStatus(): Observable<RiftcodexAuditStatus> {
+    return this.http.get<RiftcodexAuditStatus>(`${this.base}/audit/status/`);
+  }
+
+  runSyncOperation(opts: {
+    full?: boolean;
+    dry_run?: boolean;
+    skip_fixes?: boolean;
+    size?: number;
+    since?: string;
+  } = {}): Observable<RiftcodexOperationResult> {
+    return this.http.post<RiftcodexOperationResult>(`${this.base}/ops/run-sync/`, opts);
+  }
+
+  runAuditOperation(opts: { limit?: number } = {}): Observable<RiftcodexOperationResult> {
+    return this.http.post<RiftcodexOperationResult>(`${this.base}/ops/run-audit/`, opts);
+  }
+
+  getOpsOverview(opts: {
+    kind?: 'sync' | 'audit' | '';
+    status?: 'running' | 'success' | 'error' | '';
+    q?: string;
+    page?: number;
+    page_size?: number;
+  } = {}): Observable<RiftcodexOpsOverview> {
+    let params = new HttpParams();
+    if (opts.kind) params = params.set('kind', opts.kind);
+    if (opts.status) params = params.set('status', opts.status);
+    if (opts.q) params = params.set('q', opts.q);
+    if (opts.page) params = params.set('page', String(opts.page));
+    if (opts.page_size) params = params.set('page_size', String(opts.page_size));
+    return this.http.get<RiftcodexOpsOverview>(`${this.base}/ops/overview/`, { params });
+  }
+
+  getOpsRun(runId: number): Observable<RiftcodexOpsRunItem> {
+    return this.http.get<RiftcodexOpsRunItem>(`${this.base}/ops/runs/${runId}/`);
+  }
+
+  rerunOpsRun(runId: number, overrides: Record<string, any> = {}): Observable<RiftcodexOperationResult> {
+    return this.http.post<RiftcodexOperationResult>(`${this.base}/ops/runs/${runId}/rerun/`, overrides);
+  }
+
+  downloadAuditCsv(): Observable<Blob> {
+    return this.http.get(`${this.base}/audit/export.csv`, { responseType: 'blob' });
   }
 }

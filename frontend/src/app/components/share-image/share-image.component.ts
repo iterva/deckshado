@@ -39,12 +39,12 @@ export interface ShareImageItem {
   template: `
   <div class="share-toolbar">
     <button type="button" class="btn btn-sm btn-primary"
-            (click)="download()" [disabled]="busy() || !items?.length"
-            [title]="!items?.length ? 'No hay cartas para incluir' : 'Descargar imagen'">
+            (click)="download()" [disabled]="busy() || !items.length"
+            [title]="!items.length ? 'No hay cartas para incluir' : 'Descargar imagen'">
       📷 {{ busy() ? 'Generando...' : ctaLabel }}
     </button>
     @if (canCopy) {
-      <button type="button" class="btn btn-sm" (click)="copy()" [disabled]="busy() || !items?.length"
+      <button type="button" class="btn btn-sm" (click)="copy()" [disabled]="busy() || !items.length"
               title="Copiar imagen al portapapeles">
         📋 Copiar
       </button>
@@ -66,7 +66,7 @@ export interface ShareImageItem {
       @for (it of items || []; track $index) {
         <div class="card">
           <div class="img-wrap">
-            @if (it.image) {
+            @if (includeCardImages && it.image) {
               <img [src]="it.image | thumb:400" [alt]="it.name" crossorigin="anonymous" />
             } @else {
               <div class="img-fallback">{{ it.name }}</div>
@@ -135,6 +135,25 @@ export interface ShareImageItem {
       background: #1a2040;
       box-shadow: 0 6px 16px rgba(0,0,0,0.5);
     }
+    .img-wrap.no-export-image {
+      background: linear-gradient(135deg, #1a2040 0%, #111733 100%);
+      border: 1px solid #2a346e;
+      box-shadow: none;
+    }
+    .img-wrap.no-export-image::after {
+      content: 'Imagen no disponible';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 10px;
+      font-size: 12px;
+      color: #8ea0d0;
+      font-weight: 600;
+      letter-spacing: .2px;
+    }
     .img-wrap img {
       position: absolute;
       inset: 0;
@@ -202,6 +221,8 @@ export class ShareImageComponent {
   @Input() ctaLabel = 'Descargar imagen';
   @Input() footerTagline = 'ShadowForge · TCG community';
   @Input() canCopy = true;
+  /** Si es false, la imagen se genera sin cargar artes remotas (solo placeholders con nombre). */
+  @Input() includeCardImages = true;
 
   @ViewChild('exportArea', { static: true }) exportArea!: ElementRef<HTMLElement>;
 
@@ -220,15 +241,267 @@ export class ShareImageComponent {
   }
 
   get gridCols(): number {
-    const n = this.items?.length || 0;
+    const n = this.items.length;
     if (n <= 3) return 3;
     if (n >= 15) return 5;
     return 4;
   }
 
-  private async render(): Promise<HTMLCanvasElement | null> {
-    if (!this.items?.length) return null;
-    const el = this.exportArea?.nativeElement;
+  private drawRoundedRect(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    r: number,
+  ) {
+    const rr = Math.max(0, Math.min(r, Math.min(w, h) / 2));
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+
+  private ellipsize(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string {
+    if (ctx.measureText(text).width <= maxWidth) return text;
+    const suffix = '...';
+    let lo = 0;
+    let hi = text.length;
+    while (lo < hi) {
+      const mid = Math.ceil((lo + hi) / 2);
+      const t = text.slice(0, mid) + suffix;
+      if (ctx.measureText(t).width <= maxWidth) lo = mid;
+      else hi = mid - 1;
+    }
+    return text.slice(0, lo) + suffix;
+  }
+
+  private loadImage(url: string): Promise<HTMLImageElement | null> {
+    return new Promise((resolve) => {
+      const clean = (url || '').trim();
+      if (!clean) {
+        resolve(null);
+        return;
+      }
+
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.decoding = 'async';
+      img.referrerPolicy = 'no-referrer';
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = clean;
+    });
+  }
+
+  private async renderCanvasFallback(options: { includeImages?: boolean } = {}): Promise<HTMLCanvasElement | null> {
+    if (!this.items.length) return null;
+
+    const scale = 2;
+    const width = 900;
+    const paddingX = 34;
+    const topPad = 36;
+    const cols = this.gridCols;
+    const gap = 18;
+    const cardRatio = 1 / 0.715;
+    const slotW = Math.floor((width - paddingX * 2 - gap * (cols - 1)) / cols);
+    const imgH = Math.round(slotW * cardRatio);
+    const metaH = this.mode === 'selling' ? 52 : 34;
+    const rows = Math.ceil(this.items.length / cols);
+    const headerH = this.contactLine ? 100 : 84;
+    const gridH = rows * (imgH + metaH) + Math.max(0, rows - 1) * gap;
+    const height = topPad + headerH + 22 + gridH + 28;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.scale(scale, scale);
+
+    const bg = ctx.createLinearGradient(0, 0, 0, height);
+    bg.addColorStop(0, '#0f1326');
+    bg.addColorStop(1, '#131a36');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, width, height);
+
+    const includeImages = options.includeImages ?? this.includeCardImages;
+    const uniqueUrls = includeImages
+      ? Array.from(new Set(this.items.map((it) => (it.image || '').trim()).filter(Boolean)))
+      : [];
+
+    const loadedImages = new Map<string, HTMLImageElement>();
+    if (uniqueUrls.length) {
+      const loaded = await Promise.all(uniqueUrls.map((url) => this.loadImage(url)));
+      uniqueUrls.forEach((url, idx) => {
+        const img = loaded[idx];
+        if (img) loadedImages.set(url, img);
+      });
+    }
+
+    const icon = this.mode === 'buying' ? '🔎' : '🛒';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 36px Segoe UI, Arial, sans-serif';
+    const title = this.headlineText || (this.mode === 'buying' ? 'En la mira' : 'Vendiendo');
+    ctx.fillText(`${icon} ${title}`, paddingX, topPad + 32);
+
+    if (this.contactLine) {
+      ctx.fillStyle = '#a9b3d6';
+      ctx.font = '500 15px Segoe UI, Arial, sans-serif';
+      ctx.fillText(this.ellipsize(ctx, this.contactLine, width - paddingX * 2), paddingX, topPad + 60);
+    }
+
+    const gridY = topPad + headerH;
+    this.items.forEach((it, idx) => {
+      const row = Math.floor(idx / cols);
+      const col = idx % cols;
+      const x = paddingX + col * (slotW + gap);
+      const y = gridY + row * (imgH + metaH + gap);
+
+      this.drawRoundedRect(ctx, x, y, slotW, imgH, 10);
+      ctx.fillStyle = '#1a2040';
+      ctx.fill();
+
+      if (includeImages) {
+        const imgUrl = (it.image || '').trim();
+        const loaded = loadedImages.get(imgUrl);
+        if (loaded) {
+          const ratio = loaded.width / loaded.height;
+          const targetRatio = slotW / imgH;
+          let drawW = slotW;
+          let drawH = imgH;
+          let dx = x;
+          let dy = y;
+
+          if (ratio > targetRatio) {
+            drawW = Math.round(imgH * ratio);
+            dx = x - Math.round((drawW - slotW) / 2);
+          } else {
+            drawH = Math.round(slotW / ratio);
+            dy = y - Math.round((drawH - imgH) / 2);
+          }
+
+          ctx.save();
+          this.drawRoundedRect(ctx, x, y, slotW, imgH, 10);
+          ctx.clip();
+          ctx.drawImage(loaded, dx, dy, drawW, drawH);
+          ctx.restore();
+        }
+      }
+
+      this.drawRoundedRect(ctx, x + 1, y + 1, slotW - 2, imgH - 2, 9);
+      ctx.strokeStyle = '#2a346e';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      const hasRenderedImage = includeImages && loadedImages.has((it.image || '').trim());
+      if (!hasRenderedImage) {
+        ctx.fillStyle = '#8ea0d0';
+        ctx.font = '600 12px Segoe UI, Arial, sans-serif';
+        const placeholder = this.ellipsize(ctx, it.name || 'Carta', slotW - 20);
+        ctx.fillText(placeholder, x + 10, y + Math.floor(imgH / 2));
+      }
+
+      if ((it.quantity || 1) > 1) {
+        const qty = `x${it.quantity}`;
+        ctx.font = '800 14px Segoe UI, Arial, sans-serif';
+        const badgeW = Math.max(34, Math.ceil(ctx.measureText(qty).width + 16));
+        const badgeH = 24;
+        const bx = x + slotW - badgeW - 8;
+        const by = y + 8;
+        this.drawRoundedRect(ctx, bx, by, badgeW, badgeH, 999);
+        ctx.fillStyle = '#ff7a1a';
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(qty, bx + 8, by + 16);
+      }
+
+      if (it.foil) {
+        const fh = 22;
+        const gy = y + imgH - fh;
+        const foil = ctx.createLinearGradient(x, gy, x + slotW, gy);
+        foil.addColorStop(0, '#f5b400');
+        foil.addColorStop(0.5, '#ffd75e');
+        foil.addColorStop(1, '#f5b400');
+        ctx.fillStyle = foil;
+        ctx.fillRect(x, gy, slotW, fh);
+        ctx.fillStyle = '#20180a';
+        ctx.font = '900 12px Segoe UI, Arial, sans-serif';
+        ctx.fillText('FOIL', x + Math.max(8, Math.floor(slotW / 2) - 16), gy + 15);
+      }
+
+      ctx.fillStyle = '#d4dbf2';
+      ctx.font = '600 13px Segoe UI, Arial, sans-serif';
+      ctx.fillText(this.ellipsize(ctx, it.name || '', slotW), x, y + imgH + 18);
+
+      if (this.mode === 'selling' && it.price != null) {
+        const py = y + imgH + 25;
+        this.drawRoundedRect(ctx, x, py, slotW, 21, 999);
+        ctx.fillStyle = '#1f2a52';
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '800 13px Segoe UI, Arial, sans-serif';
+        const price = `$${Math.round(it.price).toLocaleString('es-CL')}`;
+        ctx.fillText(this.ellipsize(ctx, price, slotW - 14), x + 8, py + 15);
+      }
+    });
+
+    return canvas;
+  }
+
+  private sanitizeCloneStyles(root: HTMLElement): void {
+    const nodes: HTMLElement[] = [
+      root,
+      ...Array.from(root.querySelectorAll<HTMLElement>('*')),
+    ];
+    const badColorFn = /\b(?:color|oklab|oklch|lab|lch)\(/i;
+    const colorProps: Array<keyof CSSStyleDeclaration> = [
+      'color',
+      'backgroundColor',
+      'borderColor',
+      'borderTopColor',
+      'borderRightColor',
+      'borderBottomColor',
+      'borderLeftColor',
+      'outlineColor',
+      'textDecorationColor',
+      'caretColor',
+      'columnRuleColor',
+      'fill',
+      'stroke',
+    ];
+
+    for (const node of nodes) {
+      for (const prop of colorProps) {
+        const raw = (node.style as any)[prop];
+        if (typeof raw !== 'string' || !badColorFn.test(raw)) continue;
+        if (prop === 'color' || prop === 'textDecorationColor' || prop === 'caretColor' || prop === 'fill' || prop === 'stroke') {
+          (node.style as any)[prop] = '#d4dbf2';
+        } else if (prop === 'backgroundColor') {
+          (node.style as any)[prop] = 'transparent';
+        } else {
+          (node.style as any)[prop] = 'transparent';
+        }
+      }
+
+      if (typeof node.style.boxShadow === 'string' && badColorFn.test(node.style.boxShadow)) {
+        node.style.boxShadow = 'none';
+      }
+      if (typeof node.style.textShadow === 'string' && badColorFn.test(node.style.textShadow)) {
+        node.style.textShadow = 'none';
+      }
+    }
+  }
+
+  private async render(options: { stripImages?: boolean } = {}): Promise<HTMLCanvasElement | null> {
+    if (!this.items.length) return null;
+    const el = this.exportArea.nativeElement;
     if (!el) return null;
     // Esperar a que el navegador haga layout de las imágenes
     await new Promise<void>(r => requestAnimationFrame(() => r()));
@@ -267,9 +540,23 @@ export class ShareImageComponent {
       wrap.style.height = `${Math.round(width * cardRatio)}px`;
     }
 
-    // Fallback robusto: durante la captura, usamos background-size: cover en el wrap.
+    // Reinicia estilos de una captura previa.
+    for (const wrap of wraps) {
+      wrap.style.backgroundImage = '';
+      wrap.style.backgroundSize = '';
+      wrap.style.backgroundPosition = '';
+      wrap.style.backgroundRepeat = '';
+      wrap.classList.remove('no-export-image');
+    }
+    for (const img of imgs) {
+      (img as HTMLElement).style.visibility = '';
+      (img as HTMLElement).style.display = '';
+    }
+
+    // Fallback robusto: durante la captura normal, usamos background-size: cover en el wrap.
     // Esto evita que html2canvas ignore object-fit en algunos navegadores.
     for (const img of imgs) {
+      if (options.stripImages) break;
       const src = (img as HTMLImageElement).currentSrc || (img as HTMLImageElement).src;
       if (!src) continue;
       const wrap = (img as HTMLElement).closest('.img-wrap') as HTMLElement | null;
@@ -283,21 +570,55 @@ export class ShareImageComponent {
 
     const html2canvas = (await import('html2canvas')).default;
     const exportWindowWidth = window.matchMedia('(max-width: 640px)').matches ? 640 : 900;
-    return await html2canvas(el, {
+    const exportId = `share-export-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    el.setAttribute('data-export-id', exportId);
+
+    try {
+      return await html2canvas(el, {
       backgroundColor: '#0f1326',
       useCORS: true,
       allowTaint: false,
       scale: 2,
       width: 900,
       windowWidth: exportWindowWidth,
-    });
+      onclone: (doc) => {
+        const root = doc.querySelector(`[data-export-id="${exportId}"]`) as HTMLElement | null;
+        if (!root) return;
+        this.sanitizeCloneStyles(root);
+        if (!options.stripImages) return;
+        root.querySelectorAll('.img-wrap img').forEach((img) => (img as HTMLElement).style.display = 'none');
+        root.querySelectorAll('.img-wrap').forEach((wrap) => (wrap as HTMLElement).classList.add('no-export-image'));
+      },
+      });
+    } finally {
+      el.removeAttribute('data-export-id');
+    }
+  }
+
+  private async renderWithFallback(): Promise<{ canvas: HTMLCanvasElement | null; fallbackUsed: boolean }> {
+    // En modo sin imágenes remotas, evitar html2canvas por completo para no depender de parseo CSS.
+    if (!this.includeCardImages) {
+      return { canvas: await this.renderCanvasFallback({ includeImages: false }), fallbackUsed: true };
+    }
+
+    try {
+      const canvas = await this.render();
+      return { canvas, fallbackUsed: false };
+    } catch {
+      try {
+        const canvas = await this.render({ stripImages: true });
+        return { canvas, fallbackUsed: true };
+      } catch {
+        return { canvas: await this.renderCanvasFallback({ includeImages: true }), fallbackUsed: true };
+      }
+    }
   }
 
   async download() {
     if (this.busy()) return;
     this.busy.set(true);
     try {
-      const canvas = await this.render();
+      const { canvas, fallbackUsed } = await this.renderWithFallback();
       if (!canvas) return;
       const blob: Blob | null = await new Promise(res => canvas.toBlob(b => res(b), 'image/png'));
       if (!blob) return;
@@ -311,7 +632,7 @@ export class ShareImageComponent {
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      this.flashToast('Imagen descargada');
+      this.flashToast(fallbackUsed ? 'Imagen descargada (sin algunas fotos)' : 'Imagen descargada');
     } catch (e) {
       console.error('share-image download error', e);
       this.flashToast('Error generando imagen');
@@ -329,12 +650,12 @@ export class ShareImageComponent {
     }
     this.busy.set(true);
     try {
-      const canvas = await this.render();
+      const { canvas, fallbackUsed } = await this.renderWithFallback();
       if (!canvas) return;
       const blob: Blob | null = await new Promise(res => canvas.toBlob(b => res(b), 'image/png'));
       if (!blob) return;
       await navigator.clipboard.write([new w.ClipboardItem({ 'image/png': blob })]);
-      this.flashToast('Imagen copiada');
+      this.flashToast(fallbackUsed ? 'Imagen copiada (sin algunas fotos)' : 'Imagen copiada');
     } catch (e) {
       console.error('share-image copy error', e);
       this.flashToast('Error al copiar');

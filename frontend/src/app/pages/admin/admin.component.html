@@ -12,6 +12,213 @@
     <div class="alert alert-error">{{ error() }}</div>
   }
 
+  <section class="ops-panel">
+    <div class="ops-head">
+      <h2>Riftcodex Operaciones</h2>
+      <div class="ops-head-actions">
+        <span class="live-indicator" [class.live-on]="isLiveRefreshing()" [class.live-paused]="autoRefreshPaused()">
+          {{ isLiveRefreshing() ? 'En vivo' : (autoRefreshPaused() ? 'Auto-refresh pausado' : 'Auto-refresh inactivo') }}
+        </span>
+        <button class="btn-secondary" (click)="toggleAutoRefreshPause()">
+          {{ autoRefreshPaused() ? 'Reanudar auto-refresh' : 'Pausar auto-refresh' }}
+        </button>
+        <div class="share-menu">
+          <details #shareMenu class="share-menu-details">
+            <summary
+              class="btn-secondary"
+              [class.btn-copy-ok]="copyLinkCopied() || copyShortLinkCopied()"
+              aria-haspopup="menu"
+              aria-label="Compartir vista"
+              (keydown)="onShareSummaryKeydown($event)"
+              title="Opciones para compartir la vista actual"
+            >
+              {{ (copyLinkCopied() || copyShortLinkCopied()) ? 'Enlace copiado' : 'Compartir vista' }}
+            </summary>
+            <div class="share-menu-popover" role="menu" aria-label="Opciones de compartir">
+              <button
+                class="share-menu-item"
+                type="button"
+                (click)="copyCurrentViewLink(); closeShareMenu()"
+                (keydown)="onShareItemKeydown($event, 0)"
+                role="menuitem"
+                title="Copiar enlace completo con el estado actual del panel (Ctrl+Shift+K)"
+              >
+                Copiar enlace completo (Ctrl+Shift+K)
+              </button>
+              <button
+                class="share-menu-item"
+                type="button"
+                (click)="copyCompactViewLink(); closeShareMenu()"
+                (keydown)="onShareItemKeydown($event, 1)"
+                role="menuitem"
+                title="Copiar enlace corto (solo parámetros activos) (Ctrl+Shift+L)"
+              >
+                Copiar corto ({{ activeRunParamCount() }}) (Ctrl+Shift+L)
+              </button>
+            </div>
+          </details>
+        </div>
+        @if (copyHint()) {
+          <span class="copy-hint">{{ copyHint() }}</span>
+        }
+        <button class="btn-secondary" (click)="resetOpsViewDefaults()">Restaurar vista</button>
+        <button class="btn-secondary" (click)="loadOpsStatus()" [disabled]="opsLoading()">
+          {{ opsLoading() ? 'Actualizando...' : '↻ Estado' }}
+        </button>
+      </div>
+    </div>
+    <div class="ops-grid">
+      <article class="ops-card">
+        <h3>Sync</h3>
+        @if (syncStatus(); as s) {
+          <p class="ops-line"><strong>Estado:</strong> <span [class]="'pill pill-' + s.status">{{ s.status }}</span></p>
+          <p class="ops-line"><strong>Última:</strong> {{ s.last_success_at ? (s.last_success_at | date:'dd/MM/yyyy HH:mm') : '—' }}</p>
+          <p class="ops-line"><strong>Edad:</strong> {{ s.last_success_age_hours ?? '—' }} h</p>
+          <p class="ops-line"><strong>Cursor:</strong> {{ s.last_cursor || '—' }}</p>
+          @if (s.last_stats) {
+            <p class="ops-line mini">scanned: {{ s.last_stats['scanned'] ?? 0 }} · updated: {{ s.last_stats['updated'] ?? 0 }}</p>
+          }
+          <div class="ops-actions">
+            <button class="btn-secondary" (click)="runSync()" [disabled]="runningSync()">
+              {{ runningSync() ? 'Ejecutando...' : '▶ Ejecutar Sync' }}
+            </button>
+          </div>
+        } @else {
+          <p class="ops-line">Sin datos.</p>
+        }
+      </article>
+
+      <article class="ops-card">
+        <h3>Auditoría</h3>
+        @if (auditStatus(); as a) {
+          <p class="ops-line"><strong>Estado:</strong> <span [class]="'pill pill-' + a.status">{{ a.status }}</span></p>
+          <p class="ops-line"><strong>Última:</strong> {{ a.last_success_at ? (a.last_success_at | date:'dd/MM/yyyy HH:mm') : '—' }}</p>
+          @if (a.last_stats?.['counters']; as c) {
+            <p class="ops-line mini">missing_local: {{ c['missing_in_local'] ?? 0 }} · missing_remote: {{ c['missing_in_remote'] ?? 0 }}</p>
+            <p class="ops-line mini">type_mm: {{ c['type_mismatches'] ?? 0 }} · rarity_mm: {{ c['rarity_mismatches'] ?? 0 }}</p>
+          }
+          @if (a.last_error) {
+            <p class="ops-line err">{{ a.last_error }}</p>
+          }
+          <div class="ops-actions">
+            <button class="btn-secondary" (click)="runAudit()" [disabled]="runningAudit()">
+              {{ runningAudit() ? 'Ejecutando...' : '▶ Ejecutar Auditoría' }}
+            </button>
+            <button class="btn-secondary" (click)="downloadAuditCsv()">⬇ CSV</button>
+          </div>
+        } @else {
+          <p class="ops-line">Sin datos.</p>
+        }
+      </article>
+    </div>
+
+    <div class="ops-runs">
+      <div class="ops-runs-head">
+        <h3>Historial reciente</h3>
+        <div class="ops-runs-filters">
+          <input
+            type="text"
+            [(ngModel)]="runSearchQuery"
+            (ngModelChange)="onRunSearchInput()"
+            (keyup.enter)="applyRunFilters()"
+            placeholder="Buscar comando, usuario o error..."
+          />
+          <button class="btn-secondary btn-sm" (click)="applyRunFilters()">Buscar</button>
+          <button class="btn-secondary btn-sm" (click)="clearRunSearch()" [disabled]="!runSearchQuery.trim()">Limpiar</button>
+          <select [(ngModel)]="runKindFilter" (ngModelChange)="applyRunFilters()">
+            <option value="">Tipo: todos</option>
+            <option value="sync">Sync</option>
+            <option value="audit">Audit</option>
+          </select>
+          <select [(ngModel)]="runStatusFilter" (ngModelChange)="applyRunFilters()">
+            <option value="">Estado: todos</option>
+            <option value="running">Running</option>
+            <option value="success">Success</option>
+            <option value="error">Error</option>
+          </select>
+          <select [(ngModel)]="runsPageSize" (ngModelChange)="onRunsPageSizeChange()">
+            <option [ngValue]="8">8 por página</option>
+            <option [ngValue]="12">12 por página</option>
+            <option [ngValue]="20">20 por página</option>
+          </select>
+        </div>
+      </div>
+      @if (hasAnyRunFilter()) {
+        <div class="ops-filter-chips">
+          @if (runSearchQuery.trim()) {
+            <button class="chip" (click)="clearRunSearch()" title="Limpiar búsqueda">
+              Búsqueda: "{{ runSearchQuery.trim() }}" ×
+            </button>
+          }
+          @if (runKindFilter) {
+            <button class="chip" (click)="clearRunKindFilter()" title="Quitar filtro tipo">
+              Tipo: {{ runKindFilter }} ×
+            </button>
+          }
+          @if (runStatusFilter) {
+            <button class="chip" (click)="clearRunStatusFilter()" title="Quitar filtro estado">
+              Estado: {{ runStatusFilter }} ×
+            </button>
+          }
+          @if (runsPageSize !== 8) {
+            <button class="chip" (click)="resetRunsPageSize()" title="Restaurar page size">
+              Page size: {{ runsPageSize }} ×
+            </button>
+          }
+          <button class="chip chip-clear-all" (click)="resetAllRunFilters()">Limpiar todo</button>
+        </div>
+      }
+      @if (opsRuns().length > 0) {
+        <div class="ops-runs-table-wrap">
+          <table class="ops-runs-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Tipo</th>
+                <th>Comando</th>
+                <th>Estado</th>
+                <th>Inicio</th>
+                <th>Duración</th>
+                <th>Usuario</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (run of opsRuns(); track run.id) {
+                <tr>
+                  <td>#{{ run.id }}</td>
+                  <td>{{ run.kind }}</td>
+                  <td>{{ run.command }}</td>
+                  <td><span [class]="'pill pill-' + run.status">{{ run.status }}</span></td>
+                  <td>{{ run.started_at ? (run.started_at | date:'dd/MM HH:mm:ss') : '—' }}</td>
+                  <td>{{ run.duration_ms ? (run.duration_ms + ' ms') : '—' }}</td>
+                  <td>{{ run.requested_by || 'system' }}</td>
+                  <td class="ops-actions-cell">
+                    <button class="btn-secondary btn-sm" (click)="viewRunOutput(run)">Ver output</button>
+                    <button
+                      class="btn-secondary btn-sm"
+                      (click)="openRerunModal(run)"
+                      [disabled]="run.status === 'running' || rerunRunningId() === run.id"
+                    >
+                      {{ rerunRunningId() === run.id ? 'Re-ejecutando...' : 'Re-ejecutar' }}
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="ops-runs-pagination">
+          <button class="btn-secondary btn-sm" (click)="changeRunsPage(-1)" [disabled]="runsPage <= 1">← Anterior</button>
+          <span>Página {{ runsPage }} / {{ runsTotalPages }} · {{ runsTotal }} run(s)</span>
+          <button class="btn-secondary btn-sm" (click)="changeRunsPage(1)" [disabled]="runsPage >= runsTotalPages">Siguiente →</button>
+        </div>
+      } @else {
+        <p class="ops-line">Aun no hay ejecuciones registradas.</p>
+      }
+    </div>
+  </section>
+
   <div class="toolbar">
     <input
       type="text"
@@ -146,6 +353,74 @@
         <button class="btn-secondary" (click)="closeEdit()" [disabled]="saving()">Cancelar</button>
         <button class="btn-primary" (click)="saveEdit()" [disabled]="saving()">
           {{ saving() ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Operation output modal -->
+@if (outputModalOpen()) {
+  <div class="modal-backdrop" (click)="closeOutputModal()">
+    <div class="modal modal-output" (click)="$event.stopPropagation()">
+      <h2>{{ outputModalTitle() }}</h2>
+      <pre class="output-box">{{ outputModalBody() }}</pre>
+      <div class="modal-actions">
+        <button class="btn-secondary" (click)="copyOutput()">Copiar output</button>
+        <button class="btn-primary" (click)="closeOutputModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Rerun args modal -->
+@if (rerunModalOpen()) {
+  <div class="modal-backdrop" (click)="closeRerunModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      @if (rerunTarget(); as run) {
+        <h2>Re-ejecutar #{{ run.id }} · {{ run.command }}</h2>
+        @if (rerunModalLoading()) {
+          <p class="ops-line">Cargando argumentos...</p>
+        } @else {
+          @if (run.kind === 'sync') {
+            <div class="field-row">
+              <label class="checkbox">
+                <input type="checkbox" [(ngModel)]="rerunSyncForm.full" />
+                Full sync
+              </label>
+              <label class="checkbox">
+                <input type="checkbox" [(ngModel)]="rerunSyncForm.dry_run" />
+                Dry run
+              </label>
+            </div>
+            <div class="field-row">
+              <label class="checkbox">
+                <input type="checkbox" [(ngModel)]="rerunSyncForm.skip_fixes" />
+                Skip fixes
+              </label>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Size (1-100)</label>
+                <input type="number" min="1" max="100" [(ngModel)]="rerunSyncForm.size" />
+              </div>
+              <div class="field">
+                <label>Since (ISO opcional)</label>
+                <input type="text" placeholder="2026-06-01T00:00:00Z" [(ngModel)]="rerunSyncForm.since" />
+              </div>
+            </div>
+          } @else {
+            <div class="field">
+              <label>Limit (1-500)</label>
+              <input type="number" min="1" max="500" [(ngModel)]="rerunAuditForm.limit" />
+            </div>
+          }
+        }
+      }
+      <div class="modal-actions">
+        <button class="btn-secondary" (click)="closeRerunModal()" [disabled]="rerunModalLoading() || !!rerunRunningId()">Cancelar</button>
+        <button class="btn-primary" (click)="submitRerunModal()" [disabled]="rerunModalLoading() || !!rerunRunningId()">
+          {{ rerunRunningId() ? 'Re-ejecutando...' : 'Ejecutar' }}
         </button>
       </div>
     </div>

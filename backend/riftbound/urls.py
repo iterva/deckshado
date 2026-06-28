@@ -13,6 +13,7 @@ from .views import (
     riftbound_my_order_assignments,
     riftbound_accept_store_order, riftbound_cancel_store_order,
     tcgplayer_price_view, tcgplayer_prices_batch_view,
+    tcgmatch_price_view,
 )
 
 router = DefaultRouter()
@@ -40,4 +41,5 @@ urlpatterns = [
     path("orders/<int:order_id>/cancel/", riftbound_cancel_store_order, name="riftbound-cancel-store-order"),
     path("tcgplayer/price/", tcgplayer_price_view, name="riftbound-tcgplayer-price"),
     path("tcgplayer/prices-batch/", tcgplayer_prices_batch_view, name="riftbound-tcgplayer-prices-batch"),
+    path("tcgmatch/price/", tcgmatch_price_view, name="riftbound-tcgmatch-price"),
 ] + router.urls

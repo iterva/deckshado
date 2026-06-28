@@ -58,13 +58,17 @@
     display: flex; flex-direction: column; gap: 0.6rem;
   }
 
-  .page-title {
+  .deck-title {
     margin: 0;
     font-size: 1.9rem;
     line-height: 1.15;
     color: #fff;
     text-shadow: 0 2px 8px rgba(0,0,0,0.6);
     word-break: break-word;
+    background: none !important;
+    -webkit-text-fill-color: #fff !important;
+    -webkit-background-clip: border-box !important;
+    background-clip: border-box !important;
   }
 
   .hero-description {
@@ -732,7 +736,7 @@
       border-radius: 8px;
     }
     .hero-info { gap: 0.4rem; }
-    .page-title { font-size: 1.25rem; }
+    .deck-title { font-size: 1.25rem; }
     .hero-description {
       font-size: 0.8rem;
       max-height: 4.5em;
@@ -1745,7 +1749,7 @@
   .title-row {
     gap: 0.5rem;
 
-    .page-title {
+    .deck-title {
       font-size: 1.2rem;
     }
   }

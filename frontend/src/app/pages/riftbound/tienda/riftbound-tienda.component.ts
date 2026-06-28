@@ -41,13 +41,16 @@ interface RiftboundCartItem {
 
     @if (store(); as s) {
       <div class="store-header">
-        @if (s.binder_avatar_url || s.user_avatar_url) {
-          <img class="store-avatar" [src]="s.binder_avatar_url || s.user_avatar_url" alt="avatar" />
+        @if ((s.binder_avatar_url || s.user_avatar_url) && !storeAvatarFailed()) {
+          <img class="store-avatar"
+               [src]="s.binder_avatar_url || s.user_avatar_url"
+               alt="avatar"
+               (error)="onStoreAvatarError()" />
         } @else {
           <div class="store-avatar-placeholder">🏪</div>
         }
         <div class="store-info">
-          <h1>{{ s.display_name || s.username }}</h1>
+          <h1 class="store-title">{{ s.display_name || s.username }}</h1>
           <p class="store-meta">
             @if (s.city) { <span>📍 {{ s.city }}</span> }
             <span>🌎 {{ s.country }}</span>
@@ -135,24 +138,24 @@ interface RiftboundCartItem {
         @for (e of entries(); track e.id) {
           <div class="store-card">
             <div class="card-image" (click)="preview.set(e.card_data)">
-              @if (e.card_data?.image) {
+              @if (e.card_data.image) {
                 <app-card-photo-carousel
                   [cardImage]="e.card_data.image"
                   [photos]="[e.photo_url, e.photo_url_2]"
                   [alt]="e.card_data.name"
                   [thumbWidth]="350">
                 </app-card-photo-carousel>
-              } @else { <div class="img-fallback">{{ e.card_data?.card_number }}</div> }
+              } @else { <div class="img-fallback">{{ e.card_data.card_number }}</div> }
               @if (e.is_foil) { <div class="foil-badge">✨ FOIL</div> }
             </div>
             <div class="card-body">
-              <h4>{{ e.card_data?.name }}</h4>
-              <span class="card-meta">{{ e.card_data?.card_number }} · {{ e.language }}</span>
+              <h4>{{ e.card_data.name }}</h4>
+              <span class="card-meta">{{ e.card_data.card_number }} · {{ e.language }}</span>
               <div class="price-row">
                 <span class="price">{{ e.price != null ? ('$' + (e.price | number)) : 'Consultar' }}</span>
                 <span class="qty">x{{ e.selling_quantity }}</span>
               </div>
-              <app-tcg-price [cardName]="e.card_data?.name || ''" [compact]="true"></app-tcg-price>
+              <app-tcg-price [cardName]="e.card_data.name || ''" [compact]="true"></app-tcg-price>
               <button class="btn btn-sm btn-primary btn-add-cart"
                       (click)="addToCart(e, $event)"
                       [disabled]="inCart(e.id) >= e.selling_quantity">
@@ -192,17 +195,17 @@ interface RiftboundCartItem {
           @for (w of wishlist(); track w.id) {
             <div class="store-card">
               <div class="card-image" (click)="preview.set(w.card_data)">
-                @if (w.card_data?.image) {
+                @if (w.card_data.image) {
                   <img [src]="w.card_data.image" [alt]="w.card_data.name" loading="lazy" />
-                } @else { <div class="img-fallback">{{ w.card_data?.card_number }}</div> }
+                } @else { <div class="img-fallback">{{ w.card_data.card_number }}</div> }
               </div>
               <div class="card-body">
-                <h4>{{ w.card_data?.name }}</h4>
-                <span class="card-meta">{{ w.card_data?.card_number }}</span>
+                <h4>{{ w.card_data.name }}</h4>
+                <span class="card-meta">{{ w.card_data.card_number }}</span>
                 <div class="price-row">
                   <span class="qty wishlist-qty">❤️ Quiere x{{ w.desired_quantity }}</span>
                 </div>
-                <app-tcg-price [cardName]="w.card_data?.name || ''" [compact]="true"></app-tcg-price>
+                <app-tcg-price [cardName]="w.card_data.name || ''" [compact]="true"></app-tcg-price>
               </div>
             </div>
           }
@@ -320,9 +323,15 @@ interface RiftboundCartItem {
     .store-avatar-placeholder {
       background: #0f0f23; display: flex; align-items: center; justify-content: center; font-size: 2.6rem;
     }
-    .store-info h1 { margin: 0; color: #fff;
-      background: linear-gradient(90deg, #e94560, #fff); -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent; background-clip: text; }
+    .store-info { min-width: 0; }
+    .store-title {
+      margin: 0;
+      color: #f2f6ff !important;
+      background: none !important;
+      -webkit-text-fill-color: #f2f6ff !important;
+      line-height: 1.15;
+      word-break: break-word;
+    }
     .store-meta { display: flex; gap: 1rem; flex-wrap: wrap; color: #9ba3b4; font-size: .9rem; margin: .35rem 0; }
     .store-bio { color: #c8c8da; margin: .35rem 0 .6rem; }
     .store-line { color: #9ba3b4; font-size: .85rem; margin: .2rem 0; }
@@ -525,6 +534,7 @@ export class RiftboundTiendaComponent implements OnInit {
   count = signal(0);
   page = signal(1);
   preview = signal<RiftboundCardLite | null>(null);
+  storeAvatarFailed = signal(false);
 
   // Cart
   cart = signal<RiftboundCartItem[]>([]);
@@ -584,6 +594,7 @@ export class RiftboundTiendaComponent implements OnInit {
         this.entries.set(res.results);
         this.count.set(res.count);
         this.store.set(res.store);
+        this.storeAvatarFailed.set(false);
         this.loading.set(false);
         this.syncCartAvailability();
         this.cdr.markForCheck();
@@ -602,6 +613,11 @@ export class RiftboundTiendaComponent implements OnInit {
   cleanWa(v: string): string { return v.replace(/[^0-9]/g, ''); }
   cleanHandle(v: string): string { return v.replace(/^@/, '').trim(); }
 
+  onStoreAvatarError() {
+    this.storeAvatarFailed.set(true);
+    this.cdr.markForCheck();
+  }
+
   // ── Compartir imagen estilo CardIndex ──
   sellerHandle(): string {
     const s = this.store();
@@ -615,8 +631,8 @@ export class RiftboundTiendaComponent implements OnInit {
   }
   shareStoreItems(): ShareImageItem[] {
     return this.entries().slice(0, 20).map(e => ({
-      name: e.card_data?.name || '',
-      image: e.card_data?.image || '',
+      name: e.card_data.name || '',
+      image: e.card_data.image || '',
       quantity: e.selling_quantity || 1,
       foil: !!e.is_foil,
       price: e.price ?? null,
@@ -624,8 +640,8 @@ export class RiftboundTiendaComponent implements OnInit {
   }
   shareWishlistItems(): ShareImageItem[] {
     return this.wishlist().slice(0, 20).map(w => ({
-      name: w.card_data?.name || '',
-      image: w.card_data?.image || '',
+      name: w.card_data.name || '',
+      image: w.card_data.image || '',
       quantity: w.desired_quantity || 1,
       foil: false,
       price: null,

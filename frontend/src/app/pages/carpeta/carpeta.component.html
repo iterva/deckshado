@@ -354,11 +354,13 @@
       </div>
 
       @if (codexTotalPages > 1) {
-        <div class="pagination">
-          <button class="btn btn-sm" (click)="codexPrev()" [disabled]="codexPage === 1">← Anterior</button>
-          <span>{{ codexPage }} / {{ codexTotalPages }}</span>
-          <button class="btn btn-sm" (click)="codexNext()" [disabled]="codexPage >= codexTotalPages">Siguiente →</button>
-        </div>
+        <div #codexSentinel class="infinite-sentinel" aria-hidden="true"></div>
+        @if (codexLoading && codexCards.length > 0) {
+          <div class="loading">Cargando más...</div>
+        }
+        @if (!codexHasMore && codexCards.length > 0) {
+          <p class="results-count" style="margin-top: 1rem;">— Fin de la colección —</p>
+        }
       }
     </div>
   }
@@ -543,6 +545,9 @@
         </div>
         <button class="btn btn-sm btn-share" (click)="copyShareLink()">
           {{ shareLinkCopied ? '✅ Copiado!' : '🔗 Copiar Link Tienda' }}
+        </button>
+        <button class="btn btn-sm btn-share" (click)="downloadStoreQr()" [disabled]="qrDownloading">
+          {{ qrDownloading ? '⏳ Generando...' : '📱 Generar QR' }}
         </button>
         <button class="btn btn-sm btn-pdf" (click)="exportMercadoPdf()" [disabled]="exportingPdf || mercadoEntries.length === 0">
           {{ exportingPdf ? '⏳ Generando...' : '📄 Exportar PDF' }}

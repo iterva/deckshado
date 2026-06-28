@@ -5,6 +5,7 @@ import {
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import QRCode from 'qrcode';
 
 import { RiftboundService } from '../../../services/riftbound.service';
 import { AuthService } from '../../../services/auth.service';
@@ -38,8 +39,11 @@ interface DirtyPatch {
     <!-- Header -->
     <div class="carpeta-header">
       <div class="binder-avatar-wrap">
-        @if (binderProfile()?.binder_avatar_url || binderProfile()?.user_avatar_url) {
-          <img class="binder-avatar" [src]="binderProfile()!.binder_avatar_url || binderProfile()!.user_avatar_url" alt="avatar" />
+        @if ((binderProfile()?.binder_avatar_url || binderProfile()?.user_avatar_url) && !binderAvatarFailed()) {
+          <img class="binder-avatar"
+               [src]="binderProfile()!.binder_avatar_url || binderProfile()!.user_avatar_url"
+               alt="avatar"
+               (error)="onBinderAvatarError()" />
         } @else {
           <div class="binder-avatar-placeholder">📁</div>
         }
@@ -51,7 +55,7 @@ interface DirtyPatch {
         <input #avatarInput type="file" accept="image/*" hidden (change)="onAvatarFileChange($event)" />
       </div>
       <div class="binder-info">
-        <h1>Mi Carpeta · Riftbound</h1>
+        <h1 class="binder-title">Mi Carpeta · Riftbound</h1>
         <p class="binder-user">{{ auth.user()?.username || 'Invitado' }}</p>
       </div>
     </div>
@@ -151,17 +155,17 @@ interface DirtyPatch {
           @for (entry of collectionEntries(); track entry.id) {
             <div class="collection-card">
               <div class="card-image" (click)="previewCard.set(entry.card_data)">
-                @if (entry.card_data?.image) {
+                @if (entry.card_data.image) {
                   <img [src]="entry.card_data.image" [alt]="entry.card_data.name" loading="lazy" />
                 } @else {
-                  <div class="img-fallback">{{ entry.card_data?.card_number }}</div>
+                  <div class="img-fallback">{{ entry.card_data.card_number }}</div>
                 }
                 <div class="eye-overlay"><i class="bi bi-eye-fill"></i></div>
                 @if (entry.is_foil) { <div class="foil-badge">✨ FOIL</div> }
               </div>
               <div class="card-body">
-                <h4>{{ entry.card_data?.name }}</h4>
-                <span class="card-meta">{{ typeLabel(entry.card_data?.card_type) }} · {{ entry.card_data?.card_number }}</span>
+                <h4>{{ entry.card_data.name }}</h4>
+                <span class="card-meta">{{ typeLabel(entry.card_data.card_type) }} · {{ entry.card_data.card_number }}</span>
                 <div class="inline-fields">
                   <div class="field">
                     <label>Tengo</label>
@@ -180,7 +184,7 @@ interface DirtyPatch {
                   </div>
                 </div>
                 <div class="tcg-ref-row">
-                  <app-tcg-price [cardName]="entry.card_data?.name || ''" [compact]="true"></app-tcg-price>
+                  <app-tcg-price [cardName]="entry.card_data.name || ''" [compact]="true"></app-tcg-price>
                 </div>
                 <div class="inline-fields">
                   <div class="field">
@@ -375,22 +379,22 @@ interface DirtyPatch {
                 <i class="bi bi-camera-fill"></i>
               </label>
               <div class="card-image" (click)="previewCard.set(entry.card_data)">
-                @if (entry.card_data?.image) {
+                @if (entry.card_data.image) {
                   <img [src]="entry.card_data.image" [alt]="entry.card_data.name" loading="lazy" />
                 } @else {
-                  <div class="img-fallback">{{ entry.card_data?.card_number }}</div>
+                  <div class="img-fallback">{{ entry.card_data.card_number }}</div>
                 }
                 <div class="eye-overlay"><i class="bi bi-eye-fill"></i></div>
               </div>
               <div class="card-info">
-                <h4>{{ entry.card_data?.name }}</h4>
-                <span class="card-meta">{{ typeLabel(entry.card_data?.card_type) }} · {{ entry.card_data?.card_number }}</span>
+                <h4>{{ entry.card_data.name }}</h4>
+                <span class="card-meta">{{ typeLabel(entry.card_data.card_type) }} · {{ entry.card_data.card_number }}</span>
                 <div class="wishlist-qty">
                   <label>Quiero:</label>
                   <input type="number" [value]="entry.desired_quantity" min="1"
                     (change)="updateWishlistQty(entry, $any($event.target).valueAsNumber)" />
                 </div>
-                <app-tcg-price [cardName]="entry.card_data?.name || ''" [compact]="true"></app-tcg-price>
+                <app-tcg-price [cardName]="entry.card_data.name || ''" [compact]="true"></app-tcg-price>
               </div>
               <div class="card-actions">
                 <button class="btn btn-xs btn-danger" (click)="removeFromWishlist(entry)" title="Quitar de wishlist">
@@ -413,6 +417,9 @@ interface DirtyPatch {
           @if (binderProfile()?.is_store_public && binderProfile()?.share_token) {
             <button class="btn btn-sm" (click)="copyShareLink()">
               <i class="bi bi-link-45deg"></i> Copiar enlace público
+            </button>
+            <button class="btn btn-sm" (click)="downloadStoreQr()" [disabled]="qrDownloading()">
+              <i class="bi bi-qr-code"></i> {{ qrDownloading() ? 'Generando...' : 'Generar QR' }}
             </button>
           }
           <button class="btn btn-sm" (click)="exportMercadoPdf()" [disabled]="exportingPdf()">
@@ -518,16 +525,16 @@ interface DirtyPatch {
           @for (entry of mercadoEntries(); track entry.id) {
             <div class="collection-card">
               <div class="card-image" (click)="previewCard.set(entry.card_data)">
-                @if (entry.card_data?.image) {
+                @if (entry.card_data.image) {
                   <img [src]="entry.card_data.image" [alt]="entry.card_data.name" loading="lazy" />
                 } @else {
-                  <div class="img-fallback">{{ entry.card_data?.card_number }}</div>
+                  <div class="img-fallback">{{ entry.card_data.card_number }}</div>
                 }
                 @if (entry.is_foil) { <div class="foil-badge">✨ FOIL</div> }
               </div>
               <div class="card-body">
-                <h4>{{ entry.card_data?.name }}</h4>
-                <span class="card-meta">{{ entry.card_data?.card_number }} · {{ entry.language }}</span>
+                <h4>{{ entry.card_data.name }}</h4>
+                <span class="card-meta">{{ entry.card_data.card_number }} · {{ entry.language }}</span>
                 <div class="inline-fields">
                   <div class="field">
                     <label>Precio</label>
@@ -546,7 +553,7 @@ interface DirtyPatch {
                 </div>
                 <div class="tcg-ref-row">
                   <span class="tcg-ref-label">Ref. TCG:</span>
-                  <app-tcg-price [cardName]="entry.card_data?.name || ''" [compact]="true"></app-tcg-price>
+                  <app-tcg-price [cardName]="entry.card_data.name || ''" [compact]="true"></app-tcg-price>
                 </div>
                 <div class="card-photo-row">
                   <!-- Slot 1 -->
@@ -865,14 +872,14 @@ interface DirtyPatch {
       border: 1px solid #2a3a4a; border-radius: 12px;
     }
     .binder-avatar-wrap {
-      position: relative; width: 72px; height: 72px;
+      position: relative; width: 80px; height: 80px; flex-shrink: 0;
     }
     .binder-avatar {
-      width: 72px; height: 72px; border-radius: 12px;
+      width: 80px; height: 80px; border-radius: 14px;
       border: 2px solid #e94560; object-fit: cover; display: block;
     }
     .binder-avatar-placeholder {
-      width: 72px; height: 72px; border-radius: 12px;
+      width: 80px; height: 80px; border-radius: 14px;
       background: #0f0f23; border: 2px solid #e94560;
       display: flex; align-items: center; justify-content: center;
       font-size: 2rem;
@@ -885,9 +892,17 @@ interface DirtyPatch {
       display: flex; align-items: center; justify-content: center;
     }
     .avatar-edit-btn:hover { background: #e94560; color: #fff; }
-    .binder-info h1 { margin: 0; font-size: 1.6rem; color: #fff;
-      background: linear-gradient(90deg, #e94560, #fff); -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent; background-clip: text; }
+    .binder-info { min-width: 0; }
+    .binder-title {
+      margin: 0;
+      font-size: 1.6rem;
+      font-weight: 700;
+      line-height: 1.15;
+      color: #f2f6ff !important;
+      background: none !important;
+      -webkit-text-fill-color: #f2f6ff !important;
+      word-break: break-word;
+    }
     .binder-user { margin: .25rem 0 0; color: #9ba3b4; font-size: .95rem; }
 
     .tabs {
@@ -1359,11 +1374,13 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   /** Mensaje personalizable que aparece bajo el titulo en la imagen compartida. */
   wishlistShareMessage = '';
   avatarUploading = signal(false);
+  binderAvatarFailed = signal(false);
   showStoreConfig = signal(false);
   mercadoEntries = signal<RiftboundCollectionEntry[]>([]);
   mercadoLoading = signal(false);
   mercadoDirty = new Map<number, DirtyPatch>();
   exportingPdf = signal(false);
+  qrDownloading = signal(false);
   onlySelling = signal(false);
   assignedByEntry = signal<Record<number, number>>({});
 
@@ -1632,7 +1649,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   removeFromCollection(entry: RiftboundCollectionEntry) {
-    if (!confirm(`¿Quitar "${entry.card_data?.name}" de tu carpeta?`)) return;
+    if (!confirm(`¿Quitar "${entry.card_data.name}" de tu carpeta?`)) return;
     this.rb.deleteCollection(entry.id).subscribe(() => {
       this.collectionEntries.update(arr => arr.filter(e => e.id !== entry.id));
       this.collectionTotal.update(n => Math.max(0, n - 1));
@@ -1778,6 +1795,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   loadBinderProfile() {
     this.rb.getBinderProfile().subscribe(p => {
       this.binderProfile.set(p);
+      this.binderAvatarFailed.set(false);
       this.cdr.markForCheck();
     });
   }
@@ -1785,8 +1803,14 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   patchProfile(patch: Partial<RiftboundBinderProfile>) {
     this.rb.updateBinderProfile(patch).subscribe(p => {
       this.binderProfile.set(p);
+      this.binderAvatarFailed.set(false);
       this.cdr.markForCheck();
     });
+  }
+
+  onBinderAvatarError() {
+    this.binderAvatarFailed.set(true);
+    this.cdr.markForCheck();
   }
 
   onAvatarFileChange(event: Event) {
@@ -1802,6 +1826,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     this.rb.uploadBinderAvatar(file).subscribe({
       next: p => {
         this.binderProfile.set(p);
+        this.binderAvatarFailed.set(false);
         this.avatarUploading.set(false);
         this.cdr.markForCheck();
       },
@@ -1833,6 +1858,33 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     navigator.clipboard?.writeText(url).then(() => {
       alert('Enlace copiado:\n' + url);
     }).catch(() => prompt('Copia el enlace:', url));
+  }
+
+  async downloadStoreQr() {
+    const token = this.binderProfile()?.share_token;
+    if (!token) return;
+    const url = `${window.location.origin}/riftbound/tienda/${token}`;
+    this.qrDownloading.set(true);
+    try {
+      const dataUrl = await QRCode.toDataURL(url, {
+        width: 1024,
+        margin: 2,
+        errorCorrectionLevel: 'M',
+        color: { dark: '#0f172a', light: '#ffffff' },
+      });
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `riftbound-tienda-qr-${this.auth.user()?.username || 'shadowforge'}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (e) {
+      console.error('QR generation error:', e);
+      alert('No se pudo generar el QR. Intenta de nuevo.');
+    } finally {
+      this.qrDownloading.set(false);
+      this.cdr.markForCheck();
+    }
   }
 
   // ── Compartir wishlist ──

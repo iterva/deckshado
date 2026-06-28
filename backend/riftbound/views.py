@@ -1,5 +1,6 @@
 import os
 
+from django.db import transaction
 from django.db.models import Q
 from rest_framework import viewsets, permissions, status, filters, generics
 from rest_framework.decorators import action, api_view, permission_classes, parser_classes
@@ -546,18 +547,36 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
         if entry.selling_quantity > entry.quantity:
             entry.selling_quantity = entry.quantity
 
+    @staticmethod
+    def _coerce_int(value):
+        if value in (None, ""):
+            return None
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
+
+    def _merge_duplicate_entry(self, entry, duplicate):
+        """Consolida una posible entrada duplicada dentro de `entry` y elimina la otra."""
+        entry.quantity = (entry.quantity or 0) + (duplicate.quantity or 0)
+        entry.selling_quantity = (entry.selling_quantity or 0) + (duplicate.selling_quantity or 0)
+        if not entry.notes and duplicate.notes:
+            entry.notes = duplicate.notes
+        if not entry.photo_url and duplicate.photo_url:
+            entry.photo_url = duplicate.photo_url
+        if not entry.photo_url_2 and duplicate.photo_url_2:
+            entry.photo_url_2 = duplicate.photo_url_2
+        duplicate.delete()
+
     @action(detail=False, methods=["post"], url_path="upsert")
     @parser_classes([JSONParser, MultiPartParser, FormParser])
     def upsert(self, request):
-        """Crea o actualiza una entrada por (user, card, is_foil)."""
+        """Crea o actualiza una entrada; si llega `id`, actualiza esa fila exacta."""
         data = request.data.dict() if hasattr(request.data, "dict") else dict(request.data)
+
+        entry_id = self._coerce_int(data.get("id") or data.get("entry_id"))
         card_id = data.get("card")
-        if not card_id:
-            return Response({"detail": "card requerido"}, status=400)
-        try:
-            card = RiftboundCard.objects.get(pk=card_id)
-        except RiftboundCard.DoesNotExist:
-            return Response({"detail": "carta no existe"}, status=404)
+        card = None
 
         file_obj = request.FILES.get("file")
         if file_obj is not None:
@@ -569,11 +588,47 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
                 return Response({"detail": str(exc)}, status=400)
             data[target_field] = uploaded_url
 
-        is_foil = self._coerce_bool(data.get("is_foil", False))
-        entry, created = RiftboundCollectionEntry.objects.get_or_create(
-            user=request.user, card=card, is_foil=is_foil,
-            defaults={"quantity": 0},
-        )
+        with transaction.atomic():
+            if entry_id is not None:
+                entry = RiftboundCollectionEntry.objects.filter(user=request.user, pk=entry_id).first()
+                if not entry:
+                    return Response({"detail": "entrada no existe"}, status=404)
+
+                if card_id:
+                    try:
+                        card = RiftboundCard.objects.get(pk=card_id)
+                    except RiftboundCard.DoesNotExist:
+                        return Response({"detail": "carta no existe"}, status=404)
+                else:
+                    card = entry.card
+
+                target_is_foil = self._coerce_bool(data["is_foil"]) if "is_foil" in data else entry.is_foil
+                duplicate = (
+                    RiftboundCollectionEntry.objects
+                    .filter(user=request.user, card=card, is_foil=target_is_foil)
+                    .exclude(pk=entry.pk)
+                    .first()
+                )
+                if duplicate:
+                    self._merge_duplicate_entry(entry, duplicate)
+
+                entry.card = card
+                entry.is_foil = target_is_foil
+                created = False
+            else:
+                if not card_id:
+                    return Response({"detail": "card requerido"}, status=400)
+                try:
+                    card = RiftboundCard.objects.get(pk=card_id)
+                except RiftboundCard.DoesNotExist:
+                    return Response({"detail": "carta no existe"}, status=404)
+
+                is_foil = self._coerce_bool(data.get("is_foil", False))
+                entry, created = RiftboundCollectionEntry.objects.get_or_create(
+                    user=request.user, card=card, is_foil=is_foil,
+                    defaults={"quantity": 0},
+                )
+
         if "quantity" not in data and created:
             entry.quantity = 1
         self._apply_fields(entry, data)
@@ -594,18 +649,49 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
             return Response({"detail": "Máximo 200"}, status=400)
         updated = 0
         for item in items:
+            entry_id = self._coerce_int(item.get("id") or item.get("entry_id"))
             card_id = item.get("card")
-            if not card_id:
-                continue
-            try:
-                card = RiftboundCard.objects.get(pk=card_id)
-            except RiftboundCard.DoesNotExist:
-                continue
-            is_foil = bool(item.get("is_foil", False))
-            entry, _ = RiftboundCollectionEntry.objects.get_or_create(
-                user=request.user, card=card, is_foil=is_foil,
-                defaults={"quantity": 0},
-            )
+            card = None
+
+            with transaction.atomic():
+                if entry_id is not None:
+                    entry = RiftboundCollectionEntry.objects.filter(user=request.user, pk=entry_id).first()
+                    if not entry:
+                        continue
+
+                    if card_id:
+                        try:
+                            card = RiftboundCard.objects.get(pk=card_id)
+                        except RiftboundCard.DoesNotExist:
+                            continue
+                    else:
+                        card = entry.card
+
+                    target_is_foil = self._coerce_bool(item["is_foil"]) if "is_foil" in item else entry.is_foil
+                    duplicate = (
+                        RiftboundCollectionEntry.objects
+                        .filter(user=request.user, card=card, is_foil=target_is_foil)
+                        .exclude(pk=entry.pk)
+                        .first()
+                    )
+                    if duplicate:
+                        self._merge_duplicate_entry(entry, duplicate)
+
+                    entry.card = card
+                    entry.is_foil = target_is_foil
+                else:
+                    if not card_id:
+                        continue
+                    try:
+                        card = RiftboundCard.objects.get(pk=card_id)
+                    except RiftboundCard.DoesNotExist:
+                        continue
+                    is_foil = self._coerce_bool(item.get("is_foil", False))
+                    entry, _ = RiftboundCollectionEntry.objects.get_or_create(
+                        user=request.user, card=card, is_foil=is_foil,
+                        defaults={"quantity": 0},
+                    )
+
             self._apply_fields(entry, item)
             if entry.quantity <= 0:
                 entry.delete()

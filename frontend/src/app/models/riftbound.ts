@@ -51,6 +51,9 @@ export interface RiftboundCardLite {
   power: number | null;
   might: number | null;
   image: string;
+  image_url?: string;
+  image_url_small?: string;
+  cdn_image_url?: string;
   description?: string;
   subtypes?: string[];
 }

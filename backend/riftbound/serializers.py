@@ -102,7 +102,8 @@ class RiftboundCardLiteSerializer(serializers.ModelSerializer):
         model = RiftboundCard
         fields = [
             "id", "card_number", "name", "card_type", "rarity",
-            "colors", "energy", "power", "might", "image",
+            "colors", "energy", "power", "might",
+            "image", "image_url", "image_url_small", "cdn_image_url",
             "description", "subtypes",
         ]
 

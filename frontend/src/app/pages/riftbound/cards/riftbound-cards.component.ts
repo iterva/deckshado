@@ -345,7 +345,7 @@ const RARITIES = [
     .rb-modal-layout {
       display: grid; gap: 1.5rem; grid-template-columns: minmax(220px, 360px) 1fr;
     }
-    .rb-modal-img { width: 100%; border-radius: .75rem; align-self: start; }
+    .rb-modal-img { width: 100%; border-radius: .75rem; align-self: start; object-fit: contain; background: #0b0b1a; }
     .rb-modal-info h2 { margin: 0 0 .25rem; font-size: 1.6rem; color: #fff; }
     .rb-modal-info h3 { margin: 1rem 0 .25rem; color: #fff; font-size: 1.05rem; }
     .badges { display: flex; gap: .35rem; flex-wrap: wrap; margin: .75rem 0; }
@@ -365,6 +365,17 @@ const RARITIES = [
     @media (max-width: 720px) {
       .rb-modal-layout { grid-template-columns: 1fr; }
       .rb-modal { padding: 1rem; }
+      .rb-card img {
+        object-fit: contain;
+        background: #0b0b1a;
+      }
+      .rb-modal-img {
+        max-height: 58vh;
+        width: auto;
+        max-width: 100%;
+        margin: 0 auto;
+        display: block;
+      }
       .rb-modal-info h2 { font-size: 1.25rem !important; }
       .stats > div { padding: 0.35rem 0.7rem; min-width: 60px; }
       .stats strong { font-size: 1.1rem; }

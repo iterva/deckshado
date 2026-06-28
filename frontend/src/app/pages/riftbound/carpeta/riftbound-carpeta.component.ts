@@ -145,8 +145,9 @@ interface DirtyPatch {
           @for (entry of collectionEntries(); track entry.id) {
             <div class="collection-card">
               <div class="card-image" (click)="previewCard.set(entry.card_data)">
-                @if (entry.card_data?.image) {
-                  <img [src]="entry.card_data.image" [alt]="entry.card_data.name" loading="lazy" />
+                @if (cardImageUrl(entry.card_data) && !isCardImageBroken(entry.card_data)) {
+                  <img [src]="cardImageUrl(entry.card_data)" [alt]="entry.card_data?.name" loading="lazy"
+                       (error)="onCardImageError(entry.card_data, $event)" />
                 } @else {
                   <div class="img-fallback">{{ entry.card_data?.card_number }}</div>
                 }
@@ -273,8 +274,9 @@ interface DirtyPatch {
           @for (card of codexCards(); track card.id) {
             <div class="card-item" (click)="selectCodexCard(card)">
               <div class="card-image">
-                @if (card.image) {
-                  <img [src]="card.image" [alt]="card.name" loading="lazy" />
+                @if (cardImageUrl(card) && !isCardImageBroken(card)) {
+                  <img [src]="cardImageUrl(card)" [alt]="card.name" loading="lazy"
+                       (error)="onCardImageError(card, $event)" />
                 } @else {
                   <div class="img-fallback">{{ card.card_number }}</div>
                 }
@@ -371,8 +373,9 @@ interface DirtyPatch {
                 <i class="bi bi-camera-fill"></i>
               </label>
               <div class="card-image" (click)="previewCard.set(entry.card_data)">
-                @if (entry.card_data?.image) {
-                  <img [src]="entry.card_data.image" [alt]="entry.card_data.name" loading="lazy" />
+                @if (cardImageUrl(entry.card_data) && !isCardImageBroken(entry.card_data)) {
+                  <img [src]="cardImageUrl(entry.card_data)" [alt]="entry.card_data?.name" loading="lazy"
+                       (error)="onCardImageError(entry.card_data, $event)" />
                 } @else {
                   <div class="img-fallback">{{ entry.card_data?.card_number }}</div>
                 }
@@ -524,8 +527,9 @@ interface DirtyPatch {
           @for (entry of mercadoEntries(); track entry.id) {
             <div class="collection-card">
               <div class="card-image" (click)="previewCard.set(entry.card_data)">
-                @if (entry.card_data?.image) {
-                  <img [src]="entry.card_data.image" [alt]="entry.card_data.name" loading="lazy" />
+                @if (cardImageUrl(entry.card_data) && !isCardImageBroken(entry.card_data)) {
+                  <img [src]="cardImageUrl(entry.card_data)" [alt]="entry.card_data?.name" loading="lazy"
+                       (error)="onCardImageError(entry.card_data, $event)" />
                 } @else {
                   <div class="img-fallback">{{ entry.card_data?.card_number }}</div>
                 }
@@ -694,8 +698,9 @@ interface DirtyPatch {
       <div class="modal-overlay" (click)="previewCard.set(null)">
         <div class="modal modal-detail" (click)="$event.stopPropagation()">
           <button class="close-btn" (click)="previewCard.set(null)">✕</button>
-          @if (pc.image) {
-            <img [src]="pc.image" [alt]="pc.name" class="detail-image" />
+          @if (cardImageUrl(pc) && !isCardImageBroken(pc)) {
+            <img [src]="cardImageUrl(pc)" [alt]="pc.name" class="detail-image"
+                 (error)="onCardImageError(pc, $event)" />
           }
           <div class="detail-info">
             <h2>{{ pc.name }}</h2>
@@ -915,6 +920,12 @@ interface DirtyPatch {
     }
     .card-image img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .2s; }
     .card-image:hover img { transform: scale(1.04); }
+    @media (max-width: 600px) {
+      .card-image img {
+        object-fit: contain;
+        background: #0b0b1a;
+      }
+    }
     .img-fallback {
       width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
       color: #6b7280; font-weight: 700;
@@ -1062,7 +1073,16 @@ interface DirtyPatch {
       max-width: 760px; width: 100%; max-height: 90vh; overflow-y: auto;
       display: grid; grid-template-columns: 1fr 1.2fr; gap: 0; position: relative;
     }
-    @media (max-width: 640px) { .modal-detail { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) {
+      .modal-detail { grid-template-columns: 1fr; }
+      .modal-detail .detail-image {
+        max-height: 58vh;
+        width: auto;
+        max-width: 100%;
+        margin: 0 auto;
+        border-radius: 14px;
+      }
+    }
     .modal-detail .detail-image { width: 100%; height: auto; border-radius: 14px 0 0 14px; display: block; }
     .modal-detail .detail-info { padding: 1.4rem; display: flex; flex-direction: column; gap: .8rem; }
     .modal-detail h2 { margin: 0; color: #fff; }
@@ -1274,6 +1294,8 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   // Preview
   previewCard = signal<RiftboundCardLite | null>(null);
+  private imageFallbackStepByCard = new Map<number, number>();
+  cardImageBroken = signal<Set<number>>(new Set<number>());
 
   // Foto real (por entry.id + slot)
   uploadingPhotoFor = signal<number | null>(null);
@@ -1801,6 +1823,57 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   // ── Helpers ──
+  private toHttps(url: string | null | undefined): string {
+    const value = (url || '').trim();
+    if (!value) return '';
+    return value.startsWith('http://') ? `https://${value.slice(7)}` : value;
+  }
+
+  private cardImageCandidates(card: RiftboundCardLite | RiftboundCard | null | undefined): string[] {
+    if (!card) return [];
+    const candidates = [
+      this.toHttps(card.image),
+      this.toHttps(card.cdn_image_url),
+      this.toHttps(card.image_url),
+      this.toHttps(card.image_url_small),
+    ].filter(Boolean);
+    return Array.from(new Set(candidates));
+  }
+
+  cardImageUrl(card: RiftboundCardLite | RiftboundCard | null | undefined): string {
+    const candidates = this.cardImageCandidates(card);
+    if (!candidates.length) return '';
+    const step = card?.id ? (this.imageFallbackStepByCard.get(card.id) || 0) : 0;
+    return candidates[Math.min(step, candidates.length - 1)] || '';
+  }
+
+  isCardImageBroken(card: RiftboundCardLite | RiftboundCard | null | undefined): boolean {
+    if (!card?.id) return false;
+    return this.cardImageBroken().has(card.id);
+  }
+
+  onCardImageError(card: RiftboundCardLite | RiftboundCard | null | undefined, event: Event) {
+    if (!card?.id) return;
+    const candidates = this.cardImageCandidates(card);
+    const currentStep = this.imageFallbackStepByCard.get(card.id) || 0;
+
+    if (currentStep < candidates.length - 1) {
+      const nextStep = currentStep + 1;
+      this.imageFallbackStepByCard.set(card.id, nextStep);
+      const img = event.target as HTMLImageElement | null;
+      if (img) img.src = candidates[nextStep];
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.cardImageBroken.update(prev => {
+      const next = new Set(prev);
+      next.add(card.id);
+      return next;
+    });
+    this.cdr.markForCheck();
+  }
+
   typeLabel(t: string | undefined | null): string {
     return ({
       unit: 'Unit', spell: 'Spell', champion: 'Champion', legend: 'Legend',

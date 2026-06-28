@@ -458,6 +458,18 @@ interface RiftboundCartItem {
     /* ── Mobile ── */
     @media (max-width: 768px) {
       .cards-grid { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: .55rem; }
+      .card-image img {
+        object-fit: contain;
+        background: #0b0b1a;
+      }
+      .detail-image {
+        max-height: 58vh;
+        width: auto;
+        max-width: 100%;
+        margin: 0 auto;
+        display: block;
+        border-radius: 14px;
+      }
       .card-body { padding: .55rem .6rem .65rem; }
       .card-body h4 { font-size: .88rem; }
       .price { font-size: .95rem; }

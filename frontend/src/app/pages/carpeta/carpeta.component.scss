@@ -438,6 +438,162 @@
   &:hover { border-color: #e94560; }
 }
 
+// ── Orders (Pedidos / Historial) ──
+.orders-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+  margin-bottom: 0.8rem;
+
+  select {
+    min-width: 150px;
+    padding: 0.45rem 0.65rem;
+    border-radius: 8px;
+    border: 1px solid #39445a;
+    background: #171e2d;
+    color: #d7deec;
+    font-size: 0.88rem;
+  }
+
+  .btn {
+    border: 1px solid #46526a;
+    background: #2a3142;
+    color: #dce3f0;
+  }
+
+  .btn:hover:not(:disabled) {
+    background: #333c50;
+  }
+}
+
+.orders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.8rem;
+}
+
+.order-card {
+  background: #151b2a;
+  border: 1px solid #2c354a;
+  border-radius: 10px;
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.order-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+
+  h4 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #eef2fb;
+  }
+}
+
+.order-status {
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+
+  &.pending {
+    color: #f8d98f;
+    background: rgba(186, 140, 57, 0.18);
+    border-color: rgba(186, 140, 57, 0.45);
+  }
+
+  &.accepted {
+    color: #9ee6c9;
+    background: rgba(44, 132, 95, 0.2);
+    border-color: rgba(59, 161, 116, 0.48);
+  }
+
+  &.cancelled {
+    color: #f0aab1;
+    background: rgba(142, 69, 85, 0.2);
+    border-color: rgba(176, 86, 106, 0.5);
+  }
+}
+
+.order-meta {
+  margin: 0;
+  color: #c6cedf;
+  line-height: 1.35;
+
+  strong { color: #f2f5fc; }
+}
+
+.order-note {
+  margin: 0.1rem 0;
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  background: #101627;
+  border: 1px solid #2b344a;
+  color: #c8d0e0;
+  font-size: 0.84rem;
+}
+
+.order-items {
+  margin-top: 0.15rem;
+  border-top: 1px solid #273149;
+  padding-top: 0.45rem;
+  display: grid;
+  gap: 0.32rem;
+}
+
+.order-item-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+  color: #c2cbdd;
+  font-size: 0.9rem;
+
+  span:last-child {
+    color: #e8edf8;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+}
+
+.order-actions {
+  margin-top: 0.45rem;
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+
+  .btn {
+    border: 1px solid #46526a;
+    background: #2a3142;
+    color: #dce3f0;
+  }
+
+  .btn-primary {
+    background: #2f5d74;
+    border-color: #467c97;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: #396f8a;
+  }
+
+  .btn-danger {
+    background: #6a3d47;
+    border-color: #8b5561;
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background: #7a4854;
+  }
+}
+
 // ── Collection Grid ──
 .collection-grid, .wishlist-grid {
   display: grid;

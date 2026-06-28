@@ -155,7 +155,7 @@ class RiftboundCardViewSet(viewsets.ReadOnlyModelViewSet):
         rarity = map_card_rarity(classification.get("rarity"))
         image_url = media.get("image_url") or local_card.image_url or local_card.image_url_small or ""
         cdn_image_url = local_card.cdn_image_url or ""
-        image = image_url or cdn_image_url or local_card.image_url_small or ""
+        image = cdn_image_url or image_url or local_card.image_url_small or ""
 
         if lite:
             return {
@@ -169,6 +169,9 @@ class RiftboundCardViewSet(viewsets.ReadOnlyModelViewSet):
                 "power": attrs.get("power"),
                 "might": attrs.get("might"),
                 "image": image,
+                "image_url": image_url,
+                "image_url_small": local_card.image_url_small or "",
+                "cdn_image_url": cdn_image_url,
                 "description": text.get("plain") or local_card.description or "",
                 "subtypes": local_card.subtypes or [],
             }

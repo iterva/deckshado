@@ -13,10 +13,10 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RiftboundService } from '../../../services/riftbound.service';
-import { RiftboundCard, RiftboundCardLite } from '../../../models/riftbound';
+import { RiftboundCard, RiftboundCardLite, RiftboundColor } from '../../../models/riftbound';
 import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.component';
 
-const FALLBACK_COLORS: { code: string; label: string; hex: string }[] = [
+const COLORS: { code: RiftboundColor; label: string; hex: string }[] = [
   { code: 'fury',  label: 'Fury',  hex: '#e94560' },
   { code: 'calm',  label: 'Calm',  hex: '#4caf50' },
   { code: 'mind',  label: 'Mind',  hex: '#3aa6ff' },
@@ -25,7 +25,7 @@ const FALLBACK_COLORS: { code: string; label: string; hex: string }[] = [
   { code: 'order', label: 'Order', hex: '#ff6b7d' },
 ];
 
-const FALLBACK_TYPES = [
+const TYPES = [
   { code: 'unit', label: 'Unidad' },
   { code: 'spell', label: 'Hechizo' },
   { code: 'champion', label: 'Champion' },
@@ -35,7 +35,7 @@ const FALLBACK_TYPES = [
   { code: 'rune', label: 'Runa' },
 ];
 
-const FALLBACK_RARITIES = [
+const RARITIES = [
   { code: 'common', label: 'Common' },
   { code: 'uncommon', label: 'Uncommon' },
   { code: 'rare', label: 'Rare' },
@@ -44,8 +44,6 @@ const FALLBACK_RARITIES = [
   { code: 'champion', label: 'Champion' },
   { code: 'promo', label: 'Promo' },
 ];
-
-const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 
 @Component({
   selector: 'app-riftbound-cards',
@@ -110,7 +108,7 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
             <label>Energía</label>
             <select [(ngModel)]="energyFilter" (ngModelChange)="reset()">
               <option [ngValue]="null">Cualquiera</option>
-              @for (n of energyOptions; track n) {
+              @for (n of [0,1,2,3,4,5,6,7,8]; track n) {
                 <option [ngValue]="n">{{ n }}</option>
               }
             </select>
@@ -138,7 +136,7 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
         </div>
       </div>
 
-      @if (loading() && cards().length === 0) {
+      @if (loading()) {
         <p class="muted center">Cargando…</p>
       }
 
@@ -150,6 +148,14 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
             } @else {
               <div class="rb-card-placeholder">{{ card.name }}</div>
             }
+            <div class="rb-card-meta">
+              <strong>{{ card.name }}</strong>
+              <small>{{ card.card_number }}</small>
+              @if (card.description) {
+                <p class="rb-card-ability">{{ card.description }}</p>
+              }
+              <app-tcg-price [cardName]="card.name" [compact]="true" [showLink]="true"></app-tcg-price>
+            </div>
           </button>
         }
       </div>
@@ -198,14 +204,14 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
         <p class="muted center empty">Sin resultados con los filtros actuales.</p>
       }
 
-      @if (totalCount() > pageSize) {
+      @if (hasMore()) {
         <div #cardsSentinel class="infinite-sentinel" aria-hidden="true"></div>
-        @if (loading() && cards().length > 0) {
-          <p class="muted center" style="margin: 1rem 0;">Cargando más...</p>
-        }
-        @if (!hasMoreResults() && cards().length > 0) {
-          <p class="muted center" style="margin: 1rem 0;">— Fin de resultados —</p>
-        }
+      }
+      @if (loading() && cards().length > 0) {
+        <p class="muted center">Cargando más...</p>
+      }
+      @if (!hasMore() && !loading() && cards().length > 0) {
+        <p class="muted center" style="margin-top: 1rem;">— Fin de cartas —</p>
       }
     </div>
   `,
@@ -280,10 +286,11 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
       .card-grid { grid-template-columns: repeat(auto-fit, minmax(78px, 1fr)); gap: 0.45rem; }
       .rb-card { gap: 0; }
       .rb-card img, .rb-card-placeholder { border-radius: .35rem; }
+      .rb-card-meta { display: none; }
     }
     @media (max-width: 360px) { .card-grid { grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 0.35rem; } }
     .rb-card {
-      text-decoration: none; color: inherit; display: flex; flex-direction: column;
+      text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: .35rem;
       transition: transform .15s;
       background: transparent; border: none; padding: 0; cursor: pointer;
       font: inherit; text-align: left;
@@ -291,6 +298,14 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
     .rb-card:hover { transform: translateY(-3px); }
     .rb-card img { width: 100%; aspect-ratio: 63/88; object-fit: cover; border-radius: .5rem; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
     .rb-card-placeholder { aspect-ratio: 63/88; display: grid; place-items: center; padding: 1rem; text-align: center; background: #16213e; border-radius: .5rem; color: #c8c8da; }
+    .rb-card-meta { display: flex; flex-direction: column; }
+    .rb-card-meta strong { color: #fff; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rb-card-meta small { opacity: .6; font-size: .75rem; }
+    .rb-card-ability {
+      margin: .25rem 0 0; font-size: .72rem; color: #aaa; line-height: 1.35;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
 
     .search-modes {
       display: flex; background: #16213e; border: 1px solid #2a2a4a;
@@ -304,11 +319,7 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
     .search-modes button:hover { color: #fff; }
     .search-modes button.active { background: #e94560; color: #fff; font-weight: 600; }
 
-    .infinite-sentinel {
-      width: 100%;
-      height: 1px;
-      margin-top: 1rem;
-    }
+    .infinite-sentinel { width: 100%; height: 1px; margin-top: .6rem; }
 
     /* Modal */
     .rb-modal-overlay {
@@ -365,17 +376,15 @@ const FALLBACK_ENERGY = [0, 1, 2, 3, 4, 5, 6, 7, 8];
     :host-context(body.light-theme) .filter-group select,
     :host-context(body.light-theme) .chip { background: #ffffff; border-color: #d4c489; color: #2a1f10; }
     :host-context(body.light-theme) .chip.active { background: #785a28; border-color: #785a28; color: #fff; }
+    :host-context(body.light-theme) .rb-card-meta strong { color: #463714; }
   `],
 })
 export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy {
   private rb = inject(RiftboundService);
-  @ViewChild('cardsSentinel') cardsSentinelRef?: ElementRef<HTMLElement>;
-  private cardsObserver?: IntersectionObserver;
 
-  colors = [...FALLBACK_COLORS];
-  types = [...FALLBACK_TYPES];
-  rarities = [...FALLBACK_RARITIES];
-  energyOptions = [...FALLBACK_ENERGY];
+  readonly colors = COLORS;
+  readonly types = TYPES;
+  readonly rarities = RARITIES;
   // Debe coincidir con DRF PAGE_SIZE (backend/backend/settings.py).
   // Si no coincide, totalPages se calcula mal y quedan cartas inaccesibles.
   readonly pageSize = 20;
@@ -386,9 +395,10 @@ export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy
   setFilter = '';
   rarityFilter = '';
   energyFilter: number | null = null;
-  selectedColors = signal(new Set<string>());
+  selectedColors = signal(new Set<RiftboundColor>());
 
   cards = signal<RiftboundCardLite[]>([]);
+  hasMore = signal(false);
   sets = signal<{ code: string; name: string }[]>([]);
   loading = signal(false);
   modalOpen = signal(false);
@@ -396,8 +406,16 @@ export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy
   selectedCard = signal<RiftboundCard | null>(null);
   page = signal(1);
   totalCount = signal(0);
-  hasMoreResults = signal(false);
   totalPages = computed(() => Math.max(1, Math.ceil(this.totalCount() / this.pageSize)));
+  private cardsSentinelRef?: ElementRef<HTMLElement>;
+  private cardsObserver?: IntersectionObserver;
+  private contentScrollEl: HTMLElement | null = null;
+
+  @ViewChild('cardsSentinel')
+  set cardsSentinelSetter(el: ElementRef<HTMLElement> | undefined) {
+    this.cardsSentinelRef = el;
+    this.setupCardsObserver();
+  }
 
   hasActiveFilter = computed(() =>
     !!(this.searchQuery || this.typeFilter || this.setFilter ||
@@ -406,7 +424,6 @@ export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
 
   ngOnInit() {
-    this.loadDynamicIndexes();
     this.rb.listSets().subscribe({
       next: (sets: any) => {
         const arr = Array.isArray(sets) ? sets : (sets?.results ?? []);
@@ -418,28 +435,15 @@ export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy
 
   ngAfterViewInit() {
     this.setupCardsObserver();
+    this.attachContentScrollListener();
+    this.tryInfiniteScrollFallback();
   }
 
   ngOnDestroy() {
     this.cardsObserver?.disconnect();
+    this.detachContentScrollListener();
     if (this.searchTimer) clearTimeout(this.searchTimer);
     document.body.style.overflow = '';
-  }
-
-  private setupCardsObserver() {
-    if (typeof IntersectionObserver === 'undefined') return;
-    this.cardsObserver?.disconnect();
-    this.cardsObserver = new IntersectionObserver(entries => {
-      for (const entry of entries) {
-        if (entry.isIntersecting && this.hasMoreResults() && !this.loading()) {
-          this.loadMoreResults();
-          break;
-        }
-      }
-    }, { rootMargin: '300px' });
-
-    const el = this.cardsSentinelRef?.nativeElement;
-    if (el) this.cardsObserver.observe(el);
   }
 
   setType(t: string) { this.typeFilter = t; this.reset(); }
@@ -450,87 +454,11 @@ export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy
     if (this.searchQuery) this.reset();
   }
 
-  toggleColor(c: string) {
+  toggleColor(c: RiftboundColor) {
     const set = new Set(this.selectedColors());
     if (set.has(c)) set.delete(c); else set.add(c);
     this.selectedColors.set(set);
     this.reset();
-  }
-
-  private loadDynamicIndexes() {
-    this.rb.getRiftcodexIndex('card-types').subscribe({
-      next: (data) => { this.types = this.buildTypeOptions(data.values); },
-    });
-
-    this.rb.getRiftcodexIndex('rarities').subscribe({
-      next: (data) => { this.rarities = this.buildRarityOptions(data.values); },
-    });
-
-    this.rb.getRiftcodexIndex('domains').subscribe({
-      next: (data) => { this.colors = this.buildColorOptions(data.values); },
-    });
-
-    this.rb.getRiftcodexIndex('energy').subscribe({
-      next: (data) => { this.energyOptions = this.buildEnergyOptions(data.values); },
-    });
-  }
-
-  private buildTypeOptions(values: Array<string | number>): { code: string; label: string }[] {
-    const map = new Map(FALLBACK_TYPES.map((x) => [x.code, x.label]));
-    for (const raw of values) {
-      const code = String(raw || '').trim().toLowerCase();
-      if (!code) continue;
-      if (!map.has(code)) map.set(code, this.toLabel(String(raw)));
-    }
-    return Array.from(map.entries()).map(([code, label]) => ({ code, label }));
-  }
-
-  private buildRarityOptions(values: Array<string | number>): { code: string; label: string }[] {
-    const map = new Map(FALLBACK_RARITIES.map((x) => [x.code, x.label]));
-    for (const raw of values) {
-      const code = String(raw || '').trim().toLowerCase();
-      if (!code) continue;
-      if (!map.has(code)) map.set(code, this.toLabel(String(raw)));
-    }
-    return Array.from(map.entries()).map(([code, label]) => ({ code, label }));
-  }
-
-  private buildColorOptions(values: Array<string | number>): { code: string; label: string; hex: string }[] {
-    const map = new Map(FALLBACK_COLORS.map((x) => [x.code, x]));
-    for (const raw of values) {
-      const code = String(raw || '').trim().toLowerCase();
-      if (!code) continue;
-      if (!map.has(code)) {
-        map.set(code, { code, label: this.toLabel(String(raw)), hex: this.pickColorHex(code) });
-      }
-    }
-    return Array.from(map.values());
-  }
-
-  private buildEnergyOptions(values: Array<string | number>): number[] {
-    const energies = new Set<number>();
-    for (const raw of values) {
-      const n = Number(raw);
-      if (Number.isFinite(n) && n >= 0) energies.add(n);
-    }
-    const list = Array.from(energies).sort((a, b) => a - b);
-    return list.length ? list : [...FALLBACK_ENERGY];
-  }
-
-  private toLabel(raw: string): string {
-    return raw
-      .toLowerCase()
-      .replace(/[-_]+/g, ' ')
-      .replace(/\b\w/g, (x) => x.toUpperCase());
-  }
-
-  private pickColorHex(code: string): string {
-    const known = FALLBACK_COLORS.find((x) => x.code === code)?.hex;
-    if (known) return known;
-    let hash = 0;
-    for (let i = 0; i < code.length; i += 1) hash = ((hash << 5) - hash) + code.charCodeAt(i);
-    const hue = Math.abs(hash) % 360;
-    return `hsl(${hue} 72% 56%)`;
   }
 
   onSearchInput() {
@@ -549,18 +477,27 @@ export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy
   }
 
   reset() {
-    this.page.set(1);
-    this.cards.set([]);
-    this.hasMoreResults.set(false);
     this.reload();
   }
 
-  reload(append = false) {
+  reload() {
+    this.page.set(1);
+    this.cards.set([]);
+    this.hasMore.set(false);
+    this.fetchCardsPage();
+  }
+
+  loadMoreCards() {
+    if (this.loading() || !this.hasMore()) return;
+    this.page.update(p => p + 1);
+    this.fetchCardsPage(true);
+  }
+
+  private fetchCardsPage(append = false) {
     this.loading.set(true);
     this.rb.listCards({
       search: this.searchQuery || undefined,
       searchMode: this.searchMode,
-      hybrid: !!this.searchQuery && this.searchMode === 'all',
       type: this.typeFilter || undefined,
       set: this.setFilter || undefined,
       rarity: this.rarityFilter || undefined,
@@ -568,28 +505,83 @@ export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy
       colors: [...this.selectedColors()],
       excludeBattlefields: this.selectedColors().size > 0 && this.typeFilter !== 'battlefield',
       page: this.page(),
+      pageSize: this.pageSize,
       lite: true,
     }).subscribe({
       next: (resp) => {
-        const next = resp.results as RiftboundCardLite[];
         if (append) {
-          this.cards.update(curr => [...curr, ...next]);
+          this.cards.update(curr => [...curr, ...(resp.results as RiftboundCardLite[])]);
         } else {
-          this.cards.set(next);
+          this.cards.set(resp.results as RiftboundCardLite[]);
         }
         this.totalCount.set(resp.count);
-        this.hasMoreResults.set(!!resp.next);
+        this.hasMore.set(!!resp.next);
         this.loading.set(false);
-        queueMicrotask(() => this.setupCardsObserver());
+        setTimeout(() => {
+          this.setupCardsObserver();
+          this.tryInfiniteScrollFallback();
+        });
       },
       error: () => this.loading.set(false),
     });
   }
 
-  private loadMoreResults() {
-    if (this.loading() || !this.hasMoreResults()) return;
-    this.page.update(p => p + 1);
-    this.reload(true);
+  private setupCardsObserver() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    this.cardsObserver?.disconnect();
+    const sentinel = this.cardsSentinelRef?.nativeElement;
+    if (!sentinel) return;
+    this.cardsObserver = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          this.loadMoreCards();
+          break;
+        }
+      }
+    }, { rootMargin: '320px 0px' });
+    this.cardsObserver.observe(sentinel);
+  }
+
+  private attachContentScrollListener() {
+    this.detachContentScrollListener();
+    const el = document.querySelector('main.content') as HTMLElement | null;
+    if (!el) return;
+    this.contentScrollEl = el;
+    this.contentScrollEl.addEventListener('scroll', this.onContentScroll, { passive: true });
+  }
+
+  private detachContentScrollListener() {
+    if (!this.contentScrollEl) return;
+    this.contentScrollEl.removeEventListener('scroll', this.onContentScroll);
+    this.contentScrollEl = null;
+  }
+
+  private onContentScroll = () => {
+    this.tryInfiniteScrollFallback();
+  };
+
+  @HostListener('window:scroll')
+  onWindowScroll() { this.tryInfiniteScrollFallback(); }
+
+  @HostListener('window:resize')
+  onWindowResize() { this.tryInfiniteScrollFallback(); }
+
+  private tryInfiniteScrollFallback() {
+    if (!this.isNearPageBottom()) return;
+    this.loadMoreCards();
+  }
+
+  private isNearPageBottom(offset = 900): boolean {
+    const container = this.contentScrollEl;
+    if (container && container.scrollHeight > container.clientHeight) {
+      return container.scrollTop + container.clientHeight >= container.scrollHeight - 420;
+    }
+    const doc = document.documentElement;
+    const body = document.body;
+    const scrollTop = window.scrollY || doc.scrollTop || 0;
+    const viewport = window.innerHeight || doc.clientHeight || 0;
+    const fullHeight = Math.max(doc.scrollHeight, body?.scrollHeight || 0);
+    return scrollTop + viewport >= fullHeight - offset;
   }
 
   openCard(cardNumber: string) {

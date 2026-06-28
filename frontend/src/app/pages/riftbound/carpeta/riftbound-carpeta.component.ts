@@ -1608,6 +1608,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   private buildUpsertPayload(entry: RiftboundCollectionEntry, p: DirtyPatch): Partial<RiftboundCollectionEntry> {
     return {
+      id: entry.id,
       card: entry.card,
       quantity: p.quantity ?? entry.quantity,
       is_foil: p.is_foil ?? entry.is_foil,

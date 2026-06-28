@@ -27,6 +27,8 @@ from .serializers import (
 
 class CarpetaPagination(PageNumberPagination):
     page_size = 40
+    page_size_query_param = "page_size"
+    max_page_size = 200
 
 
 # ── Binder Profile ──────────────────────────────────────
@@ -354,6 +356,25 @@ def _resolve_public_profile(token_or_slug):
 
 
 def _filter_store_qs(qs, params):
+    entry_ids_raw = (params.get("entry_ids") or "").strip()
+    if entry_ids_raw:
+        entry_ids = []
+        for chunk in entry_ids_raw.split(","):
+            chunk = chunk.strip()
+            if not chunk:
+                continue
+            try:
+                value = int(chunk)
+            except ValueError:
+                continue
+            if value > 0:
+                entry_ids.append(value)
+        entry_ids = list(dict.fromkeys(entry_ids))
+        if entry_ids:
+            qs = qs.filter(id__in=entry_ids)
+        else:
+            return qs.none()
+
     search = params.get("search")
     if search:
         qs = qs.filter(card__name__icontains=search)

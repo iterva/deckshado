@@ -24,6 +24,7 @@ export interface PublicStoreResponse extends PaginatedResponse<CollectionEntry> 
 
 export interface StoreFilters {
   page?: number;
+  page_size?: number;
   search?: string;
   fmt?: string;
   edition?: string;
@@ -36,6 +37,7 @@ export interface StoreFilters {
   price_max?: number;
   only_priced?: '1';
   ordering?: string;
+  entry_ids?: number[] | string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -134,6 +136,13 @@ export class CarpetaService {
   getPublicStore(tokenOrSlug: string, filters: StoreFilters = {}): Observable<PublicStoreResponse> {
     let params = new HttpParams();
     Object.entries(filters).forEach(([k, v]) => {
+      if (Array.isArray(v)) {
+        const values = v
+          .map(x => String(x).trim())
+          .filter(x => x.length > 0);
+        if (values.length) params = params.set(k, values.join(','));
+        return;
+      }
       if (v !== undefined && v !== null && v !== '') params = params.set(k, String(v));
     });
     return this.http.get<PublicStoreResponse>(`${this.apiUrl}/store/${tokenOrSlug}/`, { params });

@@ -10,7 +10,7 @@ import { RiftboundService } from '../../../services/riftbound.service';
 import { AuthService } from '../../../services/auth.service';
 import {
   RiftboundCollectionEntry, RiftboundCardLite, RiftboundPublicBinderProfile,
-  RiftboundWishlistEntry,
+  RiftboundWishlistEntry, RiftboundStoreOrderCreatePayload,
 } from '../../../models/riftbound';
 import { ShareImageComponent, ShareImageItem } from '../../../components/share-image/share-image.component';
 import { CardPhotoCarouselComponent } from '../../../components/card-photo-carousel/card-photo-carousel.component';
@@ -106,6 +106,12 @@ interface RiftboundCartItem {
           @if (s.wishlist_count) { <span class="tab-count">{{ s.wishlist_count }}</span> }
         </button>
       </div>
+
+      @if (createdOrderId) {
+        <div class="order-success">
+          ✅ Pedido #{{ createdOrderId }} creado correctamente. El vendedor ya lo ve en su carpeta.
+        </div>
+      }
 
       @if (activeTab() === 'store') {
       <div class="filter-row">
@@ -256,9 +262,32 @@ interface RiftboundCartItem {
               <strong>\${{ cartTotal() | number }}</strong>
               @if (cartHasUnpriced()) { <small class="warn">⚠ Hay cartas sin precio, consulta al vendedor.</small> }
             </div>
+            <div class="buyer-form">
+              <h4>Datos para contacto</h4>
+              <div class="buyer-grid">
+                <label>
+                  <span>Nombre *</span>
+                  <input type="text" [(ngModel)]="buyerName" maxlength="100" placeholder="Tu nombre" />
+                </label>
+                <label>
+                  <span>WhatsApp *</span>
+                  <input type="text" [(ngModel)]="buyerWhatsapp" maxlength="30" placeholder="+56..." />
+                </label>
+                <label class="full">
+                  <span>Nota (opcional)</span>
+                  <textarea rows="2" [(ngModel)]="buyerNote" maxlength="800" placeholder="Ej: retiro en estación central"></textarea>
+                </label>
+              </div>
+              @if (orderError) {
+                <p class="order-error">{{ orderError }}</p>
+              }
+            </div>
             <div class="cart-actions">
+              <button class="btn btn-primary" (click)="createOrder()" [disabled]="!canSubmitOrder()">
+                {{ orderSubmitting ? '⏳ Creando pedido...' : '✅ Confirmar pedido' }}
+              </button>
               @if (store()?.whatsapp) {
-                <button class="btn btn-primary" (click)="sendWhatsApp()">📱 Enviar pedido por WhatsApp</button>
+                <button class="btn btn-sm" (click)="sendWhatsApp()">📱 WhatsApp</button>
               }
               <button class="btn btn-sm" (click)="copyOrder()">📋 Copiar pedido</button>
               <button class="btn btn-sm" (click)="clearCart()">🗑️ Vaciar</button>
@@ -452,6 +481,54 @@ interface RiftboundCartItem {
     }
     .cart-total strong { color: #e94560; font-size: 1.1rem; }
     .cart-total .warn { width: 100%; color: #c89b3c; font-size: .8rem; }
+    .buyer-form {
+      margin-top: .75rem;
+      padding: .7rem;
+      border-radius: 8px;
+      border: 1px solid #2a3a4a;
+      background: #0f0f23;
+    }
+    .buyer-form h4 { margin: 0 0 .55rem; color: #fff; font-size: .92rem; }
+    .buyer-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: .5rem;
+    }
+    .buyer-grid label {
+      display: flex;
+      flex-direction: column;
+      gap: .25rem;
+      color: #c8c8da;
+      font-size: .82rem;
+    }
+    .buyer-grid label.full { grid-column: 1 / -1; }
+    .buyer-grid input, .buyer-grid textarea {
+      padding: .5rem .65rem;
+      border-radius: 6px;
+      border: 1px solid #2a3a4a;
+      background: #171f30;
+      color: #e5ebf7;
+      font-size: .9rem;
+      font-family: inherit;
+    }
+    .buyer-grid input:focus, .buyer-grid textarea:focus {
+      outline: none;
+      border-color: #e94560;
+    }
+    .order-error {
+      margin: .5rem 0 0;
+      color: #ff9aa9;
+      font-size: .83rem;
+    }
+    .order-success {
+      margin: 0 0 1rem;
+      padding: .65rem .85rem;
+      border-radius: 8px;
+      border: 1px solid rgba(79, 195, 247, 0.35);
+      background: rgba(79, 195, 247, 0.12);
+      color: #cbeeff;
+      font-size: .9rem;
+    }
     .cart-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .6rem; }
     .cart-actions .btn-primary { flex: 1 1 100%; }
 
@@ -526,6 +603,12 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
   // Cart
   cart = signal<RiftboundCartItem[]>([]);
   showCart = signal(false);
+  buyerName = '';
+  buyerWhatsapp = '';
+  buyerNote = '';
+  orderSubmitting = false;
+  orderError = '';
+  createdOrderId: number | null = null;
 
   // Tabs / wishlist
   activeTab = signal<'store' | 'wishlist'>('store');
@@ -545,6 +628,12 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
   cartCount() { return this.cart().reduce((s, c) => s + c.qty, 0); }
   cartTotal() { return this.cart().reduce((s, c) => s + (c.price || 0) * c.qty, 0); }
   cartHasUnpriced() { return this.cart().some(c => c.price == null); }
+  canSubmitOrder(): boolean {
+    return this.cart().length > 0
+      && !this.orderSubmitting
+      && !!this.buyerName.trim()
+      && !!this.buyerWhatsapp.trim();
+  }
   inCart(entryId: number): number { return this.cart().find(c => c.entryId === entryId)?.qty || 0; }
 
   ngOnInit() {
@@ -552,6 +641,7 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
     const dt = this.route.snapshot.data?.['defaultTab'];
     if (dt === 'wishlist') this.activeTab.set('wishlist');
     this.loadCart();
+    this.buyerName = this.auth.user()?.username || '';
     this.reload();
     if (this.activeTab() === 'wishlist') this.reloadWishlist();
   }
@@ -753,6 +843,8 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
     }
     this.cart.set(list);
     this.saveCart();
+    this.createdOrderId = null;
+    this.orderError = '';
     this.cdr.markForCheck();
   }
 
@@ -771,6 +863,41 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
 
   clearCart() { this.cart.set([]); this.saveCart(); }
 
+  private syncCartWithLatestStock(latestEntries: RiftboundCollectionEntry[]) {
+    const latestByEntry = new Map<number, RiftboundCollectionEntry>();
+    for (const entry of latestEntries) latestByEntry.set(entry.id, entry);
+
+    const removed: string[] = [];
+    const reduced: string[] = [];
+    const nextCart: RiftboundCartItem[] = [];
+
+    for (const item of this.cart()) {
+      const latest = latestByEntry.get(item.entryId);
+      const available = latest?.selling_quantity ?? 0;
+
+      if (available <= 0) {
+        removed.push(item.name);
+        continue;
+      }
+
+      const nextQty = Math.min(item.qty, available);
+      if (nextQty < item.qty) {
+        reduced.push(`${item.name} (${item.qty}->${nextQty})`);
+      }
+
+      nextCart.push({
+        ...item,
+        name: latest?.card_data?.name || item.name,
+        image: latest?.card_data?.image || item.image,
+        price: latest?.price ?? item.price,
+        available,
+        qty: nextQty,
+      });
+    }
+
+    return { nextCart, removed, reduced };
+  }
+
   buildOrderText(): string {
     const s = this.store();
     const lines = [`Hola ${s?.display_name || s?.username}! Quiero comprar (Riftbound):`];
@@ -788,15 +915,102 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   sendWhatsApp() {
+    const waUrl = this.buildWhatsAppOrderUrl();
+    if (!waUrl) return;
+    window.open(waUrl, '_blank');
+  }
+
+  private buildWhatsAppOrderUrl(orderId?: number): string | null {
     const wa = this.store()?.whatsapp;
-    if (!wa) return;
+    if (!wa) return null;
     const number = wa.replace(/[^0-9]/g, '');
-    const text = encodeURIComponent(this.buildOrderText());
-    window.open(`https://wa.me/${number}?text=${text}`, '_blank');
+    if (!number) return null;
+    const orderSuffix = orderId ? `\n\nPedido #${orderId}` : '';
+    const text = encodeURIComponent(`${this.buildOrderText()}${orderSuffix}`);
+    return `https://wa.me/${number}?text=${text}`;
   }
 
   copyOrder() {
     navigator.clipboard.writeText(this.buildOrderText());
+  }
+
+  createOrder() {
+    if (!this.canSubmitOrder()) return;
+    this.orderSubmitting = true;
+    this.orderError = '';
+    const pendingWhatsApp = this.store()?.whatsapp ? window.open('about:blank', '_blank') : null;
+
+    const entryIds = Array.from(new Set(this.cart().map(c => c.entryId)));
+    this.rb.getPublicStore(this.token, {
+      entry_ids: entryIds,
+      page_size: Math.max(40, entryIds.length),
+      ordering: 'id',
+    }).subscribe({
+      next: (res) => {
+        const { nextCart, removed, reduced } = this.syncCartWithLatestStock(res.results);
+        this.cart.set(nextCart);
+        this.saveCart();
+
+        if (removed.length > 0 || reduced.length > 0 || nextCart.length === 0) {
+          const msg: string[] = ['Actualizamos el stock antes de enviar el pedido.'];
+          if (removed.length > 0) {
+            msg.push(`Sin stock: ${removed.slice(0, 3).join(', ')}${removed.length > 3 ? '...' : ''}.`);
+          }
+          if (reduced.length > 0) {
+            msg.push(`Cantidades ajustadas: ${reduced.slice(0, 3).join(', ')}${reduced.length > 3 ? '...' : ''}.`);
+          }
+          if (nextCart.length === 0) {
+            msg.push('El carrito quedó sin items disponibles.');
+          } else {
+            msg.push('Revisa el carrito y confirma nuevamente.');
+          }
+
+          this.orderSubmitting = false;
+          this.orderError = msg.join(' ');
+          if (pendingWhatsApp && !pendingWhatsApp.closed) pendingWhatsApp.close();
+          this.reload();
+          this.cdr.markForCheck();
+          return;
+        }
+
+        const payload: RiftboundStoreOrderCreatePayload = {
+          buyer_name: this.buyerName.trim(),
+          buyer_whatsapp: this.buyerWhatsapp.trim(),
+          buyer_note: (this.buyerNote || '').trim(),
+          items: nextCart.map((item) => ({ entry_id: item.entryId, quantity: item.qty })),
+        };
+
+        this.rb.createPublicStoreOrder(this.token, payload).subscribe({
+          next: (order) => {
+            this.createdOrderId = order.id;
+            const waUrl = this.buildWhatsAppOrderUrl(order.id);
+            if (waUrl) {
+              if (pendingWhatsApp && !pendingWhatsApp.closed) pendingWhatsApp.location.href = waUrl;
+              else window.open(waUrl, '_blank');
+            } else if (pendingWhatsApp && !pendingWhatsApp.closed) {
+              pendingWhatsApp.close();
+            }
+            this.orderSubmitting = false;
+            this.clearCart();
+            this.showCart.set(false);
+            this.reload();
+            this.cdr.markForCheck();
+          },
+          error: (err) => {
+            this.orderSubmitting = false;
+            this.orderError = err?.error?.detail || 'No se pudo crear el pedido. Revisa stock y vuelve a intentar.';
+            if (pendingWhatsApp && !pendingWhatsApp.closed) pendingWhatsApp.close();
+            this.cdr.markForCheck();
+          },
+        });
+      },
+      error: (err) => {
+        this.orderSubmitting = false;
+        this.orderError = err?.error?.detail || 'No se pudo validar stock actualizado. Intenta nuevamente.';
+        if (pendingWhatsApp && !pendingWhatsApp.closed) pendingWhatsApp.close();
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   // ── TCGPlayer ──

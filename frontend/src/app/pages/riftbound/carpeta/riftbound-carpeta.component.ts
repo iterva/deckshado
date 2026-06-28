@@ -14,10 +14,10 @@ import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.compo
 import {
   RiftboundCard, RiftboundCardLite, RiftboundCollectionEntry, RiftboundWishlistEntry,
   RiftboundSet, RiftboundCollectionStats, RiftboundBinderProfile, RiftboundBulkImportResult,
-  RiftboundCondition, RiftboundLanguage,
+  RiftboundCondition, RiftboundLanguage, RiftboundStoreOrder, RiftboundStoreOrderStatus,
 } from '../../../models/riftbound';
 
-type Tab = 'carpeta' | 'codex' | 'wishlist' | 'mercado' | 'stats';
+type Tab = 'carpeta' | 'codex' | 'wishlist' | 'mercado' | 'pedidos' | 'historial' | 'stats';
 
 interface DirtyPatch {
   quantity?: number;
@@ -70,6 +70,12 @@ interface DirtyPatch {
       </button>
       <button class="tab" [class.active]="activeTab() === 'mercado'" (click)="switchTab('mercado')">
         <i class="bi bi-shop"></i> MERCADO
+      </button>
+      <button class="tab" [class.active]="activeTab() === 'pedidos'" (click)="switchTab('pedidos')">
+        <i class="bi bi-receipt"></i> PEDIDOS
+      </button>
+      <button class="tab" [class.active]="activeTab() === 'historial'" (click)="switchTab('historial')">
+        <i class="bi bi-clock-history"></i> HISTORIAL
       </button>
       <button class="tab" [class.active]="activeTab() === 'stats'" (click)="switchTab('stats')">
         <i class="bi bi-bar-chart-fill"></i> STATS
@@ -615,6 +621,126 @@ interface DirtyPatch {
       </div>
     }
 
+    <!-- ═══ TAB: PEDIDOS (Pendientes) ═══ -->
+    @if (activeTab() === 'pedidos') {
+      <div class="tab-content">
+        <div class="orders-toolbar">
+          <button class="btn btn-sm" (click)="loadPendingOrders()">🔄 Recargar</button>
+        </div>
+
+        @if (ordersLoading()) {
+          <div class="loading">Cargando pedidos...</div>
+        }
+
+        @if (!ordersLoading() && pendingOrders().length === 0) {
+          <div class="empty-state">
+            <p>No tienes pedidos pendientes.</p>
+          </div>
+        }
+
+        <div class="orders-grid">
+          @for (o of pendingOrders(); track o.id) {
+            <div class="order-card">
+              <div class="order-head">
+                <h4>Pedido #{{ o.id }}</h4>
+                <span class="order-status pending">{{ orderStatusLabel(o.status) }}</span>
+              </div>
+              <p class="order-meta">Comprador: <strong>{{ o.buyer_name || o.buyer_username || 'Anónimo' }}</strong></p>
+              <p class="order-meta">WhatsApp: <strong>{{ o.buyer_whatsapp || '—' }}</strong></p>
+              <p class="order-meta">Creado: {{ o.created_at | date:'short' }}</p>
+              @if (o.total_estimated != null) {
+                <p class="order-meta">Total estimado: <strong>\${{ o.total_estimated | number:'1.0-0':'es-CL' }}</strong></p>
+              }
+              @if (o.buyer_note) {
+                <p class="order-note">📝 {{ o.buyer_note }}</p>
+              }
+              <div class="order-items">
+                @for (it of o.items; track it.id) {
+                  <div class="order-item-row">
+                    <span>{{ it.quantity }}x {{ it.card_name || it.card_data?.name || ('Carta #' + it.card) }}</span>
+                    <span>
+                      @if (it.line_total != null) {
+                        \${{ it.line_total | number:'1.0-0':'es-CL' }}
+                      } @else {
+                        —
+                      }
+                    </span>
+                  </div>
+                }
+              </div>
+              <div class="order-actions">
+                <button class="btn btn-sm btn-primary" (click)="acceptOrder(o)">✅ Aceptar</button>
+                <button class="btn btn-sm btn-danger" (click)="cancelOrder(o)">❌ Cancelar</button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ═══ TAB: HISTORIAL (Aceptados/Cancelados) ═══ -->
+    @if (activeTab() === 'historial') {
+      <div class="tab-content">
+        <div class="orders-toolbar">
+          <select [value]="historyStatusFilter()" (change)="onHistoryFilterChange($any($event.target).value)">
+            <option value="">Todos</option>
+            <option value="accepted">Aceptados</option>
+            <option value="cancelled">Cancelados</option>
+          </select>
+          <button class="btn btn-sm" (click)="loadHistoryOrders()">🔄 Recargar</button>
+        </div>
+
+        @if (historyLoading()) {
+          <div class="loading">Cargando historial...</div>
+        }
+
+        @if (!historyLoading() && historyOrders().length === 0) {
+          <div class="empty-state">
+            <p>No hay pedidos en historial para este filtro.</p>
+          </div>
+        }
+
+        <div class="orders-grid history-grid">
+          @for (o of historyOrders(); track o.id) {
+            <div class="order-card">
+              <div class="order-head">
+                <h4>Pedido #{{ o.id }}</h4>
+                <span class="order-status" [class.accepted]="o.status === 'accepted'" [class.cancelled]="o.status === 'cancelled'">
+                  {{ orderStatusLabel(o.status) }}
+                </span>
+              </div>
+              <p class="order-meta">Comprador: <strong>{{ o.buyer_name || o.buyer_username || 'Anónimo' }}</strong></p>
+              <p class="order-meta">Creado: {{ o.created_at | date:'short' }}</p>
+              <p class="order-meta">Cierre: {{ o.responded_at ? (o.responded_at | date:'short') : '—' }}</p>
+              @if (o.total_estimated != null) {
+                <p class="order-meta">Total estimado: <strong>\${{ o.total_estimated | number:'1.0-0':'es-CL' }}</strong></p>
+              }
+              @if (o.buyer_note) {
+                <p class="order-note">📝 {{ o.buyer_note }}</p>
+              }
+              @if (o.seller_note) {
+                <p class="order-note">Nota vendedor: {{ o.seller_note }}</p>
+              }
+              <div class="order-items">
+                @for (it of o.items; track it.id) {
+                  <div class="order-item-row">
+                    <span>{{ it.quantity }}x {{ it.card_name || it.card_data?.name || ('Carta #' + it.card) }}</span>
+                    <span>
+                      @if (it.line_total != null) {
+                        \${{ it.line_total | number:'1.0-0':'es-CL' }}
+                      } @else {
+                        —
+                      }
+                    </span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
     @if (activeTab() === 'stats') {
       <div class="tab-content">
         @if (statsLoading()) {
@@ -864,6 +990,108 @@ interface DirtyPatch {
     .btn-danger { background: transparent; border-color: #e94560; color: #e94560; }
     .btn-danger:hover:not(:disabled) { background: #e94560; color: #fff; }
     .btn-heart-lg.active { background: #e94560; color: #fff; border-color: #e94560; }
+
+    .orders-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: .55rem;
+      margin-bottom: .8rem;
+      flex-wrap: wrap;
+    }
+    .orders-toolbar select {
+      background: #16213e;
+      border: 1px solid #2a3a4a;
+      color: #e7edf8;
+      border-radius: 8px;
+      padding: .45rem .6rem;
+    }
+    .orders-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: .9rem;
+    }
+    .order-card {
+      background: rgba(22, 33, 62, 0.6);
+      border: 1px solid #2a3a4a;
+      border-radius: 12px;
+      padding: .8rem;
+      display: flex;
+      flex-direction: column;
+      gap: .35rem;
+    }
+    .order-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .5rem;
+    }
+    .order-head h4 {
+      margin: 0;
+      color: #fff;
+      font-size: .98rem;
+    }
+    .order-status {
+      font-size: .75rem;
+      border-radius: 999px;
+      padding: .18rem .55rem;
+      border: 1px solid #2a3a4a;
+      color: #c8d4ea;
+    }
+    .order-status.pending {
+      border-color: #f6c85f;
+      color: #ffe6a6;
+      background: rgba(246, 200, 95, 0.15);
+    }
+    .order-status.accepted {
+      border-color: #5abf90;
+      color: #b9f5d8;
+      background: rgba(90, 191, 144, 0.15);
+    }
+    .order-status.cancelled {
+      border-color: #d95f5f;
+      color: #ffd0d0;
+      background: rgba(217, 95, 95, 0.15);
+    }
+    .order-meta {
+      margin: 0;
+      color: #c7cfdd;
+      font-size: .84rem;
+    }
+    .order-note {
+      margin: .1rem 0 0;
+      color: #b5c0d8;
+      font-size: .82rem;
+      background: rgba(15, 23, 42, 0.45);
+      border: 1px solid rgba(42, 58, 74, 0.6);
+      border-radius: 8px;
+      padding: .4rem .55rem;
+      white-space: pre-wrap;
+    }
+    .order-items {
+      margin-top: .25rem;
+      border-top: 1px dashed #2a3a4a;
+      padding-top: .35rem;
+      display: flex;
+      flex-direction: column;
+      gap: .25rem;
+    }
+    .order-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .7rem;
+      font-size: .82rem;
+      color: #d7e0ef;
+    }
+    .order-actions {
+      margin-top: .45rem;
+      display: flex;
+      gap: .45rem;
+      flex-wrap: wrap;
+    }
+    .order-actions .btn { flex: 1 1 0; min-width: 120px; }
+    .history-grid .order-actions { display: none; }
 
     /* Grids */
     .collection-grid, .wishlist-grid {
@@ -1286,6 +1514,13 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   qrDownloading = signal(false);
   onlySelling = signal(false);
 
+  // Pedidos (vendedor)
+  pendingOrders = signal<RiftboundStoreOrder[]>([]);
+  historyOrders = signal<RiftboundStoreOrder[]>([]);
+  ordersLoading = signal(false);
+  historyLoading = signal(false);
+  historyStatusFilter = signal<'' | RiftboundStoreOrderStatus>('');
+
   // Bulk import
   showBulkImport = signal(false);
   bulkText = '';
@@ -1523,6 +1758,8 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     if (t === 'codex' && this.codexCards().length === 0) this.loadCodex();
     if (t === 'wishlist') this.loadWishlist();
     if (t === 'mercado') { this.loadMercado(); }
+    if (t === 'pedidos') this.loadPendingOrders();
+    if (t === 'historial') this.loadHistoryOrders();
     if (t === 'stats') this.loadStats();
     queueMicrotask(() => {
       this.setupCollectionObserver();
@@ -1810,6 +2047,84 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
       this.wishlistTotal.update(n => Math.max(0, n - 1));
       this.wishlistIds.delete(entry.card);
       this.cdr.markForCheck();
+    });
+  }
+
+  // ── Pedidos / Historial ──
+  loadPendingOrders() {
+    this.ordersLoading.set(true);
+    this.rb.listMyStoreOrders({ status: 'pending', page: 1 }).subscribe({
+      next: (res) => {
+        this.pendingOrders.set(res.results || []);
+        this.ordersLoading.set(false);
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.ordersLoading.set(false);
+        this.pendingOrders.set([]);
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  loadHistoryOrders() {
+    this.historyLoading.set(true);
+    const status = this.historyStatusFilter() || undefined;
+    this.rb.listMyStoreOrders({ status, page: 1 }).subscribe({
+      next: (res) => {
+        this.historyOrders.set(res.results || []);
+        this.historyLoading.set(false);
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.historyLoading.set(false);
+        this.historyOrders.set([]);
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  onHistoryFilterChange(v: '' | RiftboundStoreOrderStatus) {
+    this.historyStatusFilter.set(v);
+    this.loadHistoryOrders();
+  }
+
+  orderStatusLabel(status: RiftboundStoreOrderStatus): string {
+    if (status === 'pending') return 'Pendiente';
+    if (status === 'accepted') return 'Aceptado';
+    if (status === 'cancelled') return 'Cancelado';
+    return status;
+  }
+
+  acceptOrder(order: RiftboundStoreOrder) {
+    if (!confirm(`¿Aceptar pedido #${order.id}?`)) return;
+    this.rb.acceptStoreOrder(order.id).subscribe({
+      next: () => {
+        this.pendingOrders.update(arr => arr.filter(o => o.id !== order.id));
+        if (this.activeTab() === 'historial') this.loadHistoryOrders();
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        alert(err?.error?.detail || 'No se pudo aceptar el pedido.');
+      },
+    });
+  }
+
+  cancelOrder(order: RiftboundStoreOrder) {
+    const reason = prompt(`Motivo de cancelación para pedido #${order.id}:`, '')?.trim() || '';
+    if (!reason) {
+      alert('Debes indicar un motivo para cancelar el pedido.');
+      return;
+    }
+    this.rb.cancelStoreOrder(order.id, reason).subscribe({
+      next: () => {
+        this.pendingOrders.update(arr => arr.filter(o => o.id !== order.id));
+        if (this.activeTab() === 'historial') this.loadHistoryOrders();
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        alert(err?.error?.detail || 'No se pudo cancelar el pedido.');
+      },
     });
   }
 

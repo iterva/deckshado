@@ -428,7 +428,6 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
     this.setupBuilderCardsObserver();
     this.attachBrowserScrollListener();
     this.attachContentScrollListener();
-    this.tryBuilderInfiniteScrollFallback();
   }
 
   ngOnDestroy() {
@@ -468,7 +467,6 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
         this.cdr.detectChanges();
         queueMicrotask(() => {
           this.setupBuilderCardsObserver();
-          this.tryBuilderInfiniteScrollFallback();
         });
       },
       error: () => {
@@ -750,12 +748,12 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loadMoreCards();
   }
 
-  private isNearBuilderBottom(offset = 900): boolean {
+  private isNearBuilderBottom(offset = 220): boolean {
     if (this.browserScrollEl && this.browserScrollEl.scrollHeight > this.browserScrollEl.clientHeight) {
-      return this.browserScrollEl.scrollTop + this.browserScrollEl.clientHeight >= this.browserScrollEl.scrollHeight - 420;
+      return this.browserScrollEl.scrollTop + this.browserScrollEl.clientHeight >= this.browserScrollEl.scrollHeight - 120;
     }
     if (this.contentScrollEl && this.contentScrollEl.scrollHeight > this.contentScrollEl.clientHeight) {
-      return this.contentScrollEl.scrollTop + this.contentScrollEl.clientHeight >= this.contentScrollEl.scrollHeight - 420;
+      return this.contentScrollEl.scrollTop + this.contentScrollEl.clientHeight >= this.contentScrollEl.scrollHeight - 120;
     }
     const doc = document.documentElement;
     const body = document.body;

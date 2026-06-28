@@ -289,10 +289,18 @@ export class TiendaComponent implements OnInit {
   }
 
   sendWhatsApp() {
-    if (!this.store?.whatsapp) return;
+    const url = this.buildWhatsAppOrderUrl();
+    if (!url) return;
+    window.open(url, '_blank');
+  }
+
+  private buildWhatsAppOrderUrl(orderId?: number): string | null {
+    if (!this.store?.whatsapp) return null;
     const number = this.store.whatsapp.replace(/[^0-9]/g, '');
-    const text = encodeURIComponent(this.buildOrderText());
-    window.open(`https://wa.me/${number}?text=${text}`, '_blank');
+    if (!number) return null;
+    const orderSuffix = orderId ? `\n\nPedido #${orderId}` : '';
+    const text = encodeURIComponent(`${this.buildOrderText()}${orderSuffix}`);
+    return `https://wa.me/${number}?text=${text}`;
   }
 
   copyOrder() {
@@ -303,6 +311,7 @@ export class TiendaComponent implements OnInit {
     if (!this.canSubmitOrder()) return;
     this.orderSubmitting = true;
     this.orderError = '';
+    const pendingWhatsApp = this.store?.whatsapp ? window.open('about:blank', '_blank') : null;
 
     const entryIds = Array.from(new Set(this.cart.map(c => c.entryId)));
     this.carpetaService.getPublicStore(this.token, {
@@ -331,6 +340,7 @@ export class TiendaComponent implements OnInit {
 
           this.orderSubmitting = false;
           this.orderError = msg.join(' ');
+          if (pendingWhatsApp && !pendingWhatsApp.closed) pendingWhatsApp.close();
           this.loadStore();
           this.cdr.detectChanges();
           return;
@@ -346,6 +356,13 @@ export class TiendaComponent implements OnInit {
         this.carpetaService.createPublicStoreOrder(this.token, payload).subscribe({
           next: (order) => {
             this.createdOrderId = order.id;
+            const waUrl = this.buildWhatsAppOrderUrl(order.id);
+            if (waUrl) {
+              if (pendingWhatsApp && !pendingWhatsApp.closed) pendingWhatsApp.location.href = waUrl;
+              else window.open(waUrl, '_blank');
+            } else if (pendingWhatsApp && !pendingWhatsApp.closed) {
+              pendingWhatsApp.close();
+            }
             this.orderSubmitting = false;
             this.clearCart();
             this.showCart = false;
@@ -355,6 +372,7 @@ export class TiendaComponent implements OnInit {
           error: (err) => {
             this.orderSubmitting = false;
             this.orderError = err?.error?.detail || 'No se pudo crear el pedido. Revisa stock y vuelve a intentar.';
+            if (pendingWhatsApp && !pendingWhatsApp.closed) pendingWhatsApp.close();
             this.cdr.detectChanges();
           },
         });
@@ -362,6 +380,7 @@ export class TiendaComponent implements OnInit {
       error: (err) => {
         this.orderSubmitting = false;
         this.orderError = err?.error?.detail || 'No se pudo validar stock actualizado. Intenta nuevamente.';
+        if (pendingWhatsApp && !pendingWhatsApp.closed) pendingWhatsApp.close();
         this.cdr.detectChanges();
       },
     });

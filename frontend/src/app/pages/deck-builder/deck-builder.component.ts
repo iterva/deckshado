@@ -703,6 +703,7 @@ export class DeckBuilderComponent implements OnInit {
     'gremio-paladin': ['caballero', 'sacerdote'],
     'clan-desafiante': ['dragon', 'guerrero'],
   };
+  private readonly racelessAllyLimit = 4;
 
   private isRaceless(card: Card): boolean {
     const rs = (card.race_slug || '').toLowerCase().trim();
@@ -769,10 +770,15 @@ export class DeckBuilderComponent implements OnInit {
       return this.isRaceless(card);
     }
 
-    // Specific race: only allies of that race are allowed
+    // Specific race: allies of that race are allowed
     if (this.cardMatchesRace(card, this.selectedRace)) return true;
 
-    // Different race ally (or raceless ally in non-totem race): not allowed
+    // Raceless allies are allowed in racial decks with a cap of 4 total.
+    if (this.isRaceless(card)) {
+      return this.getRacelessAllyCount() < this.racelessAllyLimit;
+    }
+
+    // Different race ally: not allowed
     return false;
   }
 
@@ -787,8 +793,8 @@ export class DeckBuilderComponent implements OnInit {
       if (this.selectedRace === 'dream') return true;
       // Tótem: only raceless allies
       if (this.selectedRace === 'totem') return this.isRaceless(card);
-      // Specific race: show only matching race allies
-      return this.cardMatchesRace(card, this.selectedRace);
+      // Specific race: show matching race allies plus raceless allies.
+      return this.cardMatchesRace(card, this.selectedRace) || this.isRaceless(card);
     });
   }
 
@@ -869,6 +875,18 @@ export class DeckBuilderComponent implements OnInit {
     // Race restriction
     if (!this.isCardAllowedByRace(card)) return;
 
+    // Racial decks can include up to 4 raceless allies in total (main + side).
+    if (
+      this.selectedRace &&
+      this.selectedRace !== 'dream' &&
+      this.selectedRace !== 'totem' &&
+      this.isAlly(card) &&
+      this.isRaceless(card) &&
+      this.getRacelessAllyCount() >= this.racelessAllyLimit
+    ) {
+      return;
+    }
+
     const existing = this.deckCards.find(dc => dc.card.id === card.id);
     if (existing) {
       existing.quantity++;
@@ -912,6 +930,16 @@ export class DeckBuilderComponent implements OnInit {
     if (this.getNameCount(card.name) >= maxQty) return;
     if (this.totalSideCards >= 15) return;
     if (!this.isCardAllowedByRace(card)) return;
+    if (
+      this.selectedRace &&
+      this.selectedRace !== 'dream' &&
+      this.selectedRace !== 'totem' &&
+      this.isAlly(card) &&
+      this.isRaceless(card) &&
+      this.getRacelessAllyCount() >= this.racelessAllyLimit
+    ) {
+      return;
+    }
 
     const existing = this.sideCards.find(dc => dc.card.id === card.id);
     if (existing) {

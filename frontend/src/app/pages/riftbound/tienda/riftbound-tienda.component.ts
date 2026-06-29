@@ -132,9 +132,9 @@ interface RiftboundCartItem {
         <input class="sf-price-min" type="number" placeholder="Precio mín." [(ngModel)]="priceMin" min="0" />
         <input class="sf-price-max" type="number" placeholder="Precio máx." [(ngModel)]="priceMax" min="0" />
         <select class="sf-order" [(ngModel)]="ordering">
+          <option value="-price">Precio ↓</option>
           <option value="-id">Más recientes</option>
           <option value="price">Precio ↑</option>
-          <option value="-price">Precio ↓</option>
           <option value="card__name">Nombre A-Z</option>
         </select>
         </div>
@@ -693,7 +693,7 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
   ffoil: '' | '0' | '1' = '';
   priceMin: number | null = null;
   priceMax: number | null = null;
-  ordering = '-id';
+  ordering = '-price';
 
   cartCount() { return this.cart().reduce((s, c) => s + c.qty, 0); }
   cartTotal() { return this.cart().reduce((s, c) => s + (c.price || 0) * c.qty, 0); }
@@ -750,7 +750,7 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
     this.ffoil = '';
     this.priceMin = null;
     this.priceMax = null;
-    this.ordering = '-id';
+    this.ordering = '-price';
     this.reload();
   }
 

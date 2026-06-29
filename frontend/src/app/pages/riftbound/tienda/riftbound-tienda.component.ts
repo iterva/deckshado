@@ -388,9 +388,16 @@ interface RiftboundCartItem {
     .store-filter-grid {
       display: grid;
       gap: .5rem;
-      grid-template-columns: minmax(180px, 1.4fr) repeat(5, minmax(120px, 1fr));
+      grid-template-columns: repeat(14, minmax(0, 1fr));
     }
-    .sf-search { grid-column: span 2; }
+    .sf-search { grid-column: span 4; }
+    .sf-type,
+    .sf-foil,
+    .sf-price-min,
+    .sf-price-max,
+    .sf-order {
+      grid-column: span 2;
+    }
     .store-filter-actions {
       display: flex;
       gap: .5rem;
@@ -570,6 +577,10 @@ interface RiftboundCartItem {
       }
       .store-filter-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .sf-type,
+      .sf-foil {
+        grid-column: auto;
       }
       .sf-search,
       .sf-price-min,

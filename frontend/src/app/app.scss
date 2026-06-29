@@ -105,6 +105,32 @@
       &:hover { border-color: #ffbd39; }
     }
 
+    .cache-reset-btn {
+      background: transparent;
+      border: 1px solid #444;
+      border-radius: 50%;
+      width: 34px;
+      height: 34px;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      color: #ccc;
+
+      &:hover:not(:disabled) {
+        border-color: #4fc3f7;
+        color: #4fc3f7;
+        transform: rotate(18deg);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: wait;
+      }
+    }
+
     .game-toggle {
       background: transparent;
       border: 1px solid #444;
@@ -722,6 +748,7 @@
 
     .search-toggle,
     .notif-btn,
+    .cache-reset-btn,
     .theme-toggle,
     .game-toggle,
     .avatar-btn,
@@ -734,6 +761,7 @@
     }
 
     .theme-toggle,
+    .cache-reset-btn,
     .game-toggle,
     .avatar-btn {
       width: 36px;
@@ -759,6 +787,7 @@
 
     .search-toggle:hover,
     .notif-btn:hover,
+    .cache-reset-btn:hover,
     .theme-toggle:hover,
     .game-toggle:hover,
     .avatar-btn:hover {

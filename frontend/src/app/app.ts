@@ -25,6 +25,7 @@ export class App implements OnInit {
   showSearch = signal(false);
   showMobileMenu = signal(false);
   readonly appVersion = environment.appVersion;
+  hardReloading = signal(false);
   searchQuery = '';
   searchResults: any = null;
 
@@ -117,6 +118,32 @@ export class App implements OnInit {
     if (!notif.is_read) this.notifs.markRead(notif.id);
     this.showNotifs.set(false);
     if (notif.link) this.router.navigateByUrl(notif.link);
+  }
+
+  async hardRefresh(closeMenu = false) {
+    if (this.hardReloading()) return;
+    if (closeMenu) this.closeMobileMenu();
+    if (typeof window === 'undefined') return;
+
+    this.hardReloading.set(true);
+
+    try {
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+      }
+
+      if ('caches' in window) {
+        const cacheKeys = await caches.keys();
+        await Promise.all(cacheKeys.map(key => caches.delete(key)));
+      }
+    } catch {
+      // No bloquea recarga si falla limpieza de caché.
+    }
+
+    const url = new URL(window.location.href);
+    url.searchParams.set('_rf', Date.now().toString());
+    window.location.replace(url.toString());
   }
 
   @HostListener('document:click', ['$event'])

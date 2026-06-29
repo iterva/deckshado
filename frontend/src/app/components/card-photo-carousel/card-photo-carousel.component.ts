@@ -41,7 +41,7 @@ import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
         [alt]="alt"
         loading="lazy"
         (click)="onImageClick(i, img, $event)"
-        (error)="onImgError($event, img)" />
+        (error)="onImgError($event, img, i)" />
     }
 
     @if (images().length === 0) {
@@ -168,23 +168,38 @@ import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
 })
 export class CardPhotoCarouselComponent implements OnChanges {
   @Input() cardImage: string | null | undefined = '';
+  @Input({ required: false }) fallbackUrls: (string | null | undefined)[] = [];
   @Input({ required: false }) photos: (string | null | undefined)[] = [];
   @Input() alt = '';
   @Input() thumbWidth = 350;
 
   readonly index = signal(0);
-  readonly images = computed<string[]>(() => this._images);
+  readonly images = computed<string[]>(() => this._images());
   readonly lightboxUrl = signal<string | null>(null);
-  private _images: string[] = [];
+  private readonly _images = signal<string[]>([]);
+  private readonly _cardFallbacks = signal<string[]>([]);
 
   ngOnChanges(_: SimpleChanges) {
     const list: string[] = [];
-    if (this.cardImage) list.push(this.cardImage);
-    for (const p of this.photos || []) {
-      if (p && typeof p === 'string') list.push(p);
+    const normalizedCardImage = this.normalizeUrl(this.cardImage);
+    if (normalizedCardImage) list.push(normalizedCardImage);
+
+    const fallbackList: string[] = [];
+    for (const url of this.fallbackUrls || []) {
+      const normalizedFallback = this.normalizeUrl(url);
+      if (!normalizedFallback) continue;
+      if (normalizedFallback === normalizedCardImage) continue;
+      fallbackList.push(normalizedFallback);
     }
-    this._images = list;
-    if (this.index() >= list.length) this.index.set(0);
+    this._cardFallbacks.set(Array.from(new Set(fallbackList)));
+
+    for (const p of this.photos || []) {
+      const normalizedPhoto = this.normalizeUrl(p);
+      if (normalizedPhoto) list.push(normalizedPhoto);
+    }
+    const uniqueList = Array.from(new Set(list));
+    this._images.set(uniqueList);
+    if (this.index() >= uniqueList.length) this.index.set(0);
   }
 
   prev(ev: Event) {
@@ -247,11 +262,53 @@ export class CardPhotoCarouselComponent implements OnChanges {
     else this.prev(e);
   }
 
-  onImgError(ev: Event, original: string | null | undefined) {
+  onImgError(ev: Event, original: string | null | undefined, index: number) {
     const el = ev.target as HTMLImageElement;
-    if (original && el && el.src !== original) {
+    if (original && el && el.src !== original && !el.dataset['fallbackApplied']) {
       // fallback a URL original si la miniatura optimizada falla
+      el.dataset['fallbackApplied'] = 'true';
       el.src = original;
+      return;
     }
+
+    if (index === 0 && el) {
+      const fallbacks = this._cardFallbacks();
+      const currentFallbackIndex = Number(el.dataset['cardFallbackIndex'] ?? -1);
+      const nextFallbackIndex = currentFallbackIndex + 1;
+      if (nextFallbackIndex < fallbacks.length) {
+        el.dataset['cardFallbackIndex'] = String(nextFallbackIndex);
+        el.src = fallbacks[nextFallbackIndex];
+        return;
+      }
+    }
+
+    this.removeBrokenImage(index);
+  }
+
+  private removeBrokenImage(index: number) {
+    const current = this._images();
+    if (index < 0 || index >= current.length) return;
+
+    const next = current.filter((_, i) => i !== index);
+    this._images.set(next);
+
+    if (next.length === 0) {
+      this.index.set(0);
+      return;
+    }
+
+    const currentIndex = this.index();
+    if (currentIndex > index) {
+      this.index.set(currentIndex - 1);
+      return;
+    }
+    if (currentIndex >= next.length) {
+      this.index.set(next.length - 1);
+    }
+  }
+
+  private normalizeUrl(url: string | null | undefined): string {
+    if (!url || typeof url !== 'string') return '';
+    return url.trim();
   }
 }

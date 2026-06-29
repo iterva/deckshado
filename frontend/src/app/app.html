@@ -130,6 +130,15 @@
     } @else {
       <a routerLink="/login" routerLinkActive="active" class="btn-login">Ingresar</a>
     }
+    <button
+      class="cache-reset-btn"
+      type="button"
+      (click)="hardRefresh()"
+      [disabled]="hardReloading()"
+      [title]="hardReloading() ? 'Actualizando...' : 'Recarga dura (Ctrl+F5)'"
+      [attr.aria-label]="hardReloading() ? 'Actualizando aplicación' : 'Recarga dura de caché'">
+      <span aria-hidden="true">⟳</span>
+    </button>
     <button class="theme-toggle" (click)="theme.toggle()" [title]="theme.isDark() ? 'Modo claro' : 'Modo oscuro'" [attr.aria-label]="theme.isDark() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'">
       <span aria-hidden="true">{{ theme.isDark() ? '☀️' : '🌙' }}</span>
     </button>
@@ -248,6 +257,9 @@
 
     <div class="mm-section">
       <h3>Preferencias</h3>
+      <button type="button" class="mm-pref" (click)="hardRefresh(true)" [disabled]="hardReloading()">
+        {{ hardReloading() ? '⏳ Actualizando...' : '🔄 Recargar sin caché (Ctrl+F5)' }}
+      </button>
       <button type="button" class="mm-pref" (click)="theme.toggle()">
         {{ theme.isDark() ? '☀️ Modo claro' : '🌙 Modo oscuro' }}
       </button>

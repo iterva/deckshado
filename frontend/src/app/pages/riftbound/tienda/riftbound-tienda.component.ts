@@ -114,28 +114,34 @@ interface RiftboundCartItem {
       }
 
       @if (activeTab() === 'store') {
-      <div class="filter-row">
-        <input type="text" placeholder="Buscar..." [(ngModel)]="search" (keyup.enter)="reload()" />
-        <select [(ngModel)]="ftype" (change)="reload()">
+      <div class="store-filter-card">
+        <div class="store-filter-grid">
+        <input class="sf-search" type="text" placeholder="Buscar..." [(ngModel)]="search" (keyup.enter)="applyFilters()" />
+        <select class="sf-type" [(ngModel)]="ftype">
           <option value="">Todos los tipos</option>
           <option value="unit">Unit</option><option value="spell">Spell</option>
           <option value="champion">Champion</option><option value="legend">Legend</option>
           <option value="gear">Gear</option><option value="battlefield">Battlefield</option>
           <option value="rune">Rune</option>
         </select>
-        <select [(ngModel)]="ffoil" (change)="reload()">
+        <select class="sf-foil" [(ngModel)]="ffoil">
           <option value="">Foil/Normal</option>
           <option value="1">Solo foil</option>
           <option value="0">Solo normal</option>
         </select>
-        <input type="number" placeholder="Precio mín." [(ngModel)]="priceMin" (change)="reload()" min="0" />
-        <input type="number" placeholder="Precio máx." [(ngModel)]="priceMax" (change)="reload()" min="0" />
-        <select [(ngModel)]="ordering" (change)="reload()">
+        <input class="sf-price-min" type="number" placeholder="Precio mín." [(ngModel)]="priceMin" min="0" />
+        <input class="sf-price-max" type="number" placeholder="Precio máx." [(ngModel)]="priceMax" min="0" />
+        <select class="sf-order" [(ngModel)]="ordering">
           <option value="-id">Más recientes</option>
           <option value="price">Precio ↑</option>
           <option value="-price">Precio ↓</option>
           <option value="card__name">Nombre A-Z</option>
         </select>
+        </div>
+        <div class="store-filter-actions">
+          <button class="btn btn-sm btn-primary" (click)="applyFilters()" [disabled]="loading()">🔎 Filtrar</button>
+          <button class="btn btn-sm" (click)="clearFilters()" [disabled]="loading()">Limpiar</button>
+        </div>
       </div>
 
       <p class="results-count">{{ count() }} cartas</p>
@@ -144,9 +150,10 @@ interface RiftboundCartItem {
         @for (e of entries(); track e.id) {
           <div class="store-card">
             <div class="card-image" (click)="preview.set(e.card_data)">
-              @if (e.card_data.image) {
+              @if (entryCardImage(e)) {
                 <app-card-photo-carousel
-                  [cardImage]="e.card_data.image"
+                  [cardImage]="entryCardImage(e)"
+                  [fallbackUrls]="cardImageFallbacks(e.card_data)"
                   [photos]="[e.photo_url, e.photo_url_2]"
                   [alt]="e.card_data.name"
                   [thumbWidth]="350">
@@ -371,12 +378,35 @@ interface RiftboundCartItem {
     .empty-state { padding: 2rem; text-align: center; color: #9ba3b4; }
     .wishlist-qty { color: #ff7e7e !important; }
 
+    .store-filter-card {
+      margin-bottom: 1rem;
+      padding: .7rem;
+      border-radius: 10px;
+      border: 1px solid #2a3a4a;
+      background: #111a2f;
+    }
+    .store-filter-grid {
+      display: grid;
+      gap: .5rem;
+      grid-template-columns: minmax(180px, 1.4fr) repeat(5, minmax(120px, 1fr));
+    }
+    .sf-search { grid-column: span 2; }
+    .store-filter-actions {
+      display: flex;
+      gap: .5rem;
+      justify-content: flex-end;
+      margin-top: .6rem;
+    }
+    .store-filter-actions .btn { min-width: 118px; }
     .filter-row { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
-    .filter-row input, .filter-row select {
+    .filter-row input, .filter-row select, .store-filter-grid input, .store-filter-grid select {
       padding: .5rem .7rem; background: #0f0f23; color: #c8c8da;
       border: 1px solid #2a3a4a; border-radius: 6px;
     }
-    .filter-row input:focus, .filter-row select:focus { outline: none; border-color: #e94560; }
+    .filter-row input:focus, .filter-row select:focus, .store-filter-grid input:focus, .store-filter-grid select:focus {
+      outline: none;
+      border-color: #e94560;
+    }
 
     .results-count { color: #9ba3b4; font-size: .9rem; margin-bottom: 1rem; }
 
@@ -534,6 +564,28 @@ interface RiftboundCartItem {
 
     /* ── Mobile ── */
     @media (max-width: 768px) {
+      .store-filter-card {
+        padding: .6rem;
+        border-radius: 9px;
+      }
+      .store-filter-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .sf-search,
+      .sf-price-min,
+      .sf-price-max,
+      .sf-order {
+        grid-column: 1 / -1;
+      }
+      .store-filter-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .store-filter-actions .btn {
+        width: 100%;
+        min-width: 0;
+        font-size: .82rem;
+      }
       .cards-grid { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: .55rem; }
       .card-image img {
         object-fit: contain;
@@ -566,6 +618,13 @@ interface RiftboundCartItem {
       }
     }
     @media (max-width: 480px) {
+      .store-filter-grid { grid-template-columns: 1fr; }
+      .sf-search,
+      .sf-price-min,
+      .sf-price-max,
+      .sf-order {
+        grid-column: auto;
+      }
       .cards-grid { grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: .45rem; }
       .card-body h4 { font-size: .76rem; }
       .card-meta { display: none; }
@@ -670,6 +729,20 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
     this.fetchStorePage();
   }
 
+  applyFilters() {
+    this.reload();
+  }
+
+  clearFilters() {
+    this.search = '';
+    this.ftype = '';
+    this.ffoil = '';
+    this.priceMin = null;
+    this.priceMax = null;
+    this.ordering = '-id';
+    this.reload();
+  }
+
   loadMoreStore() {
     if (this.activeTab() !== 'store' || this.loading() || !this.hasMore()) return;
     this.page.update(p => p + 1);
@@ -770,6 +843,24 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
   cleanWa(v: string): string { return v.replace(/[^0-9]/g, ''); }
   cleanHandle(v: string): string { return v.replace(/^@/, '').trim(); }
 
+  entryCardImage(entry: RiftboundCollectionEntry): string {
+    const card = entry?.card_data;
+    if (!card) return '';
+
+    // Foil shares the same card art; prefer canonical card URLs first.
+    if (entry.is_foil) {
+      return card.image_url || card.image || card.image_url_small || card.cdn_image_url || '';
+    }
+    return card.image || card.image_url || card.image_url_small || card.cdn_image_url || '';
+  }
+
+  cardImageFallbacks(card: RiftboundCardLite | null | undefined): string[] {
+    if (!card) return [];
+    return [card.image_url, card.image_url_small, card.cdn_image_url].filter(
+      (url): url is string => !!url,
+    );
+  }
+
   // ── Compartir imagen estilo CardIndex ──
   sellerHandle(): string {
     const s = this.store();
@@ -838,7 +929,7 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
         price: entry.price ?? null,
         qty: 1,
         available: entry.selling_quantity,
-        image: entry.card_data.image || '',
+        image: this.entryCardImage(entry),
       });
     }
     this.cart.set(list);

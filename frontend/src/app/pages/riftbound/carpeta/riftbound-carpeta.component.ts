@@ -804,6 +804,9 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
               <p class="order-meta">Comprador: <strong>{{ o.buyer_name || o.buyer_username || 'Anónimo' }}</strong></p>
               <p class="order-meta">Creado: {{ o.created_at | date:'short' }}</p>
               <p class="order-meta">Cierre: {{ o.responded_at ? (o.responded_at | date:'short') : '—' }}</p>
+              @if (o.responded_by_username) {
+                <p class="order-meta">Gestionado por: <strong>{{ o.responded_by_username }}</strong></p>
+              }
               @if (o.total_estimated != null) {
                 <p class="order-meta">Total estimado: <strong>\${{ o.total_estimated | number:'1.0-0':'es-CL' }}</strong></p>
               }

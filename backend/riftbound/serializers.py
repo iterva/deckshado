@@ -284,6 +284,7 @@ class RiftboundStoreOrderItemSerializer(serializers.ModelSerializer):
 class RiftboundStoreOrderSerializer(serializers.ModelSerializer):
     items = RiftboundStoreOrderItemSerializer(many=True, read_only=True)
     buyer_username = serializers.CharField(source="buyer_user.username", read_only=True)
+    responded_by_username = serializers.CharField(source="responded_by.username", read_only=True)
     store_owner = serializers.CharField(source="store_profile.user.username", read_only=True)
     total_items = serializers.SerializerMethodField()
 
@@ -295,6 +296,8 @@ class RiftboundStoreOrderSerializer(serializers.ModelSerializer):
             "store_owner",
             "buyer_user",
             "buyer_username",
+            "responded_by",
+            "responded_by_username",
             "buyer_name",
             "buyer_whatsapp",
             "buyer_note",
@@ -313,6 +316,8 @@ class RiftboundStoreOrderSerializer(serializers.ModelSerializer):
             "store_owner",
             "buyer_user",
             "buyer_username",
+            "responded_by",
+            "responded_by_username",
             "status",
             "total_estimated",
             "total_items",

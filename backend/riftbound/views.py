@@ -1722,8 +1722,9 @@ def _rb_update_order_status(request, order_id, new_status):
 
         order.status = new_status
         order.responded_at = timezone.now()
+        order.responded_by = request.user
         order.seller_note = str((request.data or {}).get("seller_note") or "").strip()[:800]
-        order.save(update_fields=["status", "responded_at", "seller_note", "updated_at"])
+        order.save(update_fields=["status", "responded_at", "responded_by", "seller_note", "updated_at"])
 
     try:
         if order.buyer_user_id:

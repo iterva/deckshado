@@ -237,6 +237,8 @@ export interface RiftboundStoreOrder {
   store_owner: string;
   buyer_user: number | null;
   buyer_username?: string;
+  responded_by: number | null;
+  responded_by_username?: string;
   buyer_name: string;
   buyer_whatsapp: string;
   buyer_note: string;

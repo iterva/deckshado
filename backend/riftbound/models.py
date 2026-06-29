@@ -463,6 +463,13 @@ class RiftboundStoreOrder(models.Model):
         blank=True,
         related_name="riftbound_store_orders",
     )
+    responded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="riftbound_store_orders_responded",
+    )
     buyer_name = models.CharField(max_length=100, blank=True, default="")
     buyer_whatsapp = models.CharField(max_length=30, blank=True, default="")
     buyer_note = models.TextField(max_length=800, blank=True, default="")

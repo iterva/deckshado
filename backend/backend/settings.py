@@ -2,6 +2,104 @@ import os
 from pathlib import Path
 from datetime import timedelta
 
+
+def _load_env_file(path: Path) -> None:
+    if not path.exists() or not path.is_file():
+        return
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except UnicodeDecodeError:
+        lines = path.read_text(encoding="latin-1").splitlines()
+
+    for raw in lines:
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.lower().startswith("export "):
+            line = line[7:].strip()
+        if "=" not in line:
+            continue
+
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if not key:
+            continue
+
+        if (value.startswith('"') and value.endswith('"')) or (
+            value.startswith("'") and value.endswith("'")
+        ):
+            value = value[1:-1]
+
+        value = value.strip()
+        force_override_keys = {
+            "CDN_PROVIDER",
+            "IMAGEKIT_PUBLIC_KEY",
+            "IMAGEKIT_PRIVATE_KEY",
+            "IMAGEKIT_URL_ENDPOINT",
+            "public_key",
+            "private_key",
+            "url",
+        }
+        if key in force_override_keys:
+            os.environ[key] = value
+        else:
+            os.environ.setdefault(key, value)
+
+
+def _load_local_env() -> None:
+    settings_dir = Path(__file__).resolve().parent
+    backend_dir = settings_dir.parent
+    repo_dir = backend_dir.parent
+    workspace_dir = repo_dir.parent
+
+    candidates = [
+        backend_dir / ".env",
+        backend_dir / ".env.local",
+        repo_dir / ".env",
+        repo_dir / ".env.local",
+        repo_dir / ".env.imagekit",
+        repo_dir / ".env_imagekit",
+        repo_dir / ".env_imagekit copy",
+        workspace_dir / ".env",
+        workspace_dir / ".env.local",
+        workspace_dir / ".env.imagekit",
+        workspace_dir / ".env_imagekit",
+        workspace_dir / ".env_imagekit copy",
+    ]
+    for env_file in candidates:
+        _load_env_file(env_file)
+
+    legacy_private = (
+        os.environ.get("private_key")
+        or os.environ.get("PRIVATE_KEY")
+        or ""
+    ).strip()
+    if legacy_private:
+        os.environ["IMAGEKIT_PRIVATE_KEY"] = legacy_private
+
+    legacy_public = (
+        os.environ.get("public_key")
+        or os.environ.get("PUBLIC_KEY")
+        or ""
+    ).strip()
+    if legacy_public:
+        os.environ["IMAGEKIT_PUBLIC_KEY"] = legacy_public
+
+    legacy_url = (
+        os.environ.get("url")
+        or os.environ.get("URL")
+        or ""
+    ).strip()
+    if legacy_url:
+        os.environ["IMAGEKIT_URL_ENDPOINT"] = legacy_url
+
+    if (os.environ.get("IMAGEKIT_PRIVATE_KEY") or "").strip() and not (os.environ.get("CDN_PROVIDER") or "").strip():
+        os.environ["CDN_PROVIDER"] = "imagekit"
+
+
+_load_local_env()
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get(

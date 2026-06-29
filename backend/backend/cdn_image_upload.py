@@ -15,8 +15,35 @@ class CdnImageUploadError(Exception):
     """Raised when uploading an image to the configured CDN fails."""
 
 
-def _provider() -> str:
-    return (os.environ.get("CDN_PROVIDER") or "imagekit").strip().lower()
+PROFILE_IMAGE_FOLDERS = {
+    "deckshado/avatars",
+    "deckshado/binder_avatars",
+    "deckshado/team_logos",
+}
+
+
+def _normalize_folder(folder: str) -> str:
+    return "/".join(part for part in (folder or "").strip().strip("/").lower().split("/") if part)
+
+
+def _is_profile_image_folder(folder: str) -> bool:
+    return _normalize_folder(folder) in PROFILE_IMAGE_FOLDERS
+
+
+def _provider_for_folder(folder: str) -> str:
+    # Profile images always go to ImageKit.
+    if _is_profile_image_folder(folder):
+        return "imagekit"
+
+    configured = (os.environ.get("CDN_PROVIDER") or "").strip().lower()
+    non_profile = (os.environ.get("CDN_NON_PROFILE_PROVIDER") or "cloudinary").strip().lower()
+
+    # If CDN_PROVIDER=imagekit, do not leak non-profile uploads to ImageKit.
+    if configured == "imagekit":
+        return non_profile or "cloudinary"
+    if configured:
+        return configured
+    return non_profile or "cloudinary"
 
 
 def _is_quota_error(detail: str) -> bool:
@@ -160,7 +187,7 @@ def _upload_image_to_imagekit(file_obj: BinaryIO, *, folder: str) -> str:
 
 
 def upload_image_to_cdn(file_obj: BinaryIO, *, folder: str) -> str:
-    provider = _provider()
+    provider = _provider_for_folder(folder)
     if provider == "imagekit":
         try:
             return _upload_image_to_imagekit(file_obj, folder=folder)

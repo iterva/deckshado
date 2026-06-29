@@ -8,6 +8,7 @@ import {
   RiftboundWishlistEntry, RiftboundCarpetaIds, RiftboundCollectionStats,
   RiftboundBinderProfile, RiftboundPublicBinderProfile, RiftboundBulkImportResult,
   RiftboundStoreOrder, RiftboundStoreOrderCreatePayload, RiftboundStoreOrderAssignedSummary,
+  RiftboundWorkspace, RiftboundStoreCollaboratorPermission, RiftboundStorePermissionFlags,
 } from '../models/riftbound';
 
 interface PaginatedResponse<T> {
@@ -125,6 +126,13 @@ export class RiftboundService {
   private formats$: Observable<RiftboundFormat[]> | null = null;
   private sets$: Observable<RiftboundSet[]> | null = null;
   private icons$: Observable<RiftboundIcon[]> | null = null;
+
+  private addStoreProfileIdToParams(params: HttpParams, storeProfileId?: number): HttpParams {
+    if (storeProfileId && Number.isFinite(storeProfileId) && storeProfileId > 0) {
+      return params.set('store_profile_id', String(storeProfileId));
+    }
+    return params;
+  }
 
   // ── Cartas ──
   listCards(opts: {
@@ -260,53 +268,69 @@ export class RiftboundService {
   }
 
   // ── Carpeta ──
-  listCollection(opts: { search?: string; page?: number; selling?: boolean; page_size?: number } = {}): Observable<PaginatedResponse<RiftboundCollectionEntry>> {
+  listCollection(opts: { search?: string; page?: number; selling?: boolean; page_size?: number; store_profile_id?: number } = {}): Observable<PaginatedResponse<RiftboundCollectionEntry>> {
     let params = new HttpParams();
     if (opts.search) params = params.set('search', opts.search);
     if (opts.page) params = params.set('page', String(opts.page));
     if (opts.selling) params = params.set('selling', '1');
     if (opts.page_size) params = params.set('page_size', String(opts.page_size));
+    params = this.addStoreProfileIdToParams(params, opts.store_profile_id);
     return this.http.get<PaginatedResponse<RiftboundCollectionEntry>>(
       `${this.base}/collection/`, { params },
     );
   }
 
-  batchUpsertCollection(items: Partial<RiftboundCollectionEntry>[]): Observable<{ updated: number }> {
+  batchUpsertCollection(items: Partial<RiftboundCollectionEntry>[], opts: { store_profile_id?: number } = {}): Observable<{ updated: number }> {
     // El backend espera el array directamente, no envuelto en {items}.
-    return this.http.post<{ updated: number }>(`${this.base}/collection/batch-upsert/`, items);
+    let params = new HttpParams();
+    params = this.addStoreProfileIdToParams(params, opts.store_profile_id);
+    return this.http.post<{ updated: number }>(`${this.base}/collection/batch-upsert/`, items, { params });
   }
 
-  bulkImport(text: string, mode: 'add' | 'set' = 'add'): Observable<RiftboundBulkImportResult> {
-    return this.http.post<RiftboundBulkImportResult>(`${this.base}/collection/bulk-import/`, { text, mode });
+  bulkImport(text: string, mode: 'add' | 'set' = 'add', opts: { store_profile_id?: number } = {}): Observable<RiftboundBulkImportResult> {
+    let params = new HttpParams();
+    params = this.addStoreProfileIdToParams(params, opts.store_profile_id);
+    return this.http.post<RiftboundBulkImportResult>(`${this.base}/collection/bulk-import/`, { text, mode }, { params });
   }
 
-  upsertCollection(data: Partial<RiftboundCollectionEntry>): Observable<RiftboundCollectionEntry | { deleted: true; card: number }> {
-    return this.http.post<any>(`${this.base}/collection/upsert/`, data);
+  upsertCollection(data: Partial<RiftboundCollectionEntry>, opts: { store_profile_id?: number } = {}): Observable<RiftboundCollectionEntry | { deleted: true; card: number }> {
+    let params = new HttpParams();
+    params = this.addStoreProfileIdToParams(params, opts.store_profile_id);
+    return this.http.post<any>(`${this.base}/collection/upsert/`, data, { params });
   }
 
   /** Sube una foto real de la carta via backend y la asocia a la entrada Riftbound.
    *  `slot` indica en qué campo guardar (1 = photo_url, 2 = photo_url_2). */
   uploadCollectionPhoto(
-    cardId: number, file: File, slot: 1 | 2 = 1, isFoil: boolean = false,
+    cardId: number, file: File, slot: 1 | 2 = 1, isFoil: boolean = false, storeProfileId?: number,
   ): Observable<RiftboundCollectionEntry> {
     const fd = new FormData();
     fd.append('file', file);
     fd.append('card', String(cardId));
     fd.append('slot', String(slot));
     fd.append('is_foil', isFoil ? '1' : '0');
+    if (storeProfileId && Number.isFinite(storeProfileId) && storeProfileId > 0) {
+      fd.append('store_profile_id', String(storeProfileId));
+    }
     return this.http.post<RiftboundCollectionEntry>(`${this.base}/collection/upsert/`, fd);
   }
 
-  deleteCollection(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.base}/collection/${id}/`);
+  deleteCollection(id: number, opts: { store_profile_id?: number } = {}): Observable<void> {
+    let params = new HttpParams();
+    params = this.addStoreProfileIdToParams(params, opts.store_profile_id);
+    return this.http.delete<void>(`${this.base}/collection/${id}/`, { params });
   }
 
-  carpetaIds(): Observable<RiftboundCarpetaIds> {
-    return this.http.get<RiftboundCarpetaIds>(`${this.base}/collection/ids/`);
+  carpetaIds(opts: { store_profile_id?: number } = {}): Observable<RiftboundCarpetaIds> {
+    let params = new HttpParams();
+    params = this.addStoreProfileIdToParams(params, opts.store_profile_id);
+    return this.http.get<RiftboundCarpetaIds>(`${this.base}/collection/ids/`, { params });
   }
 
-  collectionStats(): Observable<RiftboundCollectionStats> {
-    return this.http.get<RiftboundCollectionStats>(`${this.base}/collection/stats/`);
+  collectionStats(opts: { store_profile_id?: number } = {}): Observable<RiftboundCollectionStats> {
+    let params = new HttpParams();
+    params = this.addStoreProfileIdToParams(params, opts.store_profile_id);
+    return this.http.get<RiftboundCollectionStats>(`${this.base}/collection/stats/`, { params });
   }
 
   // ── Wishlist ──
@@ -399,11 +423,12 @@ export class RiftboundService {
     return this.http.post<RiftboundStoreOrder>(`${this.base}/store/${token}/orders/`, payload);
   }
 
-  listMyStoreOrders(opts: { status?: 'pending' | 'accepted' | 'cancelled'; page?: number } = {})
+  listMyStoreOrders(opts: { status?: 'pending' | 'accepted' | 'cancelled'; page?: number; store_profile_id?: number } = {})
     : Observable<PaginatedResponse<RiftboundStoreOrder>> {
     let params = new HttpParams();
     if (opts.status) params = params.set('status', opts.status);
     if (opts.page) params = params.set('page', String(opts.page));
+    params = this.addStoreProfileIdToParams(params, opts.store_profile_id);
     return this.http.get<PaginatedResponse<RiftboundStoreOrder>>(`${this.base}/orders/mine/`, { params });
   }
 
@@ -419,8 +444,46 @@ export class RiftboundService {
     });
   }
 
-  getMyOrderAssignedSummary(): Observable<RiftboundStoreOrderAssignedSummary> {
-    return this.http.get<RiftboundStoreOrderAssignedSummary>(`${this.base}/orders/mine/assigned-summary/`);
+  getMyOrderAssignedSummary(opts: { store_profile_id?: number } = {}): Observable<RiftboundStoreOrderAssignedSummary> {
+    let params = new HttpParams();
+    params = this.addStoreProfileIdToParams(params, opts.store_profile_id);
+    return this.http.get<RiftboundStoreOrderAssignedSummary>(`${this.base}/orders/mine/assigned-summary/`, { params });
+  }
+
+  listWorkspaces(): Observable<{ results: RiftboundWorkspace[] }> {
+    return this.http.get<{ results: RiftboundWorkspace[] }>(`${this.base}/workspaces/`);
+  }
+
+  listWorkspacePermissions(profileId: number): Observable<{ store_profile_id: number; results: RiftboundStoreCollaboratorPermission[] }> {
+    return this.http.get<{ store_profile_id: number; results: RiftboundStoreCollaboratorPermission[] }>(
+      `${this.base}/workspaces/${profileId}/permissions/`,
+    );
+  }
+
+  upsertWorkspacePermission(
+    profileId: number,
+    usernameOrEmail: string,
+    permissions: Partial<RiftboundStorePermissionFlags>,
+  ): Observable<RiftboundStoreCollaboratorPermission | { deleted: true }> {
+    return this.http.post<RiftboundStoreCollaboratorPermission | { deleted: true }>(
+      `${this.base}/workspaces/${profileId}/permissions/upsert/`,
+      { user: usernameOrEmail, permissions },
+    );
+  }
+
+  updateWorkspacePermission(
+    profileId: number,
+    permissionId: number,
+    permissions: Partial<RiftboundStorePermissionFlags>,
+  ): Observable<RiftboundStoreCollaboratorPermission | { deleted: true }> {
+    return this.http.patch<RiftboundStoreCollaboratorPermission | { deleted: true }>(
+      `${this.base}/workspaces/${profileId}/permissions/${permissionId}/`,
+      { permissions },
+    );
+  }
+
+  deleteWorkspacePermission(profileId: number, permissionId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/workspaces/${profileId}/permissions/${permissionId}/delete/`);
   }
 
   getSyncStatus(): Observable<RiftcodexSyncStatus> {

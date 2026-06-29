@@ -182,6 +182,12 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/riftbound/carpeta/riftbound-carpeta.component').then(m => m.RiftboundCarpetaComponent),
   },
   {
+    path: 'riftbound/colaborar',
+    title: 'Carpetas compartidas Riftbound | ShadowForge',
+    data: { workspaceMode: true },
+    loadComponent: () => import('./pages/riftbound/carpeta/riftbound-carpeta.component').then(m => m.RiftboundCarpetaComponent),
+  },
+  {
     path: 'riftbound/tiendas',
     title: 'Tiendas Riftbound | ShadowForge',
     loadComponent: () => import('./pages/riftbound/tiendas/riftbound-stores-index.component').then(m => m.RiftboundStoresIndexComponent),

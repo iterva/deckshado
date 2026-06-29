@@ -1,5 +1,6 @@
 import os
 
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Q, Count, Sum
 from django.utils import timezone
@@ -7,6 +8,7 @@ from rest_framework import viewsets, permissions, status, filters, generics
 from rest_framework.decorators import action, api_view, permission_classes, parser_classes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
 from backend.cdn_image_upload import upload_image_to_cdn, CdnImageUploadError
@@ -17,7 +19,7 @@ from .tcgmatch import get_tcgmatch_price
 from .models import (
     RiftboundCard, RiftboundSet, RiftboundFormat, RiftboundBanlistEntry,
     RiftboundDeck, RiftboundCollectionEntry, RiftboundWishlistEntry, RiftboundIcon,
-    RiftboundBinderProfile, RiftboundStoreOrder, RiftboundStoreOrderItem,
+    RiftboundBinderProfile, RiftboundStoreOrder, RiftboundStoreOrderItem, RiftboundStorePermission,
 )
 from .serializers import (
     RiftboundCardSerializer, RiftboundCardLiteSerializer,
@@ -26,7 +28,7 @@ from .serializers import (
     RiftboundCollectionEntrySerializer, RiftboundWishlistEntrySerializer,
     RiftboundIconSerializer,
     RiftboundBinderProfileSerializer, RiftboundPublicBinderProfileSerializer,
-    RiftboundStoreOrderSerializer, RiftboundStoreOrderCreateSerializer,
+    RiftboundStoreOrderSerializer, RiftboundStoreOrderCreateSerializer, RiftboundStorePermissionSerializer,
 )
 from .integrations.riftcodex import RiftcodexClient, map_card_type, map_card_rarity, normalize_riftbound_card_number
 from users.models import Notification
@@ -482,6 +484,75 @@ class RiftboundDeckViewSet(viewsets.ModelViewSet):
         return Response(validate_riftbound_deck(deck))
 
 
+RB_OWNER_PERMISSIONS = {
+    "view_collection": True,
+    "edit_collection": True,
+    "delete_collection": True,
+    "edit_market": True,
+    "remove_from_market": True,
+    "view_orders": True,
+    "view_history": True,
+    "accept_orders": True,
+    "reject_orders": True,
+    "manage_permissions": True,
+}
+
+
+def _rb_get_or_create_profile_for_user(user):
+    profile, _ = RiftboundBinderProfile.objects.get_or_create(user=user)
+    return profile
+
+
+def _rb_permissions_payload_for_user(profile, user):
+    if profile.user_id == user.id:
+        return dict(RB_OWNER_PERMISSIONS)
+    perm = RiftboundStorePermission.objects.filter(store_profile=profile, user=user).first()
+    if not perm:
+        return None
+    return perm.permissions_dict()
+
+
+def _rb_can_permissions(perm_payload, key):
+    return bool((perm_payload or {}).get(key))
+
+
+def _rb_store_profile_id_from_request(request):
+    raw = request.query_params.get("store_profile_id")
+    if raw in (None, ""):
+        body = request.data if hasattr(request, "data") else None
+        raw = body.get("store_profile_id") if hasattr(body, "get") else None
+    if raw in (None, ""):
+        return None
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        raise PermissionDenied("store_profile_id invalido")
+    if value <= 0:
+        raise PermissionDenied("store_profile_id invalido")
+    return value
+
+
+def _rb_resolve_workspace(request, required_permission=None):
+    requested_profile_id = _rb_store_profile_id_from_request(request)
+
+    if requested_profile_id is None:
+        profile = _rb_get_or_create_profile_for_user(request.user)
+    else:
+        profile = RiftboundBinderProfile.objects.filter(pk=requested_profile_id).select_related("user").first()
+        if not profile:
+            raise PermissionDenied("Tienda no encontrada")
+
+    permissions_payload = _rb_permissions_payload_for_user(profile, request.user)
+    if permissions_payload is None:
+        raise PermissionDenied("No tienes acceso a esta tienda")
+
+    if required_permission and not _rb_can_permissions(permissions_payload, required_permission):
+        raise PermissionDenied("No tienes permiso para esta accion")
+
+    is_owner = profile.user_id == request.user.id
+    return profile, permissions_payload, is_owner
+
+
 class RiftboundCollectionPagination(PageNumberPagination):
     """Permite al cliente pedir un page_size mayor (hasta 200) en la carpeta."""
     page_size = 50
@@ -496,9 +567,64 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
     search_fields = ["card__name", "card__card_number"]
     pagination_class = RiftboundCollectionPagination
 
+    _RB_COLLECTION_FIELDS = {"quantity", "condition", "language", "is_foil", "notes"}
+    _RB_MARKET_FIELDS = {"price", "selling_quantity", "photo_url", "photo_url_2"}
+
+    def _resolve_workspace(self, required_permission="view_collection"):
+        profile, permissions_payload, is_owner = _rb_resolve_workspace(self.request, required_permission=required_permission)
+        return profile, permissions_payload, is_owner
+
+    def _entry_store_profile_id(self, entry):
+        return _rb_get_or_create_profile_for_user(entry.user).id
+
+    def _ensure_entry_belongs_to_workspace(self, entry, profile):
+        if self._entry_store_profile_id(entry) != profile.id:
+            raise PermissionDenied("La entrada no pertenece a la tienda seleccionada")
+
+    def _ensure_market_permission_for_selling_change(self, permissions_payload, old_selling, new_selling):
+        old_value = int(old_selling or 0)
+        new_value = int(new_selling or 0)
+        if old_value > 0 and new_value == 0:
+            if not (_rb_can_permissions(permissions_payload, "remove_from_market") or _rb_can_permissions(permissions_payload, "edit_market")):
+                raise PermissionDenied("No tienes permiso para quitar cartas de la venta")
+            return
+        if old_value != new_value and not _rb_can_permissions(permissions_payload, "edit_market"):
+            raise PermissionDenied("No tienes permiso para editar ventas/precios")
+
+    def _enforce_entry_permissions(self, data, permissions_payload, entry=None, created=False):
+        requested_fields = set(data.keys())
+        requested_fields.discard("card")
+        requested_fields.discard("id")
+        requested_fields.discard("entry_id")
+        requested_fields.discard("slot")
+        requested_fields.discard("store_profile_id")
+
+        if requested_fields & self._RB_COLLECTION_FIELDS:
+            if not _rb_can_permissions(permissions_payload, "edit_collection"):
+                raise PermissionDenied("No tienes permiso para editar la carpeta")
+
+        if requested_fields & self._RB_MARKET_FIELDS:
+            if "selling_quantity" in requested_fields:
+                old_selling = entry.selling_quantity if entry is not None else 0
+                try:
+                    new_selling = int(data.get("selling_quantity") or 0)
+                except (TypeError, ValueError):
+                    new_selling = old_selling
+                self._ensure_market_permission_for_selling_change(permissions_payload, old_selling, new_selling)
+
+                if "price" in requested_fields and not _rb_can_permissions(permissions_payload, "edit_market"):
+                    raise PermissionDenied("No tienes permiso para editar ventas/precios")
+            else:
+                if not _rb_can_permissions(permissions_payload, "edit_market"):
+                    raise PermissionDenied("No tienes permiso para editar ventas/precios")
+
+        if created and not _rb_can_permissions(permissions_payload, "edit_collection"):
+            raise PermissionDenied("No tienes permiso para agregar cartas a la carpeta")
+
     def get_queryset(self):
+        profile, _, _ = self._resolve_workspace(required_permission="view_collection")
         qs = (
-            RiftboundCollectionEntry.objects.filter(user=self.request.user)
+            RiftboundCollectionEntry.objects.filter(user=profile.user)
             .select_related("card", "card__set")
         )
         if self.request.query_params.get("selling") == "1":
@@ -506,7 +632,17 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
         return qs
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        profile, permissions_payload, _ = self._resolve_workspace(required_permission="view_collection")
+        if not _rb_can_permissions(permissions_payload, "edit_collection"):
+            raise PermissionDenied("No tienes permiso para agregar cartas a la carpeta")
+        serializer.save(user=profile.user)
+
+    def perform_destroy(self, instance):
+        profile, permissions_payload, _ = self._resolve_workspace(required_permission="view_collection")
+        self._ensure_entry_belongs_to_workspace(instance, profile)
+        if not _rb_can_permissions(permissions_payload, "delete_collection"):
+            raise PermissionDenied("No tienes permiso para eliminar cartas de la carpeta")
+        instance.delete()
 
     @staticmethod
     def _coerce_bool(value):
@@ -579,6 +715,7 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
     def upsert(self, request):
         """Crea o actualiza una entrada; si llega `id`, actualiza esa fila exacta."""
         data = request.data.dict() if hasattr(request.data, "dict") else dict(request.data)
+        profile, permissions_payload, _ = self._resolve_workspace(required_permission="view_collection")
 
         entry_id = self._coerce_int(data.get("id") or data.get("entry_id"))
         card_id = data.get("card")
@@ -596,9 +733,10 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
 
         with transaction.atomic():
             if entry_id is not None:
-                entry = RiftboundCollectionEntry.objects.filter(user=request.user, pk=entry_id).first()
+                entry = RiftboundCollectionEntry.objects.filter(user=profile.user, pk=entry_id).first()
                 if not entry:
                     return Response({"detail": "entrada no existe"}, status=404)
+                self._ensure_entry_belongs_to_workspace(entry, profile)
 
                 if card_id:
                     try:
@@ -611,7 +749,7 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
                 target_is_foil = self._coerce_bool(data["is_foil"]) if "is_foil" in data else entry.is_foil
                 duplicate = (
                     RiftboundCollectionEntry.objects
-                    .filter(user=request.user, card=card, is_foil=target_is_foil)
+                    .filter(user=profile.user, card=card, is_foil=target_is_foil)
                     .exclude(pk=entry.pk)
                     .first()
                 )
@@ -631,15 +769,19 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
 
                 is_foil = self._coerce_bool(data.get("is_foil", False))
                 entry, created = RiftboundCollectionEntry.objects.get_or_create(
-                    user=request.user, card=card, is_foil=is_foil,
+                    user=profile.user, card=card, is_foil=is_foil,
                     defaults={"quantity": 0},
                 )
+
+        self._enforce_entry_permissions(data, permissions_payload, entry=entry, created=created)
 
         if "quantity" not in data and created:
             entry.quantity = 1
         self._apply_fields(entry, data)
 
         if entry.quantity <= 0:
+            if not _rb_can_permissions(permissions_payload, "delete_collection"):
+                return Response({"detail": "No tienes permiso para eliminar cartas de la carpeta"}, status=403)
             entry.delete()
             return Response({"deleted": True, "card": card_id})
 
@@ -648,6 +790,7 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="batch-upsert")
     def batch_upsert(self, request):
+        profile, permissions_payload, _ = self._resolve_workspace(required_permission="view_collection")
         items = request.data if isinstance(request.data, list) else []
         if not items:
             return Response({"detail": "Se esperaba lista"}, status=400)
@@ -658,12 +801,14 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
             entry_id = self._coerce_int(item.get("id") or item.get("entry_id"))
             card_id = item.get("card")
             card = None
+            entry_created = False
 
             with transaction.atomic():
                 if entry_id is not None:
-                    entry = RiftboundCollectionEntry.objects.filter(user=request.user, pk=entry_id).first()
+                    entry = RiftboundCollectionEntry.objects.filter(user=profile.user, pk=entry_id).first()
                     if not entry:
                         continue
+                    self._ensure_entry_belongs_to_workspace(entry, profile)
 
                     if card_id:
                         try:
@@ -676,7 +821,7 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
                     target_is_foil = self._coerce_bool(item["is_foil"]) if "is_foil" in item else entry.is_foil
                     duplicate = (
                         RiftboundCollectionEntry.objects
-                        .filter(user=request.user, card=card, is_foil=target_is_foil)
+                        .filter(user=profile.user, card=card, is_foil=target_is_foil)
                         .exclude(pk=entry.pk)
                         .first()
                     )
@@ -693,13 +838,20 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
                     except RiftboundCard.DoesNotExist:
                         continue
                     is_foil = self._coerce_bool(item.get("is_foil", False))
-                    entry, _ = RiftboundCollectionEntry.objects.get_or_create(
-                        user=request.user, card=card, is_foil=is_foil,
+                    entry, entry_created = RiftboundCollectionEntry.objects.get_or_create(
+                        user=profile.user, card=card, is_foil=is_foil,
                         defaults={"quantity": 0},
                     )
 
+            try:
+                self._enforce_entry_permissions(item, permissions_payload, entry=entry, created=entry_created)
+            except PermissionDenied:
+                continue
+
             self._apply_fields(entry, item)
             if entry.quantity <= 0:
+                if not _rb_can_permissions(permissions_payload, "delete_collection"):
+                    continue
                 entry.delete()
             else:
                 entry.save()
@@ -710,6 +862,10 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
     def bulk_import(self, request):
         """Importa cartas desde texto plano. Líneas: '2 Nombre' / '2x Nombre' / 'Nombre' / 'OGN-001'."""
         import re as _re
+        profile, permissions_payload, _ = self._resolve_workspace(required_permission="view_collection")
+        if not _rb_can_permissions(permissions_payload, "edit_collection"):
+            return Response({"detail": "No tienes permiso para agregar cartas a la carpeta"}, status=403)
+
         text = (request.data.get("text") or "").strip()
         mode = request.data.get("mode") or "add"
         if not text:
@@ -754,7 +910,7 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
                     continue
             card_id = matches[0][0]
             entry, created = RiftboundCollectionEntry.objects.get_or_create(
-                user=request.user, card_id=card_id, is_foil=False,
+                user=profile.user, card_id=card_id, is_foil=False,
                 defaults={"quantity": qty},
             )
             if created:
@@ -773,14 +929,13 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], url_path="ids")
     def ids(self, request):
         """Devuelve {collection: {card_id: qty}, wishlist: [card_id, ...]}."""
+        profile, _, _ = self._resolve_workspace(required_permission="view_collection")
         coll = {}
         for cid, q in (RiftboundCollectionEntry.objects
-                       .filter(user=request.user)
+                       .filter(user=profile.user)
                        .values_list("card_id", "quantity")):
             coll[cid] = coll.get(cid, 0) + q
-        wish = list(RiftboundWishlistEntry.objects
-                    .filter(user=request.user)
-                    .values_list("card_id", flat=True))
+        wish = list(RiftboundWishlistEntry.objects.filter(user=profile.user).values_list("card_id", flat=True))
         return Response({"collection": coll, "wishlist": wish})
 
     @action(detail=False, methods=["get"], url_path="stats")
@@ -788,9 +943,10 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
         """Estadísticas agregadas de la colección."""
         from collections import Counter
         from django.db.models import Count, Sum
+        profile, _, _ = self._resolve_workspace(required_permission="view_collection")
         entries = list(
             RiftboundCollectionEntry.objects
-            .filter(user=request.user)
+            .filter(user=profile.user)
             .select_related("card", "card__set")
         )
         total_cards = sum(e.quantity for e in entries)
@@ -962,6 +1118,197 @@ def riftbound_my_share_token(request):
         "store_slug": profile.store_slug,
         "is_store_public": profile.is_store_public,
     })
+
+
+RB_PERMISSION_FIELD_MAP = {
+    "view_collection": "can_view_collection",
+    "edit_collection": "can_edit_collection",
+    "delete_collection": "can_delete_collection",
+    "edit_market": "can_edit_market",
+    "remove_from_market": "can_remove_from_market",
+    "view_orders": "can_view_orders",
+    "view_history": "can_view_history",
+    "accept_orders": "can_accept_orders",
+    "reject_orders": "can_reject_orders",
+    "manage_permissions": "can_manage_permissions",
+}
+
+
+def _rb_is_store_permission_manager(profile, user):
+    if profile.user_id == user.id:
+        return True
+    perm = RiftboundStorePermission.objects.filter(store_profile=profile, user=user).first()
+    return bool(perm and perm.can_manage_permissions)
+
+
+def _rb_permission_values_from_payload(payload):
+    source = payload.get("permissions") if isinstance(payload.get("permissions"), dict) else payload
+    values = {}
+    for short_key, model_field in RB_PERMISSION_FIELD_MAP.items():
+        if short_key in source:
+            values[model_field] = bool(source.get(short_key))
+        elif model_field in source:
+            values[model_field] = bool(source.get(model_field))
+    return values
+
+
+def _rb_workspace_payload(profile, request, permissions_payload, is_owner):
+    profile_data = RiftboundBinderProfileSerializer(profile, context={"request": request}).data
+    return {
+        "store_profile_id": profile.id,
+        "is_owner": bool(is_owner),
+        "owner_username": profile.user.username,
+        "permissions": permissions_payload,
+        "profile": profile_data,
+    }
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def riftbound_workspaces(request):
+    own_profile = _rb_get_or_create_profile_for_user(request.user)
+    results = [
+        _rb_workspace_payload(
+            own_profile,
+            request,
+            dict(RB_OWNER_PERMISSIONS),
+            is_owner=True,
+        )
+    ]
+
+    collaborator_qs = (
+        RiftboundStorePermission.objects
+        .filter(user=request.user)
+        .select_related("store_profile", "store_profile__user")
+    )
+    seen = {own_profile.id}
+    for perm in collaborator_qs:
+        profile = perm.store_profile
+        if profile.id in seen:
+            continue
+        permissions_payload = perm.permissions_dict()
+        if not any(permissions_payload.values()):
+            continue
+        seen.add(profile.id)
+        results.append(_rb_workspace_payload(profile, request, permissions_payload, is_owner=False))
+
+    results.sort(key=lambda row: (0 if row["is_owner"] else 1, row["owner_username"].lower()))
+    return Response({"results": results})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def riftbound_workspace_permissions(request, profile_id):
+    profile = get_object_or_404(RiftboundBinderProfile.objects.select_related("user"), pk=profile_id)
+    if not _rb_is_store_permission_manager(profile, request.user):
+        raise PermissionDenied("No puedes administrar permisos de esta tienda")
+
+    perms = (
+        RiftboundStorePermission.objects
+        .filter(store_profile=profile)
+        .exclude(user=profile.user)
+        .select_related("user", "granted_by")
+    )
+    data = RiftboundStorePermissionSerializer(perms, many=True, context={"request": request}).data
+    return Response({"store_profile_id": profile.id, "results": data})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def riftbound_workspace_permission_upsert(request, profile_id):
+    profile = get_object_or_404(RiftboundBinderProfile.objects.select_related("user"), pk=profile_id)
+    if not _rb_is_store_permission_manager(profile, request.user):
+        raise PermissionDenied("No puedes administrar permisos de esta tienda")
+
+    payload = request.data or {}
+    user_identifier = (payload.get("username") or payload.get("email") or payload.get("user") or "").strip()
+    if not user_identifier:
+        return Response({"detail": "Debes indicar username o email"}, status=400)
+
+    user_model = get_user_model()
+    target_user = user_model.objects.filter(username__iexact=user_identifier).first()
+    if target_user is None and "@" in user_identifier:
+        target_user = user_model.objects.filter(email__iexact=user_identifier).first()
+    if target_user is None:
+        return Response({"detail": "Usuario no encontrado"}, status=404)
+    if target_user.id == profile.user_id:
+        return Response({"detail": "No puedes asignar permisos al propietario"}, status=400)
+
+    values = _rb_permission_values_from_payload(payload)
+    if not values:
+        return Response({"detail": "No se enviaron permisos a actualizar"}, status=400)
+
+    is_owner = profile.user_id == request.user.id
+    if (not is_owner) and values.get("can_manage_permissions"):
+        raise PermissionDenied("Solo el propietario puede delegar la gestion de permisos")
+
+    perm, created = RiftboundStorePermission.objects.get_or_create(
+        store_profile=profile,
+        user=target_user,
+        defaults={"granted_by": request.user},
+    )
+    for field_name, field_value in values.items():
+        setattr(perm, field_name, field_value)
+
+    has_any_permission = any(bool(getattr(perm, field)) for field in RB_PERMISSION_FIELD_MAP.values())
+    if not has_any_permission:
+        perm.delete()
+        return Response({"deleted": True})
+
+    perm.granted_by = request.user
+    perm.save()
+    data = RiftboundStorePermissionSerializer(perm, context={"request": request}).data
+    return Response(data, status=201 if created else 200)
+
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def riftbound_workspace_permission_update(request, profile_id, permission_id):
+    profile = get_object_or_404(RiftboundBinderProfile.objects.select_related("user"), pk=profile_id)
+    if not _rb_is_store_permission_manager(profile, request.user):
+        raise PermissionDenied("No puedes administrar permisos de esta tienda")
+
+    perm = get_object_or_404(
+        RiftboundStorePermission.objects.select_related("user", "granted_by"),
+        pk=permission_id,
+        store_profile=profile,
+    )
+    if perm.user_id == profile.user_id:
+        return Response({"detail": "No puedes editar permisos del propietario"}, status=400)
+
+    values = _rb_permission_values_from_payload(request.data or {})
+    if not values:
+        return Response({"detail": "No se enviaron permisos a actualizar"}, status=400)
+
+    is_owner = profile.user_id == request.user.id
+    if (not is_owner) and values.get("can_manage_permissions"):
+        raise PermissionDenied("Solo el propietario puede delegar la gestion de permisos")
+
+    for field_name, field_value in values.items():
+        setattr(perm, field_name, field_value)
+
+    has_any_permission = any(bool(getattr(perm, field)) for field in RB_PERMISSION_FIELD_MAP.values())
+    if not has_any_permission:
+        perm.delete()
+        return Response({"deleted": True})
+
+    perm.granted_by = request.user
+    perm.save()
+    return Response(RiftboundStorePermissionSerializer(perm, context={"request": request}).data)
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def riftbound_workspace_permission_delete(request, profile_id, permission_id):
+    profile = get_object_or_404(RiftboundBinderProfile.objects.select_related("user"), pk=profile_id)
+    if not _rb_is_store_permission_manager(profile, request.user):
+        raise PermissionDenied("No puedes administrar permisos de esta tienda")
+
+    perm = get_object_or_404(RiftboundStorePermission, pk=permission_id, store_profile=profile)
+    if perm.user_id == profile.user_id:
+        return Response({"detail": "No puedes eliminar permisos del propietario"}, status=400)
+    perm.delete()
+    return Response(status=204)
 
 
 def _rb_resolve_public_profile(token_or_slug):
@@ -1257,8 +1604,9 @@ class RiftboundMyStoreOrderListView(generics.ListAPIView):
     serializer_class = RiftboundStoreOrderSerializer
 
     def get_queryset(self):
+        profile, permissions_payload, _ = _rb_resolve_workspace(self.request)
         qs = (
-            RiftboundStoreOrder.objects.filter(store_profile__user=self.request.user)
+            RiftboundStoreOrder.objects.filter(store_profile=profile)
             .select_related("store_profile", "store_profile__user", "buyer_user")
             .prefetch_related("items", "items__card")
         )
@@ -1268,17 +1616,38 @@ class RiftboundMyStoreOrderListView(generics.ListAPIView):
             RiftboundStoreOrder.STATUS_ACCEPTED,
             RiftboundStoreOrder.STATUS_CANCELLED,
         }
+
+        def _can_view_status(status_value):
+            if status_value == RiftboundStoreOrder.STATUS_PENDING:
+                return _rb_can_permissions(permissions_payload, "view_orders")
+            return _rb_can_permissions(permissions_payload, "view_history")
+
         if status_filter in allowed:
+            if not _can_view_status(status_filter):
+                raise PermissionDenied("No tienes permiso para ver ese estado de pedidos")
             qs = qs.filter(status=status_filter)
+        else:
+            status_q = Q()
+            if _rb_can_permissions(permissions_payload, "view_orders"):
+                status_q |= Q(status=RiftboundStoreOrder.STATUS_PENDING)
+            if _rb_can_permissions(permissions_payload, "view_history"):
+                status_q |= Q(status__in=[RiftboundStoreOrder.STATUS_ACCEPTED, RiftboundStoreOrder.STATUS_CANCELLED])
+            if not status_q:
+                raise PermissionDenied("No tienes permiso para ver pedidos de esta tienda")
+            qs = qs.filter(status_q)
         return qs
 
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def riftbound_my_order_assignments(request):
+    profile, permissions_payload, _ = _rb_resolve_workspace(request)
+    if not _rb_can_permissions(permissions_payload, "view_orders"):
+        raise PermissionDenied("No tienes permiso para ver pedidos pendientes")
+
     rows = (
         RiftboundStoreOrderItem.objects.filter(
-            order__store_profile__user=request.user,
+            order__store_profile=profile,
             order__status=RiftboundStoreOrder.STATUS_PENDING,
             collection_entry__isnull=False,
         )
@@ -1298,16 +1667,24 @@ def _rb_update_order_status(request, order_id, new_status):
     if new_status not in {RiftboundStoreOrder.STATUS_ACCEPTED, RiftboundStoreOrder.STATUS_CANCELLED}:
         return Response({"detail": "Estado invalido."}, status=400)
 
+    required_permission = "accept_orders" if new_status == RiftboundStoreOrder.STATUS_ACCEPTED else "reject_orders"
+
     with transaction.atomic():
         try:
             order = (
                 RiftboundStoreOrder.objects.select_for_update()
                 .select_related("store_profile", "store_profile__user", "buyer_user")
                 .prefetch_related("items")
-                .get(pk=order_id, store_profile__user=request.user)
+                .get(pk=order_id)
             )
         except RiftboundStoreOrder.DoesNotExist:
             return Response({"detail": "Pedido no encontrado."}, status=404)
+
+        permissions_payload = _rb_permissions_payload_for_user(order.store_profile, request.user)
+        if permissions_payload is None:
+            return Response({"detail": "Pedido no encontrado."}, status=404)
+        if not _rb_can_permissions(permissions_payload, required_permission):
+            return Response({"detail": "No tienes permiso para gestionar este pedido."}, status=403)
 
         if order.status != RiftboundStoreOrder.STATUS_PENDING:
             return Response({"detail": "Solo puedes gestionar pedidos pendientes."}, status=400)
@@ -1320,7 +1697,7 @@ def _rb_update_order_status(request, order_id, new_status):
                 e.id: e
                 for e in RiftboundCollectionEntry.objects.select_for_update().filter(
                     id__in=entry_ids,
-                    user=request.user,
+                    user=order.store_profile.user,
                 )
             }
 

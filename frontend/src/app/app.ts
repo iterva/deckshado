@@ -62,6 +62,7 @@ export class App implements OnInit {
     const blockedMobileRoutes = [
       '/riftbound/cards',
       '/riftbound/carpeta',
+      '/riftbound/colaborar',
       '/riftbound/tienda',
       '/carpeta',
       '/tienda',

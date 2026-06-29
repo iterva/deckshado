@@ -4,7 +4,7 @@ import {
 } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import QRCode from 'qrcode';
 
 import { RiftboundService } from '../../../services/riftbound.service';
@@ -15,9 +15,10 @@ import {
   RiftboundCard, RiftboundCardLite, RiftboundCollectionEntry, RiftboundWishlistEntry,
   RiftboundSet, RiftboundCollectionStats, RiftboundBinderProfile, RiftboundBulkImportResult,
   RiftboundCondition, RiftboundLanguage, RiftboundStoreOrder, RiftboundStoreOrderStatus,
+  RiftboundWorkspace, RiftboundStorePermissionFlags, RiftboundStoreCollaboratorPermission,
 } from '../../../models/riftbound';
 
-type Tab = 'carpeta' | 'codex' | 'wishlist' | 'mercado' | 'pedidos' | 'historial' | 'stats';
+type Tab = 'carpeta' | 'codex' | 'wishlist' | 'mercado' | 'pedidos' | 'historial' | 'stats' | 'permisos';
 
 interface DirtyPatch {
   quantity?: number;
@@ -28,6 +29,19 @@ interface DirtyPatch {
   is_foil?: boolean;
   notes?: string;
 }
+
+const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
+  view_collection: true,
+  edit_collection: true,
+  delete_collection: true,
+  edit_market: true,
+  remove_from_market: true,
+  view_orders: true,
+  view_history: true,
+  accept_orders: true,
+  reject_orders: true,
+  manage_permissions: true,
+};
 
 @Component({
   selector: 'app-riftbound-carpeta',
@@ -52,38 +66,100 @@ interface DirtyPatch {
         <input #avatarInput type="file" accept="image/*" hidden (change)="onAvatarFileChange($event)" />
       </div>
       <div class="binder-info">
-        <h1>Mi Carpeta · Riftbound</h1>
-        <p class="binder-user">{{ auth.user()?.username || 'Invitado' }}</p>
+        <h1>{{ workspaceMode() ? 'Carpetas Compartidas · Riftbound' : 'Mi Carpeta · Riftbound' }}</h1>
+        <p class="binder-user">
+          @if (workspaceMode()) {
+            @if (selectedWorkspace(); as ws) {
+              Trabajando en tienda de <strong>{{ ws.owner_username }}</strong>
+            } @else {
+              Selecciona una tienda para comenzar
+            }
+          } @else {
+            {{ auth.user()?.username || 'Invitado' }}
+          }
+        </p>
       </div>
     </div>
 
+    @if (workspaceMode()) {
+      <div class="workspace-panel">
+        <div class="workspace-field">
+          <label>Tienda con acceso</label>
+          <select [value]="selectedWorkspaceId() ?? ''" (change)="onWorkspaceChange($any($event.target).value)">
+            <option value="" disabled>Seleccionar tienda...</option>
+            @for (ws of workspaces(); track ws.store_profile_id) {
+              <option [value]="ws.store_profile_id">
+                {{ workspaceLabel(ws) }}
+              </option>
+            }
+          </select>
+        </div>
+        <div class="workspace-perms">
+          @if (selectedWorkspacePermissions(); as perms) {
+            @if (perms.edit_collection) { <span class="perm-chip">Editar carpeta</span> }
+            @if (perms.delete_collection) { <span class="perm-chip">Eliminar de carpeta</span> }
+            @if (perms.edit_market) { <span class="perm-chip">Editar mercado</span> }
+            @if (perms.remove_from_market) { <span class="perm-chip">Quitar de venta</span> }
+            @if (perms.view_orders) { <span class="perm-chip">Ver pedidos</span> }
+            @if (perms.view_history) { <span class="perm-chip">Ver historial</span> }
+            @if (perms.accept_orders) { <span class="perm-chip">Aceptar pedidos</span> }
+            @if (perms.reject_orders) { <span class="perm-chip">Rechazar pedidos</span> }
+            @if (perms.manage_permissions) { <span class="perm-chip">Gestionar permisos</span> }
+          }
+        </div>
+      </div>
+    }
+
     <!-- Tabs -->
     <div class="tabs">
-      <button class="tab" [class.active]="activeTab() === 'carpeta'" (click)="switchTab('carpeta')">
-        <i class="bi bi-folder-fill"></i> CARPETA
-      </button>
-      <button class="tab" [class.active]="activeTab() === 'codex'" (click)="switchTab('codex')">
-        <i class="bi bi-collection"></i> COLECCIÓN
-      </button>
-      <button class="tab" [class.active]="activeTab() === 'wishlist'" (click)="switchTab('wishlist')">
-        <i class="bi bi-heart-fill"></i> WISHLIST
-      </button>
-      <button class="tab" [class.active]="activeTab() === 'mercado'" (click)="switchTab('mercado')">
-        <i class="bi bi-shop"></i> MERCADO
-      </button>
-      <button class="tab" [class.active]="activeTab() === 'pedidos'" (click)="switchTab('pedidos')">
-        <i class="bi bi-receipt"></i> PEDIDOS
-      </button>
-      <button class="tab" [class.active]="activeTab() === 'historial'" (click)="switchTab('historial')">
-        <i class="bi bi-clock-history"></i> HISTORIAL
-      </button>
-      <button class="tab" [class.active]="activeTab() === 'stats'" (click)="switchTab('stats')">
-        <i class="bi bi-bar-chart-fill"></i> STATS
-      </button>
+      @if (!workspaceMode() || hasPermission('view_collection')) {
+        <button class="tab" [class.active]="activeTab() === 'carpeta'" (click)="switchTab('carpeta')">
+          <i class="bi bi-folder-fill"></i> CARPETA
+        </button>
+        <button class="tab" [class.active]="activeTab() === 'codex'" (click)="switchTab('codex')">
+          <i class="bi bi-collection"></i> COLECCIÓN
+        </button>
+      }
+      @if (!workspaceMode()) {
+        <button class="tab" [class.active]="activeTab() === 'wishlist'" (click)="switchTab('wishlist')">
+          <i class="bi bi-heart-fill"></i> WISHLIST
+        </button>
+      }
+      @if (!workspaceMode() || hasPermission('view_collection')) {
+        <button class="tab" [class.active]="activeTab() === 'mercado'" (click)="switchTab('mercado')">
+          <i class="bi bi-shop"></i> MERCADO
+        </button>
+      }
+      @if (!workspaceMode() || hasPermission('view_orders')) {
+        <button class="tab" [class.active]="activeTab() === 'pedidos'" (click)="switchTab('pedidos')">
+          <i class="bi bi-receipt"></i> PEDIDOS
+        </button>
+      }
+      @if (!workspaceMode() || hasPermission('view_history')) {
+        <button class="tab" [class.active]="activeTab() === 'historial'" (click)="switchTab('historial')">
+          <i class="bi bi-clock-history"></i> HISTORIAL
+        </button>
+      }
+      @if (!workspaceMode()) {
+        <button class="tab" [class.active]="activeTab() === 'stats'" (click)="switchTab('stats')">
+          <i class="bi bi-bar-chart-fill"></i> STATS
+        </button>
+      }
+      @if (canManagePermissions()) {
+        <button class="tab" [class.active]="activeTab() === 'permisos'" (click)="switchTab('permisos')">
+          <i class="bi bi-shield-lock-fill"></i> PERMISOS
+        </button>
+      }
     </div>
 
+    @if (workspaceMode() && !selectedWorkspaceId()) {
+      <div class="empty-state" style="margin-top: 1rem;">
+        <p>Selecciona una tienda de la lista para trabajar sobre su carpeta compartida.</p>
+      </div>
+    }
+
     <!-- ═══ TAB: CARPETA ═══ -->
-    @if (activeTab() === 'carpeta') {
+    @if (activeTab() === 'carpeta' && canUseWorkspaceContent()) {
       <div class="tab-content">
         <div class="tab-toolbar">
           <div class="search-bar">
@@ -94,10 +170,10 @@ interface DirtyPatch {
           <button class="btn btn-sm" [class.btn-primary]="onlySelling()" (click)="toggleOnlySelling()">
             🏷️ Solo en venta
           </button>
-          <button class="btn btn-sm" (click)="showBulkImport.update(v => !v)">
+          <button class="btn btn-sm" (click)="showBulkImport.update(v => !v)" [disabled]="!hasPermission('edit_collection')">
             <i class="bi bi-file-earmark-arrow-up"></i> Importar masivo
           </button>
-          @if (dirtyEntries.size > 0) {
+          @if (dirtyEntries.size > 0 && (hasPermission('edit_collection') || hasPermission('edit_market') || hasPermission('remove_from_market'))) {
             <button class="btn btn-sm btn-primary" (click)="saveAllChanges()" [disabled]="batchSaving()">
               {{ batchSaving() ? '⏳ Guardando...' : '💾 Guardar Cambios (' + dirtyEntries.size + ')' }}
             </button>
@@ -168,16 +244,19 @@ interface DirtyPatch {
                   <div class="field">
                     <label>Tengo</label>
                     <input type="number" [value]="entry.quantity" min="0"
+                      [disabled]="!hasPermission('edit_collection')"
                       (input)="onFieldChange(entry, 'quantity', $any($event.target).valueAsNumber)" />
                   </div>
                   <div class="field">
                     <label>Precio</label>
                     <input type="number" [value]="entry.price ?? ''" min="0" placeholder="—"
+                      [disabled]="!hasPermission('edit_market')"
                       (input)="onFieldChange(entry, 'price', priceFromInput($any($event.target).value))" />
                   </div>
                   <div class="field">
                     <label>En venta</label>
                     <input type="number" [value]="entry.selling_quantity" min="0" [max]="entry.quantity"
+                      [disabled]="!hasPermission('edit_market') && !hasPermission('remove_from_market')"
                       (input)="onFieldChange(entry, 'selling_quantity', $any($event.target).valueAsNumber)" />
                   </div>
                 </div>
@@ -187,13 +266,15 @@ interface DirtyPatch {
                 <div class="inline-fields">
                   <div class="field">
                     <label>Idioma</label>
-                    <select [value]="entry.language" (change)="onFieldChange(entry, 'language', $any($event.target).value)">
+                    <select [value]="entry.language" [disabled]="!hasPermission('edit_collection')"
+                      (change)="onFieldChange(entry, 'language', $any($event.target).value)">
                       <option value="EN">EN</option>
                       <option value="ZH">中文</option>
                     </select>
                   </div>
                   <label class="foil-toggle">
                     <input type="checkbox" [checked]="entry.is_foil"
+                      [disabled]="!hasPermission('edit_collection')"
                       (change)="onFieldChange(entry, 'is_foil', $any($event.target).checked)" />
                     ✨ Foil
                   </label>
@@ -201,13 +282,14 @@ interface DirtyPatch {
                 <div class="field full">
                   <label>Notas</label>
                   <input type="text" [value]="entry.notes" maxlength="200" placeholder="—"
+                    [disabled]="!hasPermission('edit_collection')"
                     (input)="onFieldChange(entry, 'notes', $any($event.target).value)" />
                 </div>
                 <div class="card-action-row">
-                  @if (dirtyEntries.has(entry.id)) {
+                  @if (dirtyEntries.has(entry.id) && (hasPermission('edit_collection') || hasPermission('edit_market') || hasPermission('remove_from_market'))) {
                     <button class="btn btn-xs btn-primary" (click)="saveEntry(entry)">💾 Guardar</button>
                   }
-                  <button class="btn btn-xs btn-danger" (click)="removeFromCollection(entry)">
+                  <button class="btn btn-xs btn-danger" (click)="removeFromCollection(entry)" [disabled]="!hasPermission('delete_collection')">
                     <i class="bi bi-trash"></i>
                   </button>
                 </div>
@@ -229,7 +311,7 @@ interface DirtyPatch {
     }
 
     <!-- ═══ TAB: CODEX ═══ -->
-    @if (activeTab() === 'codex') {
+    @if (activeTab() === 'codex' && canUseWorkspaceContent()) {
       <div class="tab-content">
         <div class="tab-toolbar">
           <div class="search-bar">
@@ -297,10 +379,12 @@ interface DirtyPatch {
                 <app-tcg-price [cardName]="card.name" [compact]="true"></app-tcg-price>
               </div>
               <div class="card-overlay-actions">
-                <button class="btn-icon btn-add" (click)="quickAddToCollection(card, $event)" title="Añadir a colección">
+                <button class="btn-icon btn-add" (click)="quickAddToCollection(card, $event)" title="Añadir a colección"
+                        [disabled]="!hasPermission('edit_collection')">
                   <i class="bi bi-plus-lg"></i>
                 </button>
                 <button class="btn-icon btn-heart" [class.active]="isInWishlist(card.id)"
+                  [disabled]="workspaceMode()"
                         (click)="toggleWishlist(card.id, $event)" title="Wishlist">
                   <i class="bi" [class.bi-heart-fill]="isInWishlist(card.id)" [class.bi-heart]="!isInWishlist(card.id)"></i>
                 </button>
@@ -322,7 +406,7 @@ interface DirtyPatch {
     }
 
     <!-- ═══ TAB: WISHLIST ═══ -->
-    @if (activeTab() === 'wishlist') {
+    @if (activeTab() === 'wishlist' && canUseWorkspaceContent()) {
       <div class="tab-content">
         <div class="tab-toolbar">
           <div class="search-bar">
@@ -420,31 +504,33 @@ interface DirtyPatch {
     }
 
     <!-- ═══ TAB: MERCADO ═══ -->
-    @if (activeTab() === 'mercado') {
+    @if (activeTab() === 'mercado' && canUseWorkspaceContent()) {
       <div class="tab-content">
         <div class="mercado-toolbar">
-          <button class="btn btn-sm" (click)="showStoreConfig.update(v => !v)">
-            <i class="bi bi-gear-fill"></i> {{ showStoreConfig() ? 'Cerrar' : 'Configurar' }} tienda
-          </button>
-          @if (binderProfile()?.is_store_public && binderProfile()?.share_token) {
-            <button class="btn btn-sm" (click)="copyShareLink()">
-              <i class="bi bi-link-45deg"></i> Copiar enlace público
+          @if (!workspaceMode()) {
+            <button class="btn btn-sm" (click)="showStoreConfig.update(v => !v)">
+              <i class="bi bi-gear-fill"></i> {{ showStoreConfig() ? 'Cerrar' : 'Configurar' }} tienda
             </button>
-            <button class="btn btn-sm" (click)="downloadStoreQr()" [disabled]="qrDownloading()">
-              <i class="bi bi-qr-code"></i> {{ qrDownloading() ? 'Generando QR...' : 'Generar QR' }}
-            </button>
+            @if (binderProfile()?.is_store_public && binderProfile()?.share_token) {
+              <button class="btn btn-sm" (click)="copyShareLink()">
+                <i class="bi bi-link-45deg"></i> Copiar enlace público
+              </button>
+              <button class="btn btn-sm" (click)="downloadStoreQr()" [disabled]="qrDownloading()">
+                <i class="bi bi-qr-code"></i> {{ qrDownloading() ? 'Generando QR...' : 'Generar QR' }}
+              </button>
+            }
           }
           <button class="btn btn-sm" (click)="exportMercadoPdf()" [disabled]="exportingPdf()">
             {{ exportingPdf() ? '⏳' : '📄' }} Exportar PDF
           </button>
-          @if (mercadoDirty.size > 0) {
+          @if (mercadoDirty.size > 0 && (hasPermission('edit_market') || hasPermission('remove_from_market'))) {
             <button class="btn btn-sm btn-primary" (click)="saveMercadoChanges()" [disabled]="batchSaving()">
               💾 Guardar ({{ mercadoDirty.size }})
             </button>
           }
         </div>
 
-        @if (showStoreConfig()) {
+        @if (!workspaceMode() && showStoreConfig()) {
           <div class="store-config-panel">
             <h4>Configuración de tienda</h4>
             <div class="form-grid">
@@ -552,11 +638,13 @@ interface DirtyPatch {
                   <div class="field">
                     <label>Precio</label>
                     <input type="number" [value]="entry.price ?? ''" min="0" placeholder="—"
+                      [disabled]="!hasPermission('edit_market')"
                       (input)="onMercadoFieldChange(entry, 'price', priceFromInput($any($event.target).value))" />
                   </div>
                   <div class="field">
                     <label>En venta</label>
                     <input type="number" [value]="entry.selling_quantity" min="0" [max]="entry.quantity"
+                      [disabled]="!hasPermission('edit_market') && !hasPermission('remove_from_market')"
                       (input)="onMercadoFieldChange(entry, 'selling_quantity', $any($event.target).valueAsNumber)" />
                   </div>
                 </div>
@@ -568,38 +656,42 @@ interface DirtyPatch {
                   <!-- Slot 1 -->
                   <input type="file" accept="image/*" capture="environment"
                          [id]="'rb-photo-input-' + entry.id + '-1'"
+                        [disabled]="!hasPermission('edit_market')"
                          (change)="onPhotoSelected(entry, $event, 1)" hidden />
                   @if (entry.photo_url) {
                     <button class="btn btn-xs btn-photo" (click)="openPhotoModal(entry.photo_url, $event)" title="Ver foto 1">
                       <img class="photo-thumb" [src]="entry.photo_url" alt="Foto 1" /> 📸 1
                     </button>
                     <button class="btn btn-xs btn-photo-action" (click)="triggerPhotoUpload(entry, $event, 1)"
-                            [disabled]="uploadingPhotoFor() === entry.id" title="Reemplazar foto 1">
+                          [disabled]="uploadingPhotoFor() === entry.id || !hasPermission('edit_market')" title="Reemplazar foto 1">
                       {{ uploadingPhotoFor() === entry.id && uploadingPhotoSlot() === 1 ? '⏳' : '🔄' }}
                     </button>
-                    <button class="btn btn-xs btn-danger" (click)="removePhoto(entry, $event, 1)" title="Quitar">✕</button>
+                    <button class="btn btn-xs btn-danger" (click)="removePhoto(entry, $event, 1)" title="Quitar"
+                      [disabled]="!hasPermission('edit_market')">✕</button>
                   } @else {
                     <button class="btn btn-xs btn-photo btn-photo-empty" (click)="triggerPhotoUpload(entry, $event, 1)"
-                            [disabled]="uploadingPhotoFor() === entry.id" title="Subir foto real">
+                            [disabled]="uploadingPhotoFor() === entry.id || !hasPermission('edit_market')" title="Subir foto real">
                       {{ uploadingPhotoFor() === entry.id && uploadingPhotoSlot() === 1 ? '⏳ Subiendo...' : '📷 Foto 1' }}
                     </button>
                   }
                   <!-- Slot 2 -->
                   <input type="file" accept="image/*" capture="environment"
                          [id]="'rb-photo-input-' + entry.id + '-2'"
+                        [disabled]="!hasPermission('edit_market')"
                          (change)="onPhotoSelected(entry, $event, 2)" hidden />
                   @if (entry.photo_url_2) {
                     <button class="btn btn-xs btn-photo" (click)="openPhotoModal(entry.photo_url_2, $event)" title="Ver foto 2">
                       <img class="photo-thumb" [src]="entry.photo_url_2" alt="Foto 2" /> 📸 2
                     </button>
                     <button class="btn btn-xs btn-photo-action" (click)="triggerPhotoUpload(entry, $event, 2)"
-                            [disabled]="uploadingPhotoFor() === entry.id" title="Reemplazar foto 2">
+                          [disabled]="uploadingPhotoFor() === entry.id || !hasPermission('edit_market')" title="Reemplazar foto 2">
                       {{ uploadingPhotoFor() === entry.id && uploadingPhotoSlot() === 2 ? '⏳' : '🔄' }}
                     </button>
-                    <button class="btn btn-xs btn-danger" (click)="removePhoto(entry, $event, 2)" title="Quitar">✕</button>
+                    <button class="btn btn-xs btn-danger" (click)="removePhoto(entry, $event, 2)" title="Quitar"
+                      [disabled]="!hasPermission('edit_market')">✕</button>
                   } @else if (entry.photo_url) {
                     <button class="btn btn-xs btn-photo btn-photo-empty" (click)="triggerPhotoUpload(entry, $event, 2)"
-                            [disabled]="uploadingPhotoFor() === entry.id" title="Subir 2ª foto">
+                            [disabled]="uploadingPhotoFor() === entry.id || !hasPermission('edit_market')" title="Subir 2ª foto">
                       {{ uploadingPhotoFor() === entry.id && uploadingPhotoSlot() === 2 ? '⏳ Subiendo...' : '➕ Foto 2' }}
                     </button>
                   }
@@ -622,7 +714,7 @@ interface DirtyPatch {
     }
 
     <!-- ═══ TAB: PEDIDOS (Pendientes) ═══ -->
-    @if (activeTab() === 'pedidos') {
+    @if (activeTab() === 'pedidos' && canUseWorkspaceContent()) {
       <div class="tab-content">
         <div class="orders-toolbar">
           <button class="btn btn-sm" (click)="loadPendingOrders()">🔄 Recargar</button>
@@ -669,8 +761,8 @@ interface DirtyPatch {
                 }
               </div>
               <div class="order-actions">
-                <button class="btn btn-sm btn-primary" (click)="acceptOrder(o)">✅ Aceptar</button>
-                <button class="btn btn-sm btn-danger" (click)="cancelOrder(o)">❌ Cancelar</button>
+                <button class="btn btn-sm btn-primary" (click)="acceptOrder(o)" [disabled]="!hasPermission('accept_orders')">✅ Aceptar</button>
+                <button class="btn btn-sm btn-danger" (click)="cancelOrder(o)" [disabled]="!hasPermission('reject_orders')">❌ Cancelar</button>
               </div>
             </div>
           }
@@ -679,7 +771,7 @@ interface DirtyPatch {
     }
 
     <!-- ═══ TAB: HISTORIAL (Aceptados/Cancelados) ═══ -->
-    @if (activeTab() === 'historial') {
+    @if (activeTab() === 'historial' && canUseWorkspaceContent()) {
       <div class="tab-content">
         <div class="orders-toolbar">
           <select [value]="historyStatusFilter()" (change)="onHistoryFilterChange($any($event.target).value)">
@@ -741,7 +833,7 @@ interface DirtyPatch {
       </div>
     }
 
-    @if (activeTab() === 'stats') {
+    @if (activeTab() === 'stats' && canUseWorkspaceContent()) {
       <div class="tab-content">
         @if (statsLoading()) {
           <p class="loading">Calculando estadísticas...</p>
@@ -817,6 +909,64 @@ interface DirtyPatch {
       </div>
     }
 
+    @if (activeTab() === 'permisos' && canUseWorkspaceContent() && canManagePermissions()) {
+      <div class="tab-content">
+        <div class="permissions-panel">
+          <h3>Gestionar colaboradores</h3>
+          <p class="hint">Asigna permisos por acción. No se usan roles fijos.</p>
+
+          <div class="permissions-create-row">
+            <input
+              type="text"
+              placeholder="Usuario o email"
+              [(ngModel)]="newCollaboratorUser"
+              maxlength="120" />
+            <button class="btn btn-primary btn-sm" (click)="grantCollaboratorAccess()" [disabled]="permissionsSaving()">
+              {{ permissionsSaving() ? '⏳ Guardando...' : '➕ Dar acceso' }}
+            </button>
+          </div>
+
+          <div class="permissions-grid">
+            @for (key of permissionKeys; track key) {
+              <label class="perm-check">
+                <input type="checkbox" [checked]="newCollaboratorPerms()[key]" (change)="toggleNewCollaboratorPerm(key, $any($event.target).checked)" />
+                <span>{{ permissionLabel(key) }}</span>
+              </label>
+            }
+          </div>
+        </div>
+
+        <div class="permissions-list">
+          @if (workspacePermissionsLoading()) {
+            <div class="loading">Cargando permisos...</div>
+          }
+          @if (!workspacePermissionsLoading() && collaboratorPermissions().length === 0) {
+            <div class="empty-state"><p>No hay colaboradores con permisos en esta tienda.</p></div>
+          }
+          @for (row of collaboratorPermissions(); track row.id) {
+            <div class="permission-row-card">
+              <div class="permission-row-head">
+                <strong>{{ row.username }}</strong>
+                <div class="permission-row-actions">
+                  <button class="btn btn-xs btn-primary" (click)="saveCollaboratorPermissions(row)" [disabled]="permissionsSaving()">Guardar</button>
+                  <button class="btn btn-xs btn-danger" (click)="removeCollaboratorPermissions(row)" [disabled]="permissionsSaving()">Quitar acceso</button>
+                </div>
+              </div>
+              <div class="permissions-grid">
+                @for (key of permissionKeys; track key) {
+                  <label class="perm-check">
+                    <input type="checkbox" [checked]="collaboratorPermValue(row, key)"
+                           (change)="toggleCollaboratorPerm(row.id, key, $any($event.target).checked)" />
+                    <span>{{ permissionLabel(key) }}</span>
+                  </label>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
     @if (showFloatingSaveButton()) {
       <button class="floating-save-btn" (click)="onFloatingSaveClick()" [disabled]="batchSaving()">
         {{ floatingSaveLabel() }}
@@ -855,7 +1005,8 @@ interface DirtyPatch {
             <p class="detail-edition">{{ pc.card_number }}</p>
             <app-tcg-price [cardName]="pc.name" [compact]="false" [showLink]="true"></app-tcg-price>
             <div class="detail-actions">
-              <button class="btn btn-primary" (click)="quickAddToCollection(pc, $event); previewCard.set(null)">
+              <button class="btn btn-primary" (click)="quickAddToCollection(pc, $event); previewCard.set(null)"
+                [disabled]="!hasPermission('edit_collection')">
                 <i class="bi bi-plus-lg"></i> Añadir a Carpeta
               </button>
               <button class="btn btn-heart-lg" [class.active]="isInWishlist(pc.id)"
@@ -916,6 +1067,41 @@ interface DirtyPatch {
       background: linear-gradient(90deg, #e94560, #fff); -webkit-background-clip: text;
       -webkit-text-fill-color: transparent; background-clip: text; }
     .binder-user { margin: .25rem 0 0; color: #9ba3b4; font-size: .95rem; }
+
+    .workspace-panel {
+      display: grid;
+      grid-template-columns: minmax(260px, 360px) 1fr;
+      gap: .8rem;
+      align-items: start;
+      margin-bottom: 1rem;
+      padding: .8rem;
+      border: 1px solid #2a3a4a;
+      border-radius: 10px;
+      background: rgba(22, 33, 62, 0.45);
+    }
+    .workspace-field { display: flex; flex-direction: column; gap: .3rem; }
+    .workspace-field label { color: #9ba3b4; font-size: .8rem; }
+    .workspace-field select {
+      padding: .45rem .6rem;
+      border: 1px solid #2a3a4a;
+      border-radius: 6px;
+      background: #0f0f23;
+      color: #fff;
+    }
+    .workspace-perms { display: flex; flex-wrap: wrap; gap: .35rem; }
+    .perm-chip {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: .2rem .55rem;
+      font-size: .76rem;
+      border: 1px solid #2a3a4a;
+      color: #dbe7ff;
+      background: #1a2b48;
+    }
+    @media (max-width: 760px) {
+      .workspace-panel { grid-template-columns: 1fr; }
+    }
 
     .tabs {
       display: flex; gap: .5rem; flex-wrap: wrap;
@@ -1408,6 +1594,66 @@ interface DirtyPatch {
     .token-row { display: flex; gap: .6rem; align-items: center; color: #9ba3b4; font-size: .85rem; flex-wrap: wrap; }
     .token-row code { background: #0f0f23; padding: .25rem .5rem; border-radius: 4px; color: #4fc3f7; }
 
+    .permissions-panel {
+      background: #16213e;
+      border: 1px solid #2a3a4a;
+      border-radius: 10px;
+      padding: .9rem;
+      margin-bottom: 1rem;
+    }
+    .permissions-panel h3 { margin: 0 0 .35rem; color: #fff; }
+    .permissions-panel .hint { margin: 0 0 .7rem; color: #9ba3b4; font-size: .84rem; }
+    .permissions-create-row {
+      display: flex;
+      gap: .5rem;
+      align-items: center;
+      margin-bottom: .7rem;
+      flex-wrap: wrap;
+    }
+    .permissions-create-row input {
+      flex: 1;
+      min-width: 240px;
+      padding: .45rem .6rem;
+      border-radius: 6px;
+      border: 1px solid #2a3a4a;
+      background: #0f0f23;
+      color: #fff;
+    }
+    .permissions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: .4rem .7rem;
+    }
+    .perm-check {
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+      color: #d1d8e6;
+      font-size: .84rem;
+    }
+    .permissions-list {
+      display: grid;
+      gap: .8rem;
+    }
+    .permission-row-card {
+      border: 1px solid #2a3a4a;
+      border-radius: 10px;
+      padding: .75rem;
+      background: rgba(22, 33, 62, 0.45);
+    }
+    .permission-row-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .65rem;
+      margin-bottom: .65rem;
+    }
+    .permission-row-actions {
+      display: inline-flex;
+      gap: .35rem;
+      flex-wrap: wrap;
+    }
+
     .floating-save-btn {
       position: fixed;
       right: 1rem;
@@ -1433,6 +1679,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   readonly rb = inject(RiftboundService);
   readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly cdr = inject(ChangeDetectorRef);
 
   readonly COLORS = [
@@ -1447,6 +1694,11 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   // State
   activeTab = signal<Tab>('carpeta');
+  workspaceMode = signal(false);
+  workspacesLoading = signal(false);
+  workspaces = signal<RiftboundWorkspace[]>([]);
+  selectedWorkspaceId = signal<number | null>(null);
+  selectedWorkspace = computed(() => this.workspaces().find(w => w.store_profile_id === this.selectedWorkspaceId()) || null);
 
   // Collection
   collectionEntries = signal<RiftboundCollectionEntry[]>([]);
@@ -1521,6 +1773,37 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   historyLoading = signal(false);
   historyStatusFilter = signal<'' | RiftboundStoreOrderStatus>('');
 
+  // Permisos colaboradores
+  workspacePermissionsLoading = signal(false);
+  permissionsSaving = signal(false);
+  collaboratorPermissions = signal<RiftboundStoreCollaboratorPermission[]>([]);
+  collaboratorDirty = new Map<number, Partial<RiftboundStorePermissionFlags>>();
+  newCollaboratorUser = '';
+  newCollaboratorPerms = signal<RiftboundStorePermissionFlags>({
+    view_collection: true,
+    edit_collection: true,
+    delete_collection: false,
+    edit_market: true,
+    remove_from_market: false,
+    view_orders: true,
+    view_history: true,
+    accept_orders: false,
+    reject_orders: false,
+    manage_permissions: false,
+  });
+  readonly permissionKeys: Array<keyof RiftboundStorePermissionFlags> = [
+    'view_collection',
+    'edit_collection',
+    'delete_collection',
+    'edit_market',
+    'remove_from_market',
+    'view_orders',
+    'view_history',
+    'accept_orders',
+    'reject_orders',
+    'manage_permissions',
+  ];
+
   // Bulk import
   showBulkImport = signal(false);
   bulkText = '';
@@ -1549,6 +1832,10 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   onPhotoSelected(entry: RiftboundCollectionEntry, ev: Event, slot: 1 | 2 = 1) {
+    if (!this.hasPermission('edit_market')) {
+      alert('No tienes permiso para editar fotos de mercado en esta tienda.');
+      return;
+    }
     const input = ev.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
@@ -1564,7 +1851,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     }
     this.uploadingPhotoFor.set(entry.id);
     this.uploadingPhotoSlot.set(slot);
-    this.rb.uploadCollectionPhoto(entry.card, file, slot, !!entry.is_foil).subscribe({
+    this.rb.uploadCollectionPhoto(entry.card, file, slot, !!entry.is_foil, this.currentStoreProfileId()).subscribe({
       next: (updated) => {
         entry.photo_url = updated.photo_url;
         entry.photo_url_2 = updated.photo_url_2;
@@ -1586,12 +1873,16 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   removePhoto(entry: RiftboundCollectionEntry, ev: Event, slot: 1 | 2 = 1) {
     ev.stopPropagation();
+    if (!this.hasPermission('edit_market')) {
+      alert('No tienes permiso para editar fotos de mercado en esta tienda.');
+      return;
+    }
     const currentUrl = slot === 2 ? entry.photo_url_2 : entry.photo_url;
     if (!currentUrl) return;
     if (!confirm('¿Quitar esta foto?')) return;
     const patch: any = { card: entry.card, is_foil: !!entry.is_foil };
     patch[slot === 2 ? 'photo_url_2' : 'photo_url'] = '';
-    this.rb.upsertCollection(patch).subscribe(() => {
+    this.rb.upsertCollection(patch, { store_profile_id: this.currentStoreProfileId() }).subscribe(() => {
       if (slot === 2) entry.photo_url_2 = ''; else entry.photo_url = '';
       this.cdr.markForCheck();
     });
@@ -1616,9 +1907,17 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
       this.router.navigate(['/login'], { queryParams: { returnUrl: '/riftbound/carpeta' } });
       return;
     }
-    this.loadIds();
-    this.loadCollection();
-    this.loadBinderProfile();
+
+    this.workspaceMode.set(!!this.route.snapshot.data?.['workspaceMode']);
+
+    if (this.workspaceMode()) {
+      this.loadWorkspaces();
+    } else {
+      this.loadIds();
+      this.loadCollection();
+      this.loadBinderProfile();
+    }
+
     this.rb.listSets().subscribe(s => {
       // listSets returns paginated or array depending on backend
       const arr = Array.isArray(s) ? s : (s as any).results || [];
@@ -1642,6 +1941,116 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     this.wishlistObserver?.disconnect();
     this.mercadoObserver?.disconnect();
     this.detachContentScrollListener();
+  }
+
+  canUseWorkspaceContent(): boolean {
+    return !this.workspaceMode() || !!this.selectedWorkspaceId();
+  }
+
+  private currentStoreProfileId(): number | undefined {
+    return this.workspaceMode() ? (this.selectedWorkspaceId() || undefined) : undefined;
+  }
+
+  selectedWorkspacePermissions(): RiftboundStorePermissionFlags {
+    if (!this.workspaceMode()) return FULL_STORE_PERMISSIONS;
+    return this.selectedWorkspace()?.permissions || {
+      view_collection: false,
+      edit_collection: false,
+      delete_collection: false,
+      edit_market: false,
+      remove_from_market: false,
+      view_orders: false,
+      view_history: false,
+      accept_orders: false,
+      reject_orders: false,
+      manage_permissions: false,
+    };
+  }
+
+  hasPermission(key: keyof RiftboundStorePermissionFlags): boolean {
+    return !!this.selectedWorkspacePermissions()[key];
+  }
+
+  canManagePermissions(): boolean {
+    return this.hasPermission('manage_permissions');
+  }
+
+  workspaceLabel(ws: RiftboundWorkspace): string {
+    const display = (ws.profile?.display_name || '').trim();
+    if (display) return `${display} (@${ws.owner_username})`;
+    return `@${ws.owner_username}`;
+  }
+
+  onWorkspaceChange(rawValue: string) {
+    const id = Number(rawValue);
+    if (!Number.isFinite(id) || id <= 0) return;
+    this.selectedWorkspaceId.set(id);
+    this.applyWorkspaceSelection();
+  }
+
+  private loadWorkspaces() {
+    this.workspacesLoading.set(true);
+    this.rb.listWorkspaces().subscribe({
+      next: (res) => {
+        const rows = res?.results || [];
+        this.workspaces.set(rows);
+        this.workspacesLoading.set(false);
+        const first = rows[0]?.store_profile_id || null;
+        this.selectedWorkspaceId.set(first);
+        this.applyWorkspaceSelection();
+      },
+      error: (err) => {
+        this.workspacesLoading.set(false);
+        this.workspaces.set([]);
+        this.selectedWorkspaceId.set(null);
+        alert(err?.error?.detail || 'No se pudieron cargar tus tiendas compartidas.');
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  private applyWorkspaceSelection() {
+    const ws = this.selectedWorkspace();
+    if (!ws) {
+      this.collectionEntries.set([]);
+      this.mercadoEntries.set([]);
+      this.pendingOrders.set([]);
+      this.historyOrders.set([]);
+      this.collaboratorPermissions.set([]);
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.binderProfile.set(ws.profile);
+
+    if (this.hasPermission('view_collection')) {
+      this.loadIds();
+      this.loadCollection();
+      this.loadMercado();
+    } else {
+      this.collectionEntries.set([]);
+      this.mercadoEntries.set([]);
+    }
+
+    if (this.hasPermission('view_orders')) {
+      this.loadPendingOrders();
+    } else {
+      this.pendingOrders.set([]);
+    }
+
+    if (this.hasPermission('view_history')) {
+      this.loadHistoryOrders();
+    } else {
+      this.historyOrders.set([]);
+    }
+
+    if (this.canManagePermissions()) {
+      this.loadWorkspacePermissions();
+    } else {
+      this.collaboratorPermissions.set([]);
+    }
+
+    this.cdr.markForCheck();
   }
 
   private attachContentScrollListener() {
@@ -1753,6 +2162,30 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   // ── Tabs ──
   switchTab(t: Tab) {
+    if (this.workspaceMode() && !this.selectedWorkspaceId()) return;
+
+    if (t === 'carpeta' || t === 'codex' || t === 'mercado') {
+      if (!this.hasPermission('view_collection')) {
+        alert('No tienes permiso para ver la carpeta de esta tienda.');
+        return;
+      }
+    }
+    if (t === 'pedidos' && !this.hasPermission('view_orders')) {
+      alert('No tienes permiso para ver pedidos pendientes.');
+      return;
+    }
+    if (t === 'historial' && !this.hasPermission('view_history')) {
+      alert('No tienes permiso para ver historial de pedidos.');
+      return;
+    }
+    if (t === 'permisos' && !this.canManagePermissions()) {
+      alert('No tienes permiso para gestionar accesos.');
+      return;
+    }
+    if ((t === 'wishlist' || t === 'stats') && this.workspaceMode()) {
+      return;
+    }
+
     this.activeTab.set(t);
     if (t === 'carpeta') this.loadCollection();
     if (t === 'codex' && this.codexCards().length === 0) this.loadCodex();
@@ -1761,6 +2194,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     if (t === 'pedidos') this.loadPendingOrders();
     if (t === 'historial') this.loadHistoryOrders();
     if (t === 'stats') this.loadStats();
+    if (t === 'permisos') this.loadWorkspacePermissions();
     queueMicrotask(() => {
       this.setupCollectionObserver();
       this.setupCodexObserver();
@@ -1772,7 +2206,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   // ── IDs ──
   loadIds() {
-    this.rb.carpetaIds().subscribe(ids => {
+    this.rb.carpetaIds({ store_profile_id: this.currentStoreProfileId() }).subscribe(ids => {
       this.collectionIds = ids.collection || {};
       this.wishlistIds = new Set(ids.wishlist || []);
       this.cdr.markForCheck();
@@ -1784,6 +2218,12 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   // ── Collection ──
   loadCollection() {
+    if (!this.hasPermission('view_collection')) {
+      this.collectionEntries.set([]);
+      this.collectionTotal.set(0);
+      this.collectionHasMore.set(false);
+      return;
+    }
     this.collectionPage.set(1);
     this.collectionEntries.set([]);
     this.collectionHasMore.set(false);
@@ -1803,6 +2243,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
       page: this.collectionPage(),
       page_size: this.COLLECTION_PAGE_SIZE,
       selling: this.onlySelling() || undefined,
+      store_profile_id: this.currentStoreProfileId(),
     }).subscribe({
       next: res => {
         if (append) {
@@ -1827,6 +2268,21 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   toggleOnlySelling() { this.onlySelling.update(v => !v); this.loadCollection(); }
 
   onFieldChange(entry: RiftboundCollectionEntry, field: keyof DirtyPatch, value: any) {
+    if (field === 'quantity' || field === 'condition' || field === 'language' || field === 'is_foil' || field === 'notes') {
+      if (!this.hasPermission('edit_collection')) return;
+    }
+    if (field === 'price') {
+      if (!this.hasPermission('edit_market')) return;
+    }
+    if (field === 'selling_quantity') {
+      const nextVal = Number(value || 0);
+      const isRemoval = (entry.selling_quantity || 0) > 0 && nextVal === 0;
+      if (isRemoval) {
+        if (!this.hasPermission('remove_from_market') && !this.hasPermission('edit_market')) return;
+      } else if (!this.hasPermission('edit_market')) {
+        return;
+      }
+    }
     const pending = this.dirtyEntries.get(entry.id) || {};
     (pending as any)[field] = value;
     this.dirtyEntries.set(entry.id, pending);
@@ -1836,7 +2292,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   saveEntry(entry: RiftboundCollectionEntry) {
     const pending = this.dirtyEntries.get(entry.id);
     if (!pending) return;
-    this.rb.upsertCollection(this.buildUpsertPayload(entry, pending)).subscribe(res => {
+    this.rb.upsertCollection(this.buildUpsertPayload(entry, pending), { store_profile_id: this.currentStoreProfileId() }).subscribe(res => {
       this.dirtyEntries.delete(entry.id);
       if ((res as any).deleted) {
         this.collectionEntries.update(arr => arr.filter(e => e.id !== entry.id));
@@ -1852,6 +2308,10 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   saveAllChanges() {
+    if (!this.hasPermission('edit_collection') && !this.hasPermission('edit_market') && !this.hasPermission('remove_from_market')) {
+      alert('No tienes permisos para guardar cambios en esta tienda.');
+      return;
+    }
     if (this.dirtyEntries.size === 0) return;
     this.batchSaving.set(true);
     const items = Array.from(this.dirtyEntries.entries()).map(([id, pending]) => {
@@ -1859,7 +2319,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
       return entry ? this.buildUpsertPayload(entry, pending) : null;
     }).filter(Boolean) as Partial<RiftboundCollectionEntry>[];
     if (!items.length) { this.batchSaving.set(false); return; }
-    this.rb.batchUpsertCollection(items).subscribe({
+    this.rb.batchUpsertCollection(items, { store_profile_id: this.currentStoreProfileId() }).subscribe({
       next: () => {
         this.dirtyEntries.clear();
         this.batchSaving.set(false);
@@ -1891,8 +2351,12 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   removeFromCollection(entry: RiftboundCollectionEntry) {
+    if (!this.hasPermission('delete_collection')) {
+      alert('No tienes permiso para eliminar cartas de esta carpeta.');
+      return;
+    }
     if (!confirm(`¿Quitar "${entry.card_data.name}" de tu carpeta?`)) return;
-    this.rb.deleteCollection(entry.id).subscribe(() => {
+    this.rb.deleteCollection(entry.id, { store_profile_id: this.currentStoreProfileId() }).subscribe(() => {
       this.collectionEntries.update(arr => arr.filter(e => e.id !== entry.id));
       this.collectionTotal.update(n => Math.max(0, n - 1));
       delete this.collectionIds[entry.card];
@@ -1903,6 +2367,12 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   // ── Codex ──
   loadCodex(append = false) {
+    if (!this.hasPermission('view_collection')) {
+      this.codexCards.set([]);
+      this.codexTotal.set(0);
+      this.codexHasMore.set(false);
+      return;
+    }
     this.codexLoading.set(true);
     this.rb.listCards({
       search: this.codexSearch || undefined,
@@ -1972,8 +2442,12 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   quickAddToCollection(card: RiftboundCardLite | RiftboundCard, ev?: MouseEvent) {
     ev?.stopPropagation();
+    if (!this.hasPermission('edit_collection')) {
+      alert('No tienes permiso para agregar cartas a esta carpeta.');
+      return;
+    }
     const newQty = (this.collectionIds[card.id] || 0) + 1;
-    this.rb.upsertCollection({ card: card.id, quantity: newQty }).subscribe(res => {
+    this.rb.upsertCollection({ card: card.id, quantity: newQty }, { store_profile_id: this.currentStoreProfileId() }).subscribe(res => {
       if (!(res as any).deleted) {
         const updated = res as RiftboundCollectionEntry;
         this.collectionIds[updated.card] = updated.quantity;
@@ -1984,6 +2458,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   toggleWishlist(cardId: number, ev?: MouseEvent) {
     ev?.stopPropagation();
+    if (this.workspaceMode()) return;
     this.rb.toggleWishlist(cardId).subscribe(res => {
       if (res.wishlisted) this.wishlistIds.add(cardId);
       else this.wishlistIds.delete(cardId);
@@ -2052,8 +2527,12 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   // ── Pedidos / Historial ──
   loadPendingOrders() {
+    if (!this.hasPermission('view_orders')) {
+      this.pendingOrders.set([]);
+      return;
+    }
     this.ordersLoading.set(true);
-    this.rb.listMyStoreOrders({ status: 'pending', page: 1 }).subscribe({
+    this.rb.listMyStoreOrders({ status: 'pending', page: 1, store_profile_id: this.currentStoreProfileId() }).subscribe({
       next: (res) => {
         this.pendingOrders.set(res.results || []);
         this.ordersLoading.set(false);
@@ -2068,9 +2547,13 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   loadHistoryOrders() {
+    if (!this.hasPermission('view_history')) {
+      this.historyOrders.set([]);
+      return;
+    }
     this.historyLoading.set(true);
     const status = this.historyStatusFilter() || undefined;
-    this.rb.listMyStoreOrders({ status, page: 1 }).subscribe({
+    this.rb.listMyStoreOrders({ status, page: 1, store_profile_id: this.currentStoreProfileId() }).subscribe({
       next: (res) => {
         this.historyOrders.set(res.results || []);
         this.historyLoading.set(false);
@@ -2097,6 +2580,10 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   acceptOrder(order: RiftboundStoreOrder) {
+    if (!this.hasPermission('accept_orders')) {
+      alert('No tienes permiso para aceptar pedidos en esta tienda.');
+      return;
+    }
     if (!confirm(`¿Aceptar pedido #${order.id}?`)) return;
     this.rb.acceptStoreOrder(order.id).subscribe({
       next: () => {
@@ -2111,6 +2598,10 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   cancelOrder(order: RiftboundStoreOrder) {
+    if (!this.hasPermission('reject_orders')) {
+      alert('No tienes permiso para rechazar pedidos en esta tienda.');
+      return;
+    }
     const reason = prompt(`Motivo de cancelación para pedido #${order.id}:`, '')?.trim() || '';
     if (!reason) {
       alert('Debes indicar un motivo para cancelar el pedido.');
@@ -2132,7 +2623,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   loadStats() {
     this.statsLoading.set(true);
     this.statsError.set(null);
-    this.rb.collectionStats().subscribe({
+    this.rb.collectionStats({ store_profile_id: this.currentStoreProfileId() }).subscribe({
       next: s => { this.stats.set(s); this.statsLoading.set(false); this.cdr.markForCheck(); },
       error: err => {
         this.statsLoading.set(false);
@@ -2352,6 +2843,11 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   // ── Mercado ──
   loadMercado() {
+    if (!this.hasPermission('view_collection')) {
+      this.mercadoEntries.set([]);
+      this.mercadoHasMore.set(false);
+      return;
+    }
     this.mercadoPage.set(1);
     this.mercadoEntries.set([]);
     this.mercadoHasMore.set(false);
@@ -2366,7 +2862,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   private fetchMercadoPage(append = false) {
     this.mercadoLoading.set(true);
-    this.rb.listCollection({ selling: true, page: this.mercadoPage() }).subscribe({
+    this.rb.listCollection({ selling: true, page: this.mercadoPage(), store_profile_id: this.currentStoreProfileId() }).subscribe({
       next: res => {
         if (append) {
           this.mercadoEntries.update(arr => [...arr, ...res.results]);
@@ -2386,6 +2882,16 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   onMercadoFieldChange(entry: RiftboundCollectionEntry, field: keyof DirtyPatch, value: any) {
+    if (field === 'price' && !this.hasPermission('edit_market')) return;
+    if (field === 'selling_quantity') {
+      const nextVal = Number(value || 0);
+      const isRemoval = (entry.selling_quantity || 0) > 0 && nextVal === 0;
+      if (isRemoval) {
+        if (!this.hasPermission('remove_from_market') && !this.hasPermission('edit_market')) return;
+      } else if (!this.hasPermission('edit_market')) {
+        return;
+      }
+    }
     const pending = this.mercadoDirty.get(entry.id) || {};
     (pending as any)[field] = value;
     this.mercadoDirty.set(entry.id, pending);
@@ -2393,6 +2899,10 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   saveMercadoChanges() {
+    if (!this.hasPermission('edit_market') && !this.hasPermission('remove_from_market')) {
+      alert('No tienes permisos para guardar cambios de mercado en esta tienda.');
+      return;
+    }
     if (this.mercadoDirty.size === 0) return;
     this.batchSaving.set(true);
     const items = Array.from(this.mercadoDirty.entries()).map(([id, pending]) => {
@@ -2400,7 +2910,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
       return entry ? this.buildUpsertPayload(entry, pending) : null;
     }).filter(Boolean) as Partial<RiftboundCollectionEntry>[];
     if (!items.length) { this.batchSaving.set(false); return; }
-    this.rb.batchUpsertCollection(items).subscribe({
+    this.rb.batchUpsertCollection(items, { store_profile_id: this.currentStoreProfileId() }).subscribe({
       next: () => {
         this.mercadoDirty.clear();
         this.batchSaving.set(false);
@@ -2440,13 +2950,141 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     }
   }
 
+  // ── Permisos de colaboradores ──
+  permissionLabel(key: keyof RiftboundStorePermissionFlags): string {
+    const labels: Record<keyof RiftboundStorePermissionFlags, string> = {
+      view_collection: 'Ver carpeta',
+      edit_collection: 'Editar carpeta',
+      delete_collection: 'Eliminar de carpeta',
+      edit_market: 'Editar venta/precio',
+      remove_from_market: 'Quitar de venta',
+      view_orders: 'Ver pedidos',
+      view_history: 'Ver historial',
+      accept_orders: 'Aceptar pedidos',
+      reject_orders: 'Rechazar pedidos',
+      manage_permissions: 'Gestionar permisos',
+    };
+    return labels[key];
+  }
+
+  collaboratorPermValue(row: RiftboundStoreCollaboratorPermission, key: keyof RiftboundStorePermissionFlags): boolean {
+    const pending = this.collaboratorDirty.get(row.id);
+    if (pending && key in pending) return !!pending[key];
+    return !!row.permissions?.[key];
+  }
+
+  toggleNewCollaboratorPerm(key: keyof RiftboundStorePermissionFlags, checked: boolean) {
+    this.newCollaboratorPerms.update(curr => ({ ...curr, [key]: checked }));
+  }
+
+  toggleCollaboratorPerm(id: number, key: keyof RiftboundStorePermissionFlags, checked: boolean) {
+    const patch = this.collaboratorDirty.get(id) || {};
+    (patch as any)[key] = checked;
+    this.collaboratorDirty.set(id, patch);
+    this.cdr.markForCheck();
+  }
+
+  loadWorkspacePermissions() {
+    if (!this.workspaceMode() || !this.canManagePermissions()) return;
+    const profileId = this.currentStoreProfileId();
+    if (!profileId) return;
+
+    this.workspacePermissionsLoading.set(true);
+    this.rb.listWorkspacePermissions(profileId).subscribe({
+      next: (res) => {
+        this.collaboratorPermissions.set(res.results || []);
+        this.workspacePermissionsLoading.set(false);
+        this.collaboratorDirty.clear();
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.workspacePermissionsLoading.set(false);
+        alert(err?.error?.detail || 'No se pudieron cargar los permisos de colaboradores.');
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  grantCollaboratorAccess() {
+    if (!this.canManagePermissions()) return;
+    const profileId = this.currentStoreProfileId();
+    if (!profileId) return;
+    const user = this.newCollaboratorUser.trim();
+    if (!user) {
+      alert('Ingresa un usuario o email.');
+      return;
+    }
+
+    this.permissionsSaving.set(true);
+    this.rb.upsertWorkspacePermission(profileId, user, this.newCollaboratorPerms()).subscribe({
+      next: () => {
+        this.newCollaboratorUser = '';
+        this.permissionsSaving.set(false);
+        this.loadWorkspacePermissions();
+      },
+      error: (err) => {
+        this.permissionsSaving.set(false);
+        alert(err?.error?.detail || 'No se pudo guardar el acceso del colaborador.');
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  saveCollaboratorPermissions(row: RiftboundStoreCollaboratorPermission) {
+    if (!this.canManagePermissions()) return;
+    const profileId = this.currentStoreProfileId();
+    if (!profileId) return;
+
+    const patch = this.collaboratorDirty.get(row.id);
+    if (!patch || Object.keys(patch).length === 0) return;
+
+    this.permissionsSaving.set(true);
+    this.rb.updateWorkspacePermission(profileId, row.id, patch).subscribe({
+      next: () => {
+        this.permissionsSaving.set(false);
+        this.collaboratorDirty.delete(row.id);
+        this.loadWorkspacePermissions();
+      },
+      error: (err) => {
+        this.permissionsSaving.set(false);
+        alert(err?.error?.detail || 'No se pudieron actualizar los permisos.');
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  removeCollaboratorPermissions(row: RiftboundStoreCollaboratorPermission) {
+    if (!this.canManagePermissions()) return;
+    const profileId = this.currentStoreProfileId();
+    if (!profileId) return;
+    if (!confirm(`¿Quitar todos los accesos de ${row.username}?`)) return;
+
+    this.permissionsSaving.set(true);
+    this.rb.deleteWorkspacePermission(profileId, row.id).subscribe({
+      next: () => {
+        this.permissionsSaving.set(false);
+        this.collaboratorDirty.delete(row.id);
+        this.loadWorkspacePermissions();
+      },
+      error: (err) => {
+        this.permissionsSaving.set(false);
+        alert(err?.error?.detail || 'No se pudo quitar el acceso.');
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
   // ── Bulk import ──
   runBulkImport() {
     const text = (this.bulkText || '').trim();
     if (!text) return;
+    if (!this.hasPermission('edit_collection')) {
+      alert('No tienes permiso para importar cartas en esta tienda.');
+      return;
+    }
     this.bulkImporting.set(true);
     this.bulkResult.set(null);
-    this.rb.bulkImport(text, this.bulkMode).subscribe({
+    this.rb.bulkImport(text, this.bulkMode, { store_profile_id: this.currentStoreProfileId() }).subscribe({
       next: res => {
         this.bulkResult.set(res);
         this.bulkImporting.set(false);
@@ -2462,8 +3100,10 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   showFloatingSaveButton(): boolean {
-    return (this.activeTab() === 'carpeta' && this.dirtyEntries.size > 0)
-      || (this.activeTab() === 'mercado' && this.mercadoDirty.size > 0);
+    const canSaveCollection = this.hasPermission('edit_collection') || this.hasPermission('edit_market') || this.hasPermission('remove_from_market');
+    const canSaveMercado = this.hasPermission('edit_market') || this.hasPermission('remove_from_market');
+    return (this.activeTab() === 'carpeta' && this.dirtyEntries.size > 0 && canSaveCollection)
+      || (this.activeTab() === 'mercado' && this.mercadoDirty.size > 0 && canSaveMercado);
   }
 
   floatingSaveLabel(): string {

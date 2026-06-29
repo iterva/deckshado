@@ -22,6 +22,7 @@
       <a routerLink="/riftbound/tiendas" routerLinkActive="active">Mercado</a>
       @if (auth.isAuthenticated()) {
         <a routerLink="/riftbound/carpeta" routerLinkActive="active">Carpeta</a>
+        <a routerLink="/riftbound/colaborar" routerLinkActive="active">Carpetas</a>
       }
     } @else {
       <a routerLink="/cards" routerLinkActive="active">Cartas</a>
@@ -228,6 +229,7 @@
         <a routerLink="/riftbound/tiendas" routerLinkActive="active" (click)="closeMobileMenu()">🏪 Mercado</a>
         @if (auth.isAuthenticated()) {
           <a routerLink="/riftbound/carpeta" routerLinkActive="active" (click)="closeMobileMenu()">📁 Carpeta</a>
+          <a routerLink="/riftbound/colaborar" routerLinkActive="active" (click)="closeMobileMenu()">🧩 Carpetas compartidas</a>
         }
       } @else {
         <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="closeMobileMenu()">🏠 Inicio</a>

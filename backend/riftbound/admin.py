@@ -11,6 +11,7 @@ from .models import (
     RiftboundWishlistEntry,
     RiftboundStoreOrder,
     RiftboundStoreOrderItem,
+    RiftboundStorePermission,
     RiftboundIcon,
 )
 
@@ -92,3 +93,25 @@ class RiftboundIconAdmin(admin.ModelAdmin):
     list_display = ("kind", "code", "label")
     list_filter = ("kind",)
     search_fields = ("code", "label")
+
+
+@admin.register(RiftboundStorePermission)
+class RiftboundStorePermissionAdmin(admin.ModelAdmin):
+    list_display = (
+        "store_profile",
+        "user",
+        "can_view_collection",
+        "can_edit_collection",
+        "can_edit_market",
+        "can_view_orders",
+        "can_manage_permissions",
+        "updated_at",
+    )
+    list_filter = (
+        "can_view_collection",
+        "can_edit_collection",
+        "can_edit_market",
+        "can_view_orders",
+        "can_manage_permissions",
+    )
+    search_fields = ("store_profile__user__username", "user__username", "user__email")

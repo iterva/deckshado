@@ -863,12 +863,13 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.qrDownloading = true;
     this.cdr.detectChanges();
     try {
-      const dataUrl = await QRCode.toDataURL(url, {
+      const qrDataUrl = await QRCode.toDataURL(url, {
         width: 1024,
         margin: 2,
-        errorCorrectionLevel: 'M',
+        errorCorrectionLevel: 'H',
         color: { dark: '#0f172a', light: '#ffffff' },
       });
+      const dataUrl = await this.composeQrWithCenteredLogo(qrDataUrl, this.getStoreQrLogoUrl());
       const a = document.createElement('a');
       a.href = dataUrl;
       a.download = `myl-tienda-qr-${this.auth.user()?.username || 'shadowforge'}.png`;
@@ -882,6 +883,73 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
       this.qrDownloading = false;
       this.cdr.detectChanges();
     }
+  }
+
+  private getStoreQrLogoUrl(): string | null {
+    const binderAvatar = (this.binderProfile?.binder_avatar_url || '').trim();
+    if (binderAvatar) return binderAvatar;
+    const userAvatar = (this.auth.user()?.avatar_url || '').trim();
+    return userAvatar || null;
+  }
+
+  private async composeQrWithCenteredLogo(qrDataUrl: string, logoUrl: string | null): Promise<string> {
+    if (!logoUrl) return qrDataUrl;
+    try {
+      const [qrImg, logoImg] = await Promise.all([
+        this.loadImageForQr(qrDataUrl),
+        this.loadImageForQr(logoUrl),
+      ]);
+
+      const size = qrImg.naturalWidth || qrImg.width || 1024;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return qrDataUrl;
+
+      ctx.drawImage(qrImg, 0, 0, size, size);
+
+      const badgeSize = Math.round(size * 0.24);
+      const badgeRadius = Math.round(badgeSize / 2);
+      const centerX = Math.round(size / 2);
+      const centerY = Math.round(size / 2);
+      const imagePadding = Math.max(6, Math.round(badgeSize * 0.08));
+
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, badgeRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, badgeRadius - imagePadding, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(
+        logoImg,
+        centerX - badgeRadius + imagePadding,
+        centerY - badgeRadius + imagePadding,
+        badgeSize - imagePadding * 2,
+        badgeSize - imagePadding * 2,
+      );
+      ctx.restore();
+
+      return canvas.toDataURL('image/png');
+    } catch {
+      return qrDataUrl;
+    }
+  }
+
+  private loadImageForQr(src: string): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.referrerPolicy = 'no-referrer';
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('No se pudo cargar imagen para QR'));
+      img.src = src;
+    });
   }
 
   removeMercadoEntry(entry: CollectionEntry) {

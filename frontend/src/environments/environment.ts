@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  appVersion: '1.0.38',
+  appVersion: '1.0.39',
   apiUrl: 'http://localhost:8000/api',
   cloudinaryCloudName: 'drw7y27sm',
   cloudinaryUploadPreset: 'deckshado_avatars',

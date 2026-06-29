@@ -144,6 +144,7 @@ export interface RiftboundCollectionEntry {
 }
 
 export interface RiftboundBinderProfile {
+  id: number;
   username: string;
   share_token: string;
   binder_avatar: string;

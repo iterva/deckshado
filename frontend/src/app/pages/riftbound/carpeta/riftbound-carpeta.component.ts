@@ -1954,6 +1954,11 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     return this.workspaceMode() ? (this.selectedWorkspaceId() || undefined) : undefined;
   }
 
+  private permissionsStoreProfileId(): number | undefined {
+    if (this.workspaceMode()) return this.currentStoreProfileId();
+    return this.binderProfile()?.id;
+  }
+
   selectedWorkspacePermissions(): RiftboundStorePermissionFlags {
     if (!this.workspaceMode()) return FULL_STORE_PERMISSIONS;
     return this.selectedWorkspace()?.permissions || {
@@ -2988,8 +2993,8 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   loadWorkspacePermissions() {
-    if (!this.workspaceMode() || !this.canManagePermissions()) return;
-    const profileId = this.currentStoreProfileId();
+    if (!this.canManagePermissions()) return;
+    const profileId = this.permissionsStoreProfileId();
     if (!profileId) return;
 
     this.workspacePermissionsLoading.set(true);
@@ -3010,8 +3015,11 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   grantCollaboratorAccess() {
     if (!this.canManagePermissions()) return;
-    const profileId = this.currentStoreProfileId();
-    if (!profileId) return;
+    const profileId = this.permissionsStoreProfileId();
+    if (!profileId) {
+      alert('Aun no se pudo resolver tu tienda. Recarga la pagina e intenta de nuevo.');
+      return;
+    }
     const user = this.newCollaboratorUser.trim();
     if (!user) {
       alert('Ingresa un usuario o email.');
@@ -3035,8 +3043,11 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   saveCollaboratorPermissions(row: RiftboundStoreCollaboratorPermission) {
     if (!this.canManagePermissions()) return;
-    const profileId = this.currentStoreProfileId();
-    if (!profileId) return;
+    const profileId = this.permissionsStoreProfileId();
+    if (!profileId) {
+      alert('Aun no se pudo resolver tu tienda. Recarga la pagina e intenta de nuevo.');
+      return;
+    }
 
     const patch = this.collaboratorDirty.get(row.id);
     if (!patch || Object.keys(patch).length === 0) return;
@@ -3058,8 +3069,11 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
 
   removeCollaboratorPermissions(row: RiftboundStoreCollaboratorPermission) {
     if (!this.canManagePermissions()) return;
-    const profileId = this.currentStoreProfileId();
-    if (!profileId) return;
+    const profileId = this.permissionsStoreProfileId();
+    if (!profileId) {
+      alert('Aun no se pudo resolver tu tienda. Recarga la pagina e intenta de nuevo.');
+      return;
+    }
     if (!confirm(`¿Quitar todos los accesos de ${row.username}?`)) return;
 
     this.permissionsSaving.set(true);

@@ -215,14 +215,14 @@ class RiftboundBinderProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = RiftboundBinderProfile
         fields = [
-            "username", "share_token", "binder_avatar", "binder_avatar_url",
+            "id", "username", "share_token", "binder_avatar", "binder_avatar_url",
             "user_avatar_url",
             "store_slug", "is_store_public", "display_name", "bio",
             "city", "country", "whatsapp", "instagram", "discord",
             "email_public", "payment_methods", "shipping_info",
             "accepts_trades", "last_active",
         ]
-        read_only_fields = ["store_slug", "last_active"]
+        read_only_fields = ["id", "store_slug", "last_active"]
 
     def get_user_avatar_url(self, obj):
         # Si el usuario tiene un avatar global, lo devolvemos; si no, vacío.

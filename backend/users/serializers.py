@@ -110,7 +110,7 @@ class AdminUserSerializer(serializers.ModelSerializer):
                 setattr(instance, field, validated_data[field])
         instance.save()
         if profile_data:
-            profile = instance.profile
+            profile, _ = Profile.objects.get_or_create(user=instance)
             for k, v in profile_data.items():
                 setattr(profile, k, v)
             profile.save()
@@ -124,7 +124,7 @@ class ProfileUpdateSerializer(serializers.Serializer):
     avatar = serializers.URLField(max_length=500, required=False, allow_blank=True)
 
     def update(self, instance, validated_data):
-        profile = instance.profile
+        profile, _ = Profile.objects.get_or_create(user=instance)
         for field in ("first_name", "last_name", "league_code", "avatar"):
             if field in validated_data:
                 value = validated_data[field]

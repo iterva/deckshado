@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view, permission_classes, parser_class
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from backend.cdn_image_upload import upload_image_to_cdn, CdnImageUploadError
+from .models import Profile
 from .serializers import (
     RegisterSerializer,
     UserSerializer,
@@ -80,7 +81,7 @@ def upload_avatar(request):
     avatar_url = _normalize_avatar_url(avatar_url)
     if not avatar_url:
         return Response({"detail": "URL de avatar inválida."}, status=status.HTTP_400_BAD_REQUEST)
-    profile = request.user.profile
+    profile, _ = Profile.objects.get_or_create(user=request.user)
     profile.avatar = avatar_url
     profile.save()
     return Response(UserSerializer(request.user, context={"request": request}).data)

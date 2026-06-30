@@ -69,6 +69,10 @@
     color: #e94560;
     text-transform: uppercase;
     letter-spacing: 1px;
+
+    &.maintenance {
+      color: #f59e0b;
+    }
   }
 }
 

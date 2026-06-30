@@ -126,6 +126,7 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
   openFilter: 'edition' | 'rarity' | 'cost' | null = null;
   selectedFormat = 'imp';
   formatName = 'Imperio';
+  private readonly maintenanceFormats = new Set(['imp_r', 'pb', 'pe']);
 
   /** Temporadas del formato Imperio (rotación de ediciones). */
   seasons = [
@@ -237,6 +238,10 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
       const fmt = this.route.snapshot.paramMap.get('format');
       if (fmt) {
         this.selectedFormat = fmt;
+        if (this.maintenanceFormats.has(fmt)) {
+          this.router.navigate(['/builder/new']);
+          return;
+        }
       }
 
       // Read race from query param

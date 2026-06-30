@@ -12,7 +12,7 @@
             <span class="format-code">{{ f.code | uppercase }}</span>
             <span class="format-name">{{ f.name }}</span>
             @if (!isEnabled(f.code)) {
-              <span class="coming-soon">Próximamente</span>
+              <span class="coming-soon" [class.maintenance]="isMaintenance(f.code)">{{ getDisabledLabel(f.code) }}</span>
             }
           </div>
         }

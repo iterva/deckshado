@@ -34,7 +34,8 @@ export class FormatSelectComponent {
   selectedSubFormat = '';
   selectedPbEdition: PbEditionOption | null = null;
 
-  readonly enabledFormats = ['imp', 'imp_r', 'esc', 'pb', 'pe'];
+  readonly enabledFormats = ['imp', 'esc'];
+  readonly maintenanceFormats = ['imp_r', 'pb', 'pe'];
 
   /** Ediciones de Primer Bloque agrupadas con sus razas. */
   readonly pbEditions: PbEditionOption[] = [
@@ -232,6 +233,14 @@ export class FormatSelectComponent {
 
   isEnabled(code: string): boolean {
     return this.enabledFormats.includes(code);
+  }
+
+  isMaintenance(code: string): boolean {
+    return this.maintenanceFormats.includes(code);
+  }
+
+  getDisabledLabel(code: string): string {
+    return this.isMaintenance(code) ? 'En mantenimiento' : 'Próximamente';
   }
 
   selectFormat(code: string) {

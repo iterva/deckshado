@@ -39,6 +39,16 @@ class Command(BaseCommand):
 
         parser.add_argument("--api-size", type=int, default=100, help="Tamano de pagina Riftcodex (1..100).")
         parser.add_argument("--api-timeout", type=int, default=30, help="Timeout API Riftcodex (seg).")
+        parser.add_argument(
+            "--skip-api",
+            action="store_true",
+            help="Omite consulta a Riftcodex y usa solo image_url local como fuente.",
+        )
+        parser.add_argument(
+            "--ignore-env-proxy",
+            action="store_true",
+            help="Ignora variables de proxy del entorno para requests salientes.",
+        )
         parser.add_argument("--head-timeout", type=int, default=10, help="Timeout HEAD (seg).")
         parser.add_argument("--download-timeout", type=int, default=40, help="Timeout descarga imagen (seg).")
 
@@ -91,11 +101,25 @@ class Command(BaseCommand):
 
         session = requests.Session()
         session.headers.update({"User-Agent": "deckshado-riftbound-cloudinary-to-imagekit/1.0"})
+        if bool(opts.get("ignore_env_proxy")):
+            session.trust_env = False
 
-        api_size = max(1, min(100, int(opts.get("api_size") or 100)))
-        api_timeout = max(5, int(opts.get("api_timeout") or 30))
-        api_map = self._fetch_riftcodex_image_map(session=session, page_size=api_size, timeout=api_timeout)
-        self.stdout.write(f"Mapa API cargado: {len(api_map)} entradas.")
+        api_map: dict[str, str] = {}
+        if bool(opts.get("skip_api")):
+            self.stdout.write(self.style.WARNING("Riftcodex API omitida por --skip-api; usando image_url local."))
+        else:
+            api_size = max(1, min(100, int(opts.get("api_size") or 100)))
+            api_timeout = max(5, int(opts.get("api_timeout") or 30))
+            try:
+                api_map = self._fetch_riftcodex_image_map(session=session, page_size=api_size, timeout=api_timeout)
+                self.stdout.write(f"Mapa API cargado: {len(api_map)} entradas.")
+            except Exception as exc:
+                self.stdout.write(
+                    self.style.WARNING(
+                        "No se pudo consultar Riftcodex API; continuando con image_url local. "
+                        f"Detalle: {exc}"
+                    )
+                )
 
         candidate_public_urls, upload_bytes = self._load_cdn_helpers()
         head_timeout = max(3, int(opts.get("head_timeout") or 10))

@@ -1,3 +1,6 @@
+import os
+import re
+
 from rest_framework import serializers
 from .models import Card, Edition, Format, Race, CardType, Rarity, BanlistEntry
 
@@ -36,6 +39,10 @@ class EditionSerializer(serializers.ModelSerializer):
 
 
 class CardListSerializer(serializers.ModelSerializer):
+    _FORCED_MYL_FALLBACK_SLUGS = {
+        "bestiarium",
+    }
+
     image_url = serializers.SerializerMethodField()
     is_unique = serializers.SerializerMethodField()
     edition_slug = serializers.CharField(source="edition.slug", read_only=True)
@@ -63,6 +70,8 @@ class CardListSerializer(serializers.ModelSerializer):
         if custom:
             rewritten_url = self._rewrite_legacy_cloudinary_url(custom)
             if rewritten_url:
+                if fallback and self._should_force_myl_fallback(obj, rewritten_url):
+                    return fallback
                 return rewritten_url
             if self._should_fallback_from_non_r2(obj, custom) and fallback:
                 return fallback
@@ -79,32 +88,56 @@ class CardListSerializer(serializers.ModelSerializer):
         if val and not callable(val):
             rewritten_url = self._rewrite_legacy_cloudinary_url(val)
             if rewritten_url:
+                if fallback and self._should_force_myl_fallback(obj, rewritten_url):
+                    return fallback
                 return rewritten_url
             if self._should_fallback_from_non_r2(obj, val) and fallback:
                 return fallback
             return val
         return fallback
 
-    def _rewrite_legacy_cloudinary_url(self, url):
-        """Map retired Cloudinary URLs to the active Cloudinary account.
+    def _should_force_myl_fallback(self, obj, url):
+        if not isinstance(url, str) or not url:
+            return False
 
-        We only rewrite known migrated folders to avoid touching unrelated assets.
-        """
+        myl_id = str(getattr(obj, 'myl_id', '') or '')
+        edition = getattr(obj, 'edition', None)
+        edition_myl_id = str(getattr(edition, 'myl_id', '') or '')
+        if myl_id.startswith('custom_') or edition_myl_id.startswith('custom_'):
+            return False
+
+        edition_slug = str(getattr(edition, 'slug', '') or '').strip().lower()
+        if edition_slug in self._FORCED_MYL_FALLBACK_SLUGS:
+            return True
+
+        lower_url = url.lower()
+        for slug in self._FORCED_MYL_FALLBACK_SLUGS:
+            marker = f"/deckshado/myl_cards/{slug}/"
+            if marker in lower_url:
+                return True
+        return False
+
+    def _rewrite_legacy_cloudinary_url(self, url):
+        """Map legacy Cloudinary accounts to the active Cloudinary account."""
         if not isinstance(url, str) or not url:
             return None
-        lower = url.lower()
-        legacy_prefix = "https://res.cloudinary.com/dmvu6tuee/"
-        if legacy_prefix not in lower:
+
+        active_cloud = self._active_cloudinary_cloud()
+        if not active_cloud:
             return None
 
-        migrated_markers = (
-            "/deckshado/extra_cards/",
-            "/deckshado/myl_cards/",
-            "/primera_era/",
-        )
-        if not any(marker in lower for marker in migrated_markers):
+        lower = url.lower()
+        legacy_clouds = ("dmvu6tuee", "drw7y27sm")
+        if not any(f"res.cloudinary.com/{cloud}/" in lower for cloud in legacy_clouds):
             return None
-        return url.replace("res.cloudinary.com/dmvu6tuee", "res.cloudinary.com/drw7y27sm")
+
+        return re.sub(
+            r"res\.cloudinary\.com/[^/]+",
+            f"res.cloudinary.com/{active_cloud}",
+            url,
+            count=1,
+            flags=re.IGNORECASE,
+        )
 
     def _default_myl_image_url(self, obj):
         edition = getattr(obj, 'edition', None)
@@ -127,11 +160,27 @@ class CardListSerializer(serializers.ModelSerializer):
     def _is_supported_cdn_url(self, lower_url):
         if 'ik.imagekit.io/' in lower_url:
             return True
+
+        active_cloud = self._active_cloudinary_cloud()
+        if active_cloud and f"res.cloudinary.com/{active_cloud}/" in lower_url:
+            return True
+
+        # Legacy clouds are still accepted while URLs are rewritten progressively.
         if 'res.cloudinary.com/drw7y27sm/' in lower_url:
             return True
+        if 'res.cloudinary.com/dmvu6tuee/' in lower_url:
+            return True
+
         if '.r2.dev/' in lower_url or '.r2.cloudflarestorage.com/' in lower_url:
             return True
         return False
+
+    def _active_cloudinary_cloud(self):
+        cloud = (os.environ.get("CLOUDINARY_CLOUD_NAME") or os.environ.get("cloud_name") or "").strip().lower()
+        if cloud:
+            return cloud
+        # Safety default for current production target.
+        return "daobfx9yb"
 
     def get_is_unique(self, obj):
         val = getattr(obj, 'is_unique', None)

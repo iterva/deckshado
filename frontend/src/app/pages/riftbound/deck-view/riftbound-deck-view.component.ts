@@ -16,6 +16,14 @@ import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.compo
 
 type ViewMode = 'grid' | 'list' | 'stats';
 type Orientation = 'vertical' | 'horizontal';
+type CardImageLike = {
+  id?: number | null;
+  card_number?: string | null;
+  image?: string | null;
+  cdn_image_url?: string | null;
+  image_url?: string | null;
+  image_url_small?: string | null;
+};
 
 const COLOR_HEX: Record<RiftboundColor, string> = {
   fury: '#e94560', calm: '#4caf50', mind: '#3aa6ff',
@@ -55,14 +63,15 @@ function typeRank(t?: string): number {
         <a routerLink="/riftbound/decks" class="back-link">← Volver a mazos</a>
 
         <!-- Hero -->
-        <div class="deck-hero" [class.with-cover]="!!d.cover_card_data?.image">
-          @if (d.cover_card_data?.image; as img) {
+        <div class="deck-hero" [class.with-cover]="!!cardImageUrl(d.cover_card_data)">
+          @if (cardImageUrl(d.cover_card_data); as img) {
             <div class="hero-bg" [style.background-image]="'url(' + img + ')'"></div>
           }
           <div class="hero-overlay"></div>
           <div class="hero-content">
-            @if (d.cover_card_data?.image; as img) {
-              <img class="hero-cover" [src]="img" [alt]="d.cover_card_data?.name || ''" />
+            @if (cardImageUrl(d.cover_card_data); as img) {
+              <img class="hero-cover" [src]="img" [alt]="d.cover_card_data?.name || ''"
+                   (error)="onCardImageError(d.cover_card_data, $event)" />
             } @else {
               <div class="hero-cover hero-cover-empty">⚔️</div>
             }
@@ -313,8 +322,9 @@ function typeRank(t?: string): number {
                                 <td class="w-qty">×{{ e.quantity }}</td>
                                 <td>
                                   <div class="entry-name">
-                                    @if (e.card_data?.image) {
-                                      <img class="entry-thumb" [src]="e.card_data?.image" [alt]="e.card_data?.name || ''" />
+                                    @if (cardImageUrl(e.card_data); as img) {
+                                      <img class="entry-thumb" [src]="img" [alt]="e.card_data?.name || ''"
+                                           (error)="onCardImageError(e.card_data, $event)" />
                                     }
                                     <span>{{ e.card_data?.name }}</span>
                                     @if (bs) {
@@ -366,14 +376,17 @@ function typeRank(t?: string): number {
                                   [class.banned]="bs?.status === 'banned'"
                                   (click)="openPreview(e)"
                                   [title]="e.card_data?.name || ''">
-                            @if (e.quantity >= 3 && e.card_data?.image) {
-                              <img class="shadow s3" [src]="e.card_data?.image" aria-hidden="true" />
+                            @if (e.quantity >= 3 && cardImageUrl(e.card_data); as img) {
+                              <img class="shadow s3" [src]="img" aria-hidden="true"
+                                   (error)="onCardImageError(e.card_data, $event)" />
                             }
-                            @if (e.quantity >= 2 && e.card_data?.image) {
-                              <img class="shadow s2" [src]="e.card_data?.image" aria-hidden="true" />
+                            @if (e.quantity >= 2 && cardImageUrl(e.card_data); as img) {
+                              <img class="shadow s2" [src]="img" aria-hidden="true"
+                                   (error)="onCardImageError(e.card_data, $event)" />
                             }
-                            @if (e.card_data?.image) {
-                              <img class="top" [src]="e.card_data?.image" [alt]="e.card_data?.name || ''" />
+                            @if (cardImageUrl(e.card_data); as img) {
+                              <img class="top" [src]="img" [alt]="e.card_data?.name || ''"
+                                   (error)="onCardImageError(e.card_data, $event)" />
                             } @else {
                               <div class="top placeholder">{{ e.card_data?.card_number }}</div>
                             }
@@ -428,7 +441,9 @@ function typeRank(t?: string): number {
               <p class="muted" style="padding:3rem;text-align:center">Cargando…</p>
             } @else if (previewDetail(); as c) {
               <div class="preview-layout">
-                @if (c.image) { <img class="preview-img" [src]="c.image" [alt]="c.name" /> }
+                @if (cardImageUrl(c); as img) {
+                  <img class="preview-img" [src]="img" [alt]="c.name" (error)="onCardImageError(c, $event)" />
+                }
                 <div class="preview-info">
                   <h2>{{ c.name }}</h2>
                   <p class="muted">
@@ -472,8 +487,9 @@ function typeRank(t?: string): number {
                 </div>
               </div>
             } @else {
-              @if (pe.card_data?.image) {
-                <img class="preview-img" [src]="pe.card_data?.image" [alt]="pe.card_data?.name || ''" />
+              @if (cardImageUrl(pe.card_data); as img) {
+                <img class="preview-img" [src]="img" [alt]="pe.card_data?.name || ''"
+                     (error)="onCardImageError(pe.card_data, $event)" />
               }
               <h3>{{ pe.card_data?.name }} <small>{{ pe.card_data?.card_number }}</small></h3>
             }
@@ -497,8 +513,9 @@ function typeRank(t?: string): number {
             } @else {
               <div class="hand-grid">
                 @for (e of handCards(); track $index) {
-                  @if (e.card_data?.image) {
-                    <img class="hand-card" [src]="e.card_data?.image" [alt]="e.card_data?.name || ''" [title]="e.card_data?.name || ''" />
+                  @if (cardImageUrl(e.card_data); as img) {
+                    <img class="hand-card" [src]="img" [alt]="e.card_data?.name || ''" [title]="e.card_data?.name || ''"
+                         (error)="onCardImageError(e.card_data, $event)" />
                   } @else {
                     <div class="hand-card placeholder">{{ e.card_data?.card_number }}</div>
                   }
@@ -966,6 +983,8 @@ export class RiftboundDeckViewComponent implements OnInit {
   private titleSvc = inject(Title);
   private metaSvc = inject(Meta);
   private cdr = inject(ChangeDetectorRef);
+  private brokenImageUrlsByKey = new Map<string, Set<string>>();
+  private imageFallbackNonce = signal(0);
 
   @ViewChild('deckContent') deckContent?: ElementRef<HTMLElement>;
 
@@ -1010,6 +1029,67 @@ export class RiftboundDeckViewComponent implements OnInit {
   hex(c: RiftboundColor): string { return COLOR_HEX[c] ?? '#888'; }
   label(c: RiftboundColor): string { return COLOR_LABEL[c] ?? c; }
   typeLabel(t?: string): string { return TYPE_LABEL[t ?? ''] ?? (t ?? '—'); }
+
+  private cardImageKey(card: CardImageLike | null | undefined): string {
+    if (!card) return '';
+    return String(card.id ?? card.card_number ?? card.image ?? 'unknown');
+  }
+
+  private normalizeImageUrl(url: string | null | undefined): string {
+    const value = (url ?? '').trim();
+    if (!value) return '';
+    if (value.startsWith('http://')) return `https://${value.slice(7)}`;
+    return value;
+  }
+
+  private candidateImageUrls(card: CardImageLike | null | undefined): string[] {
+    if (!card) return [];
+    const urls = [card.image, card.cdn_image_url, card.image_url, card.image_url_small]
+      .map((url) => this.normalizeImageUrl(url))
+      .filter(Boolean);
+    return Array.from(new Set(urls));
+  }
+
+  cardImageUrl(card: CardImageLike | null | undefined): string {
+    this.imageFallbackNonce();
+    const candidates = this.candidateImageUrls(card);
+    if (!candidates.length) return '';
+
+    const key = this.cardImageKey(card);
+    const broken = this.brokenImageUrlsByKey.get(key);
+    for (const url of candidates) {
+      if (!broken?.has(url)) return url;
+    }
+
+    return candidates[0];
+  }
+
+  onCardImageError(card: CardImageLike | null | undefined, event: Event) {
+    if (!card) return;
+    const key = this.cardImageKey(card);
+    if (!key) return;
+
+    let broken = this.brokenImageUrlsByKey.get(key);
+    if (!broken) {
+      broken = new Set<string>();
+      this.brokenImageUrlsByKey.set(key, broken);
+    }
+
+    const img = event.target as HTMLImageElement | null;
+    const failed = [img?.currentSrc, img?.src]
+      .map((url) => this.normalizeImageUrl(url))
+      .filter(Boolean);
+
+    let changed = false;
+    for (const url of failed) {
+      if (!broken.has(url)) {
+        broken.add(url);
+        changed = true;
+      }
+    }
+
+    if (changed) this.imageFallbackNonce.update((value) => value + 1);
+  }
 
   ngOnInit() {
     // Restaurar viewMode

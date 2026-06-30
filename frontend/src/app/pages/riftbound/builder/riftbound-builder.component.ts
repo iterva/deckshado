@@ -26,6 +26,15 @@ interface BuilderEntry {
   zone: RiftboundZone;
 }
 
+type CardImageLike = {
+  id?: number | null;
+  card_number?: string | null;
+  image?: string | null;
+  cdn_image_url?: string | null;
+  image_url?: string | null;
+  image_url_small?: string | null;
+};
+
 const COLORS: { code: RiftboundColor; label: string; hex: string }[] = [
   { code: 'fury',  label: 'Fury',  hex: '#e94560' },
   { code: 'calm',  label: 'Calm',  hex: '#4caf50' },
@@ -169,8 +178,9 @@ function typeRank(t?: string): number {
                  [class.banned]="isBanned(card)"
                  [class.limited]="banStatus(card) === 'limited' || banStatus(card) === 'restricted'">
               <div class="img-wrapper" (click)="openPreview(card)">
-                @if (card.image) {
-                  <img [src]="card.image" [alt]="card.name" loading="lazy" decoding="async" />
+                @if (cardImageUrl(card); as img) {
+                  <img [src]="img" [alt]="card.name" loading="lazy" decoding="async"
+                       (error)="onCardImageError(card, $event)" />
                 } @else {
                   <div class="img-placeholder">{{ card.card_number }}</div>
                 }
@@ -266,7 +276,8 @@ function typeRank(t?: string): number {
         <!-- Champion Legend del mazo -->
         <div class="legend-banner" [class.empty]="!chosenLegend()">
           @if (chosenLegend(); as L) {
-            <img [src]="L.image" [alt]="L.name" class="legend-img" />
+            <img [src]="cardImageUrl(L)" [alt]="L.name" class="legend-img"
+                 (error)="onCardImageError(L, $event)" />
             <div class="legend-info">
               <span class="legend-tag">CHAMPION LEGEND</span>
               <strong>{{ L.name }}</strong>
@@ -296,7 +307,8 @@ function typeRank(t?: string): number {
         @if (chosenLegend()) {
           <div class="legend-banner cu-banner" [class.empty]="!championUnitData()">
             @if (championUnitData(); as U) {
-              <img [src]="U.image" [alt]="U.name" class="legend-img" />
+              <img [src]="cardImageUrl(U)" [alt]="U.name" class="legend-img"
+                   (error)="onCardImageError(U, $event)" />
               <div class="legend-info">
                 <span class="legend-tag cu-tag">CHAMPION UNIT</span>
                 <strong>{{ U.name }}</strong>
@@ -421,8 +433,8 @@ function typeRank(t?: string): number {
                         [title]="coverCardId() === e.card.id ? 'Portada actual (clic para quitar)' : 'Marcar como portada del mazo'">
                   {{ coverCardId() === e.card.id ? '★' : '☆' }}
                 </button>
-                @if (e.card.image) {
-                  <img [src]="e.card.image" [alt]="e.card.name" />
+                @if (cardImageUrl(e.card); as img) {
+                  <img [src]="img" [alt]="e.card.name" (error)="onCardImageError(e.card, $event)" />
                 } @else {
                   <div class="entry-img-fallback">{{ e.card.card_number }}</div>
                 }
@@ -506,8 +518,8 @@ function typeRank(t?: string): number {
                     @for (e of sortedEntries(z); track e.card.id) {
                       <div class="dp-card">
                         <div class="dp-img-wrap">
-                          @if (e.card.image) {
-                            <img [src]="e.card.image" [alt]="e.card.name" />
+                          @if (cardImageUrl(e.card); as img) {
+                            <img [src]="img" [alt]="e.card.name" (error)="onCardImageError(e.card, $event)" />
                           } @else {
                             <div class="dp-img-fallback">{{ e.card.card_number }}</div>
                           }
@@ -544,8 +556,8 @@ function typeRank(t?: string): number {
             <p class="muted" style="padding:3rem;text-align:center">Cargando…</p>
           } @else if (previewDetail(); as c) {
             <div class="preview-layout">
-              @if (c.image) {
-                <img class="preview-img" [src]="c.image" [alt]="c.name" />
+              @if (cardImageUrl(c); as img) {
+                <img class="preview-img" [src]="img" [alt]="c.name" (error)="onCardImageError(c, $event)" />
               }
               <div class="preview-info">
                 <h2>{{ c.name }}</h2>
@@ -570,7 +582,9 @@ function typeRank(t?: string): number {
               </div>
             </div>
           } @else {
-            @if (pc.image) { <img class="preview-img" [src]="pc.image" [alt]="pc.name" /> }
+            @if (cardImageUrl(pc); as img) {
+              <img class="preview-img" [src]="img" [alt]="pc.name" (error)="onCardImageError(pc, $event)" />
+            }
             <h3>{{ pc.name }} <small>{{ pc.card_number }}</small></h3>
           }
         </div>
@@ -593,8 +607,8 @@ function typeRank(t?: string): number {
           <div class="lp-grid">
             @for (L of filteredLegends(); track L.id) {
               <button type="button" class="lp-card" (click)="chooseLegend(L)">
-                @if (L.image) {
-                  <img [src]="L.image" [alt]="L.name" />
+                @if (cardImageUrl(L); as img) {
+                  <img [src]="img" [alt]="L.name" (error)="onCardImageError(L, $event)" />
                 } @else {
                   <div class="lp-img-fallback">{{ L.card_number }}</div>
                 }
@@ -631,8 +645,8 @@ function typeRank(t?: string): number {
           <div class="lp-grid">
             @for (U of filteredChampionUnits(); track U.id) {
               <button type="button" class="lp-card" (click)="chooseChampionUnit(U)">
-                @if (U.image) {
-                  <img [src]="U.image" [alt]="U.name" />
+                @if (cardImageUrl(U); as img) {
+                  <img [src]="img" [alt]="U.name" (error)="onCardImageError(U, $event)" />
                 } @else {
                   <div class="lp-img-fallback">{{ U.card_number }}</div>
                 }
@@ -1308,6 +1322,8 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   coverCardId = signal<number | null>(null);
   saving = signal(false);
   errors = signal<string[]>([]);
+  private brokenImageUrlsByKey = new Map<string, Set<string>>();
+  private imageFallbackNonce = signal(0);
 
   // Browser state
   searchQuery = '';
@@ -1657,6 +1673,67 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
 
   typeLabel(t: string): string {
     return this.types.find(x => x.code === t)?.label ?? t;
+  }
+
+  private cardImageKey(card: CardImageLike | null | undefined): string {
+    if (!card) return '';
+    return String(card.id ?? card.card_number ?? card.image ?? 'unknown');
+  }
+
+  private normalizeImageUrl(url: string | null | undefined): string {
+    const value = (url ?? '').trim();
+    if (!value) return '';
+    if (value.startsWith('http://')) return `https://${value.slice(7)}`;
+    return value;
+  }
+
+  private candidateImageUrls(card: CardImageLike | null | undefined): string[] {
+    if (!card) return [];
+    const urls = [card.image, card.cdn_image_url, card.image_url, card.image_url_small]
+      .map((url) => this.normalizeImageUrl(url))
+      .filter(Boolean);
+    return Array.from(new Set(urls));
+  }
+
+  cardImageUrl(card: CardImageLike | null | undefined): string {
+    this.imageFallbackNonce();
+    const candidates = this.candidateImageUrls(card);
+    if (!candidates.length) return '';
+
+    const key = this.cardImageKey(card);
+    const broken = this.brokenImageUrlsByKey.get(key);
+    for (const url of candidates) {
+      if (!broken?.has(url)) return url;
+    }
+
+    return candidates[0];
+  }
+
+  onCardImageError(card: CardImageLike | null | undefined, event: Event) {
+    if (!card) return;
+    const key = this.cardImageKey(card);
+    if (!key) return;
+
+    let broken = this.brokenImageUrlsByKey.get(key);
+    if (!broken) {
+      broken = new Set<string>();
+      this.brokenImageUrlsByKey.set(key, broken);
+    }
+
+    const img = event.target as HTMLImageElement | null;
+    const failed = [img?.currentSrc, img?.src]
+      .map((url) => this.normalizeImageUrl(url))
+      .filter(Boolean);
+
+    let changed = false;
+    for (const url of failed) {
+      if (!broken.has(url)) {
+        broken.add(url);
+        changed = true;
+      }
+    }
+
+    if (changed) this.imageFallbackNonce.update((value) => value + 1);
   }
 
   autoZoneOf(c: RiftboundCardLite): RiftboundZone {

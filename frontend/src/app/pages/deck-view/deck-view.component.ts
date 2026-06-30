@@ -855,8 +855,8 @@ export class DeckViewComponent implements OnInit {
     this.handCards = this.drawRandom(this.shufflePool, 8);
   }
 
-  handleDeckImageError(event: Event, originalUrl: string | null | undefined) {
-    const img = event.target as HTMLImageElement | null;
+  handleDeckImageError(event: Event | string, originalUrl: string | null | undefined) {
+    const img = typeof event === 'string' ? null : (event.target as HTMLImageElement | null);
     if (!img) return;
 
     const current = img.currentSrc || img.src || '';

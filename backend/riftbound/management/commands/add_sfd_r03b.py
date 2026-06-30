@@ -19,7 +19,7 @@ CARD_NUMBER = "SFD-R03b"
 NAME = "Mind Rune"
 SET_CODE = "SFD"
 EXTERNAL_ID = uuid.UUID("a03b5fd0-0000-4000-8000-000000000003")
-CDN_URL = "https://res.cloudinary.com/dmvu6tuee/image/upload/riftbound/cards/sfd/sfd-r03b.jpg"
+CDN_URL = "https://ik.imagekit.io/crttm6rou/riftbound/cards/sfd/sfd-r03b.jpg"
 FALLBACK_IMAGE = CDN_URL
 
 

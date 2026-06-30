@@ -129,10 +129,12 @@ class Command(BaseCommand):
         for idx, card in enumerate(cards, start=1):
             counters.scanned += 1
 
-            source_url = (api_map.get(card.card_number) or "").strip() or (card.image_url or "").strip()
-            if not source_url:
+            sources = self._source_candidates(card=card, api_map=api_map)
+            if not sources:
                 counters.skipped += 1
                 continue
+
+            source_url = sources[0]
 
             public_id = self._public_id_for_card(card)
             ext_candidates = self._candidate_exts(source_url)
@@ -168,25 +170,33 @@ class Command(BaseCommand):
                     )
                 continue
 
-            try:
-                resp = session.get(source_url, timeout=download_timeout)
-                resp.raise_for_status()
+            last_error = None
+            migrated = False
+            for source_url in sources:
+                try:
+                    resp = session.get(source_url, timeout=download_timeout)
+                    resp.raise_for_status()
 
-                ext = self._guess_ext(source_url, resp.headers.get("Content-Type", ""))
-                cdn_url = upload_bytes(
-                    resp.content,
-                    public_id=public_id,
-                    default_ext=ext,
-                    mime_type=resp.headers.get("Content-Type", "application/octet-stream"),
-                    overwrite=True,
-                )
-                if card.cdn_image_url != cdn_url:
-                    card.cdn_image_url = cdn_url
-                    card.save(update_fields=["cdn_image_url"])
-                counters.uploaded += 1
-            except Exception as exc:
+                    ext = self._guess_ext(source_url, resp.headers.get("Content-Type", ""))
+                    cdn_url = upload_bytes(
+                        resp.content,
+                        public_id=public_id,
+                        default_ext=ext,
+                        mime_type=resp.headers.get("Content-Type", "application/octet-stream"),
+                        overwrite=True,
+                    )
+                    if card.cdn_image_url != cdn_url:
+                        card.cdn_image_url = cdn_url
+                        card.save(update_fields=["cdn_image_url"])
+                    counters.uploaded += 1
+                    migrated = True
+                    break
+                except Exception as exc:
+                    last_error = exc
+
+            if not migrated:
                 counters.errors += 1
-                self.stdout.write(self.style.WARNING(f"[{card.card_number}] error: {exc}"))
+                self.stdout.write(self.style.WARNING(f"[{card.card_number}] error: {last_error}"))
 
             if idx % 50 == 0:
                 self.stdout.write(
@@ -264,6 +274,23 @@ class Command(BaseCommand):
                 break
             page += 1
 
+        return out
+
+    @staticmethod
+    def _source_candidates(card: RiftboundCard, api_map: dict[str, str]) -> list[str]:
+        candidates = [
+            (api_map.get(card.card_number) or "").strip(),
+            (card.image_url or "").strip(),
+            (card.cdn_image_url or "").strip(),
+        ]
+
+        out: list[str] = []
+        seen: set[str] = set()
+        for url in candidates:
+            if not url or url in seen:
+                continue
+            out.append(url)
+            seen.add(url)
         return out
 
     @staticmethod

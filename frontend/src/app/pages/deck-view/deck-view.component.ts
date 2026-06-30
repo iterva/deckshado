@@ -859,25 +859,39 @@ export class DeckViewComponent implements OnInit {
     const img = event.target as HTMLImageElement | null;
     if (!img) return;
 
-    if (!originalUrl) {
-      img.onerror = null;
-      img.src = this.deckImagePlaceholder;
-      return;
-    }
-
-    // Avoid fallback loops when the failing URL is already the original source.
     const current = img.currentSrc || img.src || '';
-    if (current === originalUrl || img.dataset['fallbackApplied'] === '1') {
+    const fallbackStage = img.dataset['fallbackStage'] || '';
+    const rewritten = this.rewriteLegacyCloudinaryUrl(originalUrl);
+
+    // If we received a legacy Cloudinary URL, try active cloud first.
+    if (rewritten && rewritten !== current && fallbackStage !== 'rewritten') {
+      img.dataset['fallbackStage'] = 'rewritten';
       img.onerror = null;
-      if (current !== this.deckImagePlaceholder) {
-        img.src = this.deckImagePlaceholder;
-      }
+      img.src = rewritten;
+      img.onerror = (e) => this.handleDeckImageError(e, originalUrl);
       return;
     }
 
-    img.dataset['fallbackApplied'] = '1';
+    // If thumbnail URL failed, try the original source URL once.
+    if (originalUrl && originalUrl !== current && fallbackStage !== 'original') {
+      img.dataset['fallbackStage'] = 'original';
+      img.onerror = null;
+      img.src = originalUrl;
+      img.onerror = (e) => this.handleDeckImageError(e, originalUrl);
+      return;
+    }
+
     img.onerror = null;
-    img.src = originalUrl;
+    img.src = this.deckImagePlaceholder;
+  }
+
+  private rewriteLegacyCloudinaryUrl(url: string | null | undefined): string | null {
+    if (!url) return null;
+    const rewritten = url.replace(
+      /res\.cloudinary\.com\/(drw7y27sm|dmvu6tuee)\//i,
+      'res.cloudinary.com/daobfx9yb/',
+    );
+    return rewritten !== url ? rewritten : null;
   }
 
   /** Preload card images in background so they're cached for viewing & export */

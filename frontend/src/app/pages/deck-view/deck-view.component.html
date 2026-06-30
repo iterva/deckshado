@@ -573,7 +573,7 @@
       <h3 class="preview-title">{{ previewCard.name }}</h3>
       <hr>
       <div class="preview-body">
-        <img [src]="previewCard.image_url" [alt]="previewCard.name">
+        <img [src]="previewCard.image_url" [alt]="previewCard.name" (error)="handleDeckImageError($event, previewCard.image_url)">
         <div class="preview-stats">
           <div class="stat-row">
             <span class="stat-label">Tipo</span>

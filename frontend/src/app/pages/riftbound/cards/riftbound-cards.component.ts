@@ -143,8 +143,9 @@ const RARITIES = [
       <div class="card-grid">
         @for (card of cards(); track card.id) {
           <button type="button" class="rb-card" (click)="openCard(card.card_number)">
-            @if (card.image) {
-              <img [src]="card.image" [alt]="card.name" loading="lazy" decoding="async" />
+            @if (cardImageUrl(card); as imgUrl) {
+              <img [src]="imgUrl" [alt]="card.name" loading="lazy" decoding="async"
+                   (error)="onCardImageError(card, $event)" />
             } @else {
               <div class="rb-card-placeholder">{{ card.name }}</div>
             }
@@ -168,8 +169,9 @@ const RARITIES = [
               <p class="muted center" style="padding:3rem">Cargando…</p>
             } @else if (selectedCard(); as c) {
               <div class="rb-modal-layout">
-                @if (c.image) {
-                  <img class="rb-modal-img" [src]="c.image" [alt]="c.name" />
+                @if (cardImageUrl(c); as imgUrl) {
+                  <img class="rb-modal-img" [src]="imgUrl" [alt]="c.name"
+                       (error)="onCardImageError(c, $event)" />
                 }
                 <div class="rb-modal-info">
                   <h2>{{ c.name }}</h2>
@@ -392,6 +394,8 @@ const RARITIES = [
 })
 export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy {
   private rb = inject(RiftboundService);
+  private brokenImageUrlsByCard = new Map<number, Set<string>>();
+  private imageFallbackNonce = signal(0);
 
   readonly colors = COLORS;
   readonly types = TYPES;
@@ -433,6 +437,49 @@ export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy
        this.rarityFilter || this.energyFilter !== null || this.selectedColors().size));
 
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private candidateImageUrls(card: RiftboundCardLite | RiftboundCard): string[] {
+    const candidates = [card.image, card.cdn_image_url, card.image_url, card.image_url_small]
+      .map((url) => (url || '').trim())
+      .filter(Boolean);
+    return Array.from(new Set(candidates));
+  }
+
+  cardImageUrl(card: RiftboundCardLite | RiftboundCard | null | undefined): string {
+    this.imageFallbackNonce();
+    if (!card) return '';
+
+    const broken = this.brokenImageUrlsByCard.get(card.id);
+    for (const url of this.candidateImageUrls(card)) {
+      if (!broken?.has(url)) return url;
+    }
+    return '';
+  }
+
+  onCardImageError(card: RiftboundCardLite | RiftboundCard | null | undefined, event: Event) {
+    if (!card) return;
+    const img = event.target as HTMLImageElement | null;
+    const failedUrls = [img?.currentSrc, img?.src]
+      .map((url) => (url || '').trim())
+      .filter(Boolean);
+    if (!failedUrls.length) return;
+
+    let broken = this.brokenImageUrlsByCard.get(card.id);
+    if (!broken) {
+      broken = new Set<string>();
+      this.brokenImageUrlsByCard.set(card.id, broken);
+    }
+
+    let changed = false;
+    for (const url of failedUrls) {
+      if (!broken.has(url)) {
+        broken.add(url);
+        changed = true;
+      }
+    }
+
+    if (changed) this.imageFallbackNonce.update((value) => value + 1);
+  }
 
   ngOnInit() {
     this.rb.listSets().subscribe({

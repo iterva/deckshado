@@ -34,6 +34,9 @@ ESC_EDITION_SLUGS = [
     "heroes_de_dharma",
 ]
 
+# Hide legacy formats temporarily until data/image issues are resolved.
+HIDDEN_CARD_FORMAT_CODES = {"imp_r", "pe", "pb"}
+
 # Multi-race deck archetypes (only for ESC format)
 ESC_MULTI_RACE = {
     "culto-tenebris": ["sombra", "oni"],
@@ -87,6 +90,7 @@ class CardListView(generics.ListAPIView):
                 output_field=BooleanField(),
             ),
         )
+        qs = qs.exclude(edition__format__code__in=HIDDEN_CARD_FORMAT_CODES)
         edition = self.request.query_params.get("edition")
         card_type = self.request.query_params.get("type")
         race = self.request.query_params.get("race")
@@ -207,7 +211,9 @@ class CardListView(generics.ListAPIView):
 
 class CardDetailView(generics.RetrieveAPIView):
     serializer_class = CardDetailSerializer
-    queryset = Card.objects.select_related("edition", "rarity", "race", "card_type")
+    queryset = Card.objects.select_related("edition", "rarity", "race", "card_type").exclude(
+        edition__format__code__in=HIDDEN_CARD_FORMAT_CODES
+    )
     lookup_field = "pk"
     permission_classes = [permissions.AllowAny]
 
@@ -218,7 +224,7 @@ class EditionListView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        qs = Edition.objects.select_related("format").all()
+        qs = Edition.objects.select_related("format").exclude(format__code__in=HIDDEN_CARD_FORMAT_CODES)
         fmt = self.request.query_params.get("fmt")
         if fmt:
             if fmt == "esc":
@@ -230,7 +236,7 @@ class EditionListView(generics.ListAPIView):
 
 class FormatListView(generics.ListAPIView):
     serializer_class = FormatSerializer
-    queryset = Format.objects.all()
+    queryset = Format.objects.exclude(code__in=HIDDEN_CARD_FORMAT_CODES)
     pagination_class = None
     permission_classes = [permissions.AllowAny]
 
@@ -271,7 +277,9 @@ class CardsByFormatView(generics.ListAPIView):
 
     def get_queryset(self):
         format_code = self.kwargs["format_code"]
-        if format_code == "esc":
+        if format_code in HIDDEN_CARD_FORMAT_CODES:
+            qs = Card.objects.none()
+        elif format_code == "esc":
             qs = Card.objects.filter(edition__slug__in=ESC_EDITION_SLUGS)
         else:
             qs = Card.objects.filter(edition__format__code=format_code)

@@ -35,7 +35,7 @@ from django.db.models import Value, Case, When, BooleanField, Sum
 from django.db.models.functions import Concat
 
 from cards.models import Card, Edition
-from cards.views import ESC_EDITION_SLUGS, MYL_CARDS_CDN
+from cards.views import ESC_EDITION_SLUGS, MYL_CARDS_CDN, HIDDEN_CARD_FORMAT_CODES
 from decks.models import Deck, DeckEntry
 
 
@@ -243,7 +243,9 @@ def external_cards_by_format(request, format_code):
 
     Formatos comunes: imp, pb, fx, esc (Escuelas Elementales)
     """
-    if format_code == "esc":
+    if format_code in HIDDEN_CARD_FORMAT_CODES:
+        qs = Card.objects.none()
+    elif format_code == "esc":
         qs = Card.objects.filter(edition__slug__in=ESC_EDITION_SLUGS)
     else:
         qs = Card.objects.filter(edition__format__code=format_code)

@@ -1,0 +1,320 @@
+{
+  "blog_url": "https://blog.myl.cl/analisis-del-meta-como-los-nuevos-faerie-de-vigilantes-controlaran-la-mesa/",
+  "pdf_path": "C:\\Users\\terva\\Documents\\deckshadow\\myl_imperio_last\\02-07\\JO Nueva Era 2026 06.pdf",
+  "counts": {
+    "blog_selected": 10,
+    "blog_downloaded": 10,
+    "pdf_extracted_unique": 24,
+    "total_attempted": 34,
+    "ok": 34,
+    "errors": 0
+  },
+  "records": [
+    {
+      "kind": "blog",
+      "source_url": "https://blog.myl.cl/wp-content/uploads/2026/07/Arakiel-11.png",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\blog\\01_arakiel-11.png",
+      "slug": "01_arakiel-11",
+      "public_id": "deckshado/myl_cards/meta_faerie_blog_2026_07/01_arakiel-11",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/meta_faerie_blog_2026_07/01_arakiel-11.png",
+      "status": "ok"
+    },
+    {
+      "kind": "blog",
+      "source_url": "https://blog.myl.cl/wp-content/uploads/2026/07/Armaros-14.png",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\blog\\02_armaros-14.png",
+      "slug": "02_armaros-14",
+      "public_id": "deckshado/myl_cards/meta_faerie_blog_2026_07/02_armaros-14",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/meta_faerie_blog_2026_07/02_armaros-14.png",
+      "status": "ok"
+    },
+    {
+      "kind": "blog",
+      "source_url": "https://blog.myl.cl/wp-content/uploads/2026/07/BANNER-BLOG-32.png",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\blog\\03_banner-blog-32.png",
+      "slug": "03_banner-blog-32",
+      "public_id": "deckshado/myl_cards/meta_faerie_blog_2026_07/03_banner-blog-32",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/meta_faerie_blog_2026_07/03_banner-blog-32.png",
+      "status": "ok"
+    },
+    {
+      "kind": "blog",
+      "source_url": "https://blog.myl.cl/wp-content/uploads/2026/07/Gadriel-13.png",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\blog\\04_gadriel-13.png",
+      "slug": "04_gadriel-13",
+      "public_id": "deckshado/myl_cards/meta_faerie_blog_2026_07/04_gadriel-13",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/meta_faerie_blog_2026_07/04_gadriel-13.png",
+      "status": "ok"
+    },
+    {
+      "kind": "blog",
+      "source_url": "https://blog.myl.cl/wp-content/uploads/2026/07/Sariel-05.png",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\blog\\05_sariel-05.png",
+      "slug": "05_sariel-05",
+      "public_id": "deckshado/myl_cards/meta_faerie_blog_2026_07/05_sariel-05",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/meta_faerie_blog_2026_07/05_sariel-05.png",
+      "status": "ok"
+    },
+    {
+      "kind": "blog",
+      "source_url": "https://blog.myl.cl/wp-content/uploads/2026/07/Turiel-9-1.png",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\blog\\06_turiel-9-1.png",
+      "slug": "06_turiel-9-1",
+      "public_id": "deckshado/myl_cards/meta_faerie_blog_2026_07/06_turiel-9-1",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/meta_faerie_blog_2026_07/06_turiel-9-1.png",
+      "status": "ok"
+    },
+    {
+      "kind": "blog",
+      "source_url": "https://blog.myl.cl/wp-content/uploads/2026/07/Yehadiel-29.png",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\blog\\07_yehadiel-29.png",
+      "slug": "07_yehadiel-29",
+      "public_id": "deckshado/myl_cards/meta_faerie_blog_2026_07/07_yehadiel-29",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/meta_faerie_blog_2026_07/07_yehadiel-29.png",
+      "status": "ok"
+    },
+    {
+      "kind": "blog",
+      "source_url": "https://blog.myl.cl/wp-content/uploads/2026/07/Yomiel-10.png",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\blog\\08_yomiel-10.png",
+      "slug": "08_yomiel-10",
+      "public_id": "deckshado/myl_cards/meta_faerie_blog_2026_07/08_yomiel-10",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/meta_faerie_blog_2026_07/08_yomiel-10.png",
+      "status": "ok"
+    },
+    {
+      "kind": "blog",
+      "source_url": "https://blog.myl.cl/wp-content/uploads/2026/07/ezequiel-15.png",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\blog\\09_ezequiel-15.png",
+      "slug": "09_ezequiel-15",
+      "public_id": "deckshado/myl_cards/meta_faerie_blog_2026_07/09_ezequiel-15",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/meta_faerie_blog_2026_07/09_ezequiel-15.png",
+      "status": "ok"
+    },
+    {
+      "kind": "blog",
+      "source_url": "https://blog.myl.cl/wp-content/uploads/2026/07/semyazza-05.png",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\blog\\10_semyazza-05.png",
+      "slug": "10_semyazza-05",
+      "public_id": "deckshado/myl_cards/meta_faerie_blog_2026_07/10_semyazza-05",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/meta_faerie_blog_2026_07/10_semyazza-05.png",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=1:image=1",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p01_01.jpg",
+      "slug": "jo_nueva_era_2026_06_p01_01",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p01_01",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p01_01.jpg",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=1:image=2",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p01_02.png",
+      "slug": "jo_nueva_era_2026_06_p01_02",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p01_02",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p01_02.png",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=1:image=3",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p01_03.png",
+      "slug": "jo_nueva_era_2026_06_p01_03",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p01_03",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p01_03.png",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=2:image=1",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p02_01.jpg",
+      "slug": "jo_nueva_era_2026_06_p02_01",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p02_01",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p02_01.jpg",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=2:image=2",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p02_02.png",
+      "slug": "jo_nueva_era_2026_06_p02_02",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p02_02",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p02_02.png",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=2:image=3",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p02_03.png",
+      "slug": "jo_nueva_era_2026_06_p02_03",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p02_03",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p02_03.png",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=3:image=2",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p03_02.png",
+      "slug": "jo_nueva_era_2026_06_p03_02",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p03_02",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p03_02.png",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=4:image=2",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p04_02.png",
+      "slug": "jo_nueva_era_2026_06_p04_02",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p04_02",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p04_02.png",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=4:image=3",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p04_03.png",
+      "slug": "jo_nueva_era_2026_06_p04_03",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p04_03",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p04_03.png",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=4:image=4",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p04_04.png",
+      "slug": "jo_nueva_era_2026_06_p04_04",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p04_04",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p04_04.png",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=4:image=5",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p04_05.png",
+      "slug": "jo_nueva_era_2026_06_p04_05",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p04_05",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p04_05.png",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=5:image=2",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p05_02.png",
+      "slug": "jo_nueva_era_2026_06_p05_02",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p05_02",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p05_02.png",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=5:image=3",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p05_03.png",
+      "slug": "jo_nueva_era_2026_06_p05_03",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p05_03",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p05_03.png",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=5:image=5",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p05_05.png",
+      "slug": "jo_nueva_era_2026_06_p05_05",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p05_05",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p05_05.png",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=6:image=2",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p06_02.png",
+      "slug": "jo_nueva_era_2026_06_p06_02",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p06_02",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p06_02.png",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=6:image=3",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p06_03.png",
+      "slug": "jo_nueva_era_2026_06_p06_03",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p06_03",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p06_03.png",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=6:image=5",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p06_05.png",
+      "slug": "jo_nueva_era_2026_06_p06_05",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p06_05",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p06_05.png",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=7:image=3",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p07_03.png",
+      "slug": "jo_nueva_era_2026_06_p07_03",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p07_03",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p07_03.png",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=7:image=5",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p07_05.png",
+      "slug": "jo_nueva_era_2026_06_p07_05",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p07_05",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p07_05.png",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=8:image=4",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p08_04.png",
+      "slug": "jo_nueva_era_2026_06_p08_04",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p08_04",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p08_04.png",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=8:image=5",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p08_05.png",
+      "slug": "jo_nueva_era_2026_06_p08_05",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p08_05",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p08_05.png",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=9:image=5",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p09_05.png",
+      "slug": "jo_nueva_era_2026_06_p09_05",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p09_05",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p09_05.png",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=10:image=5",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p10_05.png",
+      "slug": "jo_nueva_era_2026_06_p10_05",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p10_05",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p10_05.png",
+      "status": "ok"
+    },
+    {
+      "kind": "pdf",
+      "source_url": "JO Nueva Era 2026 06.pdf#page=11:image=5",
+      "local_path": "C:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p11_05.png",
+      "slug": "jo_nueva_era_2026_06_p11_05",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p11_05",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/jo_nueva_era_2026_06_p11_05.png",
+      "status": "ok"
+    }
+  ]
+}

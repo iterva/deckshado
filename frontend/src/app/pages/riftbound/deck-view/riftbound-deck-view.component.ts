@@ -985,6 +985,7 @@ export class RiftboundDeckViewComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
   private brokenImageUrlsByKey = new Map<string, Set<string>>();
   private imageFallbackNonce = signal(0);
+  private exportSafeImageMode = signal(false);
 
   @ViewChild('deckContent') deckContent?: ElementRef<HTMLElement>;
 
@@ -1050,9 +1051,29 @@ export class RiftboundDeckViewComponent implements OnInit {
     return Array.from(new Set(urls));
   }
 
+  private isExportSafeImageUrl(url: string): boolean {
+    const value = this.normalizeImageUrl(url);
+    if (!value) return false;
+    if (value.startsWith('data:') || value.startsWith('blob:')) return true;
+    try {
+      const parsed = new URL(value, window.location.origin);
+      if (parsed.origin === window.location.origin) return true;
+      const host = parsed.hostname.toLowerCase();
+      return host.endsWith('.imagekit.io');
+    } catch {
+      return false;
+    }
+  }
+
+  private prioritizedImageCandidates(candidates: string[]): string[] {
+    if (!this.exportSafeImageMode()) return candidates;
+    const safe = candidates.filter((url) => this.isExportSafeImageUrl(url));
+    return safe;
+  }
+
   cardImageUrl(card: CardImageLike | null | undefined): string {
     this.imageFallbackNonce();
-    const candidates = this.candidateImageUrls(card);
+    const candidates = this.prioritizedImageCandidates(this.candidateImageUrls(card));
     if (!candidates.length) return '';
 
     const key = this.cardImageKey(card);
@@ -1065,6 +1086,8 @@ export class RiftboundDeckViewComponent implements OnInit {
   }
 
   onCardImageError(card: CardImageLike | null | undefined, event: Event) {
+    // During export capture we avoid mutating fallback state from transient errors.
+    if (this.exportSafeImageMode()) return;
     if (!card) return;
     const key = this.cardImageKey(card);
     if (!key) return;
@@ -1375,12 +1398,15 @@ export class RiftboundDeckViewComponent implements OnInit {
     const el = this.deckContent?.nativeElement;
     if (!el || this.exporting()) return;
     this.exporting.set(true);
+    this.exportSafeImageMode.set(true);
     try {
+      this.cdr.detectChanges();
+      await this.nextRenderTick();
       await this.waitForImages(el);
       const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(el, {
         backgroundColor: '#0a0a1e',
-        useCORS: true, allowTaint: true, scale: 2,
+        useCORS: true, allowTaint: false, scale: 2,
         windowWidth: el.scrollWidth, windowHeight: el.scrollHeight,
       });
       const link = document.createElement('a');
@@ -1390,7 +1416,9 @@ export class RiftboundDeckViewComponent implements OnInit {
     } catch (e) {
       console.error('Error exportando imagen:', e);
     } finally {
+      this.exportSafeImageMode.set(false);
       this.exporting.set(false);
+      this.cdr.detectChanges();
     }
   }
 
@@ -1402,12 +1430,15 @@ export class RiftboundDeckViewComponent implements OnInit {
       return this.exportImage();
     }
     this.exporting.set(true);
+    this.exportSafeImageMode.set(true);
     try {
+      this.cdr.detectChanges();
+      await this.nextRenderTick();
       await this.waitForImages(el);
       const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(el, {
         backgroundColor: '#0a0a1e',
-        useCORS: true, allowTaint: true, scale: 2,
+        useCORS: true, allowTaint: false, scale: 2,
         windowWidth: el.scrollWidth, windowHeight: el.scrollHeight,
       });
       const blob: Blob | null = await new Promise(res => canvas.toBlob(b => res(b), 'image/png'));
@@ -1418,19 +1449,24 @@ export class RiftboundDeckViewComponent implements OnInit {
     } catch (e) {
       console.error('Error copiando imagen:', e);
     } finally {
+      this.exportSafeImageMode.set(false);
       this.exporting.set(false);
+      this.cdr.detectChanges();
     }
+  }
+
+  private nextRenderTick(): Promise<void> {
+    return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
   }
 
   private waitForImages(el: HTMLElement): Promise<void[]> {
     const imgs = Array.from(el.querySelectorAll('img')) as HTMLImageElement[];
     return Promise.all(imgs.map(img => {
-      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      if (img.complete) return Promise.resolve();
+      img.loading = 'eager';
       return new Promise<void>(resolve => {
-        img.onload = () => resolve();
-        img.onerror = () => resolve();
-        img.loading = 'eager';
-        const src = img.src; img.src = ''; img.src = src;
+        img.addEventListener('load', () => resolve(), { once: true });
+        img.addEventListener('error', () => resolve(), { once: true });
       });
     }));
   }

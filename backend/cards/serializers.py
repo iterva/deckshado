@@ -104,7 +104,7 @@ class CardListSerializer(serializers.ModelSerializer):
         )
         if not any(marker in lower for marker in migrated_markers):
             return None
-        return url.replace("res.cloudinary.com/dmvu6tuee", "res.cloudinary.com/drw7y27sm")
+        return url.replace("res.cloudinary.com/dmvu6tuee", "res.cloudinary.com/daobfx9yb")
 
     def _default_myl_image_url(self, obj):
         edition = getattr(obj, 'edition', None)

@@ -11,10 +11,10 @@ def _normalize_avatar_url(url):
     if not isinstance(url, str) or not url:
         return None
     normalized = url.strip()
-    # Legacy account used by older uploads; map to active account.
+    # Legacy accounts used by older uploads; map to active account.
     normalized = re.sub(
-        r"res\.cloudinary\.com/dmvu6tuee",
-        "res.cloudinary.com/drw7y27sm",
+        r"res\.cloudinary\.com/(?:dmvu6tuee|drw7y27sm)",
+        "res.cloudinary.com/daobfx9yb",
         normalized,
         flags=re.IGNORECASE,
     )

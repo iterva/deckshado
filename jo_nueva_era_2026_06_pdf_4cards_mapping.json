@@ -1,0 +1,35 @@
+{
+  "folder": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf",
+  "deleted_before_upload": 24,
+  "uploaded_count": 4,
+  "records": [
+    {
+      "card_name": "La Serpiente del Eden",
+      "edid": "AYDV-243-P",
+      "source_local": "c:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p04_02.png",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/aydv_243_p_la_serpiente_del_eden",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/aydv_243_p_la_serpiente_del_eden.png"
+    },
+    {
+      "card_name": "Agabar la Esperanza",
+      "edid": "AYDV-234-P",
+      "source_local": "c:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p05_05.png",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/aydv_234_p_agabar_la_esperanza",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/aydv_234_p_agabar_la_esperanza.png"
+    },
+    {
+      "card_name": "Guerrillero Rodriguez",
+      "edid": "AYDV-239-P",
+      "source_local": "c:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p06_05.png",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/aydv_239_p_guerrillero_rodriguez",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/aydv_239_p_guerrillero_rodriguez.png"
+    },
+    {
+      "card_name": "Aniquilar Titanes",
+      "edid": "AYDV-232-P",
+      "source_local": "c:\\Users\\terva\\Documents\\deckshadow\\deckshado-ui-recovery\\tmp_meta_blog_pdf_upload\\pdf\\jo_nueva_era_2026_06_p07_05.png",
+      "public_id": "deckshado/myl_cards/jo_nueva_era_2026_06_pdf/aydv_232_p_aniquilar_titanes",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/myl_cards/jo_nueva_era_2026_06_pdf/aydv_232_p_aniquilar_titanes.png"
+    }
+  ]
+}

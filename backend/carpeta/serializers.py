@@ -6,10 +6,10 @@ from cards.serializers import CardListSerializer
 def _clean_avatar_url(url):
     if not isinstance(url, str) or not url:
         return None
-    lower = url.lower()
-    if "res.cloudinary.com/dmvu6tuee/" in lower:
-        return None
-    return url
+    normalized = url.strip()
+    normalized = normalized.replace("res.cloudinary.com/dmvu6tuee", "res.cloudinary.com/daobfx9yb")
+    normalized = normalized.replace("res.cloudinary.com/drw7y27sm", "res.cloudinary.com/daobfx9yb")
+    return normalized or None
 
 
 class BinderProfileSerializer(serializers.ModelSerializer):

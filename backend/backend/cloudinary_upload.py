@@ -30,7 +30,7 @@ def _resolve_cloudinary_credentials() -> tuple[str, str, str]:
 
     # Keep a safe default cloud name for legacy environments that only store API key/secret.
     if not cloud_name:
-        cloud_name = "drw7y27sm"
+        cloud_name = "daobfx9yb"
 
     if not api_key or not api_secret:
         raise CloudinaryUploadError(

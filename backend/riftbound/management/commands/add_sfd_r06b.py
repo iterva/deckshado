@@ -23,7 +23,7 @@ CARD_NUMBER = "SFD-R06b"
 NAME = "Order Rune"
 SET_CODE = "SFD"
 EXTERNAL_ID = uuid.UUID("a06b5fd0-0000-4000-8000-000000000006")
-DEFAULT_CDN = "https://res.cloudinary.com/dmvu6tuee/image/upload/riftbound/cards/sfd/sfd-r06b.webp"
+DEFAULT_CDN = "https://res.cloudinary.com/daobfx9yb/image/upload/riftbound/cards/sfd/sfd-r06b.webp"
 FALLBACK_IMAGE = DEFAULT_CDN
 
 

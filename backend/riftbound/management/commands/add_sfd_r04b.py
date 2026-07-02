@@ -19,7 +19,7 @@ CARD_NUMBER = "SFD-R04b"
 NAME = "Body Rune"
 SET_CODE = "SFD"
 EXTERNAL_ID = uuid.UUID("a04b5fd0-0000-4000-8000-000000000004")
-CDN_URL = "https://res.cloudinary.com/dmvu6tuee/image/upload/riftbound/cards/sfd/sfd-r04b.webp"
+CDN_URL = "https://res.cloudinary.com/daobfx9yb/image/upload/riftbound/cards/sfd/sfd-r04b.webp"
 FALLBACK_IMAGE = CDN_URL
 
 

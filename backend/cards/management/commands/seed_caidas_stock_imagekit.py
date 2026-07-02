@@ -7,6 +7,7 @@ Uso:
   python manage.py seed_caidas_stock_imagekit
   python manage.py seed_caidas_stock_imagekit --source-dir "C:/ruta/cartas por subir 8"
   python manage.py seed_caidas_stock_imagekit --env-file "C:/ruta/.env_imagekit copy"
+    python manage.py seed_caidas_stock_imagekit --apply-mapping-only
 """
 
 from __future__ import annotations
@@ -128,6 +129,39 @@ class Command(BaseCommand):
             action="store_true",
             help="No sube ni guarda cambios en BD",
         )
+        parser.add_argument(
+            "--apply-mapping-only",
+            action="store_true",
+            help="No sube archivos: solo aplica URLs desde el mapping JSON",
+        )
+        parser.add_argument(
+            "--mapping-file",
+            default=str(MAPPING_FILE),
+            help="Ruta al mapping JSON (default: caidas_stock_imagekit_mapping.json)",
+        )
+
+    def _load_mapping_urls(self, mapping_file: Path) -> dict[str, str]:
+        if not mapping_file.exists():
+            raise CommandError(f"No existe mapping file: {mapping_file}")
+
+        try:
+            payload = json.loads(mapping_file.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise CommandError(f"JSON invalido en mapping file: {mapping_file}: {exc}") from exc
+
+        records = payload.get("records")
+        if not isinstance(records, list):
+            raise CommandError(f"Mapping invalido en {mapping_file}: falta lista 'records'")
+
+        urls: dict[str, str] = {}
+        for rec in records:
+            if not isinstance(rec, dict):
+                continue
+            public_id = (rec.get("public_id") or "").strip()
+            image_url = (rec.get("imagekit_url") or "").strip()
+            if public_id and image_url:
+                urls[public_id] = image_url
+        return urls
 
     def _update_card_url(self, spec: dict, image_url: str, dry_run: bool) -> int:
         by_myl = Card.objects.filter(myl_id=spec["myl_id"])
@@ -156,8 +190,37 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         source_dir = Path(options["source_dir"]).expanduser().resolve()
         env_file = Path(options["env_file"]).expanduser().resolve()
+        mapping_file = Path(options["mapping_file"]).expanduser().resolve()
         folder = str(options["folder"]).strip() or DEFAULT_FOLDER
         dry_run = bool(options["dry_run"])
+        apply_mapping_only = bool(options["apply_mapping_only"])
+
+        if apply_mapping_only:
+            mapping_urls = self._load_mapping_urls(mapping_file)
+            updated_cards = 0
+
+            self.stdout.write(self.style.MIGRATE_HEADING("Aplicando mapping ImageKit a la BD..."))
+            for spec in CARD_IMAGE_SPECS:
+                image_url = mapping_urls.get(spec["public_id"])
+                if not image_url:
+                    self.stdout.write(self.style.WARNING(
+                        f"  WARN sin URL en mapping para {spec['name']} ({spec['public_id']})"
+                    ))
+                    continue
+
+                matches = self._update_card_url(spec, image_url, dry_run=dry_run)
+                if matches:
+                    updated_cards += matches
+                    self.stdout.write(f"  OK {spec['name']} -> {image_url}")
+                else:
+                    self.stdout.write(self.style.WARNING(f"  WARN sin match en BD: {spec['name']}"))
+
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"Done. Cartas actualizadas: {updated_cards}, mapping usado: {mapping_file}"
+                )
+            )
+            return
 
         if not source_dir.exists() or not source_dir.is_dir():
             raise CommandError(f"Source dir no existe: {source_dir}")

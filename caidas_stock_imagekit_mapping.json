@@ -1,0 +1,42 @@
+{
+  "kind": "caidas_stock_imagekit",
+  "folder": "/deckshado/extra_cards",
+  "records": [
+    {
+      "name": "Exorcismo de Carmen Marin",
+      "public_id": "c-o-2_05",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/extra_cards/c-o-2_05.webp",
+      "source_file": "C:\\Users\\terva\\Documents\\deckshadow\\Proyecto-deckshado\\cartas por subir 8\\C-O-2-164_005_exorcismo_de_carmen_marin.webp"
+    },
+    {
+      "name": "Estacion Fantasma",
+      "public_id": "c-o-2_08",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/extra_cards/c-o-2_08.webp",
+      "source_file": "C:\\Users\\terva\\Documents\\deckshadow\\Proyecto-deckshado\\cartas por subir 8\\C-O-2-164_008_estacion_fantasma.webp"
+    },
+    {
+      "name": "Machete del Abuelo",
+      "public_id": "c-o-2_14",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/extra_cards/c-o-2_14.webp",
+      "source_file": "C:\\Users\\terva\\Documents\\deckshadow\\Proyecto-deckshado\\cartas por subir 8\\C-O-2-164_014_machete_del_abuelo.webp"
+    },
+    {
+      "name": "Hospital San Jose",
+      "public_id": "c-o-2_16",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/extra_cards/c-o-2_16.webp",
+      "source_file": "C:\\Users\\terva\\Documents\\deckshadow\\Proyecto-deckshado\\cartas por subir 8\\C-O-2-164_016_hospital_san_jose.webp"
+    },
+    {
+      "name": "Celebrar la Muerte",
+      "public_id": "tk26_15",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/extra_cards/tk26_15.webp",
+      "source_file": "C:\\Users\\terva\\Documents\\deckshadow\\Proyecto-deckshado\\cartas por subir 8\\tk-26-163_015_celebrar_la_muerte.webp"
+    },
+    {
+      "name": "Calaveras de Azucar",
+      "public_id": "tk26_18",
+      "imagekit_url": "https://ik.imagekit.io/crttm6rou/deckshado/extra_cards/tk26_18.webp",
+      "source_file": "C:\\Users\\terva\\Documents\\deckshadow\\Proyecto-deckshado\\cartas por subir 8\\tk-26-163_018_calaveras_azucar.webp"
+    }
+  ]
+}

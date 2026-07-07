@@ -14,7 +14,7 @@ import unicodedata
 
 import requests
 from bs4 import BeautifulSoup
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
 from cards.models import BanlistEntry, Card
 
@@ -28,6 +28,90 @@ STATUS_PRIORITY = {
     BanlistEntry.LIMITED_1: 1,
     BanlistEntry.LIMITED_2: 2,
 }
+
+# Snapshot de respaldo (2026-07-06) para entornos sin salida HTTPS al blog.
+FALLBACK_BANLIST = [
+    ("racial", "Akuma el Terrible", BanlistEntry.LIMITED_1),
+    ("racial", "Alicia en Wonderland", BanlistEntry.LIMITED_2),
+    ("racial", "Azí Sruvara", BanlistEntry.LIMITED_2),
+    ("racial", "Batallón de Ovejas", BanlistEntry.LIMITED_1),
+    ("racial", "Cancha Rayada", BanlistEntry.BANNED),
+    ("racial", "Creación de Temaukel", BanlistEntry.BANNED),
+    ("racial", "Crono Diamante", BanlistEntry.LIMITED_1),
+    ("racial", "Cthulhu", BanlistEntry.BANNED),
+    ("racial", "Cueva de Xalpen", BanlistEntry.LIMITED_1),
+    ("racial", "E.A. Poe", BanlistEntry.LIMITED_1),
+    ("racial", "El Mago", BanlistEntry.LIMITED_2),
+    ("racial", "El Rey y el Verdugo", BanlistEntry.LIMITED_1),
+    ("racial", "Ereshkigal", BanlistEntry.LIMITED_2),
+    ("racial", "Flechero", BanlistEntry.BANNED),
+    ("racial", "Fusil Patriota", BanlistEntry.BANNED),
+    ("racial", "Hook", BanlistEntry.BANNED),
+    ("racial", "Horda Tenebris", BanlistEntry.BANNED),
+    ("racial", "Kuchiku el Cazador", BanlistEntry.LIMITED_2),
+    ("racial", "Legión Paladín", BanlistEntry.LIMITED_1),
+    ("racial", "Levisterio", BanlistEntry.LIMITED_1),
+    ("racial", "León Indiferente", BanlistEntry.LIMITED_1),
+    ("racial", "Liberar Esclavos", BanlistEntry.BANNED),
+    ("racial", "Los Umbras", BanlistEntry.LIMITED_1),
+    ("racial", "Lucerna", BanlistEntry.LIMITED_1),
+    ("racial", "Manuel Bulnes", BanlistEntry.LIMITED_1),
+    ("racial", "Nyssara Cautiva", BanlistEntry.LIMITED_2),
+    ("racial", "Padre de la Patria", BanlistEntry.LIMITED_1),
+    ("racial", "Paladín (BES-017-161)", BanlistEntry.LIMITED_1),
+    ("racial", "Perseguir el Sol", BanlistEntry.BANNED),
+    ("racial", "Ramón Freire", BanlistEntry.LIMITED_1),
+    ("racial", "Resistencia de Acero", BanlistEntry.LIMITED_1),
+    ("racial", "Rey de Amarillo", BanlistEntry.LIMITED_1),
+    ("racial", "Ryugu Jo", BanlistEntry.LIMITED_1),
+    ("racial", "San Bruno", BanlistEntry.BANNED),
+    ("racial", "Septimus", BanlistEntry.BANNED),
+    ("racial", "Sherlock Holmes", BanlistEntry.LIMITED_1),
+    ("racial", "Sheut", BanlistEntry.LIMITED_2),
+    ("racial", "Tesoro de los Césares", BanlistEntry.LIMITED_1),
+    ("racial", "Yelmo Mambrino", BanlistEntry.LIMITED_1),
+    ("vcr", "Ahriman", BanlistEntry.LIMITED_1),
+    ("vcr", "Alka", BanlistEntry.BANNED),
+    ("vcr", "Ayyappan", BanlistEntry.LIMITED_1),
+    ("vcr", "Azí Sruvara", BanlistEntry.LIMITED_1),
+    ("vcr", "Capitan O'Brien", BanlistEntry.LIMITED_1),
+    ("vcr", "Colaborador Titán", BanlistEntry.LIMITED_1),
+    ("vcr", "El Cuero", BanlistEntry.LIMITED_1),
+    ("vcr", "Escorpion de Seth", BanlistEntry.LIMITED_1),
+    ("vcr", "Estela Sagrada", BanlistEntry.BANNED),
+    ("vcr", "Forma de Niebla", BanlistEntry.BANNED),
+    ("vcr", "Furia Berserker", BanlistEntry.BANNED),
+    ("vcr", "Gusano Blanco", BanlistEntry.LIMITED_1),
+    ("vcr", "Ik'i B'alam", BanlistEntry.LIMITED_1),
+    ("vcr", "Invasión", BanlistEntry.BANNED),
+    ("vcr", "Javiera Carrera", BanlistEntry.LIMITED_1),
+    ("vcr", "Kogarasumaru", BanlistEntry.BANNED),
+    ("vcr", "Laterna", BanlistEntry.LIMITED_1),
+    ("vcr", "Libro de Thoth", BanlistEntry.BANNED),
+    ("vcr", "Lola", BanlistEntry.LIMITED_1),
+    ("vcr", "Lupus B7", BanlistEntry.LIMITED_1),
+    ("vcr", "Miguel Grau", BanlistEntry.LIMITED_2),
+    ("vcr", "Misil de Rastreo", BanlistEntry.LIMITED_1),
+    ("vcr", "Momificar", BanlistEntry.BANNED),
+    ("vcr", "Monitor Araucano", BanlistEntry.LIMITED_1),
+    ("vcr", "Muro de los Caídos", BanlistEntry.LIMITED_1),
+    ("vcr", "Necro Titán", BanlistEntry.LIMITED_1),
+    ("vcr", "Oda Nobunaga", BanlistEntry.LIMITED_1),
+    ("vcr", "París", BanlistEntry.BANNED),
+    ("vcr", "Peripillan", BanlistEntry.LIMITED_1),
+    ("vcr", "Piramide Roja", BanlistEntry.LIMITED_1),
+    ("vcr", "Pirata Wakou", BanlistEntry.LIMITED_1),
+    ("vcr", "Plaza de Armas", BanlistEntry.LIMITED_1),
+    ("vcr", "Prendick", BanlistEntry.LIMITED_1),
+    ("vcr", "Quantum Megumi", BanlistEntry.LIMITED_1),
+    ("vcr", "Sable Corto", BanlistEntry.BANNED),
+    ("vcr", "Shedo Titán", BanlistEntry.BANNED),
+    ("vcr", "Tanuki", BanlistEntry.LIMITED_1),
+    ("vcr", "Tumulto Voraz", BanlistEntry.LIMITED_1),
+    ("vcr", "Watson", BanlistEntry.LIMITED_1),
+    ("vcr", "Wayra Tata", BanlistEntry.LIMITED_1),
+    ("vcr", "Zmaj Depredador", BanlistEntry.LIMITED_1),
+]
 
 
 def normalize_spaces(text):
@@ -108,19 +192,38 @@ class Command(BaseCommand):
             "--url", type=str, default=BANLIST_URL,
             help=f"URL de banlist a parsear (default: {BANLIST_URL})",
         )
+        parser.add_argument(
+            "--source", type=str, default="auto", choices=["auto", "web", "fallback"],
+            help="Fuente de datos: auto (intenta web y cae a fallback), web, fallback",
+        )
 
     def handle(self, *args, **options):
         dry_run = options["dry_run"]
         url = options["url"]
+        source = options["source"]
 
-        self.stdout.write(f"Descargando banlist desde {url}...")
-        response = requests.get(url, timeout=30)
-        response.raise_for_status()
+        parsed = None
 
-        soup = BeautifulSoup(response.text, "lxml")
-        content = soup.find("div", class_="entry-content") or soup.find("article") or soup
+        if source in {"auto", "web"}:
+            self.stdout.write(f"Descargando banlist desde {url}...")
+            try:
+                response = requests.get(url, timeout=30)
+                response.raise_for_status()
 
-        parsed = self._parse_imperio_section(content)
+                soup = BeautifulSoup(response.text, "lxml")
+                content = soup.find("div", class_="entry-content") or soup.find("article") or soup
+                parsed = self._parse_imperio_section(content)
+            except requests.RequestException as exc:
+                if source == "web":
+                    raise CommandError(f"No se pudo descargar la banlist desde web: {exc}") from exc
+                self.stdout.write(self.style.WARNING(
+                    f"No se pudo descargar la banlist ({exc}). Se usara fallback local."
+                ))
+
+        if source == "fallback" or not parsed:
+            self.stdout.write("Usando snapshot fallback de banlist (2026-07-06)...")
+            parsed = self._build_entries_from_fallback()
+
         if not parsed:
             self.stdout.write(self.style.ERROR("No se encontraron entradas parseables para Imperio/VCR."))
             return
@@ -260,6 +363,22 @@ class Command(BaseCommand):
         if len(cells) >= 2:
             return normalize_spaces(cells[0])
         return None
+
+    @staticmethod
+    def _max_copies(status):
+        return 0 if status == BanlistEntry.BANNED else (1 if status == BanlistEntry.LIMITED_1 else 2)
+
+    def _build_entries_from_fallback(self):
+        entries = {}
+        for sub_format, card_name, status in FALLBACK_BANLIST:
+            self._add_entry(
+                entries,
+                raw_name=card_name,
+                sub_format=sub_format,
+                status=status,
+                max_copies=self._max_copies(status),
+            )
+        return entries
 
     def _add_entry(self, entries, raw_name, sub_format, status, max_copies):
         if sub_format not in TARGET_SUBFORMATS:

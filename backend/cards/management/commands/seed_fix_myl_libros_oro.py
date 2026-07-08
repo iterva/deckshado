@@ -5,6 +5,7 @@ Corrige a tipo Oro las cartas:
 - Libro de Enoc (custom_aydv_019_150_u)
 - Libro de Revelaciones (custom_aydv_020_150_u)
 - Infernum Vox (custom_aydv_232_p)
+- Tablas del Juramento (custom_aydv_090_150_r)
 """
 
 from django.core.management.base import BaseCommand, CommandError
@@ -16,11 +17,12 @@ TARGET_MYLS = [
     "custom_aydv_019_150_u",
     "custom_aydv_020_150_u",
     "custom_aydv_232_p",
+    "custom_aydv_090_150_r",
 ]
 
 
 class Command(BaseCommand):
-    help = "Fixea a tipo Oro cartas AYDV (Libros + Infernum Vox)"
+    help = "Fixea a tipo Oro cartas AYDV (Libros + Infernum Vox + Tablas)"
 
     def add_arguments(self, parser):
         parser.add_argument(

@@ -137,7 +137,7 @@ CARD_SPECS = [
         "edid": "AYDV-090-150-R",
         "slug": "tablas-del-juramento-aydv-150-r",
         "name": "Tablas del Juramento",
-        "type_slug": "talisman",
+        "type_slug": "oro",
         "rarity_slug": "real",
         "cost": None,
     },

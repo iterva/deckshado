@@ -1,0 +1,105 @@
+{
+  "kind": "aydv_ur_faltantes_imagekit",
+  "folder": "/deckshado/myl_cards/aydv_ur_faltantes_2026_07",
+  "records": [
+    {
+      "filename": "172_010_guerra_celestial.webp",
+      "name": "Guerra Celestial",
+      "edid": "AYDV-010-150-U",
+      "myl_id": "custom_aydv_010_150_u",
+      "public_id": "aydv_010_150_u_guerra_celestial",
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_ur_faltantes_2026_07/aydv_010_150_u_guerra_celestial.webp",
+      "status": "ok"
+    },
+    {
+      "filename": "172_013_caida_del_alba.webp",
+      "name": "Caida del Alba",
+      "edid": "AYDV-013-150-U",
+      "myl_id": "custom_aydv_013_150_u",
+      "public_id": "aydv_013_150_u_caida_del_alba",
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_ur_faltantes_2026_07/aydv_013_150_u_caida_del_alba.webp",
+      "status": "ok"
+    },
+    {
+      "filename": "172_014_gran_diluvio.webp",
+      "name": "Gran Diluvio",
+      "edid": "AYDV-014-150-U",
+      "myl_id": "custom_aydv_014_150_u",
+      "public_id": "aydv_014_150_u_gran_diluvio",
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_ur_faltantes_2026_07/aydv_014_150_u_gran_diluvio.webp",
+      "status": "ok"
+    },
+    {
+      "filename": "172_015_vision_de_enoc.webp",
+      "name": "Vision de Enoc",
+      "edid": "AYDV-015-150-U",
+      "myl_id": "custom_aydv_015_150_u",
+      "public_id": "aydv_015_150_u_vision_de_enoc",
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_ur_faltantes_2026_07/aydv_015_150_u_vision_de_enoc.webp",
+      "status": "ok"
+    },
+    {
+      "filename": "172_016_septimo_sello.webp",
+      "name": "Septimo Sello",
+      "edid": "AYDV-016-150-U",
+      "myl_id": "custom_aydv_016_150_u",
+      "public_id": "aydv_016_150_u_septimo_sello",
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_ur_faltantes_2026_07/aydv_016_150_u_septimo_sello.webp",
+      "status": "ok"
+    },
+    {
+      "filename": "172_017_espada_del_juicio.webp",
+      "name": "Espada del Juicio",
+      "edid": "AYDV-017-150-U",
+      "myl_id": "custom_aydv_017_150_u",
+      "public_id": "aydv_017_150_u_espada_del_juicio",
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_ur_faltantes_2026_07/aydv_017_150_u_espada_del_juicio.webp",
+      "status": "ok"
+    },
+    {
+      "filename": "172_018_el_arca.webp",
+      "name": "El Arca",
+      "edid": "AYDV-018-150-U",
+      "myl_id": "custom_aydv_018_150_u",
+      "public_id": "aydv_018_150_u_el_arca",
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_ur_faltantes_2026_07/aydv_018_150_u_el_arca.webp",
+      "status": "ok"
+    },
+    {
+      "filename": "172_019_libro_de_enoc.webp",
+      "name": "Libro de Enoc",
+      "edid": "AYDV-019-150-U",
+      "myl_id": "custom_aydv_019_150_u",
+      "public_id": "aydv_019_150_u_libro_de_enoc",
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_ur_faltantes_2026_07/aydv_019_150_u_libro_de_enoc.webp",
+      "status": "ok"
+    },
+    {
+      "filename": "172_020_libro_de_revelaciones.webp",
+      "name": "Libro de Revelaciones",
+      "edid": "AYDV-020-150-U",
+      "myl_id": "custom_aydv_020_150_u",
+      "public_id": "aydv_020_150_u_libro_de_revelaciones",
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_ur_faltantes_2026_07/aydv_020_150_u_libro_de_revelaciones.webp",
+      "status": "ok"
+    },
+    {
+      "filename": "172_090_tablas_del_juramento.webp",
+      "name": "Tablas del Juramento",
+      "edid": "AYDV-090-150-R",
+      "myl_id": "custom_aydv_090_150_r",
+      "public_id": "aydv_090_150_r_tablas_del_juramento",
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_ur_faltantes_2026_07/aydv_090_150_r_tablas_del_juramento.webp",
+      "status": "ok"
+    },
+    {
+      "filename": "172_232_infernum_vox.webp",
+      "name": "Infernum Vox",
+      "edid": "AYDV-232-P",
+      "myl_id": "custom_aydv_232_p",
+      "public_id": "aydv_232_p_infernum_vox",
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_ur_faltantes_2026_07/aydv_232_p_infernum_vox.webp",
+      "status": "ok"
+    }
+  ]
+}

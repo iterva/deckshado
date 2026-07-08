@@ -204,6 +204,8 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
   private builderCardsSentinelRef?: ElementRef<HTMLElement>;
   private builderCardsObserver?: IntersectionObserver;
+  /** Compuerta para evitar cascadas de autoload: requiere salir y volver al fondo. */
+  private infiniteLoadArmed = true;
 
   @ViewChild('cardBrowser')
   set cardBrowserSetter(el: ElementRef<HTMLElement> | undefined) {
@@ -485,6 +487,7 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
     this.currentPage = 1;
     this.availableCards = [];
     this.hasMoreCards = false;
+    this.infiniteLoadArmed = true;
     this.loadCards();
   }
 
@@ -687,6 +690,7 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @HostListener('window:resize')
   onWindowResize() {
+    this.setupBuilderCardsObserver();
     this.tryBuilderInfiniteScrollFallback();
   }
 
@@ -695,21 +699,33 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
     this.builderCardsObserver?.disconnect();
     const sentinel = this.builderCardsSentinelRef?.nativeElement;
     if (!sentinel) return;
+    const observerRoot = this.isScrollableContainer(this.browserScrollEl) ? this.browserScrollEl : null;
     this.builderCardsObserver = new IntersectionObserver(
       entries => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
+            if (!this.infiniteLoadArmed) continue;
+            this.infiniteLoadArmed = false;
             this.loadMoreCards();
             break;
+          } else {
+            this.infiniteLoadArmed = true;
           }
         }
       },
       {
-        root: this.browserScrollEl,
+        root: observerRoot,
         rootMargin: '320px 0px',
       },
     );
     this.builderCardsObserver.observe(sentinel);
+  }
+
+  private isScrollableContainer(el: HTMLElement | null): el is HTMLElement {
+    if (!el) return false;
+    const style = getComputedStyle(el);
+    const allowsScroll = style.overflowY === 'auto' || style.overflowY === 'scroll';
+    return allowsScroll && el.scrollHeight > el.clientHeight;
   }
 
   private attachBrowserScrollListener() {
@@ -749,7 +765,12 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
   };
 
   private tryBuilderInfiniteScrollFallback() {
-    if (!this.isNearBuilderBottom()) return;
+    if (!this.isNearBuilderBottom()) {
+      this.infiniteLoadArmed = true;
+      return;
+    }
+    if (!this.infiniteLoadArmed) return;
+    this.infiniteLoadArmed = false;
     this.loadMoreCards();
   }
 

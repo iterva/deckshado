@@ -1,0 +1,96 @@
+{
+  "kind": "aydv_myl_vigilantes_1_imagekit",
+  "folder": "/deckshado/myl_cards/aydv_myl_vigilantes_1_2026_07",
+  "records": [
+    {
+      "filename": "0000_CAIDA-DEL-ALBA.jpg",
+      "name": "Caida del Alba",
+      "edid": "AYDV-153-L",
+      "myl_id": "custom_aydv_153_l",
+      "public_id": "aydv_153_l_caida_del_alba",
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_myl_vigilantes_1_2026_07/aydv_153_l_caida_del_alba.jpg",
+      "status": "ok"
+    },
+    {
+      "filename": "0001_ESTIRPE-MALDITA.jpg",
+      "name": "Estirpe Maldita",
+      "edid": "AYDV-157-L",
+      "myl_id": "custom_aydv_157_l",
+      "public_id": "aydv_157_l_estirpe_maldita",
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_myl_vigilantes_1_2026_07/aydv_157_l_estirpe_maldita.jpg",
+      "status": "ok"
+    },
+    {
+      "filename": "0003_TRONO-DEL-CIELO.jpg",
+      "name": "Trono del Cielo",
+      "edid": "AYDV-039-150-M",
+      "myl_id": "custom_aydv_039_150_m",
+      "public_id": "aydv_039_150_m_trono_del_cielo",
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_myl_vigilantes_1_2026_07/aydv_039_150_m_trono_del_cielo.jpg",
+      "status": "ok"
+    },
+    {
+      "filename": "0004_TRONO-DEL-DRAGON.jpg",
+      "name": "Trono del Dragon",
+      "edid": "AYDV-040-150-M",
+      "myl_id": "custom_aydv_040_150_m",
+      "public_id": "aydv_040_150_m_trono_del_dragon",
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_myl_vigilantes_1_2026_07/aydv_040_150_m_trono_del_dragon.jpg",
+      "status": "ok"
+    },
+    {
+      "filename": "0006_EL-DRAGON-EMERGE.jpg",
+      "name": "El Dragon Emerge",
+      "edid": "AYDV-032-150-M",
+      "myl_id": "custom_aydv_032_150_m",
+      "public_id": "aydv_032_150_m_el_dragon_emerge",
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_myl_vigilantes_1_2026_07/aydv_032_150_m_el_dragon_emerge.jpg",
+      "status": "ok"
+    },
+    {
+      "filename": "0007_FUEGO-PURIFICADOR.jpg",
+      "name": "Fuego Purificador",
+      "edid": "AYDV-033-150-M",
+      "myl_id": "custom_aydv_033_150_m",
+      "public_id": "aydv_033_150_m_fuego_purificador",
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_myl_vigilantes_1_2026_07/aydv_033_150_m_fuego_purificador.jpg",
+      "status": "ok"
+    },
+    {
+      "filename": "0008_EL-ABISMO.jpg",
+      "name": "El Abismo",
+      "edid": "AYDV-038-150-M",
+      "myl_id": "custom_aydv_038_150_m",
+      "public_id": "aydv_038_150_m_el_abismo",
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_myl_vigilantes_1_2026_07/aydv_038_150_m_el_abismo.jpg",
+      "status": "ok"
+    },
+    {
+      "filename": "0009_SEXTO-SELLO.jpg",
+      "name": "Sexto Sello",
+      "edid": "AYDV-035-150-M",
+      "myl_id": "custom_aydv_035_150_m",
+      "public_id": "aydv_035_150_m_sexto_sello",
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_myl_vigilantes_1_2026_07/aydv_035_150_m_sexto_sello.jpg",
+      "status": "ok"
+    },
+    {
+      "filename": "0010_MARCA-DE-LA-BESTIA.jpg",
+      "name": "Marca de la Bestia",
+      "edid": "AYDV-030-150-M",
+      "myl_id": "custom_aydv_030_150_m",
+      "public_id": "aydv_030_150_m_marca_de_la_bestia",
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_myl_vigilantes_1_2026_07/aydv_030_150_m_marca_de_la_bestia.jpg",
+      "status": "ok"
+    },
+    {
+      "filename": "FUEGO_PURIFICADOR.jpeg",
+      "name": "Fuego Purificador",
+      "edid": "AYDV-033-L",
+      "myl_id": "custom_aydv_033_l",
+      "public_id": "aydv_033_l_fuego_purificador",
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_myl_vigilantes_1_2026_07/aydv_033_l_fuego_purificador.jpeg",
+      "status": "ok"
+    }
+  ]
+}

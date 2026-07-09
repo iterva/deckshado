@@ -369,13 +369,16 @@ function typeRank(t?: string): number {
                       <div class="card-grid">
                         @for (e of entries; track e.id || e.card) {
                           @let bs = getBanStatus(e);
-                          <button type="button"
-                                  class="card-stack"
-                                  [class.qty-2]="e.quantity === 2"
-                                  [class.qty-3]="e.quantity >= 3"
-                                  [class.banned]="bs?.status === 'banned'"
-                                  (click)="openPreview(e)"
-                                  [title]="e.card_data?.name || ''">
+                           <div class="card-stack"
+                             role="button"
+                             tabindex="0"
+                             [class.qty-2]="e.quantity === 2"
+                             [class.qty-3]="e.quantity >= 3"
+                             [class.banned]="bs?.status === 'banned'"
+                             (click)="openPreview(e)"
+                             (keydown.enter)="openPreview(e)"
+                             (keydown.space)="onCardStackSpace($event, e)"
+                             [title]="e.card_data?.name || ''">
                             @if (e.quantity >= 3 && cardImageUrl(e.card_data); as img) {
                               <img class="shadow s3" [src]="img" aria-hidden="true"
                                    (error)="onCardImageError(e.card_data, $event)" />
@@ -399,21 +402,19 @@ function typeRank(t?: string): number {
                                     [title]="banTooltip(bs)">{{ banShort(bs) }}</span>
                             }
                             @if (isOwner() && e.card_data?.id) {
-                              <span class="cover-star"
-                                    [class.is-cover]="d.cover_card === e.card_data?.id"
-                                    role="button"
-                                    tabindex="0"
-                                    (click)="toggleCover($event, e)"
-                                    (keydown.enter)="toggleCover($event, e)"
-                                    [title]="d.cover_card === e.card_data?.id ? 'Portada actual (clic para quitar)' : 'Fijar como portada del mazo'">
+                              <button type="button"
+                                      class="cover-star"
+                                      [class.is-cover]="d.cover_card === e.card_data?.id"
+                                      (click)="toggleCover($event, e)"
+                                      [title]="d.cover_card === e.card_data?.id ? 'Portada actual (clic para quitar)' : 'Fijar como portada del mazo'">
                                 {{ d.cover_card === e.card_data?.id ? '★' : '☆' }}
-                              </span>
+                              </button>
                             }
                             @if (d.cover_card === e.card_data?.id) {
                               <span class="cover-badge" title="Portada del mazo">★</span>
                             }
                             <span class="card-name">{{ e.card_data?.name }}</span>
-                          </button>
+                          </div>
                         }
                       </div>
                     }
@@ -482,6 +483,13 @@ function typeRank(t?: string): number {
                   <div class="preview-actions">
                     <a class="action-btn" [routerLink]="['/riftbound/cards', c.card_number]" (click)="closePreview()">🔎 Ver en explorador</a>
                     <button class="action-btn" (click)="copyText(deepLinkUrl(c.id), 'Enlace de la carta copiado')">🔗 Copiar enlace</button>
+                    @if (isOwner()) {
+                      <button class="action-btn"
+                              (click)="toggleCoverByCardId(c.id)"
+                              [disabled]="settingCover()">
+                        {{ deck()?.cover_card === c.id ? '⭐ Quitar portada' : '⭐ Usar como portada' }}
+                      </button>
+                    }
                   </div>
                   <app-tcg-price [cardName]="c.name" [compact]="false" [showLink]="true"></app-tcg-price>
                 </div>
@@ -894,14 +902,19 @@ function typeRank(t?: string): number {
     .cover-star {
       position: absolute; top: 6px; left: 6px; z-index: 3;
       width: 28px; height: 28px; display: grid; place-items: center;
+      padding: 0;
       background: rgba(0,0,0,.55); border: 1px solid rgba(200,155,60,.55);
       color: #c8c8da; border-radius: 50%; font-size: 1rem; line-height: 1;
-      cursor: pointer; transition: all .15s; opacity: 0;
+      cursor: pointer; transition: all .15s; opacity: 0; pointer-events: none;
     }
     .card-stack:hover .cover-star,
-    .cover-star.is-cover { opacity: 1; }
+    .card-stack:focus-within .cover-star,
+    .cover-star.is-cover { opacity: 1; pointer-events: auto; }
     .cover-star:hover { background: #e94560; color: #0f0f23; }
     .cover-star.is-cover { background: linear-gradient(135deg, #e94560, #ff6b7d); color: #0f0f23; border-color: #ff6b7d; }
+    @media (hover: none) and (pointer: coarse) {
+      .cover-star { opacity: 0; pointer-events: none; }
+    }
     .cover-badge {
       position: absolute; top: 6px; right: 6px; z-index: 3;
       width: 22px; height: 22px; display: grid; place-items: center;
@@ -1203,8 +1216,13 @@ export class RiftboundDeckViewComponent implements OnInit {
   toggleCover(ev: Event, e: RiftboundDeckEntry) {
     ev.preventDefault();
     ev.stopPropagation();
-    const d = this.deck();
     const cardId = e.card_data?.id;
+    if (!cardId) return;
+    this.toggleCoverByCardId(cardId);
+  }
+
+  toggleCoverByCardId(cardId: number) {
+    const d = this.deck();
     if (!d || !this.isOwner() || !cardId || this.settingCover()) return;
     const isCurrent = d.cover_card === cardId;
     const newCover = isCurrent ? null : cardId;
@@ -1220,6 +1238,11 @@ export class RiftboundDeckViewComponent implements OnInit {
         this.fireToast('No se pudo actualizar la portada');
       },
     });
+  }
+
+  onCardStackSpace(ev: Event, e: RiftboundDeckEntry) {
+    ev.preventDefault();
+    this.openPreview(e);
   }
 
   // ── Helpers preview ──

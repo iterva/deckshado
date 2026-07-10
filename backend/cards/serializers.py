@@ -42,6 +42,8 @@ class CardListSerializer(serializers.ModelSerializer):
     _FORCED_MYL_FALLBACK_SLUGS = {
         "bestiarium",
     }
+    _TARGETED_IMAGEKIT_BATCH_MARKER = "aydv_myl_vigilantes_1_2026_07"
+    _TARGETED_IMAGEKIT_CACHE_VERSION = "20260710fix"
 
     image_url = serializers.SerializerMethodField()
     is_unique = serializers.SerializerMethodField()
@@ -72,17 +74,17 @@ class CardListSerializer(serializers.ModelSerializer):
             if rewritten_url:
                 if fallback and self._should_force_myl_fallback(obj, rewritten_url):
                     return fallback
-                return rewritten_url
+                return self._with_image_cache_buster(obj, rewritten_url)
             if self._should_fallback_from_non_r2(obj, custom) and fallback:
                 return fallback
-            return custom
+            return self._with_image_cache_buster(obj, custom)
 
         # Use annotated value if present, otherwise compute
         if hasattr(obj, '_image_url_cache'):
             cached = obj._image_url_cache
             if self._should_fallback_from_non_r2(obj, cached) and fallback:
                 return fallback
-            return cached
+            return self._with_image_cache_buster(obj, cached)
 
         val = getattr(obj, 'image_url', None)
         if val and not callable(val):
@@ -90,11 +92,32 @@ class CardListSerializer(serializers.ModelSerializer):
             if rewritten_url:
                 if fallback and self._should_force_myl_fallback(obj, rewritten_url):
                     return fallback
-                return rewritten_url
+                return self._with_image_cache_buster(obj, rewritten_url)
             if self._should_fallback_from_non_r2(obj, val) and fallback:
                 return fallback
-            return val
+            return self._with_image_cache_buster(obj, val)
         return fallback
+
+    def _with_image_cache_buster(self, obj, url):
+        if not isinstance(url, str) or not url:
+            return url
+
+        lower = url.lower()
+        if "ik.imagekit.io/" not in lower:
+            return url
+
+        if self._TARGETED_IMAGEKIT_BATCH_MARKER not in lower:
+            return url
+
+        myl_id = str(getattr(obj, 'myl_id', '') or '').lower()
+        if not myl_id.startswith('custom_aydv_'):
+            return url
+
+        if 'v=' in lower:
+            return url
+
+        sep = '&' if '?' in url else '?'
+        return f"{url}{sep}v={self._TARGETED_IMAGEKIT_CACHE_VERSION}"
 
     def _should_force_myl_fallback(self, obj, url):
         if not isinstance(url, str) or not url:

@@ -20,6 +20,7 @@ import os
 import re
 import sys
 import unicodedata
+from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -31,6 +32,7 @@ from cards.models import Card, Edition
 
 
 API_CDN_BASE = "https://api.myl.cl/static/cards"
+API_CARDS_ENDPOINT = "https://api.myl.cl/cards/edition/ayd_vigilantes"
 DEFAULT_MAPPING_FILE = Path(__file__).resolve().parents[4] / "aydv_api_imagekit_mapping.json"
 DEFAULT_FOLDER = "deckshado/myl_cards/aydv_api_sync_2026_07"
 DEFAULT_API_EDITION_ID = "166"
@@ -72,6 +74,15 @@ def _extract_api_edid_candidate(local_edid: str | None) -> str | None:
     m = re.fullmatch(r"AYDV-(\d{3})(?:-[A-Z])?", value)
     if m:
         return m.group(1)
+    return None
+
+
+def _safe_api_edid(raw: Any) -> str | None:
+    text = str(raw or "").strip()
+    if not text:
+        return None
+    if text.isdigit():
+        return text.zfill(3)
     return None
 
 
@@ -123,6 +134,18 @@ class Command(BaseCommand):
             action="store_true",
             help="No guarda cambios en BD",
         )
+        parser.add_argument(
+            "--start-index",
+            type=int,
+            default=1,
+            help="Indice 1-based inicial sobre cartas AYDV ordenadas por id (default: 1)",
+        )
+        parser.add_argument(
+            "--end-index",
+            type=int,
+            default=0,
+            help="Indice 1-based final sobre cartas AYDV ordenadas por id (0 = hasta el final)",
+        )
 
     def _ensure_repo_imports(self) -> Any:
         repo_root = Path(__file__).resolve().parents[4]
@@ -139,6 +162,84 @@ class Command(BaseCommand):
         if (card.myl_id or "").startswith("cbg"):
             return True
         return _norm(card.name) in PROTECTED_IMAGE_NAMES
+
+    def _fetch_api_cards(self) -> list[dict[str, Any]]:
+        try:
+            resp = requests.get(API_CARDS_ENDPOINT, timeout=45)
+            resp.raise_for_status()
+            payload = resp.json()
+        except requests.RequestException as exc:
+            raise CommandError(f"No se pudo descargar API AYDV: {exc}") from exc
+        except ValueError as exc:
+            raise CommandError("Respuesta invalida desde API AYDV") from exc
+
+        cards = payload.get("cards", []) if isinstance(payload, dict) else []
+        if not isinstance(cards, list):
+            raise CommandError("Payload de API AYDV sin lista de cards")
+        return cards
+
+    def _build_api_indexes(
+        self,
+        api_cards: list[dict[str, Any]],
+    ) -> tuple[dict[str, list[dict[str, Any]]], dict[str, dict[str, Any]], list[tuple[str, dict[str, Any]]]]:
+        by_name: dict[str, list[dict[str, Any]]] = {}
+        by_edid: dict[str, dict[str, Any]] = {}
+        flat: list[tuple[str, dict[str, Any]]] = []
+
+        for raw in api_cards:
+            name_key = _norm(str(raw.get("name") or ""))
+            edid_key = _safe_api_edid(raw.get("edid"))
+            if not name_key or not edid_key:
+                continue
+            by_name.setdefault(name_key, []).append(raw)
+            by_edid[edid_key] = raw
+            flat.append((name_key, raw))
+
+        return by_name, by_edid, flat
+
+    def _pick_from_name_matches(
+        self,
+        card: Card,
+        candidates: list[dict[str, Any]],
+    ) -> dict[str, Any] | None:
+        if not candidates:
+            return None
+        if len(candidates) == 1:
+            return candidates[0]
+
+        # Preferir match por EDID local cuando hay multiples cartas con mismo nombre.
+        local_edid = _extract_api_edid_candidate(card.edid)
+        if local_edid:
+            for c in candidates:
+                if _safe_api_edid(c.get("edid")) == local_edid:
+                    return c
+
+        # Fallback estable: menor edid numerico.
+        ordered = sorted(candidates, key=lambda x: int(_safe_api_edid(x.get("edid")) or "999"))
+        return ordered[0]
+
+    def _best_fuzzy_api_match(
+        self,
+        card: Card,
+        api_flat: list[tuple[str, dict[str, Any]]],
+    ) -> dict[str, Any] | None:
+        target = _norm(card.name)
+        if not target:
+            return None
+
+        best_score = 0.0
+        best_raw: dict[str, Any] | None = None
+        for api_name, raw in api_flat:
+            score = SequenceMatcher(None, target, api_name).ratio()
+            if score > best_score:
+                best_score = score
+                best_raw = raw
+
+        if best_raw is None:
+            return None
+        if best_score < 0.90:
+            return None
+        return best_raw
 
     def _apply_mapping_only(self, edition: Edition, mapping_file: Path, dry_run: bool) -> None:
         if not mapping_file.exists():
@@ -189,6 +290,10 @@ class Command(BaseCommand):
         folder = str(options["folder"] or DEFAULT_FOLDER).strip().strip("/")
         api_edition_id = str(options["api_edition_id"] or DEFAULT_API_EDITION_ID).strip()
         dry_run = bool(options["dry_run"])
+        start_index = max(1, int(options.get("start_index") or 1))
+        end_index = int(options.get("end_index") or 0)
+        if end_index and end_index < start_index:
+            raise CommandError("--end-index debe ser mayor o igual a --start-index")
 
         edition = Edition.objects.filter(slug="aydv").first()
         if not edition:
@@ -201,6 +306,9 @@ class Command(BaseCommand):
         cdn_uploader = self._ensure_repo_imports()
         os.environ["CDN_PROVIDER"] = "imagekit"
 
+        api_cards = self._fetch_api_cards()
+        by_name, _by_edid, api_flat = self._build_api_indexes(api_cards)
+
         cards = list(
             Card.objects.filter(edition=edition)
             .order_by("id")
@@ -209,22 +317,44 @@ class Command(BaseCommand):
         total = len(cards)
         uploaded = 0
         skipped_protected = 0
-        skipped_no_api_edid = 0
+        skipped_no_api_match = 0
         failed_download = 0
         failed_upload = 0
+        fuzzy_matched = 0
 
         mapping: dict[str, str] = {}
+        if mapping_file.exists():
+            try:
+                existing = json.loads(mapping_file.read_text(encoding="utf-8"))
+                if isinstance(existing, dict):
+                    mapping = {str(k): str(v) for k, v in existing.items()}
+            except ValueError:
+                # Si el archivo existe pero no es JSON valido, se regenera desde cero al final.
+                mapping = {}
 
-        self.stdout.write(self.style.MIGRATE_HEADING("Descargando desde API MYL y sobrescribiendo en ImageKit..."))
+        range_text = f"indices {start_index}-{end_index or total}"
+        self.stdout.write(self.style.MIGRATE_HEADING(f"Descargando desde API MYL y sobrescribiendo en ImageKit ({range_text})..."))
 
         for idx, card in enumerate(cards, start=1):
+            if idx < start_index:
+                continue
+            if end_index and idx > end_index:
+                break
+
             if self._is_protected(card):
                 skipped_protected += 1
                 continue
 
-            api_edid = _extract_api_edid_candidate(card.edid)
+            card_name_key = _norm(card.name)
+            api_raw = self._pick_from_name_matches(card, by_name.get(card_name_key, []))
+            if api_raw is None:
+                api_raw = self._best_fuzzy_api_match(card, api_flat)
+                if api_raw is not None:
+                    fuzzy_matched += 1
+
+            api_edid = _safe_api_edid(api_raw.get("edid") if api_raw else None)
             if not api_edid:
-                skipped_no_api_edid += 1
+                skipped_no_api_match += 1
                 continue
 
             source_url = f"{API_CDN_BASE}/{api_edition_id}/{api_edid}.png"
@@ -285,7 +415,8 @@ class Command(BaseCommand):
                 "Done. "
                 f"Uploaded={uploaded} | "
                 f"ProtectedSkip={skipped_protected} | "
-                f"NoApiEdidSkip={skipped_no_api_edid} | "
+                f"NoApiMatchSkip={skipped_no_api_match} | "
+                f"FuzzyMatched={fuzzy_matched} | "
                 f"FailedDownload={failed_download} | "
                 f"FailedUpload={failed_upload}"
             )

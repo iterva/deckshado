@@ -1,0 +1,472 @@
+"""
+Seed para sincronizar Angeles y Demonios Vigilantes (AYDV) desde la API oficial de MYL.
+
+Objetivo:
+- Reemplazar imagenes por las oficiales de API (custom_image_url),
+  respetando un set de exclusiones de imagen.
+- Actualizar habilidad, tipo de carta, coste y ataque (damage).
+- Crear cartas faltantes de la API dentro de la edicion local `aydv`.
+
+Uso:
+  python manage.py seed_aydv_from_myl_api
+  python manage.py seed_aydv_from_myl_api --dry-run
+  python manage.py seed_aydv_from_myl_api --report-file ../aydv_api_seed_report.json
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import unicodedata
+from collections import defaultdict
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import requests
+from django.core.management.base import BaseCommand, CommandError
+
+from cards.models import Card, CardType, Edition, Format, Race, Rarity
+
+
+API_URL = "https://api.myl.cl/cards/edition/ayd_vigilantes"
+API_CDN_BASE = "https://api.myl.cl/static/cards"
+DEFAULT_REPORT_FILE = Path(__file__).resolve().parents[4] / "aydv_api_seed_report.json"
+
+
+PROTECTED_IMAGE_NAMES = {
+    "serpiente del eden",
+    "la serpiente del eden",
+    "acabar esperanza",
+    "acabar la esperanza",
+    "agabar esperanza",
+    "agabar la esperanza",
+    "guerrillero rodriguez",
+    "el oro",
+    "infernum vox",
+}
+
+STOPWORDS = {
+    "de", "del", "la", "las", "los", "el", "y", "en", "al", "a", "un", "una",
+}
+
+
+@dataclass
+class ApiCard:
+    api_id: str
+    edid: str
+    slug: str
+    name: str
+    norm_name: str
+    rarity_slug: str
+    race_id: str | None
+    type_id: str | None
+    cost: str | None
+    damage: str | None
+    ability: str
+    flavour: str
+    image_url: str
+
+
+def _norm(text: str | None) -> str:
+    value = (text or "").strip().replace("�", "")
+    value = unicodedata.normalize("NFKD", value)
+    value = "".join(ch for ch in value if not unicodedata.combining(ch))
+    value = value.lower()
+    value = re.sub(r"[^a-z0-9]+", " ", value)
+    value = re.sub(r"\s+", " ", value).strip()
+
+    # Reparaciones comunes de mojibake observadas en API/datos locales.
+    if value.startswith("ngel "):
+        value = f"angel {value[5:]}"
+    value = value.replace("bretaa", "bretana")
+    value = value.replace("sealados", "senalados")
+    value = value.replace("martires", "martires")
+    return value
+
+
+def _token_set(value: str) -> set[str]:
+    return {tok for tok in value.split() if tok and tok not in STOPWORDS and len(tok) > 2}
+
+
+def _sim_ratio(a: str, b: str) -> float:
+    # Similaridad simple sin dependencia externa.
+    if not a or not b:
+        return 0.0
+    # Dice coefficient por bigramas.
+    def _bigrams(s: str) -> set[str]:
+        if len(s) < 2:
+            return {s}
+        return {s[i : i + 2] for i in range(len(s) - 1)}
+
+    a2 = _bigrams(a)
+    b2 = _bigrams(b)
+    inter = len(a2 & b2)
+    return (2.0 * inter) / (len(a2) + len(b2)) if (a2 or b2) else 0.0
+
+
+def _best_match(local_card: Card, api_cards: list[ApiCard]) -> tuple[ApiCard | None, float]:
+    local_norm = _norm(local_card.name)
+    local_tokens = _token_set(local_norm)
+    local_rarity = local_card.rarity.slug if local_card.rarity else ""
+
+    exact_same_rarity = [a for a in api_cards if a.norm_name == local_norm and a.rarity_slug == local_rarity]
+    if exact_same_rarity:
+        return exact_same_rarity[0], 1.0
+
+    exact_any_rarity = [a for a in api_cards if a.norm_name == local_norm]
+    if exact_any_rarity:
+        return exact_any_rarity[0], 0.97
+
+    best: ApiCard | None = None
+    best_score = 0.0
+    for candidate in api_cards:
+        cand_tokens = _token_set(candidate.norm_name)
+        token_inter = len(local_tokens & cand_tokens)
+        if token_inter == 0:
+            continue
+
+        ratio = _sim_ratio(local_norm, candidate.norm_name)
+        jaccard = token_inter / max(1, len(local_tokens | cand_tokens))
+        score = (ratio * 0.75) + (jaccard * 0.25)
+        if local_rarity and local_rarity == candidate.rarity_slug:
+            score += 0.06
+
+        if score > best_score:
+            best = candidate
+            best_score = score
+
+    # Threshold conservador para evitar matches incorrectos.
+    if best is not None and best_score >= 0.82:
+        return best, best_score
+    return None, best_score
+
+
+class Command(BaseCommand):
+    help = "Sincroniza AYDV desde API MYL: imagenes + datos + crea faltantes"
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="No guarda cambios en BD",
+        )
+        parser.add_argument(
+            "--report-file",
+            default=str(DEFAULT_REPORT_FILE),
+            help="Ruta para guardar reporte JSON",
+        )
+
+    def _ensure_edition(self) -> Edition:
+        imp_format, _ = Format.objects.get_or_create(
+            code="imp",
+            defaults={"name": "Imperio"},
+        )
+        edition, _ = Edition.objects.update_or_create(
+            myl_id="custom_aydv",
+            defaults={
+                "slug": "aydv",
+                "title": "Angeles y Demonios: Vigilantes",
+                "format": imp_format,
+                "active": True,
+            },
+        )
+        return edition
+
+    def _fetch_api(self) -> dict[str, Any]:
+        try:
+            response = requests.get(API_URL, timeout=60)
+            response.raise_for_status()
+        except requests.RequestException as exc:
+            raise CommandError(f"No se pudo consultar API MYL: {exc}") from exc
+
+        try:
+            data = response.json()
+        except ValueError as exc:
+            raise CommandError("Respuesta API no es JSON valido") from exc
+
+        if data.get("status") != "OK":
+            raise CommandError(f"API devolvio status no OK: {data.get('status')}")
+        return data
+
+    def _sync_catalog_tables(self, data: dict[str, Any], dry_run: bool) -> None:
+        if dry_run:
+            return
+
+        for race in data.get("races", []):
+            Race.objects.update_or_create(
+                myl_id=str(race.get("id")),
+                defaults={
+                    "slug": str(race.get("slug") or "").strip(),
+                    "name": str(race.get("name") or "").strip(),
+                },
+            )
+
+        for ctype in data.get("types", []):
+            CardType.objects.update_or_create(
+                myl_id=str(ctype.get("id")),
+                defaults={
+                    "slug": str(ctype.get("slug") or "").strip(),
+                    "name": str(ctype.get("name") or "").strip(),
+                },
+            )
+
+        for rarity in data.get("rarities", []):
+            Rarity.objects.update_or_create(
+                myl_id=str(rarity.get("id")),
+                defaults={
+                    "slug": str(rarity.get("slug") or "").strip(),
+                    "name": str(rarity.get("name") or "").strip(),
+                },
+            )
+
+    def _build_api_cards(self, data: dict[str, Any]) -> list[ApiCard]:
+        edition_info = data.get("edition", {})
+        edition_slug = str(edition_info.get("slug") or "ayd_vigilantes").strip() or "ayd_vigilantes"
+
+        rarity_by_id = {
+            str(item.get("id")): str(item.get("slug") or "").strip()
+            for item in data.get("rarities", [])
+        }
+
+        out: list[ApiCard] = []
+        for raw in data.get("cards", []):
+            edid = str(raw.get("edid") or "").strip()
+            edid = edid.zfill(3) if edid.isdigit() else edid
+            image_url = f"{API_CDN_BASE}/{edition_slug}/{edid}.png"
+
+            out.append(
+                ApiCard(
+                    api_id=str(raw.get("id") or "").strip(),
+                    edid=edid,
+                    slug=str(raw.get("slug") or "").strip(),
+                    name=str(raw.get("name") or "").strip(),
+                    norm_name=_norm(raw.get("name")),
+                    rarity_slug=rarity_by_id.get(str(raw.get("rarity")), ""),
+                    race_id=(str(raw.get("race")) if raw.get("race") is not None else None),
+                    type_id=(str(raw.get("type")) if raw.get("type") is not None else None),
+                    cost=(str(raw.get("cost")) if raw.get("cost") is not None else None),
+                    damage=(str(raw.get("damage")) if raw.get("damage") is not None else None),
+                    ability=str(raw.get("ability") or "").strip(),
+                    flavour=str(raw.get("flavour") or "").strip(),
+                    image_url=image_url,
+                )
+            )
+        return out
+
+    def _is_image_protected(self, card: Card) -> bool:
+        if (card.myl_id or "").startswith("cbg"):
+            return True
+        name_norm = _norm(card.name)
+        return name_norm in PROTECTED_IMAGE_NAMES
+
+    def _resolve_fk(self, api_card: ApiCard) -> tuple[Rarity | None, Race | None, CardType | None]:
+        rarity = Rarity.objects.filter(slug=api_card.rarity_slug).first()
+        race = Race.objects.filter(myl_id=api_card.race_id).first() if api_card.race_id else None
+        card_type = CardType.objects.filter(myl_id=api_card.type_id).first() if api_card.type_id else None
+        return rarity, race, card_type
+
+    def _update_card_from_api(
+        self,
+        card: Card,
+        api_card: ApiCard,
+        dry_run: bool,
+    ) -> tuple[bool, bool, list[str]]:
+        rarity, race, card_type = self._resolve_fk(api_card)
+
+        changed_fields: list[str] = []
+
+        target_pairs: list[tuple[str, Any]] = [
+            ("rarity", rarity),
+            ("race", race),
+            ("card_type", card_type),
+            ("cost", api_card.cost),
+            ("damage", api_card.damage),
+            ("ability", api_card.ability),
+            ("flavour", api_card.flavour),
+        ]
+
+        image_changed = False
+        protected = self._is_image_protected(card)
+        if not protected and card.custom_image_url != api_card.image_url:
+            target_pairs.append(("custom_image_url", api_card.image_url))
+            image_changed = True
+
+        for field, target in target_pairs:
+            current = getattr(card, field)
+            if current != target:
+                setattr(card, field, target)
+                changed_fields.append(field)
+
+        if changed_fields and not dry_run:
+            card.save(update_fields=changed_fields)
+
+        return bool(changed_fields), image_changed, changed_fields
+
+    def _create_card_from_api(self, edition: Edition, api_card: ApiCard, dry_run: bool) -> str:
+        rarity, race, card_type = self._resolve_fk(api_card)
+
+        # myl_id API primero; fallback custom si faltara.
+        preferred_myl_id = api_card.api_id or f"custom_aydv_api_{api_card.edid}"
+        final_myl_id = preferred_myl_id
+        if Card.objects.filter(myl_id=preferred_myl_id).exists():
+            final_myl_id = f"custom_aydv_api_{api_card.edid}_{preferred_myl_id}"
+
+        defaults = {
+            "myl_id": final_myl_id,
+            "edid": api_card.edid,
+            "slug": api_card.slug or f"aydv-{api_card.edid}",
+            "name": api_card.name or f"AYDV {api_card.edid}",
+            "edition": edition,
+            "rarity": rarity,
+            "race": race,
+            "card_type": card_type,
+            "cost": api_card.cost,
+            "damage": api_card.damage,
+            "ability": api_card.ability,
+            "flavour": api_card.flavour,
+            "custom_image_url": api_card.image_url,
+        }
+
+        if dry_run:
+            return final_myl_id
+
+        Card.objects.create(**defaults)
+        return final_myl_id
+
+    def handle(self, *args, **options):
+        dry_run = bool(options["dry_run"])
+        report_file = Path(options["report_file"]).expanduser().resolve()
+
+        edition = self._ensure_edition()
+        data = self._fetch_api()
+        self._sync_catalog_tables(data, dry_run=dry_run)
+        api_cards = self._build_api_cards(data)
+
+        local_cards = list(
+            Card.objects.filter(edition=edition)
+            .select_related("rarity", "race", "card_type")
+            .order_by("id")
+        )
+
+        api_by_id = {api_card.api_id: api_card for api_card in api_cards}
+        matched_api_ids: set[str] = set()
+
+        updated_cards = 0
+        updated_images = 0
+        protected_images = 0
+        unmatched_local = 0
+        created_cards = 0
+
+        details_updates: list[dict[str, Any]] = []
+        details_unmatched_local: list[dict[str, Any]] = []
+        details_created: list[dict[str, Any]] = []
+
+        self.stdout.write(self.style.MIGRATE_HEADING("Sincronizando cartas AYDV con API oficial..."))
+
+        for card in local_cards:
+            api_match, score = _best_match(card, api_cards)
+            if api_match is None:
+                unmatched_local += 1
+                details_unmatched_local.append(
+                    {
+                        "card_id": card.id,
+                        "myl_id": card.myl_id,
+                        "edid": card.edid,
+                        "name": card.name,
+                        "reason": "no_confident_match",
+                        "best_score": round(score, 4),
+                    }
+                )
+                continue
+
+            changed, image_changed, changed_fields = self._update_card_from_api(
+                card=card,
+                api_card=api_match,
+                dry_run=dry_run,
+            )
+            matched_api_ids.add(api_match.api_id)
+
+            if self._is_image_protected(card):
+                protected_images += 1
+
+            if changed:
+                updated_cards += 1
+                if image_changed:
+                    updated_images += 1
+                details_updates.append(
+                    {
+                        "card_id": card.id,
+                        "myl_id": card.myl_id,
+                        "edid": card.edid,
+                        "name": card.name,
+                        "api_id": api_match.api_id,
+                        "api_edid": api_match.edid,
+                        "api_name": api_match.name,
+                        "score": round(score, 4),
+                        "changed_fields": changed_fields,
+                    }
+                )
+
+        # Crear faltantes de API que no quedaron representadas por ninguna carta local.
+        for api_card in api_cards:
+            if api_card.api_id in matched_api_ids:
+                continue
+
+            created_myl_id = self._create_card_from_api(
+                edition=edition,
+                api_card=api_card,
+                dry_run=dry_run,
+            )
+            created_cards += 1
+            details_created.append(
+                {
+                    "api_id": api_card.api_id,
+                    "api_edid": api_card.edid,
+                    "api_name": api_card.name,
+                    "created_myl_id": created_myl_id,
+                    "image_url": api_card.image_url,
+                }
+            )
+
+        report = {
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "dry_run": dry_run,
+            "edition": {
+                "id": edition.id,
+                "slug": edition.slug,
+                "myl_id": edition.myl_id,
+            },
+            "api": {
+                "url": API_URL,
+                "cards": len(api_cards),
+            },
+            "summary": {
+                "local_cards": len(local_cards),
+                "updated_cards": updated_cards,
+                "updated_images": updated_images,
+                "protected_images_seen": protected_images,
+                "unmatched_local": unmatched_local,
+                "created_cards": created_cards,
+            },
+            "updated": details_updates,
+            "created": details_created,
+            "unmatched_local": details_unmatched_local,
+        }
+
+        report_file.parent.mkdir(parents=True, exist_ok=True)
+        report_file.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+
+        self.stdout.write(
+            self.style.SUCCESS(
+                "Done. "
+                f"Updated={updated_cards} "
+                f"(images={updated_images}) | "
+                f"Created={created_cards} | "
+                f"UnmatchedLocal={unmatched_local}"
+            )
+        )
+        self.stdout.write(f"Reporte: {report_file}")
+        if dry_run:
+            self.stdout.write(self.style.WARNING("DRY RUN: no se guardaron cambios en BD."))

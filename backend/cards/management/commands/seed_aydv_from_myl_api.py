@@ -316,7 +316,7 @@ class Command(BaseCommand):
 
     def _build_api_cards(self, data: dict[str, Any]) -> list[ApiCard]:
         edition_info = data.get("edition", {})
-        edition_slug = str(edition_info.get("slug") or "ayd_vigilantes").strip() or "ayd_vigilantes"
+        edition_path_id = str(edition_info.get("id") or "166").strip() or "166"
 
         rarity_by_id = {
             str(item.get("id")): str(item.get("slug") or "").strip()
@@ -327,7 +327,7 @@ class Command(BaseCommand):
         for raw in data.get("cards", []):
             edid = str(raw.get("edid") or "").strip()
             edid = edid.zfill(3) if edid.isdigit() else edid
-            image_url = f"{API_CDN_BASE}/{edition_slug}/{edid}.png"
+            image_url = f"{API_CDN_BASE}/{edition_path_id}/{edid}.png"
 
             out.append(
                 ApiCard(

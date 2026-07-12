@@ -1,5 +1,7 @@
+import json
 import os
 import re
+from pathlib import Path
 
 from rest_framework import serializers
 from .models import Card, Edition, Format, Race, CardType, Rarity, BanlistEntry
@@ -44,6 +46,8 @@ class CardListSerializer(serializers.ModelSerializer):
     }
     _TARGETED_IMAGEKIT_BATCH_MARKER = "aydv_myl_vigilantes_1_2026_07"
     _TARGETED_IMAGEKIT_CACHE_VERSION = "20260710fix"
+    _AYDV_MAPPING_FILE = Path(__file__).resolve().parents[2] / "aydv_api_imagekit_mapping.json"
+    _AYDV_MAPPING_CACHE: dict[str, str] | None = None
 
     image_url = serializers.SerializerMethodField()
     is_unique = serializers.SerializerMethodField()
@@ -65,6 +69,11 @@ class CardListSerializer(serializers.ModelSerializer):
         ]
 
     def get_image_url(self, obj):
+        # AYDV fix: if DB still has stale api.myl URLs, force latest ImageKit mapping by myl_id.
+        override = self._aydv_imagekit_override(obj)
+        if override:
+            return self._with_image_cache_buster(obj, override)
+
         fallback = self._default_myl_image_url(obj)
 
         # Prefer custom URL for promo/extra cards
@@ -97,6 +106,44 @@ class CardListSerializer(serializers.ModelSerializer):
                 return fallback
             return self._with_image_cache_buster(obj, val)
         return fallback
+
+    def _aydv_imagekit_override(self, obj):
+        edition = getattr(obj, 'edition', None)
+        edition_slug = str(getattr(edition, 'slug', '') or '').strip().lower()
+        if edition_slug != 'aydv':
+            return None
+
+        myl_id = str(getattr(obj, 'myl_id', '') or '').strip()
+        if not myl_id:
+            return None
+
+        mapping = self._aydv_imagekit_mapping()
+        candidate = str(mapping.get(myl_id) or '').strip()
+        if 'ik.imagekit.io/' not in candidate.lower():
+            return None
+        return candidate
+
+    @classmethod
+    def _aydv_imagekit_mapping(cls):
+        if cls._AYDV_MAPPING_CACHE is not None:
+            return cls._AYDV_MAPPING_CACHE
+
+        mapping: dict[str, str] = {}
+        path = cls._AYDV_MAPPING_FILE
+        if path.exists():
+            try:
+                payload = json.loads(path.read_text(encoding='utf-8'))
+                if isinstance(payload, dict):
+                    mapping = {
+                        str(k): str(v)
+                        for k, v in payload.items()
+                        if isinstance(k, str) and isinstance(v, str)
+                    }
+            except ValueError:
+                mapping = {}
+
+        cls._AYDV_MAPPING_CACHE = mapping
+        return cls._AYDV_MAPPING_CACHE
 
     def _with_image_cache_buster(self, obj, url):
         if not isinstance(url, str) or not url:

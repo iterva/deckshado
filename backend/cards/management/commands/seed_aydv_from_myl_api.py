@@ -144,6 +144,50 @@ def _best_match(local_card: Card, api_cards: list[ApiCard]) -> tuple[ApiCard | N
     return None, best_score
 
 
+def _best_match_aggressive(local_card: Card, api_cards: list[ApiCard]) -> tuple[ApiCard | None, float]:
+    """Fallback mas permisivo para reducir unmatched en cartas legacy/custom."""
+    local_norm = _norm(local_card.name)
+    local_tokens = _token_set(local_norm)
+    local_rarity = local_card.rarity.slug if local_card.rarity else ""
+
+    best: ApiCard | None = None
+    best_score = 0.0
+    for candidate in api_cards:
+        cand_tokens = _token_set(candidate.norm_name)
+        ratio = _sim_ratio(local_norm, candidate.norm_name)
+        jaccard = 0.0
+        if local_tokens or cand_tokens:
+            jaccard = len(local_tokens & cand_tokens) / max(1, len(local_tokens | cand_tokens))
+
+        score = (ratio * 0.85) + (jaccard * 0.15)
+        if local_rarity and local_rarity == candidate.rarity_slug:
+            score += 0.05
+        if local_norm and (local_norm in candidate.norm_name or candidate.norm_name in local_norm):
+            score += 0.05
+
+        if score > best_score:
+            best = candidate
+            best_score = score
+
+    if best is not None and best_score >= 0.62:
+        return best, best_score
+    return None, best_score
+
+
+def _extract_api_edid_candidate(local_edid: str | None) -> str | None:
+    """Extrae edid de API (3 digitos) solo para patrones AYDV numericos seguros."""
+    value = (local_edid or "").strip().upper()
+    if re.fullmatch(r"\d{3}", value):
+        return value
+
+    # Ej: AYDV-123 o AYDV-243-P
+    m = re.fullmatch(r"AYDV-(\d{3})(?:-[A-Z])?", value)
+    if m:
+        return m.group(1)
+
+    return None
+
+
 class Command(BaseCommand):
     help = "Sincroniza AYDV desde API MYL: imagenes + datos + crea faltantes"
 
@@ -169,6 +213,11 @@ class Command(BaseCommand):
             "--source-file",
             default=str(DEFAULT_SNAPSHOT_FILE),
             help="Ruta del snapshot JSON usado en modo snapshot/auto",
+        )
+        parser.add_argument(
+            "--aggressive-unmatched",
+            action="store_true",
+            help="Aplica un fallback fuzzy mas agresivo para reducir unmatched",
         )
 
     def _ensure_edition(self) -> Edition:
@@ -311,6 +360,20 @@ class Command(BaseCommand):
         card_type = CardType.objects.filter(myl_id=api_card.type_id).first() if api_card.type_id else None
         return rarity, race, card_type
 
+    def _match_by_edid(self, card: Card, api_by_edid: dict[str, ApiCard]) -> tuple[ApiCard | None, float]:
+        candidate = _extract_api_edid_candidate(card.edid)
+        if not candidate:
+            return None, 0.0
+        api_card = api_by_edid.get(candidate)
+        if not api_card:
+            return None, 0.0
+        local_norm = _norm(card.name)
+        api_norm = api_card.norm_name
+        score = _sim_ratio(local_norm, api_norm)
+        # Bonificacion por edid exacto (deterministico).
+        score = max(score, 0.93)
+        return api_card, score
+
     def _update_card_from_api(
         self,
         card: Card,
@@ -384,6 +447,7 @@ class Command(BaseCommand):
         report_file = Path(options["report_file"]).expanduser().resolve()
         source = str(options["source"])
         source_file = Path(options["source_file"]).expanduser().resolve()
+        aggressive_unmatched = bool(options["aggressive_unmatched"])
 
         edition = self._ensure_edition()
         data, source_used = self._load_source_data(source=source, source_file=source_file)
@@ -397,6 +461,7 @@ class Command(BaseCommand):
         )
 
         api_by_id = {api_card.api_id: api_card for api_card in api_cards}
+        api_by_edid = {api_card.edid: api_card for api_card in api_cards}
         matched_api_ids: set[str] = set()
 
         updated_cards = 0
@@ -412,7 +477,12 @@ class Command(BaseCommand):
         self.stdout.write(self.style.MIGRATE_HEADING("Sincronizando cartas AYDV con API oficial..."))
 
         for card in local_cards:
-            api_match, score = _best_match(card, api_cards)
+            api_match, score = self._match_by_edid(card, api_by_edid)
+            if api_match is None:
+                api_match, score = _best_match(card, api_cards)
+            if api_match is None and aggressive_unmatched:
+                api_match, score = _best_match_aggressive(card, api_cards)
+
             if api_match is None:
                 unmatched_local += 1
                 details_unmatched_local.append(
@@ -483,6 +553,7 @@ class Command(BaseCommand):
                 "requested": source,
                 "used": source_used,
                 "snapshot_file": str(source_file),
+                "aggressive_unmatched": aggressive_unmatched,
             },
             "edition": {
                 "id": edition.id,

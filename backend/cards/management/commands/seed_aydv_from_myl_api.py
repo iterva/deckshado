@@ -33,6 +33,7 @@ from cards.models import Card, CardType, Edition, Format, Race, Rarity
 API_URL = "https://api.myl.cl/cards/edition/ayd_vigilantes"
 API_CDN_BASE = "https://api.myl.cl/static/cards"
 DEFAULT_REPORT_FILE = Path(__file__).resolve().parents[4] / "aydv_api_seed_report.json"
+DEFAULT_SNAPSHOT_FILE = Path(__file__).resolve().parents[2] / "data" / "ayd_vigilantes_api_snapshot.json"
 
 
 PROTECTED_IMAGE_NAMES = {
@@ -157,6 +158,18 @@ class Command(BaseCommand):
             default=str(DEFAULT_REPORT_FILE),
             help="Ruta para guardar reporte JSON",
         )
+        parser.add_argument(
+            "--source",
+            type=str,
+            default="auto",
+            choices=["auto", "web", "snapshot"],
+            help="Fuente de datos: auto (intenta web y cae a snapshot), web, snapshot",
+        )
+        parser.add_argument(
+            "--source-file",
+            default=str(DEFAULT_SNAPSHOT_FILE),
+            help="Ruta del snapshot JSON usado en modo snapshot/auto",
+        )
 
     def _ensure_edition(self) -> Edition:
         imp_format, _ = Format.objects.get_or_create(
@@ -189,6 +202,37 @@ class Command(BaseCommand):
         if data.get("status") != "OK":
             raise CommandError(f"API devolvio status no OK: {data.get('status')}")
         return data
+
+    def _load_snapshot(self, source_file: Path) -> dict[str, Any]:
+        if not source_file.exists():
+            raise CommandError(f"No existe snapshot local: {source_file}")
+
+        try:
+            data = json.loads(source_file.read_text(encoding="utf-8"))
+        except ValueError as exc:
+            raise CommandError(f"Snapshot JSON invalido: {source_file}") from exc
+
+        if data.get("status") != "OK":
+            raise CommandError(f"Snapshot con status no OK: {data.get('status')}")
+        return data
+
+    def _load_source_data(self, source: str, source_file: Path) -> tuple[dict[str, Any], str]:
+        if source == "web":
+            return self._fetch_api(), "web"
+
+        if source == "snapshot":
+            return self._load_snapshot(source_file), "snapshot"
+
+        # auto
+        try:
+            return self._fetch_api(), "web"
+        except CommandError as exc:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"No se pudo consultar API ({exc}). Se usara snapshot local."
+                )
+            )
+            return self._load_snapshot(source_file), "snapshot"
 
     def _sync_catalog_tables(self, data: dict[str, Any], dry_run: bool) -> None:
         if dry_run:
@@ -338,9 +382,11 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         dry_run = bool(options["dry_run"])
         report_file = Path(options["report_file"]).expanduser().resolve()
+        source = str(options["source"])
+        source_file = Path(options["source_file"]).expanduser().resolve()
 
         edition = self._ensure_edition()
-        data = self._fetch_api()
+        data, source_used = self._load_source_data(source=source, source_file=source_file)
         self._sync_catalog_tables(data, dry_run=dry_run)
         api_cards = self._build_api_cards(data)
 
@@ -433,6 +479,11 @@ class Command(BaseCommand):
         report = {
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "dry_run": dry_run,
+            "source": {
+                "requested": source,
+                "used": source_used,
+                "snapshot_file": str(source_file),
+            },
             "edition": {
                 "id": edition.id,
                 "slug": edition.slug,

@@ -48,6 +48,8 @@ PROTECTED_IMAGE_NAMES = {
     "el oro",
     "infernum vox",
     "gehena",
+    "dulce canasta",
+    "don de belial",
 }
 
 

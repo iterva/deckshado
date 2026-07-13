@@ -47,6 +47,7 @@ PROTECTED_IMAGE_NAMES = {
     "guerrillero rodriguez",
     "el oro",
     "infernum vox",
+    "gehena",
 }
 
 

@@ -172,7 +172,7 @@ MAZO_DRAGON_CARDS = [
         "edid": "MID-08",
         "slug": "escamas-de-dragon-mid",
         "name": "Escamas de Dragón",
-        "type_slug": "totem",
+        "type_slug": "oro",
         "race_slug": "dragon",
         "cost": "1",
         "damage": None,

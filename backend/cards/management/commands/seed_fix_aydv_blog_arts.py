@@ -33,6 +33,13 @@ TARGETS = [
         "url": "https://blog.myl.cl/wp-content/uploads/2026/05/AYDV_180-1.png",
     },
     {
+        "myl_id": "custom_aydv_181",
+        "edition_slug": "aydv",
+        "edid": "AYDV-181",
+        "name": "Alicia en Wonderland",
+        "url": "https://blog.myl.cl/wp-content/uploads/2026/05/AYDV_181-1.png",
+    },
+    {
         "myl_id": "custom_aydv_182",
         "edition_slug": "aydv",
         "edid": "AYDV-182",
@@ -52,6 +59,13 @@ TARGETS = [
         "edid": "AYDV-213",
         "name": "Jinete de la Peste",
         "url": "https://blog.myl.cl/wp-content/uploads/2026/05/AYDV_213-1.png",
+    },
+    {
+        "myl_id": "custom_aydv_214",
+        "edition_slug": "aydv",
+        "edid": "AYDV-214",
+        "name": "Jinete de la Guerra",
+        "url": "https://blog.myl.cl/wp-content/uploads/2026/05/AYDV_214-1.png",
     },
     {
         "myl_id": "custom_aydv_215",

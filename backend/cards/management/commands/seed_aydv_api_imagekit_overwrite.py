@@ -54,9 +54,11 @@ PROTECTED_IMAGE_NAMES = {
     "santo santo santo",
     "mano de destruccion",
     "miguel grau",
+    "alicia en wonderland",
     "lanza argenta",
     "nefandos",
     "jinete de la peste",
+    "jinete de la guerra",
     "jinete del hambre",
     "jinete de la muerte",
 }

@@ -50,6 +50,15 @@ PROTECTED_IMAGE_NAMES = {
     "gehena",
     "dulce canasta",
     "don de belial",
+    "serafin",
+    "santo santo santo",
+    "mano de destruccion",
+    "miguel grau",
+    "lanza argenta",
+    "nefandos",
+    "jinete de la peste",
+    "jinete del hambre",
+    "jinete de la muerte",
 }
 
 

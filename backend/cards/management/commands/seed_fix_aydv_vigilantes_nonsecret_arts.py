@@ -126,6 +126,15 @@ class Command(BaseCommand):
             default=str(DEFAULT_MYLSERENA_MAPPING_FILE),
             help="Mapping JSON de Mylserena (records[] con name/rarity_slug/imagekit_url)",
         )
+        parser.add_argument(
+            "--source-mode",
+            choices=["auto", "api", "local"],
+            default="auto",
+            help=(
+                "Fuente de imagen: auto=local primero y API fallback, "
+                "api=solo API MYL, local=solo fuentes locales"
+            ),
+        )
 
     def _ensure_repo_imports(self) -> Any:
         repo_root = Path(__file__).resolve().parents[4]
@@ -290,6 +299,7 @@ class Command(BaseCommand):
         api_edition_id = str(options["api_edition_id"] or DEFAULT_API_EDITION_ID).strip()
         dry_run = bool(options["dry_run"])
         progress_every = max(1, int(options.get("progress_every") or 1))
+        source_mode = str(options.get("source_mode") or "auto").strip().lower()
 
         edition = Edition.objects.filter(slug="aydv").first()
         if not edition:
@@ -441,6 +451,7 @@ class Command(BaseCommand):
                 f"AYDV Vigilantes no-secretas: corrigiendo {total} cartas especificas (no 293)"
             )
         )
+        self.stdout.write(self.style.MIGRATE_HEADING(f"Modo de fuente: {source_mode}"))
 
         mylserena_index = self._load_mylserena_index(mylserena_mapping_file)
         mylserena_by_myl_id = self._load_records_index_by_myl_id(mylserena_mapping_file)
@@ -488,8 +499,29 @@ class Command(BaseCommand):
             if not source_url_mylserena:
                 source_url_mylserena = mylserena_index.get((target["slug_key"], target["rarity_slug"]))
 
-            source_kind = "LOCAL" if source_url_local else ("MYLSERENA" if source_url_mylserena else "API")
-            source_url = source_url_local or source_url_mylserena or f"{API_CDN_BASE}/{api_edition_id}/{target['api_edid']}.png"
+            chosen_local = source_url_local or source_url_mylserena
+            if source_mode == "api":
+                source_kind = "API"
+                source_url = f"{API_CDN_BASE}/{api_edition_id}/{target['api_edid']}.png"
+            elif source_mode == "local":
+                if not chosen_local:
+                    failed_download += 1
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"[{idx}/{total}] FAIL source LOCAL missing -> {card.edid} {card.name} [{target['rarity_slug']}]"
+                        )
+                    )
+                    if idx % progress_every == 0 or idx == total:
+                        self.stdout.write(
+                            f"[progress {idx}/{total}] Uploaded={uploaded} (Local={uploaded_from_local}, API={uploaded_from_api}) Unchanged={unchanged} "
+                            f"FailedDownload={failed_download} FailedUpload={failed_upload}"
+                        )
+                    continue
+                source_kind = "LOCAL"
+                source_url = chosen_local
+            else:
+                source_kind = "LOCAL" if chosen_local else "API"
+                source_url = chosen_local or f"{API_CDN_BASE}/{api_edition_id}/{target['api_edid']}.png"
             label = f"{card.edid} {card.name} [{target['rarity_slug']}]"
 
             try:

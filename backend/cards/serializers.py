@@ -44,9 +44,12 @@ class CardListSerializer(serializers.ModelSerializer):
     _FORCED_MYL_FALLBACK_SLUGS = {
         "bestiarium",
     }
-    _TARGETED_IMAGEKIT_BATCH_MARKER = "aydv_myl_vigilantes_1_2026_07"
-    _TARGETED_IMAGEKIT_CACHE_VERSION = "20260710fix"
-    _AYDV_MAPPING_FILE = Path(__file__).resolve().parents[2] / "aydv_api_imagekit_mapping.json"
+    _TARGETED_IMAGEKIT_BATCH_MARKERS = (
+        "aydv_nonsecret_fix_2026_07",
+        "aydv_myl_vigilantes_1_2026_07",
+    )
+    _TARGETED_IMAGEKIT_CACHE_VERSION = "20260716fix"
+    _AYDV_MAPPING_FILE = Path(__file__).resolve().parents[2] / "aydv_vigilantes_nonsecret_mapping.json"
     _AYDV_MAPPING_CACHE: dict[str, str] | None = None
 
     image_url = serializers.SerializerMethodField()
@@ -153,7 +156,7 @@ class CardListSerializer(serializers.ModelSerializer):
         if "ik.imagekit.io/" not in lower:
             return url
 
-        if self._TARGETED_IMAGEKIT_BATCH_MARKER not in lower:
+        if not any(marker in lower for marker in self._TARGETED_IMAGEKIT_BATCH_MARKERS):
             return url
 
         myl_id = str(getattr(obj, 'myl_id', '') or '').lower()

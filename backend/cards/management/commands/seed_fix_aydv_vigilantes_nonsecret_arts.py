@@ -7,7 +7,7 @@ import sys
 import unicodedata
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 import requests
 from django.core.management.base import BaseCommand, CommandError
@@ -20,8 +20,17 @@ API_CDN_BASE = "https://api.myl.cl/static/cards"
 DEFAULT_API_EDITION_ID = "166"
 DEFAULT_FOLDER = "deckshado/myl_cards/aydv_nonsecret_fix_2026_07"
 DEFAULT_MAPPING_FILE = Path(__file__).resolve().parents[4] / "aydv_vigilantes_nonsecret_mapping.json"
+DEFAULT_MYLSERENA_MAPPING_FILE = Path(__file__).resolve().parents[4] / "aydv_mylserena_vigilantes_imagekit_mapping.json"
+DEFAULT_UR_FALTANTES_MAPPING_FILE = Path(__file__).resolve().parents[4] / "aydv_ur_faltantes_imagekit_mapping.json"
+DEFAULT_MYL_VIG1_MAPPING_FILE = Path(__file__).resolve().parents[4] / "aydv_myl_vigilantes_1_imagekit_mapping.json"
+DEFAULT_BLOG_VIG_MAPPING_FILE = Path(__file__).resolve().parents[4] / "aydv_blog_vigilantes_mapping.json"
 TRIGGER_RARITIES = {"secreta", "legendaria"}
 COUNTERPART_EXCLUDED_RARITIES = {"secreta", "legendaria"}
+
+BLOG_CLOUDINARY_ID_BY_MYL_ID = {
+    "custom_aydv_002": "aydv_002_u",
+    "custom_aydv_021": "aydv_021_m",
+}
 
 
 def _norm(text: str | None) -> str:
@@ -112,6 +121,11 @@ class Command(BaseCommand):
             default=1,
             help="Imprime progreso cada N cartas (default: 1)",
         )
+        parser.add_argument(
+            "--mylserena-mapping-file",
+            default=str(DEFAULT_MYLSERENA_MAPPING_FILE),
+            help="Mapping JSON de Mylserena (records[] con name/rarity_slug/imagekit_url)",
+        )
 
     def _ensure_repo_imports(self) -> Any:
         repo_root = Path(__file__).resolve().parents[4]
@@ -196,8 +210,81 @@ class Command(BaseCommand):
         if dry_run:
             self.stdout.write(self.style.WARNING("DRY RUN: no se guardaron cambios en BD."))
 
+    def _load_mylserena_index(self, mapping_file: Path) -> dict[tuple[str, str], str]:
+        if not mapping_file.exists():
+            return {}
+
+        try:
+            payload = json.loads(mapping_file.read_text(encoding="utf-8"))
+        except ValueError:
+            return {}
+
+        records = payload.get("records") if isinstance(payload, dict) else None
+        if not isinstance(records, list):
+            return {}
+
+        index: dict[tuple[str, str], str] = {}
+        for row in records:
+            if not isinstance(row, dict):
+                continue
+            name_key = _norm(str(row.get("name") or ""))
+            rarity_slug = str(row.get("rarity_slug") or "").strip().lower()
+            imagekit_url = str(row.get("imagekit_url") or "").strip()
+            if not name_key or not rarity_slug or not imagekit_url:
+                continue
+            index[(name_key, rarity_slug)] = imagekit_url
+        return index
+
+    def _load_records_index_by_myl_id(self, mapping_file: Path) -> dict[str, str]:
+        if not mapping_file.exists():
+            return {}
+
+        try:
+            payload = json.loads(mapping_file.read_text(encoding="utf-8"))
+        except ValueError:
+            return {}
+
+        records = payload.get("records") if isinstance(payload, dict) else None
+        if not isinstance(records, list):
+            return {}
+
+        index: dict[str, str] = {}
+        for row in records:
+            if not isinstance(row, dict):
+                continue
+            myl_id = str(row.get("myl_id") or "").strip()
+            imagekit_url = str(row.get("imagekit_url") or "").strip()
+            if myl_id and imagekit_url:
+                index[myl_id] = imagekit_url
+        return index
+
+    def _load_blog_index_by_myl_id(self, mapping_file: Path) -> dict[str, str]:
+        if not mapping_file.exists():
+            return {}
+        try:
+            payload = json.loads(mapping_file.read_text(encoding="utf-8"))
+        except ValueError:
+            return {}
+        if not isinstance(payload, dict):
+            return {}
+
+        index: dict[str, str] = {}
+        for myl_id, cloud_id in BLOG_CLOUDINARY_ID_BY_MYL_ID.items():
+            url = str(payload.get(cloud_id) or "").strip()
+            if "/image/fetch/" in url:
+                encoded = url.split("/image/fetch/", 1)[1]
+                # remove optional Cloudinary transformations after encoded URL if present
+                encoded = encoded.split("?", 1)[0]
+                decoded = unquote(encoded)
+                if decoded.startswith("http://") or decoded.startswith("https://"):
+                    url = decoded
+            if url:
+                index[myl_id] = url
+        return index
+
     def handle(self, *args, **options):
         mapping_file = Path(options["mapping_file"]).expanduser().resolve()
+        mylserena_mapping_file = Path(options["mylserena_mapping_file"]).expanduser().resolve()
         apply_mapping_only = bool(options["apply_mapping_only"])
         folder = str(options["folder"] or DEFAULT_FOLDER).strip().strip("/")
         api_edition_id = str(options["api_edition_id"] or DEFAULT_API_EDITION_ID).strip()
@@ -355,7 +442,32 @@ class Command(BaseCommand):
             )
         )
 
+        mylserena_index = self._load_mylserena_index(mylserena_mapping_file)
+        mylserena_by_myl_id = self._load_records_index_by_myl_id(mylserena_mapping_file)
+        ur_faltantes_by_myl_id = self._load_records_index_by_myl_id(DEFAULT_UR_FALTANTES_MAPPING_FILE)
+        myl_vig1_by_myl_id = self._load_records_index_by_myl_id(DEFAULT_MYL_VIG1_MAPPING_FILE)
+        blog_by_myl_id = self._load_blog_index_by_myl_id(DEFAULT_BLOG_VIG_MAPPING_FILE)
+
+        local_source_by_myl_id: dict[str, str] = {}
+        local_source_by_myl_id.update(mylserena_by_myl_id)
+        local_source_by_myl_id.update(ur_faltantes_by_myl_id)
+        local_source_by_myl_id.update(myl_vig1_by_myl_id)
+        local_source_by_myl_id.update(blog_by_myl_id)
+
+        self.stdout.write(
+            self.style.MIGRATE_HEADING(
+                f"Fuente Mylserena cargada: {len(mylserena_index)} pares nombre+rareza"
+            )
+        )
+        self.stdout.write(
+            self.style.MIGRATE_HEADING(
+                f"Fuentes locales por myl_id: {len(local_source_by_myl_id)}"
+            )
+        )
+
         uploaded = 0
+        uploaded_from_local = 0
+        uploaded_from_api = 0
         failed_download = 0
         failed_upload = 0
         unchanged = 0
@@ -370,7 +482,14 @@ class Command(BaseCommand):
                 mapping = {}
 
         for idx, (target, card) in enumerate(selected, start=1):
-            source_url = f"{API_CDN_BASE}/{api_edition_id}/{target['api_edid']}.png"
+            myl_id_key = str(card.myl_id or "").strip()
+            source_url_local = local_source_by_myl_id.get(myl_id_key)
+            source_url_mylserena = mylserena_index.get((target["name_key"], target["rarity_slug"]))
+            if not source_url_mylserena:
+                source_url_mylserena = mylserena_index.get((target["slug_key"], target["rarity_slug"]))
+
+            source_kind = "LOCAL" if source_url_local else ("MYLSERENA" if source_url_mylserena else "API")
+            source_url = source_url_local or source_url_mylserena or f"{API_CDN_BASE}/{api_edition_id}/{target['api_edid']}.png"
             label = f"{card.edid} {card.name} [{target['rarity_slug']}]"
 
             try:
@@ -387,27 +506,11 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING(f"[{idx}/{total}] FAIL empty {label}"))
                 continue
 
-            shared_with_secret = False
-            if (card.custom_image_url or "").strip():
-                shared_with_secret = Card.objects.filter(
-                    edition=edition,
-                    rarity__slug="secreta",
-                    custom_image_url=card.custom_image_url,
-                ).exists()
-
-            public_id = _extract_imagekit_public_id(card.custom_image_url)
-            if not public_id or shared_with_secret:
-                safe_name = _slugify(card.name)
-                safe_myl_id = _slugify(str(card.myl_id or f"card-{card.id}"))
-                public_id = (
-                    f"{folder}/fixed_{target['api_edid']}_{safe_name}_{target['rarity_slug']}_{safe_myl_id}.png"
-                )
-                if shared_with_secret:
-                    self.stdout.write(
-                        self.style.WARNING(
-                            f"[{idx}/{total}] INFO decouple secret URL -> {label}"
-                        )
-                    )
+            safe_name = _slugify(card.name)
+            safe_myl_id = _slugify(str(card.myl_id or f"card-{card.id}"))
+            public_id = (
+                f"{folder}/fixed_{target['api_edid']}_{safe_name}_{target['rarity_slug']}_{safe_myl_id}.png"
+            )
 
             if dry_run:
                 fake_url = card.custom_image_url or f"https://ik.imagekit.io/<cloud>/{public_id}"
@@ -415,10 +518,19 @@ class Command(BaseCommand):
                     unchanged += 1
                 else:
                     uploaded += 1
+                    if source_kind in {"LOCAL", "MYLSERENA"}:
+                        uploaded_from_local += 1
+                    else:
+                        uploaded_from_api += 1
                 if card.myl_id:
                     mapping[str(card.myl_id)] = fake_url
                 pct = (idx / total) * 100
-                self.stdout.write(f"[{idx}/{total} {pct:.1f}%] DRY {label}")
+                self.stdout.write(f"[{idx}/{total} {pct:.1f}%] DRY {source_kind} {label}")
+                if idx % progress_every == 0 or idx == total:
+                    self.stdout.write(
+                        f"[progress {idx}/{total}] Uploaded={uploaded} (Local={uploaded_from_local}, API={uploaded_from_api}) "
+                        f"Unchanged={unchanged} FailedDownload={failed_download} FailedUpload={failed_upload}"
+                    )
                 continue
 
             try:
@@ -440,16 +552,20 @@ class Command(BaseCommand):
                 card.custom_image_url = image_url
                 card.save(update_fields=["custom_image_url"])
                 uploaded += 1
+                if source_kind in {"LOCAL", "MYLSERENA"}:
+                    uploaded_from_local += 1
+                else:
+                    uploaded_from_api += 1
 
             if card.myl_id:
                 mapping[str(card.myl_id)] = image_url
 
             pct = (idx / total) * 100
-            self.stdout.write(f"[{idx}/{total} {pct:.1f}%] OK {label}")
+            self.stdout.write(f"[{idx}/{total} {pct:.1f}%] OK {source_kind} {label}")
 
             if idx % progress_every == 0 or idx == total:
                 self.stdout.write(
-                    f"[progress {idx}/{total}] Uploaded={uploaded} Unchanged={unchanged} "
+                    f"[progress {idx}/{total}] Uploaded={uploaded} (Local={uploaded_from_local}, API={uploaded_from_api}) Unchanged={unchanged} "
                     f"FailedDownload={failed_download} FailedUpload={failed_upload}"
                 )
 
@@ -459,7 +575,7 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(
                 "Done. "
-                f"Targets={total} | Uploaded={uploaded} | Unchanged={unchanged} | "
+                f"Targets={total} | Uploaded={uploaded} | FromLocal={uploaded_from_local} | FromAPI={uploaded_from_api} | Unchanged={unchanged} | "
                 f"FailedDownload={failed_download} | FailedUpload={failed_upload}"
             )
         )

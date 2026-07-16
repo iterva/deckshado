@@ -20,31 +20,8 @@ API_CDN_BASE = "https://api.myl.cl/static/cards"
 DEFAULT_API_EDITION_ID = "166"
 DEFAULT_FOLDER = "deckshado/myl_cards/aydv_nonsecret_fix_2026_07"
 DEFAULT_MAPPING_FILE = Path(__file__).resolve().parents[4] / "aydv_vigilantes_nonsecret_mapping.json"
-
-# Solo versiones no secretas objetivo (ultra/mega) para AYDV Vigilantes.
-TARGET_API_SLUGS = [
-    "angel_gabriel",
-    "angel_jofiel",
-    "belcebu",
-    "belfegor",
-    "caida_del_alba",
-    "el_arca",
-    "el_gran_descenso",
-    "estirpe_maldita",
-    "fuego_purificador",
-    "gran_diluvio",
-    "guerra_celestial",
-    "leviathan",
-    "lucifer",
-    "miguel",
-    "rafael",
-    "satanas",
-    "semyazza",
-    "trono_del_cielo",
-    "trono_del_dragon",
-    "uriel",
-    "zadquiel",
-]
+TRIGGER_RARITIES = {"secreta", "legendaria"}
+COUNTERPART_EXCLUDED_RARITIES = {"secreta", "legendaria"}
 
 
 def _norm(text: str | None) -> str:
@@ -101,7 +78,7 @@ def _extract_imagekit_public_id(url: str | None) -> str | None:
 
 
 class Command(BaseCommand):
-    help = "Corrige artes de no-secretas AYDV Vigilantes (secretas+9 legendarias)"
+    help = "Corrige artes de contrapartes no-secretas/no-legendarias AYDV Vigilantes"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -256,6 +233,7 @@ class Command(BaseCommand):
         }
 
         api_by_slug: dict[str, dict[str, Any]] = {}
+        api_groups: dict[str, list[dict[str, Any]]] = {}
         for raw in api_cards:
             if not isinstance(raw, dict):
                 continue
@@ -263,37 +241,59 @@ class Command(BaseCommand):
             if slug:
                 api_by_slug[slug] = raw
 
+            name_key = _norm(str(raw.get("name") or ""))
+            if name_key:
+                api_groups.setdefault(name_key, []).append(raw)
+
         targets: list[dict[str, Any]] = []
-        missing_api: list[str] = []
-        for slug in TARGET_API_SLUGS:
-            raw = api_by_slug.get(slug)
-            if raw is None:
-                missing_api.append(slug)
+        skipped_groups: list[str] = []
+        for name_key, group in api_groups.items():
+            group_rarities = {
+                rarity_by_id.get(str(item.get("rarity")), "")
+                for item in group
+                if isinstance(item, dict)
+            }
+
+            if not (group_rarities & TRIGGER_RARITIES):
                 continue
 
-            rarity_slug = rarity_by_id.get(str(raw.get("rarity")), "")
-            if rarity_slug not in {"ultra-real", "mega-real"}:
-                missing_api.append(slug)
-                continue
+            added_for_group = 0
+            for raw in group:
+                rarity_slug = rarity_by_id.get(str(raw.get("rarity")), "")
+                if rarity_slug in COUNTERPART_EXCLUDED_RARITIES:
+                    continue
 
-            api_edid = _safe_api_edid(raw.get("edid"))
-            if not api_edid:
-                missing_api.append(slug)
-                continue
+                api_edid = _safe_api_edid(raw.get("edid"))
+                if not api_edid:
+                    continue
 
-            targets.append(
-                {
-                    "api_slug": slug,
-                    "name_key": _norm(str(raw.get("name") or "")),
-                    "slug_key": _norm(slug.replace("_", " ")),
-                    "rarity_slug": rarity_slug,
-                    "api_edid": api_edid,
-                    "api_name": str(raw.get("name") or slug),
-                }
+                slug = str(raw.get("slug") or "").strip()
+                if not slug:
+                    continue
+
+                targets.append(
+                    {
+                        "api_slug": slug,
+                        "name_key": name_key,
+                        "slug_key": _norm(slug.replace("_", " ")),
+                        "rarity_slug": rarity_slug,
+                        "api_edid": api_edid,
+                        "api_name": str(raw.get("name") or slug),
+                    }
+                )
+                added_for_group += 1
+
+            if added_for_group == 0:
+                skipped_groups.append(name_key)
+
+        if skipped_groups:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"Grupos con secreta/legendaria sin contraparte no-secreta/no-legendaria: {', '.join(sorted(skipped_groups))}"
+                )
             )
 
-        if missing_api:
-            self.stdout.write(self.style.WARNING(f"API missing/invalid slugs: {', '.join(sorted(missing_api))}"))
+        targets.sort(key=lambda t: (t["api_name"].lower(), t["rarity_slug"], t["api_edid"]))
 
         if not targets:
             raise CommandError("No se pudieron resolver objetivos desde API AYDV")

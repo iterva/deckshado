@@ -160,6 +160,12 @@ class Command(BaseCommand):
             default=0,
             help="Indice 1-based final sobre cartas AYDV ordenadas por id (0 = hasta el final)",
         )
+        parser.add_argument(
+            "--progress-every",
+            type=int,
+            default=25,
+            help="Imprime progreso cada N elementos (default: 25)",
+        )
 
     def _ensure_repo_imports(self) -> Any:
         repo_root = Path(__file__).resolve().parents[4]
@@ -195,8 +201,15 @@ class Command(BaseCommand):
     def _build_api_indexes(
         self,
         api_cards: list[dict[str, Any]],
-    ) -> tuple[dict[str, list[dict[str, Any]]], dict[str, dict[str, Any]], list[tuple[str, dict[str, Any]]]]:
+        rarity_by_id: dict[str, str],
+    ) -> tuple[
+        dict[str, list[dict[str, Any]]],
+        dict[tuple[str, str], list[dict[str, Any]]],
+        dict[str, dict[str, Any]],
+        list[tuple[str, dict[str, Any]]],
+    ]:
         by_name: dict[str, list[dict[str, Any]]] = {}
+        by_name_rarity: dict[tuple[str, str], list[dict[str, Any]]] = {}
         by_edid: dict[str, dict[str, Any]] = {}
         flat: list[tuple[str, dict[str, Any]]] = []
 
@@ -205,11 +218,14 @@ class Command(BaseCommand):
             edid_key = _safe_api_edid(raw.get("edid"))
             if not name_key or not edid_key:
                 continue
+            rarity_slug = str(rarity_by_id.get(str(raw.get("rarity")), "")).strip().lower()
             by_name.setdefault(name_key, []).append(raw)
+            if rarity_slug:
+                by_name_rarity.setdefault((name_key, rarity_slug), []).append(raw)
             by_edid[edid_key] = raw
             flat.append((name_key, raw))
 
-        return by_name, by_edid, flat
+        return by_name, by_name_rarity, by_edid, flat
 
     def _pick_from_name_matches(
         self,
@@ -255,7 +271,13 @@ class Command(BaseCommand):
             return None
         return best_raw
 
-    def _apply_mapping_only(self, edition: Edition, mapping_file: Path, dry_run: bool) -> None:
+    def _apply_mapping_only(
+        self,
+        edition: Edition,
+        mapping_file: Path,
+        dry_run: bool,
+        progress_every: int,
+    ) -> None:
         if not mapping_file.exists():
             raise CommandError(f"No existe mapping file: {mapping_file}")
 
@@ -270,25 +292,53 @@ class Command(BaseCommand):
         updated = 0
         kept = 0
         missing = 0
+        total = len(mapping)
 
-        for myl_id, image_url in mapping.items():
+        self.stdout.write(
+            self.style.MIGRATE_HEADING(
+                f"Aplicando mapping en BD ({total} entradas, progreso cada {progress_every})..."
+            )
+        )
+
+        for idx, (myl_id, image_url) in enumerate(mapping.items(), start=1):
             card = Card.objects.filter(edition=edition, myl_id=str(myl_id)).first()
             if not card:
                 missing += 1
+                if idx % progress_every == 0 or idx == total:
+                    pct = (idx / total) * 100 if total else 100
+                    self.stdout.write(
+                        f"[apply {idx}/{total} {pct:.1f}%] Updated={updated} Kept={kept} Missing={missing}"
+                    )
                 continue
 
             image_url = str(image_url or "").strip()
             if not image_url:
+                if idx % progress_every == 0 or idx == total:
+                    pct = (idx / total) * 100 if total else 100
+                    self.stdout.write(
+                        f"[apply {idx}/{total} {pct:.1f}%] Updated={updated} Kept={kept} Missing={missing}"
+                    )
                 continue
 
             if card.custom_image_url == image_url:
                 kept += 1
+                if idx % progress_every == 0 or idx == total:
+                    pct = (idx / total) * 100 if total else 100
+                    self.stdout.write(
+                        f"[apply {idx}/{total} {pct:.1f}%] Updated={updated} Kept={kept} Missing={missing}"
+                    )
                 continue
 
             if not dry_run:
                 card.custom_image_url = image_url
                 card.save(update_fields=["custom_image_url"])
             updated += 1
+
+            if idx % progress_every == 0 or idx == total:
+                pct = (idx / total) * 100 if total else 100
+                self.stdout.write(
+                    f"[apply {idx}/{total} {pct:.1f}%] Updated={updated} Kept={kept} Missing={missing}"
+                )
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -304,6 +354,7 @@ class Command(BaseCommand):
         folder = str(options["folder"] or DEFAULT_FOLDER).strip().strip("/")
         api_edition_id = str(options["api_edition_id"] or DEFAULT_API_EDITION_ID).strip()
         dry_run = bool(options["dry_run"])
+        progress_every = max(1, int(options.get("progress_every") or 25))
         start_index = max(1, int(options.get("start_index") or 1))
         end_index = int(options.get("end_index") or 0)
         if end_index and end_index < start_index:
@@ -314,14 +365,35 @@ class Command(BaseCommand):
             raise CommandError("No existe la edicion 'aydv' en la base de datos")
 
         if apply_mapping_only:
-            self._apply_mapping_only(edition=edition, mapping_file=mapping_file, dry_run=dry_run)
+            self._apply_mapping_only(
+                edition=edition,
+                mapping_file=mapping_file,
+                dry_run=dry_run,
+                progress_every=progress_every,
+            )
             return
 
         cdn_uploader = self._ensure_repo_imports()
         os.environ["CDN_PROVIDER"] = "imagekit"
 
         api_cards = self._fetch_api_cards()
-        by_name, _by_edid, api_flat = self._build_api_indexes(api_cards)
+        rarity_payload = []
+        try:
+            resp = requests.get(API_CARDS_ENDPOINT, timeout=45)
+            resp.raise_for_status()
+            payload = resp.json()
+            if isinstance(payload, dict):
+                rarity_payload = payload.get("rarities", []) or []
+        except Exception:
+            rarity_payload = []
+
+        rarity_by_id = {
+            str(item.get("id")): str(item.get("slug") or "")
+            for item in rarity_payload
+            if isinstance(item, dict)
+        }
+
+        by_name, by_name_rarity, _by_edid, api_flat = self._build_api_indexes(api_cards, rarity_by_id)
 
         cards = list(
             Card.objects.filter(edition=edition)
@@ -349,18 +421,45 @@ class Command(BaseCommand):
         range_text = f"indices {start_index}-{end_index or total}"
         self.stdout.write(self.style.MIGRATE_HEADING(f"Descargando desde API MYL y sobrescribiendo en ImageKit ({range_text})..."))
 
+        scope_end = end_index or total
+        scope_total = max(0, scope_end - start_index + 1)
+        processed_scope = 0
+
+        def report_progress(force: bool = False) -> None:
+            if scope_total <= 0:
+                return
+            if not force and processed_scope % progress_every != 0 and processed_scope != scope_total:
+                return
+            pct = (processed_scope / scope_total) * 100
+            self.stdout.write(
+                "[progress "
+                f"{processed_scope}/{scope_total} {pct:.1f}%] "
+                f"Uploaded={uploaded} | "
+                f"ProtectedSkip={skipped_protected} | "
+                f"NoApiMatchSkip={skipped_no_api_match} | "
+                f"FuzzyMatched={fuzzy_matched} | "
+                f"FailedDownload={failed_download} | "
+                f"FailedUpload={failed_upload}"
+            )
+
         for idx, card in enumerate(cards, start=1):
             if idx < start_index:
                 continue
             if end_index and idx > end_index:
                 break
 
+            processed_scope += 1
+
             if self._is_protected(card):
                 skipped_protected += 1
+                report_progress()
                 continue
 
             card_name_key = _norm(card.name)
-            api_raw = self._pick_from_name_matches(card, by_name.get(card_name_key, []))
+            local_rarity_slug = str(getattr(getattr(card, "rarity", None), "slug", "") or "").strip().lower()
+            rarity_candidates = by_name_rarity.get((card_name_key, local_rarity_slug), []) if local_rarity_slug else []
+            name_candidates = by_name.get(card_name_key, [])
+            api_raw = self._pick_from_name_matches(card, rarity_candidates or name_candidates)
             if api_raw is None:
                 api_raw = self._best_fuzzy_api_match(card, api_flat)
                 if api_raw is not None:
@@ -369,6 +468,7 @@ class Command(BaseCommand):
             api_edid = _safe_api_edid(api_raw.get("edid") if api_raw else None)
             if not api_edid:
                 skipped_no_api_match += 1
+                report_progress()
                 continue
 
             source_url = f"{API_CDN_BASE}/{api_edition_id}/{api_edid}.png"
@@ -378,12 +478,14 @@ class Command(BaseCommand):
             except requests.RequestException:
                 failed_download += 1
                 self.stdout.write(self.style.WARNING(f"[{idx}/{total}] FAIL download: {card.edid} {card.name}"))
+                report_progress()
                 continue
 
             content = resp.content
             if not content:
                 failed_download += 1
                 self.stdout.write(self.style.WARNING(f"[{idx}/{total}] FAIL empty: {card.edid} {card.name}"))
+                report_progress()
                 continue
 
             public_id = _extract_imagekit_public_id(card.custom_image_url)
@@ -396,6 +498,7 @@ class Command(BaseCommand):
                 mapping[card.myl_id] = card.custom_image_url or f"https://ik.imagekit.io/<cloud>/{public_id}"
                 uploaded += 1
                 self.stdout.write(f"[{idx}/{total}] DRY {card.edid} {card.name}")
+                report_progress()
                 continue
 
             try:
@@ -409,6 +512,7 @@ class Command(BaseCommand):
             except Exception as exc:
                 failed_upload += 1
                 self.stdout.write(self.style.WARNING(f"[{idx}/{total}] FAIL upload: {card.edid} {card.name} -> {exc}"))
+                report_progress()
                 continue
 
             mapping[card.myl_id] = image_url
@@ -419,6 +523,10 @@ class Command(BaseCommand):
                 card.save(update_fields=["custom_image_url"])
 
             self.stdout.write(f"[{idx}/{total}] OK {card.edid} {card.name}")
+            report_progress()
+
+        if scope_total and processed_scope == 0:
+            self.stdout.write(self.style.WARNING("No se procesaron cartas con el rango indicado."))
 
         # Persistir mapping para aplicar en PythonAnywhere sin tocar API.
         mapping_file.parent.mkdir(parents=True, exist_ok=True)

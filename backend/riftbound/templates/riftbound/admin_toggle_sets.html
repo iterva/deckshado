@@ -1,0 +1,12 @@
+{% extends "cards/admin_base.html" %}
+{% block content %}
+<div class="panel">
+  <h1>Activar o desactivar cartas por set (Riftbound)</h1>
+  <p class="muted">Seleccione sets y aplique estado activo/inactivo a todas sus cartas.</p>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Aplicar cambios</button>
+  </form>
+</div>
+{% endblock %}

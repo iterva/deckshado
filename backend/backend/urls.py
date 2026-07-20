@@ -14,6 +14,7 @@ from cards.views_admin import (
     cards_admin_season_edit,
     cards_admin_edition_new,
     cards_admin_edition_edit,
+    cards_admin_edition_cards,
     cards_admin_card_new,
     cards_admin_card_edit,
     cards_admin_banlist_new,
@@ -21,6 +22,20 @@ from cards.views_admin import (
     cards_admin_bulk_editions,
     cards_admin_bulk_cards,
     cards_admin_quick_search,
+)
+from riftbound.views_admin import (
+    riftbound_admin_dashboard,
+    riftbound_admin_toggle_sets,
+    riftbound_admin_set_new,
+    riftbound_admin_set_edit,
+    riftbound_admin_set_cards,
+    riftbound_admin_card_new,
+    riftbound_admin_card_edit,
+    riftbound_admin_banlist_new,
+    riftbound_admin_banlist_edit,
+    riftbound_admin_bulk_sets,
+    riftbound_admin_bulk_cards,
+    riftbound_admin_search,
 )
 
 
@@ -59,6 +74,7 @@ urlpatterns = [
     path("admin/cards-tools/seasons/<int:season_id>/edit/", cards_admin_season_edit, name="cards-admin-season-edit"),
     path("admin/cards-tools/editions/new/", cards_admin_edition_new, name="cards-admin-edition-new"),
     path("admin/cards-tools/editions/<int:edition_id>/edit/", cards_admin_edition_edit, name="cards-admin-edition-edit"),
+    path("admin/cards-tools/editions/<int:edition_id>/cards/", cards_admin_edition_cards, name="cards-admin-edition-cards"),
     path("admin/cards-tools/cards/new/", cards_admin_card_new, name="cards-admin-card-new"),
     path("admin/cards-tools/cards/<int:card_id>/edit/", cards_admin_card_edit, name="cards-admin-card-edit"),
     path("admin/cards-tools/banlist/new/", cards_admin_banlist_new, name="cards-admin-banlist-new"),
@@ -66,6 +82,20 @@ urlpatterns = [
     path("admin/cards-tools/bulk/editions/", cards_admin_bulk_editions, name="cards-admin-bulk-editions"),
     path("admin/cards-tools/bulk/cards/", cards_admin_bulk_cards, name="cards-admin-bulk-cards"),
     path("admin/cards-tools/search/", cards_admin_quick_search, name="cards-admin-search"),
+
+    path("admin/riftbound-tools/", riftbound_admin_dashboard, name="riftbound-admin-dashboard"),
+    path("admin/riftbound-tools/toggle-sets/", riftbound_admin_toggle_sets, name="riftbound-admin-toggle-sets"),
+    path("admin/riftbound-tools/sets/new/", riftbound_admin_set_new, name="riftbound-admin-set-new"),
+    path("admin/riftbound-tools/sets/<int:set_id>/edit/", riftbound_admin_set_edit, name="riftbound-admin-set-edit"),
+    path("admin/riftbound-tools/sets/<int:set_id>/cards/", riftbound_admin_set_cards, name="riftbound-admin-set-cards"),
+    path("admin/riftbound-tools/cards/new/", riftbound_admin_card_new, name="riftbound-admin-card-new"),
+    path("admin/riftbound-tools/cards/<int:card_id>/edit/", riftbound_admin_card_edit, name="riftbound-admin-card-edit"),
+    path("admin/riftbound-tools/banlist/new/", riftbound_admin_banlist_new, name="riftbound-admin-banlist-new"),
+    path("admin/riftbound-tools/banlist/<int:entry_id>/edit/", riftbound_admin_banlist_edit, name="riftbound-admin-banlist-edit"),
+    path("admin/riftbound-tools/bulk/sets/", riftbound_admin_bulk_sets, name="riftbound-admin-bulk-sets"),
+    path("admin/riftbound-tools/bulk/cards/", riftbound_admin_bulk_cards, name="riftbound-admin-bulk-cards"),
+    path("admin/riftbound-tools/search/", riftbound_admin_search, name="riftbound-admin-search"),
+
     path("admin/", admin.site.urls),
     path("api/auth/", include("users.urls")),
     path("api/cards/", include("cards.urls")),

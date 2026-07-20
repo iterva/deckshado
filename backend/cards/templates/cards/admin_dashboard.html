@@ -66,16 +66,41 @@
 <div class="panel">
   <h2>Resumen por formato</h2>
   <table>
-    <thead><tr><th>Formato</th><th>Código</th><th>Total ediciones</th></tr></thead>
+    <thead><tr><th>Formato</th><th>Código</th><th>Total ediciones</th><th>Activas</th></tr></thead>
     <tbody>
       {% for row in editions_by_format %}
         <tr>
           <td>{{ row.format__name|default:"-" }}</td>
           <td>{{ row.format__code|default:"-" }}</td>
           <td>{{ row.total }}</td>
+          <td>{{ row.active_count }}</td>
         </tr>
       {% empty %}
-        <tr><td colspan="3">Sin datos.</td></tr>
+        <tr><td colspan="4">Sin datos.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="panel">
+  <h2>Ediciones (clic para ver cartas)</h2>
+  <table>
+    <thead><tr><th>Título</th><th>Slug</th><th>Formato</th><th>Temporada</th><th>Activa</th><th>Acción</th></tr></thead>
+    <tbody>
+      {% for e in recent_editions %}
+        <tr>
+          <td>{{ e.title }}</td>
+          <td>{{ e.slug }}</td>
+          <td>{{ e.format.name|default:"-" }}</td>
+          <td>{{ e.season.name|default:"-" }}</td>
+          <td>{{ e.active|yesno:"Sí,No" }}</td>
+          <td class="row-actions">
+            <a href="{% url 'cards-admin-edition-cards' e.id %}">Ver cartas</a>
+            <a href="{% url 'cards-admin-edition-edit' e.id %}">Editar edición</a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6">No hay ediciones registradas.</td></tr>
       {% endfor %}
     </tbody>
   </table>

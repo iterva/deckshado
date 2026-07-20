@@ -1,0 +1,75 @@
+{% extends "cards/admin_base.html" %}
+{% block content %}
+<div class="panel">
+  <h1>Buscar y editar (Riftbound)</h1>
+  <form method="get">
+    <label for="q">Texto</label>
+    <input id="q" name="q" value="{{ q }}" placeholder="Nombre de carta, set o banlist">
+    <button type="submit">Buscar</button>
+  </form>
+</div>
+
+{% if q %}
+<div class="panel">
+  <h2>Sets</h2>
+  <table>
+    <thead><tr><th>Código</th><th>Nombre</th><th>Acción</th></tr></thead>
+    <tbody>
+      {% for s in sets %}
+        <tr>
+          <td>{{ s.code }}</td>
+          <td>{{ s.name }}</td>
+          <td class="row-actions">
+            <a href="{% url 'riftbound-admin-set-cards' s.id %}">Ver cartas</a>
+            <a href="{% url 'riftbound-admin-set-edit' s.id %}">Editar set</a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="3">Sin resultados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="panel">
+  <h2>Cartas</h2>
+  <table>
+    <thead><tr><th>Número</th><th>Nombre</th><th>Set</th><th>Tipo</th><th>Rareza</th><th>Acción</th></tr></thead>
+    <tbody>
+      {% for c in cards %}
+        <tr>
+          <td>{{ c.card_number }}</td>
+          <td>{{ c.name }}</td>
+          <td>{{ c.set.code|default:"-" }}</td>
+          <td>{{ c.get_card_type_display }}</td>
+          <td>{{ c.get_rarity_display }}</td>
+          <td class="row-actions"><a href="{% url 'riftbound-admin-card-edit' c.id %}">Editar carta</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6">Sin resultados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="panel">
+  <h2>Banlist</h2>
+  <table>
+    <thead><tr><th>Carta</th><th>Formato</th><th>Estado</th><th>Copias</th><th>Acción</th></tr></thead>
+    <tbody>
+      {% for b in banlist %}
+        <tr>
+          <td>{{ b.card.name }}</td>
+          <td>{{ b.format.code }}</td>
+          <td>{{ b.get_status_display }}</td>
+          <td>{{ b.max_copies }}</td>
+          <td class="row-actions"><a href="{% url 'riftbound-admin-banlist-edit' b.id %}">Editar banlist</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5">Sin resultados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

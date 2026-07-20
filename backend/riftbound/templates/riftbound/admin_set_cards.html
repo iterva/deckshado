@@ -1,0 +1,60 @@
+{% extends "cards/admin_base.html" %}
+{% block title %}Cartas por set Riftbound{% endblock %}
+{% block content %}
+<div class="panel">
+  <h1>{{ set_obj.code }} - {{ set_obj.name }}</h1>
+  <p class="muted">Total cartas: {{ total }}</p>
+  <form method="get">
+    <label for="q">Buscar carta por nombre</label>
+    <input id="q" name="q" value="{{ q }}" placeholder="Ej: Annie">
+    <button type="submit">Buscar</button>
+    <a href="{% url 'riftbound-admin-set-cards' set_obj.id %}">Limpiar</a>
+  </form>
+</div>
+
+<div class="panel">
+  <h2>Listado de cartas</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Preview</th>
+        <th>Número</th>
+        <th>Nombre</th>
+        <th>Tipo</th>
+        <th>Rareza</th>
+        <th>Energía</th>
+        <th>Poder</th>
+        <th>Might</th>
+        <th>Descripción</th>
+        <th>Activa</th>
+        <th>Acción</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in cards %}
+        <tr>
+          <td>
+            {% if c.cdn_image_url or c.image_url %}
+              <img src="{{ c.cdn_image_url|default:c.image_url }}" alt="{{ c.name }}" style="width:56px;height:auto;border-radius:6px;border:1px solid #d9e0e8;">
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td>{{ c.card_number }}</td>
+          <td>{{ c.name }}</td>
+          <td>{{ c.get_card_type_display }}</td>
+          <td>{{ c.get_rarity_display }}</td>
+          <td>{{ c.energy|default:"-" }}</td>
+          <td>{{ c.power|default:"-" }}</td>
+          <td>{{ c.might|default:"-" }}</td>
+          <td>{{ c.description|default:"-"|truncatechars:140 }}</td>
+          <td>{{ c.is_active|yesno:"Sí,No" }}</td>
+          <td class="row-actions"><a href="{% url 'riftbound-admin-card-edit' c.id %}">Editar carta</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="11">No hay cartas para mostrar.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

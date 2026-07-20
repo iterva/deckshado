@@ -64,6 +64,10 @@
     .nav a.secondary {
       background: #2e3f58;
     }
+    .nav .divider {
+      margin: 8px 0;
+      border-top: 1px solid var(--border);
+    }
     label {
       display: block;
       font-weight: 600;
@@ -126,11 +130,20 @@
 <body>
   <div class="wrap">
     <div class="panel nav">
-      <a href="{% url 'cards-admin-dashboard' %}">Panel Cartas/Banlist</a>
-      <a href="{% url 'cards-admin-search' %}" class="secondary">Buscar/Editar</a>
-      <a href="{% url 'cards-admin-toggle-editions' %}" class="secondary">Activar/Desactivar Ediciones</a>
-      <a href="{% url 'cards-admin-bulk-editions' %}" class="secondary">Carga Masiva Ediciones</a>
-      <a href="{% url 'cards-admin-bulk-cards' %}" class="secondary">Carga Masiva Cartas</a>
+      <a href="{% url 'cards-admin-dashboard' %}">MYL</a>
+      <a href="{% url 'riftbound-admin-dashboard' %}" class="secondary">Riftbound</a>
+
+      <div class="divider"></div>
+
+      <a href="{% url 'cards-admin-search' %}" class="secondary">MYL Buscar/Editar</a>
+      <a href="{% url 'cards-admin-toggle-editions' %}" class="secondary">MYL Activar/Desactivar Ediciones</a>
+      <a href="{% url 'cards-admin-bulk-editions' %}" class="secondary">MYL Carga Masiva Ediciones</a>
+      <a href="{% url 'cards-admin-bulk-cards' %}" class="secondary">MYL Carga Masiva Cartas</a>
+
+      <a href="{% url 'riftbound-admin-search' %}" class="secondary">Riftbound Buscar/Editar</a>
+      <a href="{% url 'riftbound-admin-toggle-sets' %}" class="secondary">Riftbound Activar/Desactivar Sets</a>
+      <a href="{% url 'riftbound-admin-bulk-sets' %}" class="secondary">Riftbound Carga Masiva Sets</a>
+      <a href="{% url 'riftbound-admin-bulk-cards' %}" class="secondary">Riftbound Carga Masiva Cartas</a>
     </div>
 
     {% if messages %}

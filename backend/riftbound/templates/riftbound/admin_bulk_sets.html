@@ -1,0 +1,12 @@
+{% extends "cards/admin_base.html" %}
+{% block content %}
+<div class="panel">
+  <h1>Carga masiva de sets Riftbound</h1>
+  <p class="muted">CSV soportado: code, name, release_date</p>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Subir CSV</button>
+  </form>
+</div>
+{% endblock %}

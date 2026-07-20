@@ -1,0 +1,56 @@
+{% extends "cards/admin_base.html" %}
+{% block title %}Cartas por edición{% endblock %}
+{% block content %}
+<div class="panel">
+  <h1>{{ edition.title }}</h1>
+  <p class="muted">Formato: {{ edition.format.name|default:"-" }} · Temporada: {{ edition.season.name|default:"-" }} · Total: {{ total }}</p>
+  <form method="get">
+    <label for="q">Buscar carta por nombre</label>
+    <input id="q" name="q" value="{{ q }}" placeholder="Ej: Gehena">
+    <button type="submit">Buscar</button>
+    <a href="{% url 'cards-admin-edition-cards' edition.id %}">Limpiar</a>
+  </form>
+</div>
+
+<div class="panel">
+  <h2>Listado de cartas</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Preview</th>
+        <th>Edid</th>
+        <th>Nombre</th>
+        <th>Tipo</th>
+        <th>Rareza</th>
+        <th>Coste</th>
+        <th>Daño</th>
+        <th>Descripción</th>
+        <th>Acción</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in cards_rows %}
+        <tr>
+          <td>
+            {% if row.preview_url %}
+              <img src="{{ row.preview_url }}" alt="{{ row.obj.name }}" style="width:56px;height:auto;border-radius:6px;border:1px solid #d9e0e8;">
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td>{{ row.obj.edid }}</td>
+          <td>{{ row.obj.name }}</td>
+          <td>{{ row.obj.card_type.name|default:"-" }}</td>
+          <td>{{ row.obj.rarity.name|default:"-" }}</td>
+          <td>{{ row.obj.cost|default:"-" }}</td>
+          <td>{{ row.obj.damage|default:"-" }}</td>
+          <td>{{ row.obj.ability|default:"-"|truncatechars:140 }}</td>
+          <td class="row-actions"><a href="{% url 'cards-admin-card-edit' row.obj.id %}">Editar carta</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="9">No hay cartas para mostrar.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

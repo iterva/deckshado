@@ -1,0 +1,17 @@
+{% extends "cards/admin_base.html" %}
+{% block content %}
+<div class="panel">
+  <h1>Carga masiva de cartas Riftbound</h1>
+  <p class="muted">CSV base: card_number, name, set_code, card_type, rarity, energy, power, might, description, flavor, image_url</p>
+  {% if imagekit_session %}
+    <p><strong>Sesión ImageKit activa:</strong> {{ imagekit_session.url }}</p>
+  {% else %}
+    <p class="muted">No hay sesión ImageKit cargada. Puede cargar cartas sin subida de imágenes o cargar env de sesión.</p>
+  {% endif %}
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Procesar CSV</button>
+  </form>
+</div>
+{% endblock %}

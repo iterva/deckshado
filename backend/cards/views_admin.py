@@ -79,6 +79,7 @@ def cards_admin_dashboard(request):
     )
 
     recent_seasons = Season.objects.order_by("-is_active", "-start_date")[:20]
+    recent_editions = Edition.objects.select_related("format", "season").order_by("-date_release", "title")[:120]
 
     context = {
         "season_count": Season.objects.count(),
@@ -90,8 +91,46 @@ def cards_admin_dashboard(request):
         "imagekit_form": imagekit_form,
         "editions_by_format": by_format,
         "recent_seasons": recent_seasons,
+        "recent_editions": recent_editions,
     }
     return render(request, "cards/admin_dashboard.html", context)
+
+
+def _myl_card_preview_url(card: Card) -> str:
+    if card.custom_image_url:
+        return card.custom_image_url
+    if card.edition and card.edition.myl_id and card.edid:
+        return f"https://api.myl.cl/static/cards/{card.edition.myl_id}/{card.edid}.png"
+    return ""
+
+
+@cards_admin_owner_required
+@require_http_methods(["GET"])
+def cards_admin_edition_cards(request, edition_id: int):
+    edition = get_object_or_404(Edition.objects.select_related("format", "season"), pk=edition_id)
+    q = (request.GET.get("q") or "").strip()
+
+    cards_qs = Card.objects.filter(edition=edition).select_related("card_type", "rarity", "race").order_by("edid")
+    if q:
+        cards_qs = cards_qs.filter(name__icontains=q)
+
+    cards_rows = []
+    for card in cards_qs[:1000]:
+        cards_rows.append({
+            "obj": card,
+            "preview_url": _myl_card_preview_url(card),
+        })
+
+    return render(
+        request,
+        "cards/admin_edition_cards.html",
+        {
+            "edition": edition,
+            "cards_rows": cards_rows,
+            "q": q,
+            "total": cards_qs.count(),
+        },
+    )
 
 
 @cards_admin_owner_required

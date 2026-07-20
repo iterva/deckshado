@@ -60,6 +60,10 @@ class BulkRiftboundCardCsvForm(forms.Form):
     csv_file = forms.FileField(
         help_text="CSV de cartas. Requeridas: card_number,name,set_code. Opcionales: slug,card_type,rarity,energy,power,might,description,flavor,image_url,cdn_image_url,is_active"
     )
+    images_zip_file = forms.FileField(
+        required=False,
+        help_text="Opcional: ZIP de imágenes descargadas (un solo archivo). Se prioriza esta fuente para subir a ImageKit.",
+    )
     upload_images_to_imagekit = forms.BooleanField(required=False, initial=False)
     imagekit_folder = forms.CharField(required=False, max_length=255, initial="deckshado/riftbound/cards_admin_bulk")
 

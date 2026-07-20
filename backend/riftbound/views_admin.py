@@ -3,6 +3,7 @@ import json
 import html
 import io
 import re
+import zipfile
 from functools import wraps
 from urllib.parse import urlparse
 
@@ -19,7 +20,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.text import slugify
 from django.views.decorators.http import require_http_methods
 
-from cards.admin_tools import host_from_url, upload_image_url_to_imagekit
+from cards.admin_tools import host_from_url, upload_image_bytes_to_imagekit, upload_image_url_to_imagekit
 from cards.forms import SessionImagekitEnvForm, default_allowed_image_hosts, parse_session_env
 
 from .forms_admin import (
@@ -498,6 +499,123 @@ def _download_prepared_image(request):
     return out
 
 
+def _download_prepared_images_zip(request):
+    payload = _prepared_source_from_session(request)
+    cards = payload.get("cards") or []
+    if not cards:
+        return HttpResponseBadRequest("No hay imágenes preparadas para descarga masiva.")
+
+    zip_buffer = io.BytesIO()
+    used_names: set[str] = set()
+    errors: list[str] = []
+
+    with zipfile.ZipFile(zip_buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for idx, item in enumerate(cards, start=1):
+            image_url = str(item.get("image_url") or "").strip()
+            parsed = urlparse(image_url)
+            if parsed.netloc.lower() not in RIFTBOUND_IMAGE_HOSTS:
+                errors.append(f"{idx}. Host no permitido: {image_url}")
+                continue
+
+            try:
+                response = requests.get(image_url, timeout=90)
+                response.raise_for_status()
+            except Exception as exc:
+                errors.append(f"{idx}. Error descargando {image_url}: {exc}")
+                continue
+
+            file_name = _safe_download_name(item.get("file_name") or f"card_{idx}.png")
+            name_root, dot, ext = file_name.rpartition(".")
+            if not dot:
+                name_root = file_name
+                ext = ""
+
+            unique_name = file_name
+            sequence = 2
+            while unique_name in used_names:
+                unique_name = f"{name_root}_{sequence}.{ext}" if ext else f"{name_root}_{sequence}"
+                sequence += 1
+
+            used_names.add(unique_name)
+            archive.writestr(unique_name, response.content)
+
+        if errors:
+            archive.writestr("_errores_descarga.txt", "\n".join(errors))
+
+    if not used_names:
+        return HttpResponseBadRequest("No se pudo descargar ninguna imagen válida para el ZIP.")
+
+    set_code = str(payload.get("set_code") or "RIFT").strip().upper()
+    zip_buffer.seek(0)
+    out = HttpResponse(zip_buffer.getvalue(), content_type="application/zip")
+    out["Content-Disposition"] = f'attachment; filename="riftbound_images_{set_code}.zip"'
+    return out
+
+
+def _image_content_type_from_name(file_name: str) -> str:
+    lower = (file_name or "").strip().lower()
+    if lower.endswith(".png"):
+        return "image/png"
+    if lower.endswith(".jpg") or lower.endswith(".jpeg"):
+        return "image/jpeg"
+    if lower.endswith(".webp"):
+        return "image/webp"
+    return "application/octet-stream"
+
+
+def _card_number_key(value: str) -> str:
+    return re.sub(r"[^A-Za-z0-9-]", "", str(value or "").strip().upper())
+
+
+def _open_images_zip_index(uploaded_file):
+    file_name = str(getattr(uploaded_file, "name", "") or "").strip()
+    if file_name and not file_name.lower().endswith(".zip"):
+        raise ValueError("Solo se soporta archivo ZIP para carga masiva de imágenes.")
+
+    raw = uploaded_file.read()
+    if not raw:
+        raise ValueError("El ZIP de imágenes está vacío.")
+
+    zip_buffer = io.BytesIO(raw)
+    archive = zipfile.ZipFile(zip_buffer)
+    by_card: dict[str, str] = {}
+    by_name: dict[str, str] = {}
+    valid_ext = (".png", ".jpg", ".jpeg", ".webp")
+
+    for info in archive.infolist():
+        if info.is_dir():
+            continue
+        base_name = info.filename.rsplit("/", 1)[-1].rsplit("\\", 1)[-1].strip()
+        if not base_name:
+            continue
+        if not base_name.lower().endswith(valid_ext):
+            continue
+
+        by_name.setdefault(base_name.lower(), info.filename)
+
+        stem = base_name.rsplit(".", 1)[0]
+        prefix = stem.split("_", 1)[0]
+        key = _card_number_key(prefix)
+        if key:
+            by_card.setdefault(key, info.filename)
+
+    return archive, by_card, by_name
+
+
+def _find_image_member_for_row(row: dict[str, str], by_card: dict[str, str], by_name: dict[str, str]) -> str:
+    card_number = _card_number_key(row.get("card_number", ""))
+    if card_number and card_number in by_card:
+        return by_card[card_number]
+
+    image_url = str(row.get("image_url") or "").strip()
+    if image_url:
+        candidate_name = (urlparse(image_url).path.rsplit("/", 1)[-1] or "").strip().lower()
+        if candidate_name and candidate_name in by_name:
+            return by_name[candidate_name]
+
+    return ""
+
+
 def _redirect_next_or_default(request, default_view_name: str):
     next_url = (request.POST.get("next") or request.GET.get("next") or "").strip()
     if next_url and url_has_allowed_host_and_scheme(
@@ -726,6 +844,8 @@ def riftbound_admin_bulk_cards(request):
             return _download_prepared_csv(request)
         if download_kind == "image":
             return _download_prepared_image(request)
+        if download_kind in {"images_zip", "zip"}:
+            return _download_prepared_images_zip(request)
 
     source_form = SourceRiftboundGalleryForm()
     form = BulkRiftboundCardCsvForm(request.POST or None, request.FILES or None)
@@ -765,10 +885,13 @@ def riftbound_admin_bulk_cards(request):
         elif action == "upload_csv" and form.is_valid():
             processed = 0
             uploaded_to_imagekit = 0
+            uploaded_from_zip = 0
+            uploaded_from_url = 0
             errors: list[str] = []
 
             do_upload = form.cleaned_data.get("upload_images_to_imagekit", False)
             imagekit_folder = form.cleaned_data.get("imagekit_folder", "").strip() or "deckshado/riftbound/cards_admin_bulk"
+            images_zip_file = form.cleaned_data.get("images_zip_file")
             session_env = request.session.get(SESSION_KEY_IMAGEKIT) or {}
 
             if do_upload and not session_env:
@@ -776,42 +899,82 @@ def riftbound_admin_bulk_cards(request):
                 return redirect("riftbound-admin-bulk-cards")
 
             allowed_hosts = default_allowed_image_hosts()
+            archive = None
+            archive_by_card: dict[str, str] = {}
+            archive_by_name: dict[str, str] = {}
 
-            for idx, row in enumerate(csv_rows(form.cleaned_data["csv_file"]), start=2):
+            if do_upload and images_zip_file:
                 try:
-                    source_image = (row.get("image_url") or row.get("cdn_image_url") or "").strip()
-                    if do_upload and source_image:
-                        host = host_from_url(source_image)
-                        if host not in allowed_hosts:
-                            raise ValueError(f"Host no permitido para subida: {host}")
-
-                        file_name = row.get("card_number", "rb-card")
-                        uploaded_url = upload_image_url_to_imagekit(
-                            source_url=source_image,
-                            imagekit_private_key=session_env["private_key"],
-                            imagekit_url_endpoint=session_env["url"],
-                            folder=imagekit_folder,
-                            file_name=file_name,
-                        )
-                        row["cdn_image_url"] = uploaded_url
-                        uploaded_to_imagekit += 1
-
-                    upsert_card_row(row)
-                    processed += 1
+                    archive, archive_by_card, archive_by_name = _open_images_zip_index(images_zip_file)
                 except Exception as exc:
-                    errors.append(f"Línea {idx}: {exc}")
+                    messages.error(request, f"ZIP de imágenes inválido: {exc}")
+                    return redirect("riftbound-admin-bulk-cards")
+
+            try:
+                for idx, row in enumerate(csv_rows(form.cleaned_data["csv_file"]), start=2):
+                    try:
+                        source_image = (row.get("image_url") or row.get("cdn_image_url") or "").strip()
+                        if do_upload:
+                            file_name = row.get("card_number", "rb-card")
+                            member_name = _find_image_member_for_row(row, archive_by_card, archive_by_name) if archive else ""
+
+                            if archive and member_name:
+                                image_bytes = archive.read(member_name)
+                                ct = _image_content_type_from_name(member_name)
+                                uploaded_url = upload_image_bytes_to_imagekit(
+                                    file_bytes=image_bytes,
+                                    imagekit_private_key=session_env["private_key"],
+                                    imagekit_url_endpoint=session_env["url"],
+                                    folder=imagekit_folder,
+                                    file_name=file_name,
+                                    content_type=ct,
+                                )
+                                row["cdn_image_url"] = uploaded_url
+                                uploaded_to_imagekit += 1
+                                uploaded_from_zip += 1
+                            elif source_image:
+                                host = host_from_url(source_image)
+                                if host not in allowed_hosts:
+                                    raise ValueError(f"Host no permitido para subida: {host}")
+
+                                uploaded_url = upload_image_url_to_imagekit(
+                                    source_url=source_image,
+                                    imagekit_private_key=session_env["private_key"],
+                                    imagekit_url_endpoint=session_env["url"],
+                                    folder=imagekit_folder,
+                                    file_name=file_name,
+                                )
+                                row["cdn_image_url"] = uploaded_url
+                                uploaded_to_imagekit += 1
+                                uploaded_from_url += 1
+                            else:
+                                raise ValueError("Sin imagen para subir: no se encontró en ZIP ni en image_url/cdn_image_url")
+
+                        upsert_card_row(row)
+                        processed += 1
+                    except Exception as exc:
+                        errors.append(f"Línea {idx}: {exc}")
+            finally:
+                if archive:
+                    archive.close()
 
             if errors:
                 messages.warning(
                     request,
-                    f"Cartas procesadas: {processed}, subidas ImageKit: {uploaded_to_imagekit}, errores: {len(errors)}",
+                    (
+                        f"Cartas procesadas: {processed}, subidas ImageKit: {uploaded_to_imagekit} "
+                        f"(ZIP: {uploaded_from_zip}, URL: {uploaded_from_url}), errores: {len(errors)}"
+                    ),
                 )
                 for err in errors[:10]:
                     messages.error(request, err)
             else:
                 messages.success(
                     request,
-                    f"Carga de cartas Riftbound completada. Filas: {processed}, subidas ImageKit: {uploaded_to_imagekit}",
+                    (
+                        f"Carga de cartas Riftbound completada. Filas: {processed}, subidas ImageKit: {uploaded_to_imagekit} "
+                        f"(ZIP: {uploaded_from_zip}, URL: {uploaded_from_url})"
+                    ),
                 )
 
             return redirect("riftbound-admin-bulk-cards")

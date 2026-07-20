@@ -24,6 +24,7 @@
     {% endif %}
 
     {% if prepared_cards_total %}
+      <p><a href="?download=images_zip"><strong>Descargar ZIP con todas las imágenes</strong></a></p>
       <p>
         <button type="button" id="download-all-images" data-total="{{ prepared_cards_total }}">Descargar todas las imágenes</button>
       </p>
@@ -69,6 +70,7 @@
   {% else %}
     <p class="muted">No hay sesión ImageKit cargada. Puede cargar cartas sin subida de imágenes o cargar env de sesión.</p>
   {% endif %}
+  <p class="muted">Para subir imágenes locales a ImageKit en lote, use el campo ZIP de imágenes junto al CSV.</p>
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     <input type="hidden" name="action" value="upload_csv" />

@@ -23,6 +23,19 @@
     color: #888;
     font-size: 0.9rem;
   }
+
+  .admin-shortcuts {
+    margin-top: 0.8rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .admin-link {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+  }
 }
 
 .alert {

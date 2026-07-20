@@ -3,6 +3,16 @@
     <a routerLink="/" class="back-link">← Volver</a>
     <h1>Panel de administración</h1>
     <p class="subtitle">Gestión de usuarios registrados</p>
+    <div class="admin-shortcuts">
+      <a
+        class="btn-secondary admin-link"
+        [href]="cardsToolsAdminUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Ir a Cartas y Banlist
+      </a>
+    </div>
   </header>
 
   @if (message()) {

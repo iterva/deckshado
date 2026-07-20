@@ -22,6 +22,7 @@ import {
 })
 export class AdminComponent implements OnInit, OnDestroy {
   private readonly apiUrl = `${environment.apiUrl}/auth/admin`;
+  readonly cardsToolsAdminUrl = this.buildCardsToolsAdminUrl();
 
   users = signal<AdminUser[]>([]);
   loading = signal(false);
@@ -101,6 +102,25 @@ export class AdminComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private riftbound: RiftboundService,
   ) {}
+
+  private buildCardsToolsAdminUrl(): string {
+    const rawApiUrl = (environment.apiUrl || '').trim();
+    if (!rawApiUrl) {
+      return '/admin/cards-tools/';
+    }
+
+    try {
+      const parsed = new URL(rawApiUrl);
+      const basePath = parsed.pathname.replace(/\/+$/, '').replace(/\/api$/, '');
+      parsed.pathname = `${basePath}/admin/cards-tools/`.replace(/\/{2,}/g, '/');
+      parsed.search = '';
+      parsed.hash = '';
+      return parsed.toString();
+    } catch {
+      const trimmed = rawApiUrl.replace(/\/+$/, '');
+      return `${trimmed.replace(/\/api$/, '')}/admin/cards-tools/`;
+    }
+  }
 
   ngOnInit() {
     const me = this.auth.user();

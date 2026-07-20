@@ -120,16 +120,27 @@ class SourceRiftboundGalleryForm(forms.Form):
     def clean(self):
         cleaned = super().clean()
         mode = (cleaned.get("source_mode") or "").strip()
+        source_url = cleaned.get("source_url")
+        source_html_file = cleaned.get("source_html_file")
+        source_html_text = (cleaned.get("source_html_text") or "").strip()
+
+        # Priorice automáticamente la fuente manual cuando existe,
+        # aunque el selector haya quedado en "Desde URL".
+        if source_html_file:
+            mode = self.SOURCE_MODE_HTML_FILE
+            cleaned["source_mode"] = mode
+        elif source_html_text:
+            mode = self.SOURCE_MODE_HTML_TEXT
+            cleaned["source_mode"] = mode
 
         if mode == self.SOURCE_MODE_URL:
-            if not cleaned.get("source_url"):
+            if not source_url:
                 self.add_error("source_url", "Debe indicar la URL de la galería.")
         elif mode == self.SOURCE_MODE_HTML_FILE:
-            if not cleaned.get("source_html_file"):
+            if not source_html_file:
                 self.add_error("source_html_file", "Debe subir un archivo HTML.")
         elif mode == self.SOURCE_MODE_HTML_TEXT:
-            html_text = (cleaned.get("source_html_text") or "").strip()
-            if not html_text:
+            if not source_html_text:
                 self.add_error("source_html_text", "Debe pegar el HTML de la galería.")
         else:
             self.add_error("source_mode", "Modo de fuente no válido.")

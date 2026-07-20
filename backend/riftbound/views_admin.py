@@ -306,6 +306,10 @@ def riftbound_admin_search(request):
     has_description = (request.GET.get("has_description") or "all").strip().lower()
     has_cdn_image = (request.GET.get("has_cdn_image") or "all").strip().lower()
 
+    ban_q = (request.GET.get("ban_q") or "").strip()
+    ban_format_id_raw = (request.GET.get("ban_format_id") or "").strip()
+    ban_status = (request.GET.get("ban_status") or "").strip().lower()
+
     page_size_raw = (request.GET.get("page_size") or "200").strip()
     allowed_page_sizes = {100, 200, 500, 1000}
     try:
@@ -314,6 +318,15 @@ def riftbound_admin_search(request):
         page_size = 200
     if page_size not in allowed_page_sizes:
         page_size = 200
+
+    ban_page_size_raw = (request.GET.get("ban_page_size") or "100").strip()
+    allowed_ban_page_sizes = {50, 100, 200, 500}
+    try:
+        ban_page_size = int(ban_page_size_raw)
+    except ValueError:
+        ban_page_size = 100
+    if ban_page_size not in allowed_ban_page_sizes:
+        ban_page_size = 100
 
     def _to_int(value: str) -> int | None:
         if not value:
@@ -324,10 +337,13 @@ def riftbound_admin_search(request):
             return None
 
     set_id = _to_int(set_id_raw)
+    ban_format_id = _to_int(ban_format_id_raw)
 
     sets_filter = RiftboundSet.objects.order_by("code")
+    formats_filter = RiftboundFormat.objects.order_by("code")
     card_type_choices = list(RiftboundCard._meta.get_field("card_type").choices)
     rarity_choices = list(RiftboundCard._meta.get_field("rarity").choices)
+    ban_status_choices = list(RiftboundBanlistEntry._meta.get_field("status").choices)
 
     cards_qs = RiftboundCard.objects.select_related("set")
 
@@ -370,16 +386,38 @@ def riftbound_admin_search(request):
     page_obj = paginator.get_page(request.GET.get("page") or 1)
     cards = page_obj.object_list
 
-    query_without_page = request.GET.copy()
-    if "page" in query_without_page:
-        del query_without_page["page"]
+    cards_query_without_page = request.GET.copy()
+    if "page" in cards_query_without_page:
+        del cards_query_without_page["page"]
 
     sets = RiftboundSet.objects.none()
-    banlist = RiftboundBanlistEntry.objects.none()
+    banlist_qs = RiftboundBanlistEntry.objects.select_related("card", "format")
+
+    if ban_q:
+        banlist_qs = banlist_qs.filter(
+            Q(card__name__icontains=ban_q)
+            | Q(card__card_number__icontains=ban_q)
+            | Q(format__code__icontains=ban_q)
+            | Q(format__name__icontains=ban_q)
+            | Q(note__icontains=ban_q)
+        )
+    if ban_format_id:
+        banlist_qs = banlist_qs.filter(format_id=ban_format_id)
+    if ban_status:
+        banlist_qs = banlist_qs.filter(status=ban_status)
+
+    banlist_qs = banlist_qs.order_by("format__code", "card__name")
+    total_banlist = banlist_qs.count()
+    ban_paginator = Paginator(banlist_qs, ban_page_size)
+    ban_page_obj = ban_paginator.get_page(request.GET.get("ban_page") or 1)
+    banlist = ban_page_obj.object_list
+
+    banlist_query_without_page = request.GET.copy()
+    if "ban_page" in banlist_query_without_page:
+        del banlist_query_without_page["ban_page"]
 
     if q:
         sets = RiftboundSet.objects.filter(Q(code__icontains=q) | Q(name__icontains=q)).order_by("code")[:40]
-        banlist = RiftboundBanlistEntry.objects.filter(card__name__icontains=q).select_related("card", "format")[:80]
 
     return render(
         request,
@@ -393,12 +431,21 @@ def riftbound_admin_search(request):
             "has_description": has_description,
             "has_cdn_image": has_cdn_image,
             "page_size": page_size,
+            "ban_q": ban_q,
+            "ban_format_id": ban_format_id or "",
+            "ban_status": ban_status,
+            "ban_page_size": ban_page_size,
             "total_cards": total_cards,
+            "total_banlist": total_banlist,
             "page_obj": page_obj,
-            "query_without_page": query_without_page.urlencode(),
+            "ban_page_obj": ban_page_obj,
+            "cards_query_without_page": cards_query_without_page.urlencode(),
+            "banlist_query_without_page": banlist_query_without_page.urlencode(),
             "sets_filter": sets_filter,
+            "formats_filter": formats_filter,
             "card_type_choices": card_type_choices,
             "rarity_choices": rarity_choices,
+            "ban_status_choices": ban_status_choices,
             "sets": sets,
             "cards": cards,
             "banlist": banlist,

@@ -77,7 +77,7 @@
       </div>
     </div>
 
-    <button type="submit">Aplicar filtros</button>
+    <button type="submit">Aplicar filtros de cartas</button>
     <a href="{% url 'riftbound-admin-search' %}" style="margin-left:10px; text-decoration:none; font-weight:600; color:#0c5f4a;">Limpiar</a>
   </form>
 </div>
@@ -118,11 +118,97 @@
   {% if page_obj.paginator.num_pages > 1 %}
     <p style="margin-top:10px;">
       {% if page_obj.has_previous %}
-        <a href="?{{ query_without_page }}{% if query_without_page %}&{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>
+        <a href="?{{ cards_query_without_page }}{% if cards_query_without_page %}&{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>
       {% endif %}
       <span style="margin:0 8px;">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
       {% if page_obj.has_next %}
-        <a href="?{{ query_without_page }}{% if query_without_page %}&{% endif %}page={{ page_obj.next_page_number }}">Siguiente</a>
+        <a href="?{{ cards_query_without_page }}{% if cards_query_without_page %}&{% endif %}page={{ page_obj.next_page_number }}">Siguiente</a>
+      {% endif %}
+    </p>
+  {% endif %}
+</div>
+
+<div class="panel">
+  <h2>Banlist</h2>
+  <p style="margin-bottom:10px;"><a href="{% url 'riftbound-admin-banlist-new' %}">Nueva entrada banlist</a></p>
+
+  <form method="get">
+    <div class="grid">
+      <div>
+        <label for="ban_q">Buscar en banlist</label>
+        <input id="ban_q" name="ban_q" value="{{ ban_q }}" placeholder="Carta, número, formato, nota...">
+      </div>
+
+      <div>
+        <label for="ban_format_id">Formato</label>
+        <select id="ban_format_id" name="ban_format_id">
+          <option value="">Todos</option>
+          {% for f in formats_filter %}
+            <option value="{{ f.id }}" {% if ban_format_id == f.id %}selected{% endif %}>{{ f.code }} - {{ f.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label for="ban_status">Estado</label>
+        <select id="ban_status" name="ban_status">
+          <option value="">Todos</option>
+          {% for value, label in ban_status_choices %}
+            <option value="{{ value }}" {% if ban_status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label for="ban_page_size">Filas por página</label>
+        <select id="ban_page_size" name="ban_page_size">
+          <option value="50" {% if ban_page_size == 50 %}selected{% endif %}>50</option>
+          <option value="100" {% if ban_page_size == 100 %}selected{% endif %}>100</option>
+          <option value="200" {% if ban_page_size == 200 %}selected{% endif %}>200</option>
+          <option value="500" {% if ban_page_size == 500 %}selected{% endif %}>500</option>
+        </select>
+      </div>
+    </div>
+
+    <button type="submit">Aplicar filtros de banlist</button>
+  </form>
+
+  {% if total_banlist %}
+    <p class="muted">
+      Total: {{ total_banlist }} entradas.
+      Mostrando {{ ban_page_obj.start_index }} - {{ ban_page_obj.end_index }}.
+    </p>
+  {% else %}
+    <p class="muted">Sin entradas para los filtros actuales.</p>
+  {% endif %}
+
+  <table>
+    <thead><tr><th>Carta</th><th>Número</th><th>Formato</th><th>Estado</th><th>Copias</th><th>Vigencia</th><th>Acción</th></tr></thead>
+    <tbody>
+      {% for b in banlist %}
+        <tr>
+          <td>{{ b.card.name }}</td>
+          <td>{{ b.card.card_number|default:"-" }}</td>
+          <td>{{ b.format.code }}</td>
+          <td>{{ b.get_status_display }}</td>
+          <td>{{ b.max_copies }}</td>
+          <td>{{ b.effective_from|default:"-" }}</td>
+          <td class="row-actions"><a href="{% url 'riftbound-admin-banlist-edit' b.id %}">Editar banlist</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7">Sin resultados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if ban_page_obj.paginator.num_pages > 1 %}
+    <p style="margin-top:10px;">
+      {% if ban_page_obj.has_previous %}
+        <a href="?{{ banlist_query_without_page }}{% if banlist_query_without_page %}&{% endif %}ban_page={{ ban_page_obj.previous_page_number }}">Anterior</a>
+      {% endif %}
+      <span style="margin:0 8px;">Página {{ ban_page_obj.number }} de {{ ban_page_obj.paginator.num_pages }}</span>
+      {% if ban_page_obj.has_next %}
+        <a href="?{{ banlist_query_without_page }}{% if banlist_query_without_page %}&{% endif %}ban_page={{ ban_page_obj.next_page_number }}">Siguiente</a>
       {% endif %}
     </p>
   {% endif %}
@@ -145,26 +231,6 @@
         </tr>
       {% empty %}
         <tr><td colspan="3">Sin resultados.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
-<div class="panel">
-  <h2>Banlist</h2>
-  <table>
-    <thead><tr><th>Carta</th><th>Formato</th><th>Estado</th><th>Copias</th><th>Acción</th></tr></thead>
-    <tbody>
-      {% for b in banlist %}
-        <tr>
-          <td>{{ b.card.name }}</td>
-          <td>{{ b.format.code }}</td>
-          <td>{{ b.get_status_display }}</td>
-          <td>{{ b.max_copies }}</td>
-          <td class="row-actions"><a href="{% url 'riftbound-admin-banlist-edit' b.id %}">Editar banlist</a></td>
-        </tr>
-      {% empty %}
-        <tr><td colspan="5">Sin resultados.</td></tr>
       {% endfor %}
     </tbody>
   </table>

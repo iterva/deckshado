@@ -3,10 +3,164 @@
 <div class="panel">
   <h1>Buscar y editar</h1>
   <form method="get">
-    <label for="q">Texto</label>
-    <input id="q" name="q" value="{{ q }}" placeholder="Nombre de carta, edición o banlist">
-    <button type="submit">Buscar</button>
+    <div class="grid">
+      <div>
+        <label for="q">Texto</label>
+        <input id="q" name="q" value="{{ q }}" placeholder="Nombre, edid, habilidad, edición...">
+      </div>
+
+      <div>
+        <label for="format_code">Formato</label>
+        <select id="format_code" name="format_code">
+          <option value="">Todos</option>
+          {% for f in formats %}
+            <option value="{{ f.code }}" {% if format_code == f.code %}selected{% endif %}>{{ f.name }} ({{ f.code|upper }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label for="edition_id">Edición</label>
+        <select id="edition_id" name="edition_id">
+          <option value="">Todas</option>
+          {% for e in editions_filter %}
+            <option value="{{ e.id }}" {% if edition_id == e.id %}selected{% endif %}>
+              {{ e.title }}{% if e.format %} ({{ e.format.code|upper }}){% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label for="type_id">Tipo</label>
+        <select id="type_id" name="type_id">
+          <option value="">Todos</option>
+          {% for t in card_types %}
+            <option value="{{ t.id }}" {% if type_id == t.id %}selected{% endif %}>{{ t.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label for="rarity_id">Rareza</label>
+        <select id="rarity_id" name="rarity_id">
+          <option value="">Todas</option>
+          {% for r in rarities %}
+            <option value="{{ r.id }}" {% if rarity_id == r.id %}selected{% endif %}>{{ r.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label for="race_id">Raza</label>
+        <select id="race_id" name="race_id">
+          <option value="">Todas</option>
+          {% for r in races %}
+            <option value="{{ r.id }}" {% if race_id == r.id %}selected{% endif %}>{{ r.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label for="edition_active">Edición activa</label>
+        <select id="edition_active" name="edition_active">
+          <option value="all" {% if edition_active == "all" %}selected{% endif %}>Todas</option>
+          <option value="active" {% if edition_active == "active" %}selected{% endif %}>Solo activas</option>
+          <option value="inactive" {% if edition_active == "inactive" %}selected{% endif %}>Solo inactivas</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="has_ability">Habilidad</label>
+        <select id="has_ability" name="has_ability">
+          <option value="all" {% if has_ability == "all" %}selected{% endif %}>Todas</option>
+          <option value="yes" {% if has_ability == "yes" %}selected{% endif %}>Con habilidad</option>
+          <option value="no" {% if has_ability == "no" %}selected{% endif %}>Sin habilidad</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="has_custom_image">Imagen personalizada</label>
+        <select id="has_custom_image" name="has_custom_image">
+          <option value="all" {% if has_custom_image == "all" %}selected{% endif %}>Todas</option>
+          <option value="yes" {% if has_custom_image == "yes" %}selected{% endif %}>Con custom_image_url</option>
+          <option value="no" {% if has_custom_image == "no" %}selected{% endif %}>Sin custom_image_url</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="page_size">Filas por página</label>
+        <select id="page_size" name="page_size">
+          <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+          <option value="200" {% if page_size == 200 %}selected{% endif %}>200</option>
+          <option value="500" {% if page_size == 500 %}selected{% endif %}>500</option>
+          <option value="1000" {% if page_size == 1000 %}selected{% endif %}>1000</option>
+        </select>
+      </div>
+    </div>
+
+    <button type="submit">Aplicar filtros</button>
+    <a href="{% url 'cards-admin-search' %}" style="margin-left:10px; text-decoration:none; font-weight:600; color:#0c5f4a;">Limpiar</a>
   </form>
+</div>
+
+<div class="panel">
+  <h2>Cartas</h2>
+  {% if total_cards %}
+    <p class="muted">
+      Total: {{ total_cards }} cartas.
+      Mostrando {{ page_obj.start_index }} - {{ page_obj.end_index }}.
+    </p>
+  {% else %}
+    <p class="muted">Sin resultados para los filtros actuales.</p>
+  {% endif %}
+
+  <table>
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>EDID</th>
+        <th>Edición</th>
+        <th>Formato</th>
+        <th>Tipo</th>
+        <th>Raza</th>
+        <th>Rareza</th>
+        <th>Costo</th>
+        <th>Daño</th>
+        <th>Acción</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in cards %}
+        <tr>
+          <td>{{ c.name }}</td>
+          <td>{{ c.edid }}</td>
+          <td>{{ c.edition.title }}</td>
+          <td>{{ c.edition.format.code|upper|default:"-" }}</td>
+          <td>{{ c.card_type.name|default:"-" }}</td>
+          <td>{{ c.race.name|default:"-" }}</td>
+          <td>{{ c.rarity.name|default:"-" }}</td>
+          <td>{{ c.cost|default:"-" }}</td>
+          <td>{{ c.damage|default:"-" }}</td>
+          <td class="row-actions"><a href="{% url 'cards-admin-card-edit' c.id %}">Editar</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="10">Sin resultados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+    <p style="margin-top:10px;">
+      {% if page_obj.has_previous %}
+        <a href="?{{ query_without_page }}{% if query_without_page %}&{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>
+      {% endif %}
+      <span style="margin:0 8px;">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a href="?{{ query_without_page }}{% if query_without_page %}&{% endif %}page={{ page_obj.next_page_number }}">Siguiente</a>
+      {% endif %}
+    </p>
+  {% endif %}
 </div>
 
 {% if q %}
@@ -43,26 +197,6 @@
           <td>{{ e.season.name|default:"-" }}</td>
           <td>{{ e.active|yesno:"Sí,No" }}</td>
           <td class="row-actions"><a href="{% url 'cards-admin-edition-edit' e.id %}">Editar</a></td>
-        </tr>
-      {% empty %}
-        <tr><td colspan="5">Sin resultados.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
-<div class="panel">
-  <h2>Cartas</h2>
-  <table>
-    <thead><tr><th>Nombre</th><th>Edición</th><th>Tipo</th><th>Rareza</th><th>Acción</th></tr></thead>
-    <tbody>
-      {% for c in cards %}
-        <tr>
-          <td>{{ c.name }}</td>
-          <td>{{ c.edition.title }}</td>
-          <td>{{ c.card_type.name|default:"-" }}</td>
-          <td>{{ c.rarity.name|default:"-" }}</td>
-          <td class="row-actions"><a href="{% url 'cards-admin-card-edit' c.id %}">Editar</a></td>
         </tr>
       {% empty %}
         <tr><td colspan="5">Sin resultados.</td></tr>

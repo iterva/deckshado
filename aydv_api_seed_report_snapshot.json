@@ -1,0 +1,584 @@
+{
+  "timestamp": "2026-07-12T20:46:56.517779Z",
+  "dry_run": true,
+  "source": {
+    "requested": "snapshot",
+    "used": "snapshot",
+    "snapshot_file": "C:\\Users\\terva\\Documents\\deckshadow\\Proyecto-deckshado\\backend\\cards\\data\\ayd_vigilantes_api_snapshot.json"
+  },
+  "edition": {
+    "id": 103,
+    "slug": "aydv",
+    "myl_id": "custom_aydv"
+  },
+  "api": {
+    "url": "https://api.myl.cl/cards/edition/ayd_vigilantes",
+    "cards": 226
+  },
+  "summary": {
+    "local_cards": 293,
+    "updated_cards": 2,
+    "updated_images": 2,
+    "protected_images_seen": 30,
+    "unmatched_local": 64,
+    "created_cards": 2
+  },
+  "updated": [
+    {
+      "card_id": 17878,
+      "myl_id": "20972",
+      "edid": "015",
+      "name": "miguel",
+      "api_id": "20958",
+      "api_edid": "001",
+      "api_name": "miguel",
+      "score": 1.0,
+      "changed_fields": [
+        "custom_image_url"
+      ]
+    },
+    {
+      "card_id": 17880,
+      "myl_id": "20974",
+      "edid": "017",
+      "name": "lucifer",
+      "api_id": "20965",
+      "api_edid": "008",
+      "api_name": "lucifer",
+      "score": 1.0,
+      "changed_fields": [
+        "custom_image_url"
+      ]
+    }
+  ],
+  "created": [
+    {
+      "api_id": "20972",
+      "api_edid": "015",
+      "api_name": "miguel",
+      "created_myl_id": "custom_aydv_api_015_20972",
+      "image_url": "https://api.myl.cl/static/cards/ayd_vigilantes/015.png"
+    },
+    {
+      "api_id": "20974",
+      "api_edid": "017",
+      "api_name": "lucifer",
+      "created_myl_id": "custom_aydv_api_017_20974",
+      "image_url": "https://api.myl.cl/static/cards/ayd_vigilantes/017.png"
+    }
+  ],
+  "unmatched_local": [
+    {
+      "card_id": 14693,
+      "myl_id": "custom_aydv_175",
+      "edid": "AYDV-175",
+      "name": "Serafín",
+      "reason": "no_confident_match",
+      "best_score": 0.485
+    },
+    {
+      "card_id": 14694,
+      "myl_id": "custom_aydv_176",
+      "edid": "AYDV-176",
+      "name": "Santo, Santo, Santo",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 14695,
+      "myl_id": "custom_aydv_179",
+      "edid": "AYDV-179",
+      "name": "Mano de Destrucción",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 14696,
+      "myl_id": "custom_aydv_180",
+      "edid": "AYDV-180",
+      "name": "Miguel Grau",
+      "reason": "no_confident_match",
+      "best_score": 0.625
+    },
+    {
+      "card_id": 14697,
+      "myl_id": "custom_aydv_181",
+      "edid": "AYDV-181",
+      "name": "Alicia en Wonderland",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 14698,
+      "myl_id": "custom_aydv_182",
+      "edid": "AYDV-182",
+      "name": "Lanza Argenta",
+      "reason": "no_confident_match",
+      "best_score": 0.4333
+    },
+    {
+      "card_id": 14699,
+      "myl_id": "custom_aydv_183",
+      "edid": "AYDV-183",
+      "name": "Dulce Canasta",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 14700,
+      "myl_id": "custom_aydv_184",
+      "edid": "AYDV-184",
+      "name": "Belial",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 14701,
+      "myl_id": "custom_aydv_186",
+      "edid": "AYDV-186",
+      "name": "Don de Belial",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 14702,
+      "myl_id": "custom_aydv_190",
+      "edid": "AYDV-190",
+      "name": "Gehena",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 14703,
+      "myl_id": "custom_aydv_191",
+      "edid": "AYDV-191",
+      "name": "Altar de Moloch",
+      "reason": "no_confident_match",
+      "best_score": 0.5197
+    },
+    {
+      "card_id": 14704,
+      "myl_id": "custom_aydv_192",
+      "edid": "AYDV-192",
+      "name": "Custodios",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 14705,
+      "myl_id": "custom_aydv_194",
+      "edid": "AYDV-194",
+      "name": "Nefandos",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 14706,
+      "myl_id": "custom_aydv_195",
+      "edid": "AYDV-195",
+      "name": "Paladín David",
+      "reason": "no_confident_match",
+      "best_score": 0.447
+    },
+    {
+      "card_id": 14707,
+      "myl_id": "custom_aydv_199",
+      "edid": "AYDV-199",
+      "name": "Torre de Babel",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 14708,
+      "myl_id": "custom_aydv_213",
+      "edid": "AYDV-213",
+      "name": "Jinete de la Peste",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 14709,
+      "myl_id": "custom_aydv_214",
+      "edid": "AYDV-214",
+      "name": "Jinete de la Guerra",
+      "reason": "no_confident_match",
+      "best_score": 0.3646
+    },
+    {
+      "card_id": 14710,
+      "myl_id": "custom_aydv_215",
+      "edid": "AYDV-215",
+      "name": "Jinete del Hambre",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 14711,
+      "myl_id": "custom_aydv_216",
+      "edid": "AYDV-216",
+      "name": "Jinete de la Muerte",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 14715,
+      "myl_id": "custom_aydv_us_gabriel",
+      "edid": "AYDV-US01",
+      "name": "Gabriel (Ultra Secreta)",
+      "reason": "no_confident_match",
+      "best_score": 0.4012
+    },
+    {
+      "card_id": 14716,
+      "myl_id": "custom_aydv_us_semyazza",
+      "edid": "AYDV-US02",
+      "name": "Semyazza (Ultra Secreta)",
+      "reason": "no_confident_match",
+      "best_score": 0.4872
+    },
+    {
+      "card_id": 14717,
+      "myl_id": "custom_aydv_us_lucifer",
+      "edid": "AYDV-US03",
+      "name": "Lucifer (Ultra Secreta)",
+      "reason": "no_confident_match",
+      "best_score": 0.4295
+    },
+    {
+      "card_id": 14720,
+      "myl_id": "custom_aydv_123",
+      "edid": "AYDV-123",
+      "name": "Paladín del Tiempo",
+      "reason": "no_confident_match",
+      "best_score": 0.6576
+    },
+    {
+      "card_id": 17685,
+      "myl_id": "cbg020",
+      "edid": "B020",
+      "name": "El Ángel y su Juicio",
+      "reason": "no_confident_match",
+      "best_score": 0.447
+    },
+    {
+      "card_id": 17686,
+      "myl_id": "cbg021",
+      "edid": "B021",
+      "name": "Ángel Redentor",
+      "reason": "no_confident_match",
+      "best_score": 0.4746
+    },
+    {
+      "card_id": 17688,
+      "myl_id": "cbg023",
+      "edid": "B023",
+      "name": "Ángel Metatrón",
+      "reason": "no_confident_match",
+      "best_score": 0.71
+    },
+    {
+      "card_id": 17690,
+      "myl_id": "cbg025",
+      "edid": "B025",
+      "name": "Ángel Sandalfón",
+      "reason": "no_confident_match",
+      "best_score": 0.6964
+    },
+    {
+      "card_id": 17701,
+      "myl_id": "custom_aydv_243_p",
+      "edid": "AYDV-243-P",
+      "name": "La Serpiente del Eden",
+      "reason": "no_confident_match",
+      "best_score": 0.4015
+    },
+    {
+      "card_id": 17702,
+      "myl_id": "custom_aydv_234_p",
+      "edid": "AYDV-234-P",
+      "name": "Agabar la Esperanza",
+      "reason": "no_confident_match",
+      "best_score": 0.6104
+    },
+    {
+      "card_id": 17703,
+      "myl_id": "custom_aydv_239_p",
+      "edid": "AYDV-239-P",
+      "name": "Guerrillero Rodriguez",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 17704,
+      "myl_id": "custom_aydv_232_p",
+      "edid": "AYDV-232-P",
+      "name": "Infernum Vox",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 17705,
+      "myl_id": "custom_aydv_357_p",
+      "edid": "AYDV-357-P",
+      "name": "La Última Bestia",
+      "reason": "no_confident_match",
+      "best_score": 0.6964
+    },
+    {
+      "card_id": 17733,
+      "myl_id": "custom_aydv_xc001",
+      "edid": "AYDV-XC001",
+      "name": "Ángel Castiel",
+      "reason": "no_confident_match",
+      "best_score": 0.7144
+    },
+    {
+      "card_id": 17771,
+      "myl_id": "custom_aydv_xm008",
+      "edid": "AYDV-XM008",
+      "name": "Trono del Clielo",
+      "reason": "no_confident_match",
+      "best_score": 0.81
+    },
+    {
+      "card_id": 17773,
+      "myl_id": "custom_aydv_xp001",
+      "edid": "AYDV-XP001",
+      "name": "Adán",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 17774,
+      "myl_id": "custom_aydv_xp002",
+      "edid": "AYDV-XP002",
+      "name": "Ángel Samyaza",
+      "reason": "no_confident_match",
+      "best_score": 0.4924
+    },
+    {
+      "card_id": 17775,
+      "myl_id": "custom_aydv_xp003",
+      "edid": "AYDV-XP003",
+      "name": "Arcanistas",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 17776,
+      "myl_id": "custom_aydv_xp004",
+      "edid": "AYDV-XP004",
+      "name": "Ardor Celestial",
+      "reason": "no_confident_match",
+      "best_score": 0.5672
+    },
+    {
+      "card_id": 17777,
+      "myl_id": "custom_aydv_xp005",
+      "edid": "AYDV-XP005",
+      "name": "Arpa de David",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 17778,
+      "myl_id": "custom_aydv_xp006",
+      "edid": "AYDV-XP006",
+      "name": "Brujas de Belial",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 17779,
+      "myl_id": "custom_aydv_xp007",
+      "edid": "AYDV-XP007",
+      "name": "Cañón Helios",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 17780,
+      "myl_id": "custom_aydv_xp008",
+      "edid": "AYDV-XP008",
+      "name": "Carcosa",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 17781,
+      "myl_id": "custom_aydv_xp009",
+      "edid": "AYDV-XP009",
+      "name": "Ciudad de los Césares",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 17782,
+      "myl_id": "custom_aydv_xp010",
+      "edid": "AYDV-XP010",
+      "name": "Colmillo de Vampiro",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 17783,
+      "myl_id": "custom_aydv_xp011",
+      "edid": "AYDV-XP011",
+      "name": "Espada del Orden",
+      "reason": "no_confident_match",
+      "best_score": 0.5833
+    },
+    {
+      "card_id": 17784,
+      "myl_id": "custom_aydv_xp012",
+      "edid": "AYDV-XP012",
+      "name": "Eva",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 17785,
+      "myl_id": "custom_aydv_xp013",
+      "edid": "AYDV-XP013",
+      "name": "Fisión Nuclear",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 17786,
+      "myl_id": "custom_aydv_xp014",
+      "edid": "AYDV-XP014",
+      "name": "Golpe Solar",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 17787,
+      "myl_id": "custom_aydv_xp015",
+      "edid": "AYDV-XP015",
+      "name": "Hijo Mortal",
+      "reason": "no_confident_match",
+      "best_score": 0.3141
+    },
+    {
+      "card_id": 17788,
+      "myl_id": "custom_aydv_xp016",
+      "edid": "AYDV-XP016",
+      "name": "La Ira de Dios",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 17789,
+      "myl_id": "custom_aydv_xp017",
+      "edid": "AYDV-XP017",
+      "name": "Pecado Original",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 17790,
+      "myl_id": "custom_aydv_xp018",
+      "edid": "AYDV-XP018",
+      "name": "Pozo Impuro",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 17791,
+      "myl_id": "custom_aydv_xp019",
+      "edid": "AYDV-XP019",
+      "name": "Sacrificio Solar",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 17792,
+      "myl_id": "custom_aydv_xp020",
+      "edid": "AYDV-XP020",
+      "name": "Serafurgia",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 17793,
+      "myl_id": "custom_aydv_xp021",
+      "edid": "AYDV-XP021",
+      "name": "Supremacia Kaiju",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 17794,
+      "myl_id": "custom_aydv_xp022",
+      "edid": "AYDV-XP022",
+      "name": "Terminal P-12",
+      "reason": "no_confident_match",
+      "best_score": 0.0
+    },
+    {
+      "card_id": 17795,
+      "myl_id": "custom_aydv_xp023",
+      "edid": "AYDV-XP023",
+      "name": "Tesoro de los Césares",
+      "reason": "no_confident_match",
+      "best_score": 0.4804
+    },
+    {
+      "card_id": 17796,
+      "myl_id": "custom_aydv_xp024",
+      "edid": "AYDV-XP024",
+      "name": "Trono Divino",
+      "reason": "no_confident_match",
+      "best_score": 0.4746
+    },
+    {
+      "card_id": 17797,
+      "myl_id": "custom_aydv_xp025",
+      "edid": "AYDV-XP025",
+      "name": "Vigilantes",
+      "reason": "no_confident_match",
+      "best_score": 0.6071
+    },
+    {
+      "card_id": 17823,
+      "myl_id": "custom_aydv_xr026",
+      "edid": "AYDV-XR026",
+      "name": "Libro de las Olas",
+      "reason": "no_confident_match",
+      "best_score": 0.8157
+    },
+    {
+      "card_id": 17845,
+      "myl_id": "custom_aydv_xv003",
+      "edid": "AYDV-XV003",
+      "name": "Ángel Abadón",
+      "reason": "no_confident_match",
+      "best_score": 0.6538
+    },
+    {
+      "card_id": 17846,
+      "myl_id": "custom_aydv_xv004",
+      "edid": "AYDV-XV004",
+      "name": "Ángel Sandalfón",
+      "reason": "no_confident_match",
+      "best_score": 0.7564
+    },
+    {
+      "card_id": 17858,
+      "myl_id": "custom_aydv_xv016",
+      "edid": "AYDV-XV016",
+      "name": "Paladín del Fuego Blanco",
+      "reason": "no_confident_match",
+      "best_score": 0.7431
+    },
+    {
+      "card_id": 17864,
+      "myl_id": "custom_aydv_xv022",
+      "edid": "AYDV-XV022",
+      "name": "Titán Nephilim",
+      "reason": "no_confident_match",
+      "best_score": 0.7123
+    }
+  ]
+}

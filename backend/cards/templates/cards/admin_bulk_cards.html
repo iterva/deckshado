@@ -3,6 +3,65 @@
 <div class="panel">
   <h1>Carga masiva de cartas</h1>
   <p class="muted">CSV base: myl_id, edid, name, edition_slug, type_slug, race_slug, rarity_slug, cost, damage, ability, flavour, image_url</p>
+
+  <h2>Preparar cartas desde URL</h2>
+  <p class="muted">Permite leer la fuente (API MYL o Galería Riftbound), generar CSV y descargar imágenes directamente en Descargas de su equipo.</p>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="prepare_source_cards" />
+    {{ source_form.as_p }}
+    <button type="submit">Preparar fuente</button>
+  </form>
+
+  {% if prepared_source %}
+    <hr />
+    <p><strong>Fuente preparada:</strong> {{ prepared_source.source_url }}</p>
+    <p class="muted">Tipo: {{ prepared_source.source_kind }} | Cartas detectadas: {{ prepared_cards_total }}</p>
+    {% if prepared_has_csv %}
+      <p><a href="?download=csv"><strong>Descargar CSV generado</strong></a></p>
+    {% else %}
+      <p class="muted">No se generó CSV (desactive/active opción correspondiente en el formulario).</p>
+    {% endif %}
+
+    {% if prepared_cards_total %}
+      <p>
+        <button type="button" id="download-all-images" data-total="{{ prepared_cards_total }}">Descargar todas las imágenes</button>
+      </p>
+      <p id="download-status" class="muted"></p>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Nombre</th>
+            <th>EDID</th>
+            <th>Descarga</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in prepared_cards_preview %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ item.name }}</td>
+            <td>{{ item.edid }}</td>
+            <td><a href="?download=image&i={{ forloop.counter0 }}">Descargar imagen</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if prepared_cards_total > prepared_cards_preview|length %}
+        <p class="muted">Se muestran solo las primeras {{ prepared_cards_preview|length }} cartas.</p>
+      {% endif %}
+    {% endif %}
+
+    <form method="post" style="margin-top: 1rem;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="clear_prepared_source" />
+      <button type="submit">Limpiar preparación</button>
+    </form>
+  {% endif %}
+
+  <hr />
+  <h2>Procesar CSV en base de datos</h2>
   {% if imagekit_session %}
     <p><strong>Sesión ImageKit activa:</strong> {{ imagekit_session.url }}</p>
   {% else %}
@@ -10,8 +69,63 @@
   {% endif %}
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
+    <input type="hidden" name="action" value="upload_csv" />
     {{ form.as_p }}
     <button type="submit">Procesar CSV</button>
   </form>
 </div>
+
+<script>
+(function () {
+  const button = document.getElementById("download-all-images");
+  if (!button) {
+    return;
+  }
+
+  const status = document.getElementById("download-status");
+  const total = parseInt(button.getAttribute("data-total") || "0", 10);
+
+  function setStatus(text) {
+    if (status) {
+      status.textContent = text;
+    }
+  }
+
+  button.addEventListener("click", function () {
+    if (!Number.isFinite(total) || total <= 0) {
+      setStatus("No hay imágenes para descargar.");
+      return;
+    }
+
+    setStatus("Iniciando descargas...");
+    button.disabled = true;
+    let index = 0;
+
+    function triggerNext() {
+      if (index >= total) {
+        setStatus("Descarga masiva completada. Revise su carpeta Descargas.");
+        button.disabled = false;
+        return;
+      }
+
+      setStatus("Descargando " + (index + 1) + " de " + total + "...");
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.src = "?download=image&i=" + index;
+      document.body.appendChild(iframe);
+
+      setTimeout(function () {
+        if (iframe.parentNode) {
+          iframe.parentNode.removeChild(iframe);
+        }
+      }, 20000);
+
+      index += 1;
+      setTimeout(triggerNext, 350);
+    }
+
+    triggerNext();
+  });
+})();
+</script>
 {% endblock %}

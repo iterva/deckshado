@@ -1,0 +1,84 @@
+{
+  "kind": "aydv_full_bgfix_imagekit",
+  "slug_prefix": "aydv",
+  "folder": "/deckshado/myl_cards/aydv_full_bgfix_2026_07",
+  "generated_at": "2026-07-10T18:54:41.297975+00:00",
+  "dry_run": true,
+  "records": [
+    {
+      "card_id": 14718,
+      "myl_id": "custom_aydv_002",
+      "edid": "AYDV-002",
+      "name": "Miguel",
+      "edition_slug": "aydv",
+      "source_url": "https://res.cloudinary.com/drw7y27sm/image/fetch/https%3A%2F%2Fblog.myl.cl%2Fwp-content%2Fuploads%2F2026%2F05%2F03_ultrareales_02-2.png",
+      "status": "ok",
+      "fetched_from": "https://res.cloudinary.com/daobfx9yb/image/fetch/https%3A%2F%2Fblog.myl.cl%2Fwp-content%2Fuploads%2F2026%2F05%2F03_ultrareales_02-2.png",
+      "size_before": [
+        709,
+        1016
+      ],
+      "size_after": [
+        670,
+        979
+      ],
+      "crop_box": [
+        26,
+        17,
+        696,
+        996
+      ],
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_full_bgfix_2026_07/custom_aydv_002_AYDV-002.png"
+    },
+    {
+      "card_id": 17713,
+      "myl_id": "custom_aydv_010_150_u",
+      "edid": "AYDV-010-150-U",
+      "name": "Guerra Celestial",
+      "edition_slug": "aydv",
+      "source_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_ur_faltantes_2026_07/aydv_010_150_u_guerra_celestial.webp",
+      "status": "ok",
+      "fetched_from": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_ur_faltantes_2026_07/aydv_010_150_u_guerra_celestial.webp",
+      "size_before": [
+        703,
+        1024
+      ],
+      "size_after": [
+        685,
+        1003
+      ],
+      "crop_box": [
+        3,
+        20,
+        688,
+        1023
+      ],
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_full_bgfix_2026_07/custom_aydv_010_150_u_AYDV-010-150-U.webp"
+    },
+    {
+      "card_id": 17714,
+      "myl_id": "custom_aydv_013_150_u",
+      "edid": "AYDV-013-150-U",
+      "name": "Caida del Alba",
+      "edition_slug": "aydv",
+      "source_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_ur_faltantes_2026_07/aydv_013_150_u_caida_del_alba.webp",
+      "status": "ok",
+      "fetched_from": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_ur_faltantes_2026_07/aydv_013_150_u_caida_del_alba.webp",
+      "size_before": [
+        703,
+        1024
+      ],
+      "size_after": [
+        703,
+        1017
+      ],
+      "crop_box": [
+        0,
+        7,
+        703,
+        1024
+      ],
+      "imagekit_url": "https://ik.imagekit.io/0wviufrb2/deckshado/myl_cards/aydv_full_bgfix_2026_07/custom_aydv_013_150_u_AYDV-013-150-U.webp"
+    }
+  ]
+}

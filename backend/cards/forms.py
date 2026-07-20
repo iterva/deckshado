@@ -67,11 +67,17 @@ class ToggleEditionsForm(forms.Form):
         help_text="Opcional: filtrar por formato para activar/desactivar en bloque.",
     )
     edition_ids = forms.ModelMultipleChoiceField(
-        queryset=Edition.objects.select_related("format").all(),
+        queryset=Edition.objects.select_related("format").order_by("title"),
         required=False,
         widget=forms.CheckboxSelectMultiple,
     )
     active = forms.BooleanField(required=False, initial=True, label="Marcar como activa")
+
+    def __init__(self, *args, preselect_active=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        if preselect_active and not self.is_bound:
+            active_qs = Edition.objects.filter(active=True).values_list("id", flat=True)
+            self.fields["edition_ids"].initial = list(active_qs)
 
 
 class SessionImagekitEnvForm(forms.Form):
@@ -91,6 +97,42 @@ class BulkCardCsvForm(forms.Form):
     )
     upload_images_to_imagekit = forms.BooleanField(required=False, initial=False)
     imagekit_folder = forms.CharField(required=False, max_length=255, initial="deckshado/myl_cards/admin_bulk")
+
+
+class SourceCardsUrlForm(forms.Form):
+    SOURCE_KIND_CHOICES = [
+        ("auto", "Auto (detectar por URL)"),
+        ("myl_api", "API MYL"),
+        ("riftbound_gallery", "Galería oficial Riftbound"),
+    ]
+
+    source_url = forms.URLField(
+        label="URL origen",
+        help_text="Ejemplos: https://api.myl.cl/cards/edition/ayd_vigilantes o https://playriftbound.com/en-us/card-gallery/",
+    )
+    source_kind = forms.ChoiceField(
+        choices=SOURCE_KIND_CHOICES,
+        initial="auto",
+        label="Tipo de fuente",
+    )
+    edition_slug = forms.CharField(
+        required=False,
+        max_length=120,
+        help_text="Si desea generar CSV para la subida actual, indique el edition_slug destino.",
+        label="Edition slug destino (opcional)",
+    )
+    generate_bulk_csv = forms.BooleanField(
+        required=False,
+        initial=True,
+        label="Generar CSV compatible con esta carga masiva",
+    )
+    max_cards = forms.IntegerField(
+        required=False,
+        initial=1200,
+        min_value=1,
+        max_value=5000,
+        label="Máximo de cartas a procesar",
+    )
 
 
 @dataclass

@@ -136,7 +136,12 @@ def cards_admin_edition_cards(request, edition_id: int):
 @cards_admin_owner_required
 @require_http_methods(["GET", "POST"])
 def cards_admin_toggle_editions(request):
-    form = ToggleEditionsForm(request.POST or None)
+    if request.method == "POST":
+        form = ToggleEditionsForm(request.POST)
+    else:
+        active_ids = list(Edition.objects.filter(active=True).values_list("id", flat=True))
+        form = ToggleEditionsForm(initial={"edition_ids": active_ids})
+
     if request.method == "POST" and form.is_valid():
         desired_active = form.cleaned_data["active"]
         selected_ids = list(form.cleaned_data["edition_ids"].values_list("id", flat=True))

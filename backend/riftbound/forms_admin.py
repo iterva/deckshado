@@ -64,6 +64,33 @@ class BulkRiftboundCardCsvForm(forms.Form):
     imagekit_folder = forms.CharField(required=False, max_length=255, initial="deckshado/riftbound/cards_admin_bulk")
 
 
+class SourceRiftboundGalleryForm(forms.Form):
+    source_url = forms.URLField(
+        label="URL fuente",
+        required=True,
+        initial="https://playriftbound.com/en-us/card-gallery/",
+        help_text="Fuente soportada: playriftbound.com/en-us/card-gallery/",
+    )
+    set_code = forms.CharField(
+        label="Set code destino",
+        required=True,
+        max_length=10,
+        help_text="Ejemplo: OGN, ARC",
+    )
+    max_cards = forms.IntegerField(
+        label="Máximo de cartas a preparar",
+        required=True,
+        min_value=1,
+        max_value=3000,
+        initial=1200,
+    )
+    generate_bulk_csv = forms.BooleanField(
+        label="Generar CSV para carga masiva",
+        required=False,
+        initial=True,
+    )
+
+
 def csv_rows(file_obj) -> Iterable[dict[str, str]]:
     raw = file_obj.read()
     text = raw.decode("utf-8", errors="replace")

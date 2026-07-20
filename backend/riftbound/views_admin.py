@@ -1,13 +1,22 @@
+import csv
+import hashlib
+import html
+import io
+import re
 from functools import wraps
+from urllib.parse import urlparse
 
+import requests
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.paginator import Paginator
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.text import slugify
 from django.views.decorators.http import require_http_methods
 
 from cards.admin_tools import host_from_url, upload_image_url_to_imagekit
@@ -19,6 +28,7 @@ from .forms_admin import (
     RiftboundBanlistEntryForm,
     RiftboundCardForm,
     RiftboundSetForm,
+    SourceRiftboundGalleryForm,
     ToggleRiftboundSetsForm,
     csv_rows,
     upsert_card_row,
@@ -28,6 +38,237 @@ from .models import RiftboundBanlistEntry, RiftboundCard, RiftboundFormat, Riftb
 
 
 SESSION_KEY_IMAGEKIT = "cards_admin_imagekit_session"
+SESSION_KEY_RIFTBOUND_SOURCE_PREPARED = "riftbound_admin_source_prepared"
+
+RIFTBOUND_GALLERY_HOSTS = {"playriftbound.com", "www.playriftbound.com", "riftbound.leagueoflegends.com"}
+RIFTBOUND_IMAGE_HOSTS = {"cmsassets.rgpub.io"}
+_IMG_TAG_RE = re.compile(r"<img\b[^>]*>", re.IGNORECASE)
+
+
+def _safe_download_name(raw: str, fallback: str = "card.png") -> str:
+    value = (raw or "").strip() or fallback
+    base, dot, ext = value.rpartition(".")
+    if not dot:
+        base = value
+        ext = ""
+    safe_base = "".join(ch if ch.isalnum() or ch in {"-", "_"} else "_" for ch in base).strip("_")
+    safe_base = safe_base[:160] or "card"
+    safe_ext = "".join(ch for ch in ext.lower() if ch.isalnum())[:8]
+    return f"{safe_base}.{safe_ext}" if safe_ext else safe_base
+
+
+def _normalize_image_url(url: str) -> str:
+    return (url or "").split("?", 1)[0].strip()
+
+
+def _extract_attr(tag: str, attr: str) -> str:
+    match = re.search(rf"\b{attr}\s*=\s*(?:\"([^\"]*)\"|'([^']*)')", tag, flags=re.IGNORECASE)
+    if not match:
+        return ""
+    return match.group(1) or match.group(2) or ""
+
+
+def _riftbound_name_from_alt(alt_text: str, fallback: str) -> str:
+    text = html.unescape(alt_text or "").strip()
+    if ":" in text:
+        text = text.split(":", 1)[1].strip()
+    if "." in text:
+        text = text.split(".", 1)[0].strip()
+    text = re.sub(r"\s+", " ", text).strip(" -")
+    return text or fallback
+
+
+def _guess_card_number(image_url: str, set_code: str, index: int) -> str:
+    image_name = (urlparse(image_url).path.rsplit("/", 1)[-1] or "").strip()
+    stem = image_name.rsplit(".", 1)[0] if "." in image_name else image_name
+    candidate = re.sub(r"[^A-Za-z0-9-]", "", stem).upper()
+    if 3 <= len(candidate) <= 20 and any(ch.isdigit() for ch in candidate):
+        return candidate
+    return f"{set_code}-{index:03d}"[:20]
+
+
+def _build_riftbound_bulk_csv_text(rows: list[dict[str, str]]) -> str:
+    headers = [
+        "card_number",
+        "name",
+        "set_code",
+        "slug",
+        "card_type",
+        "rarity",
+        "energy",
+        "power",
+        "might",
+        "description",
+        "flavor",
+        "image_url",
+        "cdn_image_url",
+        "is_active",
+    ]
+    buffer = io.StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=headers)
+    writer.writeheader()
+    for row in rows:
+        writer.writerow({h: row.get(h, "") for h in headers})
+    return buffer.getvalue()
+
+
+def _collect_cards_from_riftbound_gallery(source_url: str, max_cards: int, set_code: str) -> list[dict[str, str]]:
+    response = requests.get(source_url, timeout=90)
+    response.raise_for_status()
+    html_text = response.text
+
+    cards: list[dict[str, str]] = []
+    seen_urls: set[str] = set()
+    seen_numbers: set[str] = set()
+
+    for tag in _IMG_TAG_RE.findall(html_text):
+        src = html.unescape(_extract_attr(tag, "src")).strip()
+        if not src:
+            continue
+
+        image_url = _normalize_image_url(src)
+        parsed = urlparse(image_url)
+        if parsed.scheme not in {"http", "https"}:
+            continue
+        if parsed.netloc.lower() not in RIFTBOUND_IMAGE_HOSTS:
+            continue
+        if image_url in seen_urls:
+            continue
+        seen_urls.add(image_url)
+
+        card_idx = len(cards) + 1
+        fallback_name = f"Riftbound {card_idx}"
+        name = _riftbound_name_from_alt(_extract_attr(tag, "alt"), fallback_name)
+
+        candidate_number = _guess_card_number(image_url, set_code=set_code, index=card_idx)
+        card_number = candidate_number
+        if card_number in seen_numbers:
+            card_number = f"{set_code}-{card_idx:03d}"[:20]
+        seen_numbers.add(card_number)
+
+        image_name = (parsed.path.rsplit("/", 1)[-1] or "card.png").strip()
+        ext = ".png"
+        if "." in image_name:
+            maybe_ext = "." + image_name.rsplit(".", 1)[-1].lower()
+            if re.fullmatch(r"\.[a-z0-9]{2,5}", maybe_ext):
+                ext = maybe_ext
+
+        slug_name = slugify(name) or f"riftbound_{card_idx:03d}"
+
+        cards.append(
+            {
+                "card_number": card_number,
+                "name": name,
+                "set_code": set_code,
+                "slug": slug_name,
+                "card_type": "unit",
+                "rarity": "common",
+                "energy": "",
+                "power": "",
+                "might": "",
+                "description": "",
+                "flavor": "",
+                "image_url": image_url,
+                "cdn_image_url": "",
+                "is_active": "1",
+                "file_name": _safe_download_name(f"{card_number}_{slug_name}{ext}"),
+            }
+        )
+
+        if len(cards) >= max_cards:
+            break
+
+    if not cards:
+        raise ValueError("No se encontraron imágenes de cartas en la galería de Riftbound.")
+    return cards
+
+
+def _build_prepared_source_payload(cleaned: dict) -> dict:
+    source_url = str(cleaned.get("source_url") or "").strip()
+    set_code = str(cleaned.get("set_code") or "").strip().upper()
+    max_cards = int(cleaned.get("max_cards") or 1200)
+    generate_bulk_csv = bool(cleaned.get("generate_bulk_csv"))
+
+    parsed = urlparse(source_url)
+    host = parsed.netloc.lower().strip()
+    path = (parsed.path or "").lower()
+    if host not in RIFTBOUND_GALLERY_HOSTS or "/card-gallery" not in path:
+        raise ValueError("La URL no corresponde a una galería de Riftbound soportada.")
+
+    rows = _collect_cards_from_riftbound_gallery(source_url, max_cards=max_cards, set_code=set_code)
+    csv_text = _build_riftbound_bulk_csv_text(rows) if generate_bulk_csv else ""
+
+    cards_for_download = [
+        {
+            "name": row.get("name", ""),
+            "card_number": row.get("card_number", ""),
+            "set_code": row.get("set_code", ""),
+            "image_url": row.get("image_url", ""),
+            "file_name": row.get("file_name", ""),
+        }
+        for row in rows
+    ]
+
+    return {
+        "source_url": source_url,
+        "set_code": set_code,
+        "cards": cards_for_download,
+        "csv_text": csv_text,
+        "generate_bulk_csv": generate_bulk_csv,
+    }
+
+
+def _prepared_source_from_session(request) -> dict:
+    payload = request.session.get(SESSION_KEY_RIFTBOUND_SOURCE_PREPARED) or {}
+    cards = payload.get("cards")
+    if not isinstance(cards, list):
+        return {}
+    return payload
+
+
+def _download_prepared_csv(request):
+    payload = _prepared_source_from_session(request)
+    csv_text = payload.get("csv_text") or ""
+    if not csv_text:
+        return HttpResponseBadRequest("No hay CSV preparado para descarga.")
+
+    set_code = str(payload.get("set_code") or "RIFT").strip().upper()
+    response = HttpResponse(csv_text, content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="riftbound_bulk_cards_{set_code}.csv"'
+    return response
+
+
+def _download_prepared_image(request):
+    payload = _prepared_source_from_session(request)
+    cards = payload.get("cards") or []
+    raw_index = (request.GET.get("i") or "").strip()
+    if not raw_index.isdigit():
+        return HttpResponseBadRequest("Índice de imagen inválido.")
+
+    index = int(raw_index)
+    if index < 0 or index >= len(cards):
+        return HttpResponseBadRequest("Índice de imagen fuera de rango.")
+
+    item = cards[index]
+    image_url = str(item.get("image_url") or "").strip()
+    parsed = urlparse(image_url)
+    if parsed.netloc.lower() not in RIFTBOUND_IMAGE_HOSTS:
+        return HttpResponseBadRequest("Host de imagen no permitido.")
+
+    try:
+        response = requests.get(image_url, timeout=90)
+        response.raise_for_status()
+    except Exception as exc:
+        return HttpResponseBadRequest(f"No se pudo descargar la imagen remota: {exc}")
+
+    content_type = (response.headers.get("Content-Type") or "application/octet-stream").split(";", 1)[0].strip()
+    if not content_type.startswith("image/"):
+        content_type = "application/octet-stream"
+
+    file_name = _safe_download_name(item.get("file_name") or "card.png")
+    out = HttpResponse(response.content, content_type=content_type)
+    out["Content-Disposition"] = f'attachment; filename="{file_name}"'
+    return out
 
 
 def _redirect_next_or_default(request, default_view_name: str):
@@ -252,66 +493,107 @@ def riftbound_admin_bulk_sets(request):
 @riftbound_admin_owner_required
 @require_http_methods(["GET", "POST"])
 def riftbound_admin_bulk_cards(request):
+    if request.method == "GET":
+        download_kind = (request.GET.get("download") or "").strip().lower()
+        if download_kind == "csv":
+            return _download_prepared_csv(request)
+        if download_kind == "image":
+            return _download_prepared_image(request)
+
+    source_form = SourceRiftboundGalleryForm()
     form = BulkRiftboundCardCsvForm(request.POST or None, request.FILES or None)
-    if request.method == "POST" and form.is_valid():
-        processed = 0
-        uploaded_to_imagekit = 0
-        errors: list[str] = []
+    if request.method == "POST":
+        action = (request.POST.get("action") or "upload_csv").strip().lower()
 
-        do_upload = form.cleaned_data.get("upload_images_to_imagekit", False)
-        imagekit_folder = form.cleaned_data.get("imagekit_folder", "").strip() or "deckshado/riftbound/cards_admin_bulk"
-        session_env = request.session.get(SESSION_KEY_IMAGEKIT) or {}
+        if action == "prepare_source_cards":
+            source_form = SourceRiftboundGalleryForm(request.POST)
+            if source_form.is_valid():
+                try:
+                    prepared_payload = _build_prepared_source_payload(source_form.cleaned_data)
+                except Exception as exc:
+                    messages.error(request, f"No se pudo preparar la fuente: {exc}")
+                else:
+                    request.session[SESSION_KEY_RIFTBOUND_SOURCE_PREPARED] = prepared_payload
+                    messages.success(
+                        request,
+                        f"Fuente preparada correctamente. Cartas detectadas: {len(prepared_payload.get('cards') or [])}",
+                    )
+                    return redirect("riftbound-admin-bulk-cards")
+            else:
+                messages.error(request, "Revise los datos de la fuente antes de preparar.")
 
-        if do_upload and not session_env:
-            messages.error(request, "Debe cargar primero el archivo env de sesión de ImageKit para subir imágenes.")
+        elif action == "clear_prepared_source":
+            request.session.pop(SESSION_KEY_RIFTBOUND_SOURCE_PREPARED, None)
+            messages.info(request, "Se limpió la preparación de fuente.")
             return redirect("riftbound-admin-bulk-cards")
 
-        allowed_hosts = default_allowed_image_hosts()
+        elif action == "upload_csv" and form.is_valid():
+            processed = 0
+            uploaded_to_imagekit = 0
+            errors: list[str] = []
 
-        for idx, row in enumerate(csv_rows(form.cleaned_data["csv_file"]), start=2):
-            try:
-                source_image = (row.get("image_url") or row.get("cdn_image_url") or "").strip()
-                if do_upload and source_image:
-                    host = host_from_url(source_image)
-                    if host not in allowed_hosts:
-                        raise ValueError(f"Host no permitido para subida: {host}")
+            do_upload = form.cleaned_data.get("upload_images_to_imagekit", False)
+            imagekit_folder = form.cleaned_data.get("imagekit_folder", "").strip() or "deckshado/riftbound/cards_admin_bulk"
+            session_env = request.session.get(SESSION_KEY_IMAGEKIT) or {}
 
-                    file_name = row.get("card_number", "rb-card")
-                    uploaded_url = upload_image_url_to_imagekit(
-                        source_url=source_image,
-                        imagekit_private_key=session_env["private_key"],
-                        imagekit_url_endpoint=session_env["url"],
-                        folder=imagekit_folder,
-                        file_name=file_name,
-                    )
-                    row["cdn_image_url"] = uploaded_url
-                    uploaded_to_imagekit += 1
+            if do_upload and not session_env:
+                messages.error(request, "Debe cargar primero el archivo env de sesión de ImageKit para subir imágenes.")
+                return redirect("riftbound-admin-bulk-cards")
 
-                upsert_card_row(row)
-                processed += 1
-            except Exception as exc:
-                errors.append(f"Línea {idx}: {exc}")
+            allowed_hosts = default_allowed_image_hosts()
 
-        if errors:
-            messages.warning(
-                request,
-                f"Cartas procesadas: {processed}, subidas ImageKit: {uploaded_to_imagekit}, errores: {len(errors)}",
-            )
-            for err in errors[:10]:
-                messages.error(request, err)
-        else:
-            messages.success(
-                request,
-                f"Carga de cartas Riftbound completada. Filas: {processed}, subidas ImageKit: {uploaded_to_imagekit}",
-            )
+            for idx, row in enumerate(csv_rows(form.cleaned_data["csv_file"]), start=2):
+                try:
+                    source_image = (row.get("image_url") or row.get("cdn_image_url") or "").strip()
+                    if do_upload and source_image:
+                        host = host_from_url(source_image)
+                        if host not in allowed_hosts:
+                            raise ValueError(f"Host no permitido para subida: {host}")
 
-        return redirect("riftbound-admin-bulk-cards")
+                        file_name = row.get("card_number", "rb-card")
+                        uploaded_url = upload_image_url_to_imagekit(
+                            source_url=source_image,
+                            imagekit_private_key=session_env["private_key"],
+                            imagekit_url_endpoint=session_env["url"],
+                            folder=imagekit_folder,
+                            file_name=file_name,
+                        )
+                        row["cdn_image_url"] = uploaded_url
+                        uploaded_to_imagekit += 1
+
+                    upsert_card_row(row)
+                    processed += 1
+                except Exception as exc:
+                    errors.append(f"Línea {idx}: {exc}")
+
+            if errors:
+                messages.warning(
+                    request,
+                    f"Cartas procesadas: {processed}, subidas ImageKit: {uploaded_to_imagekit}, errores: {len(errors)}",
+                )
+                for err in errors[:10]:
+                    messages.error(request, err)
+            else:
+                messages.success(
+                    request,
+                    f"Carga de cartas Riftbound completada. Filas: {processed}, subidas ImageKit: {uploaded_to_imagekit}",
+                )
+
+            return redirect("riftbound-admin-bulk-cards")
+
+    prepared_source = _prepared_source_from_session(request)
+    prepared_cards = prepared_source.get("cards") or []
 
     return render(
         request,
         "riftbound/admin_bulk_cards.html",
         {
             "form": form,
+            "source_form": source_form,
+            "prepared_source": prepared_source,
+            "prepared_cards_total": len(prepared_cards),
+            "prepared_cards_preview": prepared_cards[:25],
+            "prepared_has_csv": bool(prepared_source.get("csv_text")),
             "imagekit_session": request.session.get(SESSION_KEY_IMAGEKIT),
         },
     )

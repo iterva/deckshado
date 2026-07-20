@@ -1,4 +1,5 @@
 import csv
+import json
 import html
 import io
 import re
@@ -42,6 +43,11 @@ SESSION_KEY_RIFTBOUND_SOURCE_PREPARED = "riftbound_admin_source_prepared"
 RIFTBOUND_GALLERY_HOSTS = {"playriftbound.com", "www.playriftbound.com", "riftbound.leagueoflegends.com"}
 RIFTBOUND_IMAGE_HOSTS = {"cmsassets.rgpub.io"}
 _IMG_TAG_RE = re.compile(r"<img\b[^>]*>", re.IGNORECASE)
+_NEXT_DATA_RE = re.compile(
+    r'<script[^>]*id=["\']__NEXT_DATA__["\'][^>]*>(.*?)</script>',
+    flags=re.IGNORECASE | re.DOTALL,
+)
+_RAW_CMS_URL_RE = re.compile(r'https?:\\?/\\?/cmsassets\.rgpub\.io[^"\'\s<>]+', flags=re.IGNORECASE)
 
 
 def _safe_download_name(raw: str, fallback: str = "card.png") -> str:
@@ -86,6 +92,201 @@ def _guess_card_number(image_url: str, set_code: str, index: int) -> str:
     return f"{set_code}-{index:03d}"[:20]
 
 
+def _extract_numeric_text(value) -> str:
+    if isinstance(value, dict):
+        raw = value.get("id")
+        if raw in (None, ""):
+            raw = value.get("label")
+    else:
+        raw = value
+    text = str(raw or "").strip()
+    if not text:
+        return ""
+    return text if re.fullmatch(r"-?\d+", text) else ""
+
+
+def _html_to_plain_text(text_html: str) -> str:
+    text = html.unescape(text_html or "")
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+def _extract_cards_items_from_next_data(root) -> list[dict]:
+    candidate_lists: list[list[dict]] = []
+
+    def _walk(node):
+        if isinstance(node, dict):
+            cards = node.get("cards")
+            if isinstance(cards, dict):
+                items = cards.get("items")
+                if isinstance(items, list) and items and isinstance(items[0], dict):
+                    candidate_lists.append(items)
+            for value in node.values():
+                _walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                _walk(value)
+
+    _walk(root)
+    if not candidate_lists:
+        return []
+    return max(candidate_lists, key=len)
+
+
+def _collect_cards_from_next_data_html(html_text: str, max_cards: int, fallback_set_code: str) -> list[dict[str, str]]:
+    match = _NEXT_DATA_RE.search(html_text or "")
+    if not match:
+        return []
+
+    try:
+        payload = json.loads(match.group(1))
+    except Exception:
+        return []
+
+    items = _extract_cards_items_from_next_data(payload)
+    if not items:
+        return []
+
+    type_allowed = {"champion", "legend", "unit", "spell", "gear", "battlefield", "rune", "other"}
+    rarity_allowed = {"common", "uncommon", "rare", "epic", "legendary", "champion", "promo", "other"}
+
+    rows: list[dict[str, str]] = []
+    seen_urls: set[str] = set()
+    seen_numbers: set[str] = set()
+
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+
+        card_image = item.get("cardImage") or {}
+        image_url_raw = str(card_image.get("url") or "").strip()
+        image_url = _normalize_image_url(image_url_raw.replace("\\/", "/"))
+        parsed = urlparse(image_url)
+        if parsed.netloc.lower() not in RIFTBOUND_IMAGE_HOSTS:
+            continue
+        if image_url in seen_urls:
+            continue
+        seen_urls.add(image_url)
+
+        name = str(item.get("name") or "").strip()
+        if not name:
+            name = _riftbound_name_from_alt(str(card_image.get("accessibilityText") or ""), f"Riftbound {len(rows) + 1}")
+
+        public_code = str(item.get("publicCode") or "").strip()
+        card_number_match = re.search(r"([A-Za-z0-9]+-\d+[A-Za-z]?)", public_code)
+        if card_number_match:
+            card_number = card_number_match.group(1).upper()
+        else:
+            collector = item.get("collectorNumber")
+            collector_text = _extract_numeric_text(collector)
+            if collector_text:
+                card_number = f"{fallback_set_code}-{int(collector_text):03d}"
+            else:
+                card_number = _guess_card_number(image_url, set_code=fallback_set_code, index=len(rows) + 1)
+
+        if card_number in seen_numbers:
+            card_number = _guess_card_number(image_url, set_code=fallback_set_code, index=len(rows) + 1)
+        seen_numbers.add(card_number)
+
+        set_value = item.get("set") or {}
+        set_data = set_value.get("value") if isinstance(set_value, dict) else {}
+        set_id = str((set_data or {}).get("id") or "").strip().upper()
+        set_code = set_id or fallback_set_code
+
+        type_data = item.get("cardType") or {}
+        type_list = type_data.get("type") if isinstance(type_data, dict) else None
+        type_id = "unit"
+        if isinstance(type_list, list) and type_list:
+            type_id = str((type_list[0] or {}).get("id") or "unit").strip().lower()
+        if type_id not in type_allowed:
+            type_id = "unit"
+
+        rarity_data = item.get("rarity") or {}
+        rarity_value = rarity_data.get("value") if isinstance(rarity_data, dict) else {}
+        rarity_id = str((rarity_value or {}).get("id") or "common").strip().lower()
+        if rarity_id not in rarity_allowed:
+            rarity_id = "other"
+
+        text_data = item.get("text") or {}
+        rich_text = text_data.get("richText") if isinstance(text_data, dict) else {}
+        body_html = str((rich_text or {}).get("body") or "")
+        description = _html_to_plain_text(body_html)
+
+        energy = _extract_numeric_text((item.get("energy") or {}).get("value") if isinstance(item.get("energy"), dict) else item.get("energy"))
+        power = _extract_numeric_text((item.get("power") or {}).get("value") if isinstance(item.get("power"), dict) else item.get("power"))
+        might = _extract_numeric_text((item.get("might") or {}).get("value") if isinstance(item.get("might"), dict) else item.get("might"))
+
+        image_name = (parsed.path.rsplit("/", 1)[-1] or "card.png").strip()
+        ext = ".png"
+        if "." in image_name:
+            maybe_ext = "." + image_name.rsplit(".", 1)[-1].lower()
+            if re.fullmatch(r"\.[a-z0-9]{2,5}", maybe_ext):
+                ext = maybe_ext
+        slug_name = slugify(name) or f"riftbound_{len(rows) + 1:03d}"
+
+        rows.append(
+            {
+                "card_number": card_number,
+                "name": name,
+                "set_code": set_code,
+                "slug": slug_name,
+                "card_type": type_id,
+                "rarity": rarity_id,
+                "energy": energy,
+                "power": power,
+                "might": might,
+                "description": description,
+                "flavor": "",
+                "image_url": image_url,
+                "cdn_image_url": "",
+                "is_active": "1",
+                "file_name": _safe_download_name(f"{card_number}_{slug_name}{ext}"),
+            }
+        )
+
+        if len(rows) >= max_cards:
+            break
+
+    return rows
+
+
+def _iter_fallback_image_urls(html_text: str):
+    # 1) Intentar atributos de etiquetas img por compatibilidad con fuentes estáticas.
+    for tag in _IMG_TAG_RE.findall(html_text):
+        for attr in ("src", "data-src", "srcset", "data-srcset"):
+            raw = _extract_attr(tag, attr)
+            if not raw:
+                continue
+            first = raw.split(",", 1)[0].strip().split(" ", 1)[0]
+            decoded = html.unescape(first).replace("\\/", "/")
+            if decoded:
+                yield decoded
+
+    # 2) Fallback para páginas SPA/SSR: URLs embebidas en JSON/script.
+    for match in _RAW_CMS_URL_RE.finditer(html_text or ""):
+        decoded = html.unescape(match.group(0)).replace("\\/", "/")
+        if decoded:
+            yield decoded
+
+
+def _is_likely_card_image(url: str) -> bool:
+    parsed = urlparse(url)
+    if parsed.netloc.lower() not in RIFTBOUND_IMAGE_HOSTS:
+        return False
+    path = parsed.path or ""
+    if "/game_data_live/" not in path:
+        return False
+    if not re.search(r"\.(png|jpe?g|webp)$", path, flags=re.IGNORECASE):
+        return False
+    dim = re.search(r"-(\d{2,4})x(\d{2,4})\.[a-z0-9]+$", path, flags=re.IGNORECASE)
+    if not dim:
+        return False
+    width = int(dim.group(1))
+    height = int(dim.group(2))
+    return height >= width and height >= 900 and width >= 600
+
+
 def _build_riftbound_bulk_csv_text(rows: list[dict[str, str]]) -> str:
     headers = [
         "card_number",
@@ -112,20 +313,22 @@ def _build_riftbound_bulk_csv_text(rows: list[dict[str, str]]) -> str:
 
 
 def _collect_cards_from_riftbound_gallery_html(html_text: str, max_cards: int, set_code: str) -> list[dict[str, str]]:
+    # Camino principal: usa __NEXT_DATA__ cuando existe (incluye nombre y metadatos de carta).
+    rows_from_next = _collect_cards_from_next_data_html(html_text, max_cards=max_cards, fallback_set_code=set_code)
+    if rows_from_next:
+        return rows_from_next
+
+    # Fallback: extracción por URLs embebidas cuando no hay datos estructurados.
     cards: list[dict[str, str]] = []
     seen_urls: set[str] = set()
     seen_numbers: set[str] = set()
 
-    for tag in _IMG_TAG_RE.findall(html_text):
-        src = html.unescape(_extract_attr(tag, "src")).strip()
-        if not src:
-            continue
-
-        image_url = _normalize_image_url(src)
+    for raw_url in _iter_fallback_image_urls(html_text):
+        image_url = _normalize_image_url(raw_url)
         parsed = urlparse(image_url)
         if parsed.scheme not in {"http", "https"}:
             continue
-        if parsed.netloc.lower() not in RIFTBOUND_IMAGE_HOSTS:
+        if not _is_likely_card_image(image_url):
             continue
         if image_url in seen_urls:
             continue
@@ -133,7 +336,7 @@ def _collect_cards_from_riftbound_gallery_html(html_text: str, max_cards: int, s
 
         card_idx = len(cards) + 1
         fallback_name = f"Riftbound {card_idx}"
-        name = _riftbound_name_from_alt(_extract_attr(tag, "alt"), fallback_name)
+        name = fallback_name
 
         candidate_number = _guess_card_number(image_url, set_code=set_code, index=card_idx)
         card_number = candidate_number

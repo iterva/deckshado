@@ -5,8 +5,8 @@
   <p class="muted">CSV base: card_number, name, set_code, card_type, rarity, energy, power, might, description, flavor, image_url</p>
 
   <h2>Preparar cartas desde URL</h2>
-  <p class="muted">Permite leer la galería de Riftbound, generar CSV y descargar imágenes en Descargas de su equipo.</p>
-  <form method="post">
+  <p class="muted">Permite leer la galería de Riftbound, generar CSV y descargar imágenes en Descargas de su equipo. Si el servidor bloquea la URL por proxy, use modo archivo HTML o pegado de HTML.</p>
+  <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     <input type="hidden" name="action" value="prepare_source_cards" />
     {{ source_form.as_p }}
@@ -15,7 +15,7 @@
 
   {% if prepared_source %}
     <hr />
-    <p><strong>Fuente preparada:</strong> {{ prepared_source.source_url }}</p>
+    <p><strong>Fuente preparada:</strong> {{ prepared_source.source_url|default:"HTML manual" }}</p>
     <p class="muted">Set destino: {{ prepared_source.set_code }} | Cartas detectadas: {{ prepared_cards_total }}</p>
     {% if prepared_has_csv %}
       <p><a href="?download=csv"><strong>Descargar CSV generado</strong></a></p>

@@ -65,11 +65,38 @@ class BulkRiftboundCardCsvForm(forms.Form):
 
 
 class SourceRiftboundGalleryForm(forms.Form):
+    SOURCE_MODE_URL = "url"
+    SOURCE_MODE_HTML_FILE = "html_file"
+    SOURCE_MODE_HTML_TEXT = "html_text"
+
+    SOURCE_MODE_CHOICES = [
+        (SOURCE_MODE_URL, "Desde URL"),
+        (SOURCE_MODE_HTML_FILE, "Desde archivo HTML"),
+        (SOURCE_MODE_HTML_TEXT, "Pegando HTML"),
+    ]
+
+    source_mode = forms.ChoiceField(
+        label="Modo de fuente",
+        required=True,
+        choices=SOURCE_MODE_CHOICES,
+        initial=SOURCE_MODE_URL,
+    )
     source_url = forms.URLField(
         label="URL fuente",
-        required=True,
+        required=False,
         initial="https://playriftbound.com/en-us/card-gallery/",
         help_text="Fuente soportada: playriftbound.com/en-us/card-gallery/",
+    )
+    source_html_file = forms.FileField(
+        label="Archivo HTML",
+        required=False,
+        help_text="Útil cuando el servidor no puede abrir la URL por proxy/firewall.",
+    )
+    source_html_text = forms.CharField(
+        label="HTML de la galería",
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 6}),
+        help_text="Pegue aquí el código fuente HTML de la galería.",
     )
     set_code = forms.CharField(
         label="Set code destino",
@@ -89,6 +116,25 @@ class SourceRiftboundGalleryForm(forms.Form):
         required=False,
         initial=True,
     )
+
+    def clean(self):
+        cleaned = super().clean()
+        mode = (cleaned.get("source_mode") or "").strip()
+
+        if mode == self.SOURCE_MODE_URL:
+            if not cleaned.get("source_url"):
+                self.add_error("source_url", "Debe indicar la URL de la galería.")
+        elif mode == self.SOURCE_MODE_HTML_FILE:
+            if not cleaned.get("source_html_file"):
+                self.add_error("source_html_file", "Debe subir un archivo HTML.")
+        elif mode == self.SOURCE_MODE_HTML_TEXT:
+            html_text = (cleaned.get("source_html_text") or "").strip()
+            if not html_text:
+                self.add_error("source_html_text", "Debe pegar el HTML de la galería.")
+        else:
+            self.add_error("source_mode", "Modo de fuente no válido.")
+
+        return cleaned
 
 
 def csv_rows(file_obj) -> Iterable[dict[str, str]]:

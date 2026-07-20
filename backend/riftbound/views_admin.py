@@ -1,5 +1,4 @@
 import csv
-import hashlib
 import html
 import io
 import re
@@ -112,11 +111,7 @@ def _build_riftbound_bulk_csv_text(rows: list[dict[str, str]]) -> str:
     return buffer.getvalue()
 
 
-def _collect_cards_from_riftbound_gallery(source_url: str, max_cards: int, set_code: str) -> list[dict[str, str]]:
-    response = requests.get(source_url, timeout=90)
-    response.raise_for_status()
-    html_text = response.text
-
+def _collect_cards_from_riftbound_gallery_html(html_text: str, max_cards: int, set_code: str) -> list[dict[str, str]]:
     cards: list[dict[str, str]] = []
     seen_urls: set[str] = set()
     seen_numbers: set[str] = set()
@@ -183,19 +178,38 @@ def _collect_cards_from_riftbound_gallery(source_url: str, max_cards: int, set_c
     return cards
 
 
+def _collect_cards_from_riftbound_gallery(source_url: str, max_cards: int, set_code: str) -> list[dict[str, str]]:
+    response = requests.get(source_url, timeout=90)
+    response.raise_for_status()
+    return _collect_cards_from_riftbound_gallery_html(response.text, max_cards=max_cards, set_code=set_code)
+
+
 def _build_prepared_source_payload(cleaned: dict) -> dict:
+    source_mode = str(cleaned.get("source_mode") or SourceRiftboundGalleryForm.SOURCE_MODE_URL).strip()
     source_url = str(cleaned.get("source_url") or "").strip()
     set_code = str(cleaned.get("set_code") or "").strip().upper()
     max_cards = int(cleaned.get("max_cards") or 1200)
     generate_bulk_csv = bool(cleaned.get("generate_bulk_csv"))
 
-    parsed = urlparse(source_url)
-    host = parsed.netloc.lower().strip()
-    path = (parsed.path or "").lower()
-    if host not in RIFTBOUND_GALLERY_HOSTS or "/card-gallery" not in path:
-        raise ValueError("La URL no corresponde a una galería de Riftbound soportada.")
+    if source_mode == SourceRiftboundGalleryForm.SOURCE_MODE_URL:
+        parsed = urlparse(source_url)
+        host = parsed.netloc.lower().strip()
+        path = (parsed.path or "").lower()
+        if host not in RIFTBOUND_GALLERY_HOSTS or "/card-gallery" not in path:
+            raise ValueError("La URL no corresponde a una galería de Riftbound soportada.")
+        rows = _collect_cards_from_riftbound_gallery(source_url, max_cards=max_cards, set_code=set_code)
+    elif source_mode == SourceRiftboundGalleryForm.SOURCE_MODE_HTML_FILE:
+        uploaded = cleaned.get("source_html_file")
+        if not uploaded:
+            raise ValueError("Debe subir un archivo HTML.")
+        html_text = uploaded.read().decode("utf-8", errors="replace")
+        rows = _collect_cards_from_riftbound_gallery_html(html_text, max_cards=max_cards, set_code=set_code)
+    elif source_mode == SourceRiftboundGalleryForm.SOURCE_MODE_HTML_TEXT:
+        html_text = str(cleaned.get("source_html_text") or "")
+        rows = _collect_cards_from_riftbound_gallery_html(html_text, max_cards=max_cards, set_code=set_code)
+    else:
+        raise ValueError("Modo de fuente no soportado.")
 
-    rows = _collect_cards_from_riftbound_gallery(source_url, max_cards=max_cards, set_code=set_code)
     csv_text = _build_riftbound_bulk_csv_text(rows) if generate_bulk_csv else ""
 
     cards_for_download = [
@@ -210,6 +224,7 @@ def _build_prepared_source_payload(cleaned: dict) -> dict:
     ]
 
     return {
+        "source_mode": source_mode,
         "source_url": source_url,
         "set_code": set_code,
         "cards": cards_for_download,
@@ -506,12 +521,20 @@ def riftbound_admin_bulk_cards(request):
         action = (request.POST.get("action") or "upload_csv").strip().lower()
 
         if action == "prepare_source_cards":
-            source_form = SourceRiftboundGalleryForm(request.POST)
+            source_form = SourceRiftboundGalleryForm(request.POST, request.FILES)
             if source_form.is_valid():
                 try:
                     prepared_payload = _build_prepared_source_payload(source_form.cleaned_data)
                 except Exception as exc:
-                    messages.error(request, f"No se pudo preparar la fuente: {exc}")
+                    exc_text = str(exc)
+                    if "ProxyError" in exc_text or "403 Forbidden" in exc_text:
+                        messages.error(
+                            request,
+                            "No se pudo abrir la URL desde el servidor por restricción de proxy. "
+                            "Use 'Desde archivo HTML' o 'Pegando HTML' para preparar la fuente.",
+                        )
+                    else:
+                        messages.error(request, f"No se pudo preparar la fuente: {exc}")
                 else:
                     request.session[SESSION_KEY_RIFTBOUND_SOURCE_PREPARED] = prepared_payload
                     messages.success(

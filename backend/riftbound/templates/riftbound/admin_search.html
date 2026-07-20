@@ -183,7 +183,7 @@
   {% endif %}
 
   <table>
-    <thead><tr><th>Carta</th><th>Número</th><th>Formato</th><th>Estado</th><th>Copias</th><th>Vigencia</th><th>Acción</th></tr></thead>
+    <thead><tr><th>Carta</th><th>Número</th><th>Formato</th><th>Estado</th><th>Copias</th><th>Vigencia</th><th>Acciones</th></tr></thead>
     <tbody>
       {% for b in banlist %}
         <tr>
@@ -193,7 +193,14 @@
           <td>{{ b.get_status_display }}</td>
           <td>{{ b.max_copies }}</td>
           <td>{{ b.effective_from|default:"-" }}</td>
-          <td class="row-actions"><a href="{% url 'riftbound-admin-banlist-edit' b.id %}">Editar banlist</a></td>
+          <td class="row-actions">
+            <a href="{% url 'riftbound-admin-banlist-edit' b.id %}?next={{ request.get_full_path|urlencode }}">Editar banlist</a>
+            <form method="post" action="{% url 'riftbound-admin-banlist-delete' b.id %}" style="display:inline;" onsubmit="return confirm('¿Seguro que desea eliminar esta entrada de banlist?');">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <button type="submit" class="danger">Eliminar</button>
+            </form>
+          </td>
         </tr>
       {% empty %}
         <tr><td colspan="7">Sin resultados.</td></tr>

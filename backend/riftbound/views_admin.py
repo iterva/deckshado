@@ -7,6 +7,7 @@ from django.core.paginator import Paginator
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_http_methods
 
 from cards.admin_tools import host_from_url, upload_image_url_to_imagekit
@@ -27,6 +28,17 @@ from .models import RiftboundBanlistEntry, RiftboundCard, RiftboundFormat, Riftb
 
 
 SESSION_KEY_IMAGEKIT = "cards_admin_imagekit_session"
+
+
+def _redirect_next_or_default(request, default_view_name: str):
+    next_url = (request.POST.get("next") or request.GET.get("next") or "").strip()
+    if next_url and url_has_allowed_host_and_scheme(
+        url=next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return redirect(next_url)
+    return redirect(default_view_name)
 
 
 def riftbound_admin_owner_required(view_func):
@@ -197,8 +209,18 @@ def riftbound_admin_banlist_edit(request, entry_id: int):
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Entrada de banlist Riftbound actualizada correctamente.")
-        return redirect("riftbound-admin-dashboard")
+        return _redirect_next_or_default(request, "riftbound-admin-dashboard")
     return render(request, "cards/admin_entity_form.html", {"title": f"Editar banlist: {entry.card.name}", "form": form})
+
+
+@riftbound_admin_owner_required
+@require_http_methods(["POST"])
+def riftbound_admin_banlist_delete(request, entry_id: int):
+    entry = get_object_or_404(RiftboundBanlistEntry, pk=entry_id)
+    card_name = entry.card.name
+    entry.delete()
+    messages.success(request, f"Entrada de banlist eliminada: {card_name}.")
+    return _redirect_next_or_default(request, "riftbound-admin-search")
 
 
 @riftbound_admin_owner_required

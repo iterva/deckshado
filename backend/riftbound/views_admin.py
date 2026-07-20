@@ -187,9 +187,18 @@ def _collect_cards_from_riftbound_gallery(source_url: str, max_cards: int, set_c
 def _build_prepared_source_payload(cleaned: dict) -> dict:
     source_mode = str(cleaned.get("source_mode") or SourceRiftboundGalleryForm.SOURCE_MODE_URL).strip()
     source_url = str(cleaned.get("source_url") or "").strip()
+    source_html_file = cleaned.get("source_html_file")
+    source_html_text = str(cleaned.get("source_html_text") or "")
     set_code = str(cleaned.get("set_code") or "").strip().upper()
     max_cards = int(cleaned.get("max_cards") or 1200)
     generate_bulk_csv = bool(cleaned.get("generate_bulk_csv"))
+
+    # Fallback automático: si el usuario aporta HTML manual, úselo aunque no haya
+    # cambiado explícitamente el selector de modo.
+    if source_html_file:
+        source_mode = SourceRiftboundGalleryForm.SOURCE_MODE_HTML_FILE
+    elif source_html_text.strip():
+        source_mode = SourceRiftboundGalleryForm.SOURCE_MODE_HTML_TEXT
 
     if source_mode == SourceRiftboundGalleryForm.SOURCE_MODE_URL:
         parsed = urlparse(source_url)
@@ -199,13 +208,13 @@ def _build_prepared_source_payload(cleaned: dict) -> dict:
             raise ValueError("La URL no corresponde a una galería de Riftbound soportada.")
         rows = _collect_cards_from_riftbound_gallery(source_url, max_cards=max_cards, set_code=set_code)
     elif source_mode == SourceRiftboundGalleryForm.SOURCE_MODE_HTML_FILE:
-        uploaded = cleaned.get("source_html_file")
+        uploaded = source_html_file
         if not uploaded:
             raise ValueError("Debe subir un archivo HTML.")
         html_text = uploaded.read().decode("utf-8", errors="replace")
         rows = _collect_cards_from_riftbound_gallery_html(html_text, max_cards=max_cards, set_code=set_code)
     elif source_mode == SourceRiftboundGalleryForm.SOURCE_MODE_HTML_TEXT:
-        html_text = str(cleaned.get("source_html_text") or "")
+        html_text = source_html_text
         rows = _collect_cards_from_riftbound_gallery_html(html_text, max_cards=max_cards, set_code=set_code)
     else:
         raise ValueError("Modo de fuente no soportado.")

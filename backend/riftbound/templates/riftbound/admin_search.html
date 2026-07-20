@@ -3,10 +3,129 @@
 <div class="panel">
   <h1>Buscar y editar (Riftbound)</h1>
   <form method="get">
-    <label for="q">Texto</label>
-    <input id="q" name="q" value="{{ q }}" placeholder="Nombre de carta, set o banlist">
-    <button type="submit">Buscar</button>
+    <div class="grid">
+      <div>
+        <label for="q">Texto</label>
+        <input id="q" name="q" value="{{ q }}" placeholder="Nombre, número, set, habilidad...">
+      </div>
+
+      <div>
+        <label for="set_id">Set</label>
+        <select id="set_id" name="set_id">
+          <option value="">Todos</option>
+          {% for s in sets_filter %}
+            <option value="{{ s.id }}" {% if set_id == s.id %}selected{% endif %}>{{ s.code }} - {{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label for="card_type">Tipo</label>
+        <select id="card_type" name="card_type">
+          <option value="">Todos</option>
+          {% for value, label in card_type_choices %}
+            <option value="{{ value }}" {% if card_type == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label for="rarity">Rareza</label>
+        <select id="rarity" name="rarity">
+          <option value="">Todas</option>
+          {% for value, label in rarity_choices %}
+            <option value="{{ value }}" {% if rarity == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label for="is_active">Estado</label>
+        <select id="is_active" name="is_active">
+          <option value="all" {% if is_active == "all" %}selected{% endif %}>Todos</option>
+          <option value="active" {% if is_active == "active" %}selected{% endif %}>Activas</option>
+          <option value="inactive" {% if is_active == "inactive" %}selected{% endif %}>Inactivas</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="has_description">Texto de reglas</label>
+        <select id="has_description" name="has_description">
+          <option value="all" {% if has_description == "all" %}selected{% endif %}>Todas</option>
+          <option value="yes" {% if has_description == "yes" %}selected{% endif %}>Con texto</option>
+          <option value="no" {% if has_description == "no" %}selected{% endif %}>Sin texto</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="has_cdn_image">Imagen CDN</label>
+        <select id="has_cdn_image" name="has_cdn_image">
+          <option value="all" {% if has_cdn_image == "all" %}selected{% endif %}>Todas</option>
+          <option value="yes" {% if has_cdn_image == "yes" %}selected{% endif %}>Con CDN</option>
+          <option value="no" {% if has_cdn_image == "no" %}selected{% endif %}>Sin CDN</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="page_size">Filas por página</label>
+        <select id="page_size" name="page_size">
+          <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+          <option value="200" {% if page_size == 200 %}selected{% endif %}>200</option>
+          <option value="500" {% if page_size == 500 %}selected{% endif %}>500</option>
+          <option value="1000" {% if page_size == 1000 %}selected{% endif %}>1000</option>
+        </select>
+      </div>
+    </div>
+
+    <button type="submit">Aplicar filtros</button>
+    <a href="{% url 'riftbound-admin-search' %}" style="margin-left:10px; text-decoration:none; font-weight:600; color:#0c5f4a;">Limpiar</a>
   </form>
+</div>
+
+<div class="panel">
+  <h2>Cartas</h2>
+  {% if total_cards %}
+    <p class="muted">
+      Total: {{ total_cards }} cartas.
+      Mostrando {{ page_obj.start_index }} - {{ page_obj.end_index }}.
+    </p>
+  {% else %}
+    <p class="muted">Sin resultados para los filtros actuales.</p>
+  {% endif %}
+
+  <table>
+    <thead><tr><th>Número</th><th>Nombre</th><th>Set</th><th>Tipo</th><th>Rareza</th><th>Estado</th><th>Energía</th><th>Poder</th><th>Might</th><th>Acción</th></tr></thead>
+    <tbody>
+      {% for c in cards %}
+        <tr>
+          <td>{{ c.card_number }}</td>
+          <td>{{ c.name }}</td>
+          <td>{{ c.set.code|default:"-" }}</td>
+          <td>{{ c.get_card_type_display }}</td>
+          <td>{{ c.get_rarity_display }}</td>
+          <td>{{ c.is_active|yesno:"Activa,Inactiva" }}</td>
+          <td>{{ c.energy|default:"-" }}</td>
+          <td>{{ c.power|default:"-" }}</td>
+          <td>{{ c.might|default:"-" }}</td>
+          <td class="row-actions"><a href="{% url 'riftbound-admin-card-edit' c.id %}">Editar carta</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="10">Sin resultados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+    <p style="margin-top:10px;">
+      {% if page_obj.has_previous %}
+        <a href="?{{ query_without_page }}{% if query_without_page %}&{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>
+      {% endif %}
+      <span style="margin:0 8px;">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a href="?{{ query_without_page }}{% if query_without_page %}&{% endif %}page={{ page_obj.next_page_number }}">Siguiente</a>
+      {% endif %}
+    </p>
+  {% endif %}
 </div>
 
 {% if q %}
@@ -26,27 +145,6 @@
         </tr>
       {% empty %}
         <tr><td colspan="3">Sin resultados.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
-<div class="panel">
-  <h2>Cartas</h2>
-  <table>
-    <thead><tr><th>Número</th><th>Nombre</th><th>Set</th><th>Tipo</th><th>Rareza</th><th>Acción</th></tr></thead>
-    <tbody>
-      {% for c in cards %}
-        <tr>
-          <td>{{ c.card_number }}</td>
-          <td>{{ c.name }}</td>
-          <td>{{ c.set.code|default:"-" }}</td>
-          <td>{{ c.get_card_type_display }}</td>
-          <td>{{ c.get_rarity_display }}</td>
-          <td class="row-actions"><a href="{% url 'riftbound-admin-card-edit' c.id %}">Editar carta</a></td>
-        </tr>
-      {% empty %}
-        <tr><td colspan="6">Sin resultados.</td></tr>
       {% endfor %}
     </tbody>
   </table>

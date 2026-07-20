@@ -3,6 +3,7 @@ from functools import wraps
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
+from django.core.paginator import Paginator
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -298,13 +299,86 @@ def riftbound_admin_bulk_cards(request):
 @require_http_methods(["GET"])
 def riftbound_admin_search(request):
     q = (request.GET.get("q") or "").strip()
+    set_id_raw = (request.GET.get("set_id") or "").strip()
+    card_type = (request.GET.get("card_type") or "").strip().lower()
+    rarity = (request.GET.get("rarity") or "").strip().lower()
+    is_active = (request.GET.get("is_active") or "all").strip().lower()
+    has_description = (request.GET.get("has_description") or "all").strip().lower()
+    has_cdn_image = (request.GET.get("has_cdn_image") or "all").strip().lower()
+
+    page_size_raw = (request.GET.get("page_size") or "200").strip()
+    allowed_page_sizes = {100, 200, 500, 1000}
+    try:
+        page_size = int(page_size_raw)
+    except ValueError:
+        page_size = 200
+    if page_size not in allowed_page_sizes:
+        page_size = 200
+
+    def _to_int(value: str) -> int | None:
+        if not value:
+            return None
+        try:
+            return int(value)
+        except ValueError:
+            return None
+
+    set_id = _to_int(set_id_raw)
+
+    sets_filter = RiftboundSet.objects.order_by("code")
+    card_type_choices = list(RiftboundCard._meta.get_field("card_type").choices)
+    rarity_choices = list(RiftboundCard._meta.get_field("rarity").choices)
+
+    cards_qs = RiftboundCard.objects.select_related("set")
+
+    if q:
+        cards_qs = cards_qs.filter(
+            Q(name__icontains=q)
+            | Q(card_number__icontains=q)
+            | Q(slug__icontains=q)
+            | Q(description__icontains=q)
+            | Q(variant__icontains=q)
+            | Q(set__code__icontains=q)
+            | Q(set__name__icontains=q)
+        )
+
+    if set_id:
+        cards_qs = cards_qs.filter(set_id=set_id)
+    if card_type:
+        cards_qs = cards_qs.filter(card_type=card_type)
+    if rarity:
+        cards_qs = cards_qs.filter(rarity=rarity)
+
+    if is_active == "active":
+        cards_qs = cards_qs.filter(is_active=True)
+    elif is_active == "inactive":
+        cards_qs = cards_qs.filter(is_active=False)
+
+    if has_description == "yes":
+        cards_qs = cards_qs.exclude(description__exact="")
+    elif has_description == "no":
+        cards_qs = cards_qs.filter(description__exact="")
+
+    if has_cdn_image == "yes":
+        cards_qs = cards_qs.exclude(cdn_image_url__exact="")
+    elif has_cdn_image == "no":
+        cards_qs = cards_qs.filter(cdn_image_url__exact="")
+
+    cards_qs = cards_qs.order_by("set__code", "card_number", "name")
+    total_cards = cards_qs.count()
+    paginator = Paginator(cards_qs, page_size)
+    page_obj = paginator.get_page(request.GET.get("page") or 1)
+    cards = page_obj.object_list
+
+    query_without_page = request.GET.copy()
+    if "page" in query_without_page:
+        del query_without_page["page"]
+
     sets = RiftboundSet.objects.none()
-    cards = RiftboundCard.objects.none()
     banlist = RiftboundBanlistEntry.objects.none()
 
     if q:
         sets = RiftboundSet.objects.filter(Q(code__icontains=q) | Q(name__icontains=q)).order_by("code")[:40]
-        cards = RiftboundCard.objects.filter(name__icontains=q).select_related("set")[:80]
         banlist = RiftboundBanlistEntry.objects.filter(card__name__icontains=q).select_related("card", "format")[:80]
 
     return render(
@@ -312,6 +386,19 @@ def riftbound_admin_search(request):
         "riftbound/admin_search.html",
         {
             "q": q,
+            "set_id": set_id or "",
+            "card_type": card_type,
+            "rarity": rarity,
+            "is_active": is_active,
+            "has_description": has_description,
+            "has_cdn_image": has_cdn_image,
+            "page_size": page_size,
+            "total_cards": total_cards,
+            "page_obj": page_obj,
+            "query_without_page": query_without_page.urlencode(),
+            "sets_filter": sets_filter,
+            "card_type_choices": card_type_choices,
+            "rarity_choices": rarity_choices,
             "sets": sets,
             "cards": cards,
             "banlist": banlist,

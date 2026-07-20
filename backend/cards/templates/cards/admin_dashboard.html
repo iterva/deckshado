@@ -1,0 +1,83 @@
+{% extends "cards/admin_base.html" %}
+{% block title %}Panel Cartas y Banlist{% endblock %}
+{% block content %}
+<div class="panel">
+  <h1>Panel Administrativo de Cartas y Banlist</h1>
+  <p class="muted">Gestione temporadas, ediciones, cartas y banlist desde una sola vista dedicada.</p>
+  <div class="grid">
+    <div class="metric"><div class="muted">Temporadas</div><div class="value">{{ season_count }}</div></div>
+    <div class="metric"><div class="muted">Ediciones</div><div class="value">{{ edition_count }}</div></div>
+    <div class="metric"><div class="muted">Ediciones activas</div><div class="value">{{ active_edition_count }}</div></div>
+    <div class="metric"><div class="muted">Cartas</div><div class="value">{{ card_count }}</div></div>
+    <div class="metric"><div class="muted">Banlist</div><div class="value">{{ banlist_count }}</div></div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Acciones rápidas</h2>
+  <a href="{% url 'cards-admin-season-new' %}">Nueva temporada</a> |
+  <a href="{% url 'cards-admin-edition-new' %}">Nueva edición</a> |
+  <a href="{% url 'cards-admin-card-new' %}">Nueva carta</a> |
+  <a href="{% url 'cards-admin-banlist-new' %}">Nueva entrada banlist</a>
+</div>
+
+<div class="panel">
+  <h2>Temporadas</h2>
+  <table>
+    <thead><tr><th>Código</th><th>Nombre</th><th>Inicio</th><th>Fin</th><th>Activa</th><th>Acción</th></tr></thead>
+    <tbody>
+      {% for s in recent_seasons %}
+        <tr>
+          <td>{{ s.code }}</td>
+          <td>{{ s.name }}</td>
+          <td>{{ s.start_date|default:"-" }}</td>
+          <td>{{ s.end_date|default:"-" }}</td>
+          <td>{{ s.is_active|yesno:"Sí,No" }}</td>
+          <td class="row-actions"><a href="{% url 'cards-admin-season-edit' s.id %}">Editar</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6">Sin temporadas registradas.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="panel">
+  <h2>Sesión de subida ImageKit</h2>
+  {% if imagekit_session %}
+    <p><strong>Sesión activa:</strong> {{ imagekit_session.url }}</p>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="clear_imagekit_session">
+      <button class="danger" type="submit">Limpiar sesión ImageKit</button>
+    </form>
+  {% else %}
+    <p class="muted">No hay sesión de ImageKit activa. Para carga masiva con subida, cargue un archivo env en esta sesión.</p>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="set_imagekit_session">
+    {{ imagekit_form.as_p }}
+    <button type="submit">Cargar env de sesión</button>
+  </form>
+</div>
+
+<div class="panel">
+  <h2>Resumen por formato</h2>
+  <table>
+    <thead><tr><th>Formato</th><th>Código</th><th>Total ediciones</th></tr></thead>
+    <tbody>
+      {% for row in editions_by_format %}
+        <tr>
+          <td>{{ row.format__name|default:"-" }}</td>
+          <td>{{ row.format__code|default:"-" }}</td>
+          <td>{{ row.total }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="3">Sin datos.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

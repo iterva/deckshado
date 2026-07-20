@@ -1,0 +1,94 @@
+{% extends "cards/admin_base.html" %}
+{% block content %}
+<div class="panel">
+  <h1>Buscar y editar</h1>
+  <form method="get">
+    <label for="q">Texto</label>
+    <input id="q" name="q" value="{{ q }}" placeholder="Nombre de carta, edición o banlist">
+    <button type="submit">Buscar</button>
+  </form>
+</div>
+
+{% if q %}
+<div class="panel">
+  <h2>Temporadas</h2>
+  <table>
+    <thead><tr><th>Código</th><th>Nombre</th><th>Inicio</th><th>Fin</th><th>Activa</th><th>Acción</th></tr></thead>
+    <tbody>
+      {% for s in seasons %}
+        <tr>
+          <td>{{ s.code }}</td>
+          <td>{{ s.name }}</td>
+          <td>{{ s.start_date|default:"-" }}</td>
+          <td>{{ s.end_date|default:"-" }}</td>
+          <td>{{ s.is_active|yesno:"Sí,No" }}</td>
+          <td class="row-actions"><a href="{% url 'cards-admin-season-edit' s.id %}">Editar</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6">Sin resultados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="panel">
+  <h2>Ediciones</h2>
+  <table>
+    <thead><tr><th>Título</th><th>Formato</th><th>Temporada</th><th>Activa</th><th>Acción</th></tr></thead>
+    <tbody>
+      {% for e in editions %}
+        <tr>
+          <td>{{ e.title }}</td>
+          <td>{{ e.format.name|default:"-" }}</td>
+          <td>{{ e.season.name|default:"-" }}</td>
+          <td>{{ e.active|yesno:"Sí,No" }}</td>
+          <td class="row-actions"><a href="{% url 'cards-admin-edition-edit' e.id %}">Editar</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5">Sin resultados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="panel">
+  <h2>Cartas</h2>
+  <table>
+    <thead><tr><th>Nombre</th><th>Edición</th><th>Tipo</th><th>Rareza</th><th>Acción</th></tr></thead>
+    <tbody>
+      {% for c in cards %}
+        <tr>
+          <td>{{ c.name }}</td>
+          <td>{{ c.edition.title }}</td>
+          <td>{{ c.card_type.name|default:"-" }}</td>
+          <td>{{ c.rarity.name|default:"-" }}</td>
+          <td class="row-actions"><a href="{% url 'cards-admin-card-edit' c.id %}">Editar</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5">Sin resultados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="panel">
+  <h2>Banlist</h2>
+  <table>
+    <thead><tr><th>Carta</th><th>Formato</th><th>Sub-formato</th><th>Estado</th><th>Acción</th></tr></thead>
+    <tbody>
+      {% for b in banlist %}
+        <tr>
+          <td>{{ b.card_name }}</td>
+          <td>{{ b.format_code }}</td>
+          <td>{{ b.sub_format }}</td>
+          <td>{{ b.get_status_display }}</td>
+          <td class="row-actions"><a href="{% url 'cards-admin-banlist-edit' b.id %}">Editar</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5">Sin resultados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "cards/admin_base.html" %}
+{% block content %}
+<div class="panel">
+  <h1>Activar o desactivar ediciones</h1>
+  <p class="muted">Seleccione una o varias ediciones y cambie su estado en bloque.</p>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Aplicar cambios</button>
+  </form>
+</div>
+{% endblock %}

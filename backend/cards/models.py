@@ -12,6 +12,20 @@ class Format(models.Model):
         return self.name
 
 
+class Season(models.Model):
+    code = models.CharField(max_length=30, unique=True, db_index=True)
+    name = models.CharField(max_length=120)
+    start_date = models.DateField(blank=True, null=True)
+    end_date = models.DateField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["-is_active", "-start_date", "name"]
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+
+
 class Edition(models.Model):
     myl_id = models.CharField(max_length=20, unique=True)
     slug = models.CharField(max_length=100, unique=True, db_index=True)
@@ -19,6 +33,13 @@ class Edition(models.Model):
     image = models.URLField(blank=True, null=True)
     date_release = models.DateField(blank=True, null=True)
     date_empire_valid = models.DateField(blank=True, null=True)
+    season = models.ForeignKey(
+        Season,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="editions",
+    )
     format = models.ForeignKey(Format, on_delete=models.SET_NULL, null=True, blank=True, related_name="editions")
     active = models.BooleanField(default=True, help_text="Si la edición está en la rotación actual de su formato")
 

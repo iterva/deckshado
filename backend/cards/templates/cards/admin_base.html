@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}Cards Admin{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --ink: #192230;
+      --muted: #546275;
+      --primary: #0f7f61;
+      --border: #d9e0e8;
+      --danger: #b42f2f;
+    }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(160deg, #f9fcff 0%, #edf4fb 100%);
+      color: var(--ink);
+    }
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 6px 18px rgba(24, 40, 58, 0.08);
+      margin-bottom: 16px;
+    }
+    h1, h2, h3 { margin: 0 0 10px; }
+    .muted { color: var(--muted); }
+    .grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+    .metric {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      background: #fbfdff;
+    }
+    .metric .value {
+      font-weight: 700;
+      font-size: 1.4rem;
+      color: var(--primary);
+    }
+    .nav a {
+      display: inline-block;
+      margin: 0 8px 8px 0;
+      text-decoration: none;
+      color: #fff;
+      background: var(--primary);
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 0.92rem;
+    }
+    .nav a.secondary {
+      background: #2e3f58;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin: 10px 0 6px;
+    }
+    input, select, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 0.94rem;
+      background: #fff;
+    }
+    textarea { min-height: 120px; }
+    button {
+      border: 0;
+      border-radius: 8px;
+      background: var(--primary);
+      color: #fff;
+      padding: 8px 12px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+    button.alt { background: #2e3f58; }
+    button.danger { background: var(--danger); }
+    ul.messages {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 12px;
+    }
+    ul.messages li {
+      margin-bottom: 6px;
+      padding: 8px;
+      border-radius: 8px;
+      background: #eef6ff;
+      border: 1px solid #cee1f6;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #f0f4f9; }
+    .row-actions a {
+      margin-right: 8px;
+      color: #0c5f4a;
+      text-decoration: none;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel nav">
+      <a href="{% url 'cards-admin-dashboard' %}">Panel Cartas/Banlist</a>
+      <a href="{% url 'cards-admin-search' %}" class="secondary">Buscar/Editar</a>
+      <a href="{% url 'cards-admin-toggle-editions' %}" class="secondary">Activar/Desactivar Ediciones</a>
+      <a href="{% url 'cards-admin-bulk-editions' %}" class="secondary">Carga Masiva Ediciones</a>
+      <a href="{% url 'cards-admin-bulk-cards' %}" class="secondary">Carga Masiva Cartas</a>
+    </div>
+
+    {% if messages %}
+      <ul class="messages">
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

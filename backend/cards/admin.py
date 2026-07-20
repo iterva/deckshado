@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Format, Edition, Race, CardType, Rarity, Keyword, Card, BanlistEntry
+from .models import Format, Season, Edition, Race, CardType, Rarity, Keyword, Card, BanlistEntry
 
 
 @admin.register(Format)
@@ -8,10 +8,17 @@ class FormatAdmin(admin.ModelAdmin):
     search_fields = ["code", "name"]
 
 
+@admin.register(Season)
+class SeasonAdmin(admin.ModelAdmin):
+    list_display = ["code", "name", "start_date", "end_date", "is_active"]
+    list_filter = ["is_active"]
+    search_fields = ["code", "name"]
+
+
 @admin.register(Edition)
 class EditionAdmin(admin.ModelAdmin):
-    list_display = ["title", "slug", "format", "date_release"]
-    list_filter = ["format"]
+    list_display = ["title", "slug", "format", "season", "active", "date_release"]
+    list_filter = ["format", "season", "active"]
     search_fields = ["title", "slug"]
 
 

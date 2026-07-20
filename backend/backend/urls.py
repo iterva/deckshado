@@ -7,6 +7,21 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django.db.models import Q
 from external_api import external_token, external_token_google, external_set_password, external_my_decks, external_cards_by_format
+from cards.views_admin import (
+    cards_admin_dashboard,
+    cards_admin_toggle_editions,
+    cards_admin_season_new,
+    cards_admin_season_edit,
+    cards_admin_edition_new,
+    cards_admin_edition_edit,
+    cards_admin_card_new,
+    cards_admin_card_edit,
+    cards_admin_banlist_new,
+    cards_admin_banlist_edit,
+    cards_admin_bulk_editions,
+    cards_admin_bulk_cards,
+    cards_admin_quick_search,
+)
 
 
 @api_view(["GET"])
@@ -38,6 +53,19 @@ def global_search(request):
 
 
 urlpatterns = [
+    path("admin/cards-tools/", cards_admin_dashboard, name="cards-admin-dashboard"),
+    path("admin/cards-tools/toggle-editions/", cards_admin_toggle_editions, name="cards-admin-toggle-editions"),
+    path("admin/cards-tools/seasons/new/", cards_admin_season_new, name="cards-admin-season-new"),
+    path("admin/cards-tools/seasons/<int:season_id>/edit/", cards_admin_season_edit, name="cards-admin-season-edit"),
+    path("admin/cards-tools/editions/new/", cards_admin_edition_new, name="cards-admin-edition-new"),
+    path("admin/cards-tools/editions/<int:edition_id>/edit/", cards_admin_edition_edit, name="cards-admin-edition-edit"),
+    path("admin/cards-tools/cards/new/", cards_admin_card_new, name="cards-admin-card-new"),
+    path("admin/cards-tools/cards/<int:card_id>/edit/", cards_admin_card_edit, name="cards-admin-card-edit"),
+    path("admin/cards-tools/banlist/new/", cards_admin_banlist_new, name="cards-admin-banlist-new"),
+    path("admin/cards-tools/banlist/<int:entry_id>/edit/", cards_admin_banlist_edit, name="cards-admin-banlist-edit"),
+    path("admin/cards-tools/bulk/editions/", cards_admin_bulk_editions, name="cards-admin-bulk-editions"),
+    path("admin/cards-tools/bulk/cards/", cards_admin_bulk_cards, name="cards-admin-bulk-cards"),
+    path("admin/cards-tools/search/", cards_admin_quick_search, name="cards-admin-search"),
     path("admin/", admin.site.urls),
     path("api/auth/", include("users.urls")),
     path("api/cards/", include("cards.urls")),

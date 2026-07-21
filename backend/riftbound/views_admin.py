@@ -479,6 +479,7 @@ def _build_riftbound_bulk_csv_text(rows: list[dict[str, str]]) -> str:
 def _build_riftbound_upload_result_csv_text(rows: list[dict[str, str]]) -> str:
     headers = [
         "card_number",
+        "_source_card_number",
         "name",
         "set_code",
         "slug",
@@ -976,6 +977,37 @@ def _card_number_key(value: str) -> str:
     return re.sub(r"[^A-Za-z0-9-]", "", str(value or "").strip().upper())
 
 
+def _card_identity_key(row: dict[str, str]) -> str:
+    name = str(row.get("name") or "").strip().lower()
+    slug = str(row.get("slug") or "").strip().lower()
+    card_type = str(row.get("card_type") or "").strip().lower()
+    return f"{name}|{slug}|{card_type}"
+
+
+def _alpha_suffix(index: int) -> str:
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    result = ""
+    value = max(1, int(index))
+    while value > 0:
+        value, rem = divmod(value - 1, 26)
+        result = alphabet[rem] + result
+    return result
+
+
+def _next_available_card_number(base_card_number: str, is_taken) -> str:
+    base = _card_number_key(base_card_number) or "RIFT"
+    max_len = 20
+
+    for idx in range(1, 2000):
+        suffix = _alpha_suffix(idx)
+        prefix = base[: max_len - len(suffix)]
+        candidate = f"{prefix}{suffix}"
+        if not is_taken(candidate):
+            return candidate
+
+    raise ValueError(f"No se pudo generar card_number alternativo para '{base}'")
+
+
 def _open_images_zip_index(uploaded_file):
     file_name = str(getattr(uploaded_file, "name", "") or "").strip()
     if file_name and not file_name.lower().endswith(".zip"):
@@ -1040,6 +1072,10 @@ def _open_images_zip_index(uploaded_file):
 
 
 def _find_image_member_for_row(row: dict[str, str], by_card: dict[str, str], by_name: dict[str, str]) -> str:
+    source_card_number = _card_number_key(row.get("_source_card_number", ""))
+    if source_card_number and source_card_number in by_card:
+        return by_card[source_card_number]
+
     card_number = _card_number_key(row.get("card_number", ""))
     if card_number and card_number in by_card:
         return by_card[card_number]
@@ -1472,6 +1508,7 @@ def riftbound_admin_bulk_cards(request):
             uploaded_from_url = 0
             created_set_codes: set[str] = set()
             errors: list[str] = []
+            import_warnings: list[str] = []
             result_rows: list[dict[str, str]] = []
 
             do_upload = form.cleaned_data.get("upload_images_to_imagekit", False)
@@ -1499,6 +1536,44 @@ def riftbound_admin_bulk_cards(request):
             archive_by_card: dict[str, str] = {}
             archive_by_name: dict[str, str] = {}
             zip_warnings: list[str] = []
+            source_identities_by_number: dict[str, set[str]] = {}
+            source_assignment: dict[tuple[str, str], str] = {}
+            existing_identity_cache: dict[str, tuple[str, str] | None] = {}
+            reserved_numbers: set[str] = set()
+            number_exists_cache: dict[str, bool] = {}
+            card_number_adjustments = 0
+
+            def _existing_identity(card_number: str):
+                key = _card_number_key(card_number)
+                if key not in existing_identity_cache:
+                    row_db = RiftboundCard.objects.filter(card_number=key).values("name", "slug").first()
+                    if row_db:
+                        existing_identity_cache[key] = (
+                            str(row_db.get("name") or "").strip().lower(),
+                            str(row_db.get("slug") or "").strip().lower(),
+                        )
+                    else:
+                        existing_identity_cache[key] = None
+                return existing_identity_cache[key]
+
+            def _is_taken(card_number: str) -> bool:
+                key = _card_number_key(card_number)
+                if not key:
+                    return False
+                if key in reserved_numbers:
+                    return True
+                if key in number_exists_cache:
+                    return number_exists_cache[key]
+                exists = RiftboundCard.objects.filter(card_number=key).exists()
+                number_exists_cache[key] = exists
+                return exists
+
+            def _reserve(card_number: str):
+                key = _card_number_key(card_number)
+                if not key:
+                    return
+                reserved_numbers.add(key)
+                number_exists_cache[key] = True
 
             if do_upload and images_zip_file:
                 try:
@@ -1509,15 +1584,57 @@ def riftbound_admin_bulk_cards(request):
                     messages.error(request, f"ZIP de imágenes inválido: {exc}")
                     return redirect("riftbound-admin-bulk-cards")
 
-                if zip_warnings and not is_async_upload:
-                    for warn in zip_warnings[:5]:
-                        messages.warning(request, warn)
-
             try:
                 for idx, row in enumerate(csv_rows(form.cleaned_data["csv_file"]), start=2):
                     current_row = dict(row)
                     upload_source = "none"
                     try:
+                        raw_card_number = _card_number_key(current_row.get("card_number", ""))
+                        if raw_card_number:
+                            identity_key = _card_identity_key(current_row)
+                            source_pair = (raw_card_number, identity_key)
+                            assigned_number = source_assignment.get(source_pair)
+
+                            if assigned_number:
+                                current_row["card_number"] = assigned_number
+                                current_row["_source_card_number"] = raw_card_number
+                            else:
+                                seen_identities = source_identities_by_number.setdefault(raw_card_number, set())
+                                file_conflict = bool(seen_identities and identity_key not in seen_identities)
+
+                                existing_identity = _existing_identity(raw_card_number)
+                                db_conflict = bool(
+                                    existing_identity
+                                    and existing_identity
+                                    != (
+                                        str(current_row.get("name") or "").strip().lower(),
+                                        str(current_row.get("slug") or "").strip().lower(),
+                                    )
+                                )
+
+                                final_number = raw_card_number
+                                if file_conflict or db_conflict:
+                                    final_number = _next_available_card_number(raw_card_number, _is_taken)
+                                    current_row["card_number"] = final_number
+                                    current_row["_source_card_number"] = raw_card_number
+                                    card_number_adjustments += 1
+                                    reason_parts = []
+                                    if file_conflict:
+                                        reason_parts.append("duplicado en CSV")
+                                    if db_conflict:
+                                        reason_parts.append("colision con carta existente")
+                                    reason_text = ", ".join(reason_parts) or "colision"
+                                    import_warnings.append(
+                                        f"Línea {idx}: card_number '{raw_card_number}' ajustado a '{final_number}' ({reason_text})."
+                                    )
+                                else:
+                                    current_row["card_number"] = final_number
+
+                                source_assignment[source_pair] = final_number
+                                seen_identities.add(identity_key)
+
+                            _reserve(current_row.get("card_number", ""))
+
                         if default_domains and not (
                             current_row.get("domain_1")
                             or current_row.get("domain_2")
@@ -1595,6 +1712,11 @@ def riftbound_admin_bulk_cards(request):
                 if archive:
                     archive.close()
 
+            all_warnings = zip_warnings + import_warnings
+            if all_warnings and not is_async_upload:
+                for warn in all_warnings[:8]:
+                    messages.warning(request, warn)
+
             if result_rows:
                 set_code = str(result_rows[0].get("set_code") or "RIFT").strip().upper()
                 request.session[SESSION_KEY_RIFTBOUND_UPLOAD_RESULT] = {
@@ -1612,7 +1734,7 @@ def riftbound_admin_bulk_cards(request):
             summary_message = (
                 f"Cartas procesadas: {processed}, subidas ImageKit: {uploaded_to_imagekit} "
                 f"(ZIP: {uploaded_from_zip}, URL: {uploaded_from_url}), sets creados: {len(created_set_codes)}, "
-                f"errores: {len(errors)}"
+                f"ajustes card_number: {card_number_adjustments}, errores: {len(errors)}"
             )
 
             if is_async_upload:
@@ -1625,7 +1747,7 @@ def riftbound_admin_bulk_cards(request):
                     "uploaded_from_url": uploaded_from_url,
                     "created_sets_count": len(created_set_codes),
                     "created_sets": sorted(created_set_codes)[:30],
-                    "warnings": zip_warnings[:10],
+                    "warnings": all_warnings[:20],
                     "errors_count": len(errors),
                     "errors": errors[:20],
                     "message": summary_message,

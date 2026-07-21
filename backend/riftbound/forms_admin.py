@@ -319,6 +319,17 @@ def upsert_card_row(
     if not row_domains and fallback_domains:
         row_domains = [d for d in fallback_domains if _normalize_domain(d)][:2]
 
+    existing_card = RiftboundCard.objects.filter(card_number=card_number).only("image_url", "cdn_image_url").first()
+    image_url_value = str(row.get("image_url") or "").strip()
+    cdn_image_url_value = str(row.get("cdn_image_url") or "").strip()
+
+    # Si el CSV no trae URL de imagen para una carta existente, no sobrescribir con vacío.
+    if existing_card:
+        if not image_url_value:
+            image_url_value = existing_card.image_url
+        if not cdn_image_url_value:
+            cdn_image_url_value = existing_card.cdn_image_url
+
     card, _ = RiftboundCard.objects.update_or_create(
         card_number=card_number,
         defaults={
@@ -334,8 +345,8 @@ def upsert_card_row(
             "description": row.get("description", ""),
             "flavor": row.get("flavor", ""),
             "colors": row_domains,
-            "image_url": row.get("image_url", ""),
-            "cdn_image_url": row.get("cdn_image_url", ""),
+            "image_url": image_url_value,
+            "cdn_image_url": cdn_image_url_value,
             "is_active": str(row.get("is_active", "1")).lower() in {"1", "true", "yes", "si"},
         },
     )

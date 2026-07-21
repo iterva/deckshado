@@ -3,10 +3,16 @@
 {% block content %}
 <div class="panel">
   <h1>{{ set_obj.code }} - {{ set_obj.name }}</h1>
-  <p class="muted">Total cartas: {{ total }}</p>
+  <p class="muted">Total set: {{ total_all }} | Activas: {{ total_active }} | Inactivas: {{ total_inactive }} | Mostradas: {{ total }}</p>
   <form method="get">
     <label for="q">Buscar carta por nombre</label>
     <input id="q" name="q" value="{{ q }}" placeholder="Ej: Annie">
+    <label for="active" style="margin-left:0.5rem;">Estado</label>
+    <select id="active" name="active">
+      <option value="all" {% if active_filter == 'all' %}selected{% endif %}>Todas</option>
+      <option value="active" {% if active_filter == 'active' %}selected{% endif %}>Solo activas</option>
+      <option value="inactive" {% if active_filter == 'inactive' %}selected{% endif %}>Solo inactivas (faltantes)</option>
+    </select>
     <button type="submit">Buscar</button>
     <a href="{% url 'riftbound-admin-set-cards' set_obj.id %}">Limpiar</a>
   </form>

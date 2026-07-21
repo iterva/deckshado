@@ -44,6 +44,7 @@ SESSION_KEY_RIFTBOUND_UPLOAD_RESULT = "riftbound_admin_upload_result"
 
 RIFTBOUND_GALLERY_HOSTS = {"playriftbound.com", "www.playriftbound.com", "riftbound.leagueoflegends.com"}
 RIFTBOUND_IMAGE_HOSTS = {"cmsassets.rgpub.io"}
+RIFTBOUND_DOMAIN_ALLOWED = {"fury", "calm", "mind", "body", "chaos", "order", "neutral"}
 _IMG_TAG_RE = re.compile(r"<img\b[^>]*>", re.IGNORECASE)
 _NEXT_DATA_RE = re.compile(
     r'<script[^>]*id=["\']__NEXT_DATA__["\'][^>]*>(.*?)</script>',
@@ -112,6 +113,69 @@ def _html_to_plain_text(text_html: str) -> str:
     text = re.sub(r"<[^>]+>", " ", text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
+
+
+def _extract_domains_from_value(value) -> list[str]:
+    domains: list[str] = []
+
+    def _append(raw) -> None:
+        token = str(raw or "").strip().lower()
+        if token in RIFTBOUND_DOMAIN_ALLOWED and token not in domains:
+            domains.append(token)
+
+    def _walk(node) -> None:
+        if len(domains) >= 2:
+            return
+        if node is None:
+            return
+        if isinstance(node, str):
+            for part in re.split(r"[,;|/]", node):
+                _append(part)
+                if len(domains) >= 2:
+                    return
+            return
+        if isinstance(node, list):
+            for item in node:
+                _walk(item)
+                if len(domains) >= 2:
+                    return
+            return
+        if isinstance(node, dict):
+            for key in ("id", "slug", "code", "name", "value", "label", "title"):
+                if key in node:
+                    _walk(node.get(key))
+                    if len(domains) >= 2:
+                        return
+            for key in ("domain", "domains", "color", "colors"):
+                if key in node:
+                    _walk(node.get(key))
+                    if len(domains) >= 2:
+                        return
+
+    _walk(value)
+    return domains[:2]
+
+
+def _extract_domains_from_gallery_item(item: dict) -> list[str]:
+    domains: list[str] = []
+
+    def _add(value) -> None:
+        nonlocal domains
+        if len(domains) >= 2:
+            return
+        for token in _extract_domains_from_value(value):
+            if token not in domains:
+                domains.append(token)
+            if len(domains) >= 2:
+                return
+
+    for key in ("domain", "domains", "color", "colors"):
+        _add(item.get(key))
+
+    for key in ("classification", "classifications", "cardClassification"):
+        _add(item.get(key))
+
+    return domains[:2]
 
 
 def _extract_cards_items_from_next_data(root) -> list[dict]:
@@ -218,6 +282,10 @@ def _collect_cards_from_next_data_html(
         if rarity_id not in rarity_allowed:
             rarity_id = "other"
 
+        domains = _extract_domains_from_gallery_item(item)
+        domain_1 = domains[0] if len(domains) >= 1 else ""
+        domain_2 = domains[1] if len(domains) >= 2 else ""
+
         text_data = item.get("text") or {}
         rich_text = text_data.get("richText") if isinstance(text_data, dict) else {}
         body_html = str((rich_text or {}).get("body") or "")
@@ -243,6 +311,8 @@ def _collect_cards_from_next_data_html(
                 "slug": slug_name,
                 "card_type": type_id,
                 "rarity": rarity_id,
+                "domain_1": domain_1,
+                "domain_2": domain_2,
                 "energy": energy,
                 "power": power,
                 "might": might,
@@ -305,6 +375,8 @@ def _build_riftbound_bulk_csv_text(rows: list[dict[str, str]]) -> str:
         "slug",
         "card_type",
         "rarity",
+        "domain_1",
+        "domain_2",
         "energy",
         "power",
         "might",
@@ -330,6 +402,8 @@ def _build_riftbound_upload_result_csv_text(rows: list[dict[str, str]]) -> str:
         "slug",
         "card_type",
         "rarity",
+        "domain_1",
+        "domain_2",
         "energy",
         "power",
         "might",
@@ -404,6 +478,8 @@ def _collect_cards_from_riftbound_gallery_html(html_text: str, max_cards: int, s
                 "slug": slug_name,
                 "card_type": "unit",
                 "rarity": "common",
+                "domain_1": "",
+                "domain_2": "",
                 "energy": "",
                 "power": "",
                 "might": "",
@@ -838,6 +914,7 @@ def riftbound_admin_toggle_sets(request):
     for item in sets:
         all_active = item.card_total > 0 and item.active_cards == item.card_total
         partially_active = item.card_total > 0 and 0 < item.active_cards < item.card_total
+        inactive_cards = max(item.card_total - item.active_cards, 0)
         rows.append(
             {
                 "id": item.id,
@@ -845,6 +922,7 @@ def riftbound_admin_toggle_sets(request):
                 "name": item.name,
                 "card_total": item.card_total,
                 "active_cards": item.active_cards,
+                "inactive_cards": inactive_cards,
                 "all_active": all_active,
                 "partially_active": partially_active,
             }
@@ -881,10 +959,22 @@ def riftbound_admin_set_edit(request, set_id: int):
 def riftbound_admin_set_cards(request, set_id: int):
     set_obj = get_object_or_404(RiftboundSet, pk=set_id)
     q = (request.GET.get("q") or "").strip()
+    active_filter = (request.GET.get("active") or "all").strip().lower()
 
     cards_qs = RiftboundCard.objects.filter(set=set_obj).order_by("card_number")
+    total_all = cards_qs.count()
+    total_active = cards_qs.filter(is_active=True).count()
+    total_inactive = max(total_all - total_active, 0)
+
     if q:
         cards_qs = cards_qs.filter(name__icontains=q)
+
+    if active_filter == "active":
+        cards_qs = cards_qs.filter(is_active=True)
+    elif active_filter == "inactive":
+        cards_qs = cards_qs.filter(is_active=False)
+    else:
+        active_filter = "all"
 
     return render(
         request,
@@ -893,6 +983,10 @@ def riftbound_admin_set_cards(request, set_id: int):
             "set_obj": set_obj,
             "cards": cards_qs[:1000],
             "q": q,
+            "active_filter": active_filter,
+            "total_all": total_all,
+            "total_active": total_active,
+            "total_inactive": total_inactive,
             "total": cards_qs.count(),
         },
     )
@@ -1060,6 +1154,7 @@ def riftbound_admin_bulk_cards(request):
 
             do_upload = form.cleaned_data.get("upload_images_to_imagekit", False)
             auto_create_missing_sets = form.cleaned_data.get("auto_create_missing_sets", True)
+            default_domains = list(form.cleaned_data.get("default_domains") or [])
             imagekit_folder = form.cleaned_data.get("imagekit_folder", "").strip() or "deckshado/riftbound/cards_admin_bulk"
             images_zip_file = form.cleaned_data.get("images_zip_file")
             session_env = request.session.get(SESSION_KEY_IMAGEKIT) or {}
@@ -1096,6 +1191,15 @@ def riftbound_admin_bulk_cards(request):
                     current_row = dict(row)
                     upload_source = "none"
                     try:
+                        if default_domains and not (
+                            current_row.get("domain_1")
+                            or current_row.get("domain_2")
+                            or current_row.get("domains")
+                            or current_row.get("colors")
+                        ):
+                            current_row["domain_1"] = default_domains[0] if len(default_domains) >= 1 else ""
+                            current_row["domain_2"] = default_domains[1] if len(default_domains) >= 2 else ""
+
                         current_set_code = (current_row.get("set_code") or "").strip().upper()
                         missing_set_before = bool(
                             auto_create_missing_sets and current_set_code and current_set_code not in set_cache
@@ -1143,6 +1247,7 @@ def riftbound_admin_bulk_cards(request):
                             current_row,
                             auto_create_missing_set=auto_create_missing_sets,
                             set_cache=set_cache,
+                            fallback_domains=default_domains,
                         )
                         if missing_set_before and current_set_code in set_cache:
                             created_set_codes.add(current_set_code)

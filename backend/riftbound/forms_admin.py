@@ -1,12 +1,49 @@
 import csv
 import io
+import re
 from typing import Iterable
 
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.text import slugify
 
-from .models import RiftboundBanlistEntry, RiftboundCard, RiftboundFormat, RiftboundSet
+from .models import COLOR_CHOICES, RiftboundBanlistEntry, RiftboundCard, RiftboundFormat, RiftboundSet
+
+
+DOMAIN_CHOICES = [("", "---------")] + list(COLOR_CHOICES)
+DOMAIN_ALLOWED = {code for code, _ in COLOR_CHOICES}
+
+
+def _normalize_domain(value: str) -> str:
+    token = str(value or "").strip().lower()
+    return token if token in DOMAIN_ALLOWED else ""
+
+
+def _extract_row_domains(row: dict[str, str]) -> list[str]:
+    collected: list[str] = []
+
+    def _append(raw: str):
+        normalized = _normalize_domain(raw)
+        if normalized and normalized not in collected:
+            collected.append(normalized)
+
+    # Soporte explícito de columnas de dominio recomendadas.
+    _append(row.get("domain_1", ""))
+    _append(row.get("domain_2", ""))
+
+    # Compatibilidad con variantes históricas de columnas.
+    _append(row.get("domain1", ""))
+    _append(row.get("domain2", ""))
+    _append(row.get("dominio_1", ""))
+    _append(row.get("dominio_2", ""))
+
+    # Compatibilidad con campo combinado (ej: "fury,calm").
+    combined = row.get("domains", "") or row.get("colors", "")
+    if combined:
+        for token in re.split(r"[,;|/]", str(combined)):
+            _append(token)
+
+    return collected[:2]
 
 
 class RiftboundSetForm(forms.ModelForm):
@@ -16,6 +53,9 @@ class RiftboundSetForm(forms.ModelForm):
 
 
 class RiftboundCardForm(forms.ModelForm):
+    domain_1 = forms.ChoiceField(required=False, choices=DOMAIN_CHOICES, label="Dominio 1")
+    domain_2 = forms.ChoiceField(required=False, choices=DOMAIN_CHOICES, label="Dominio 2")
+
     class Meta:
         model = RiftboundCard
         fields = [
@@ -35,6 +75,29 @@ class RiftboundCardForm(forms.ModelForm):
             "cdn_image_url",
             "is_active",
         ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        current = [str(c).lower() for c in (getattr(self.instance, "colors", []) or []) if _normalize_domain(c)]
+        self.fields["domain_1"].initial = current[0] if len(current) >= 1 else ""
+        self.fields["domain_2"].initial = current[1] if len(current) >= 2 else ""
+
+    def clean(self):
+        cleaned = super().clean()
+        d1 = _normalize_domain(cleaned.get("domain_1", ""))
+        d2 = _normalize_domain(cleaned.get("domain_2", ""))
+        if d1 and d2 and d1 == d2:
+            raise ValidationError("No puede repetir el mismo dominio en Dominio 1 y Dominio 2.")
+        cleaned["_domains_clean"] = [d for d in (d1, d2) if d]
+        return cleaned
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.colors = self.cleaned_data.get("_domains_clean", [])
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
 
 
 class RiftboundBanlistEntryForm(forms.ModelForm):
@@ -58,11 +121,23 @@ class BulkRiftboundSetCsvForm(forms.Form):
 
 class BulkRiftboundCardCsvForm(forms.Form):
     csv_file = forms.FileField(
-        help_text="CSV de cartas. Requeridas: card_number,name,set_code. Opcionales: slug,card_type,rarity,energy,power,might,description,flavor,image_url,cdn_image_url,is_active"
+        help_text="CSV de cartas. Requeridas: card_number,name,set_code. Opcionales: slug,card_type,rarity,energy,power,might,description,flavor,image_url,cdn_image_url,domain_1,domain_2,is_active"
     )
     images_zip_file = forms.FileField(
         required=False,
         help_text="Opcional: ZIP de imágenes descargadas (un solo archivo). Se prioriza esta fuente para subir a ImageKit.",
+    )
+    default_domain_1 = forms.ChoiceField(
+        required=False,
+        choices=DOMAIN_CHOICES,
+        label="Dominio 1 por defecto",
+        help_text="Se usa si la fila CSV no trae domain_1/domain_2.",
+    )
+    default_domain_2 = forms.ChoiceField(
+        required=False,
+        choices=DOMAIN_CHOICES,
+        label="Dominio 2 por defecto",
+        help_text="Opcional. No debe repetir Dominio 1.",
     )
     auto_create_missing_sets = forms.BooleanField(
         required=False,
@@ -72,6 +147,15 @@ class BulkRiftboundCardCsvForm(forms.Form):
     )
     upload_images_to_imagekit = forms.BooleanField(required=False, initial=False)
     imagekit_folder = forms.CharField(required=False, max_length=255, initial="deckshado/riftbound/cards_admin_bulk")
+
+    def clean(self):
+        cleaned = super().clean()
+        d1 = _normalize_domain(cleaned.get("default_domain_1", ""))
+        d2 = _normalize_domain(cleaned.get("default_domain_2", ""))
+        if d1 and d2 and d1 == d2:
+            self.add_error("default_domain_2", "No puede repetir el mismo dominio.")
+        cleaned["default_domains"] = [d for d in (d1, d2) if d]
+        return cleaned
 
 
 class SourceRiftboundGalleryForm(forms.Form):
@@ -204,6 +288,7 @@ def upsert_card_row(
     *,
     auto_create_missing_set: bool = False,
     set_cache: dict[str, RiftboundSet] | None = None,
+    fallback_domains: list[str] | None = None,
 ) -> RiftboundCard:
     card_number = row.get("card_number", "").strip().upper()
     name = row.get("name", "").strip()
@@ -230,6 +315,9 @@ def upsert_card_row(
 
     card_type_allowed = {choice for choice, _ in RiftboundCard._meta.get_field("card_type").choices}
     rarity_allowed = {choice for choice, _ in RiftboundCard._meta.get_field("rarity").choices}
+    row_domains = _extract_row_domains(row)
+    if not row_domains and fallback_domains:
+        row_domains = [d for d in fallback_domains if _normalize_domain(d)][:2]
 
     card, _ = RiftboundCard.objects.update_or_create(
         card_number=card_number,
@@ -245,6 +333,7 @@ def upsert_card_row(
             "might": _to_int(row.get("might", "")),
             "description": row.get("description", ""),
             "flavor": row.get("flavor", ""),
+            "colors": row_domains,
             "image_url": row.get("image_url", ""),
             "cdn_image_url": row.get("cdn_image_url", ""),
             "is_active": str(row.get("is_active", "1")).lower() in {"1", "true", "yes", "si"},

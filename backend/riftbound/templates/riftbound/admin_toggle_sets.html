@@ -10,7 +10,7 @@
         <tr>
           <th>Código</th>
           <th>Nombre</th>
-          <th>Cartas activas</th>
+          <th>Estado de cartas</th>
           <th>Activo</th>
           <th>Edición completa</th>
         </tr>
@@ -31,8 +31,16 @@
           </td>
           <td>
             {{ row.active_cards }} / {{ row.card_total }}
+            {% if row.all_active %}
+              <span class="muted">(completo)</span>
+            {% endif %}
             {% if row.partially_active %}
-              <span class="muted">(parcial)</span>
+              <span class="muted">(parcial: faltan {{ row.inactive_cards }} inactivas)</span>
+              <br>
+              <a href="{% url 'riftbound-admin-set-cards' row.id %}?active=inactive">Ver faltantes</a>
+            {% endif %}
+            {% if not row.active_cards and row.card_total %}
+              <span class="muted">(todas inactivas)</span>
             {% endif %}
           </td>
           <td>
@@ -41,6 +49,7 @@
               name="active_set_ids"
               value="{{ row.id }}"
               {% if row.all_active %}checked{% endif %}
+              {% if row.partially_active %}data-partial="1"{% endif %}
             />
           </td>
           <td>
@@ -54,8 +63,17 @@
         {% endfor %}
       </tbody>
     </table>
-    <p class="muted" style="margin-top:0.7rem;">Si un set queda sin check, todas sus cartas pasarán a inactivas al aplicar.</p>
+    <p class="muted" style="margin-top:0.7rem;">Si un set queda sin check, todas sus cartas pasarán a inactivas al aplicar. En estado parcial, use "Ver faltantes" para revisar cartas inactivas.</p>
     <button type="submit">Aplicar cambios</button>
   </form>
 </div>
+
+<script>
+(function () {
+  const partialChecks = document.querySelectorAll('input[type="checkbox"][data-partial="1"]');
+  partialChecks.forEach(function (cb) {
+    cb.indeterminate = true;
+  });
+})();
+</script>
 {% endblock %}

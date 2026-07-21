@@ -2707,6 +2707,17 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     if (!card) return [];
     const candidates = [
       ...this.imageUrlVariants(card.cdn_image_url),
+      ...this.imageUrlVariants(card.image),
+      ...this.imageUrlVariants(card.image_url),
+      ...this.imageUrlVariants(card.image_url_small),
+    ].filter(Boolean);
+    return Array.from(new Set(candidates));
+  }
+
+  private shareCardImageCandidates(card: RiftboundCardLite | RiftboundCard | null | undefined): string[] {
+    if (!card) return [];
+    const candidates = [
+      ...this.imageUrlVariants(card.cdn_image_url),
       ...this.imageKitCandidatesFromCardNumber(card.card_number),
       ...this.imageUrlVariants(card.image),
       ...this.imageUrlVariants(card.image_url),
@@ -2945,7 +2956,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     const filtered = sel.size > 0 ? source.filter(w => sel.has(w.id)) : source;
     return filtered.slice(0, 20).map(w => {
       const card = hydrated.get(w.card_data.id) || w.card_data;
-      const imageCandidates = this.cardImageCandidates(card);
+      const imageCandidates = this.shareCardImageCandidates(card);
       return {
         name: w.card_data.name || '',
         image: imageCandidates[0] || '',

@@ -15,7 +15,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.core.paginator import Paginator
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.text import slugify
@@ -980,7 +980,22 @@ def riftbound_admin_bulk_cards(request):
             messages.info(request, "Se limpió el CSV resultado de la última carga.")
             return redirect("riftbound-admin-bulk-cards")
 
-        elif action == "upload_csv" and form.is_valid():
+        elif action == "upload_csv":
+            is_async_upload = request.headers.get("x-requested-with", "").lower() == "xmlhttprequest"
+
+            if not form.is_valid():
+                if is_async_upload:
+                    return JsonResponse(
+                        {
+                            "ok": False,
+                            "message": "Revise los datos del formulario antes de procesar.",
+                            "form_errors": form.errors,
+                        },
+                        status=400,
+                    )
+                messages.error(request, "Revise los datos del formulario antes de procesar.")
+                return redirect("riftbound-admin-bulk-cards")
+
             processed = 0
             uploaded_to_imagekit = 0
             uploaded_from_zip = 0
@@ -994,6 +1009,14 @@ def riftbound_admin_bulk_cards(request):
             session_env = request.session.get(SESSION_KEY_IMAGEKIT) or {}
 
             if do_upload and not session_env:
+                if is_async_upload:
+                    return JsonResponse(
+                        {
+                            "ok": False,
+                            "message": "Debe cargar primero el archivo env de sesión de ImageKit para subir imágenes.",
+                        },
+                        status=400,
+                    )
                 messages.error(request, "Debe cargar primero el archivo env de sesión de ImageKit para subir imágenes.")
                 return redirect("riftbound-admin-bulk-cards")
 
@@ -1006,6 +1029,8 @@ def riftbound_admin_bulk_cards(request):
                 try:
                     archive, archive_by_card, archive_by_name = _open_images_zip_index(images_zip_file)
                 except Exception as exc:
+                    if is_async_upload:
+                        return JsonResponse({"ok": False, "message": f"ZIP de imágenes inválido: {exc}"}, status=400)
                     messages.error(request, f"ZIP de imágenes inválido: {exc}")
                     return redirect("riftbound-admin-bulk-cards")
 
@@ -1084,13 +1109,30 @@ def riftbound_admin_bulk_cards(request):
                     "csv_text": _build_riftbound_upload_result_csv_text(result_rows),
                 }
 
+            summary_message = (
+                f"Cartas procesadas: {processed}, subidas ImageKit: {uploaded_to_imagekit} "
+                f"(ZIP: {uploaded_from_zip}, URL: {uploaded_from_url}), errores: {len(errors)}"
+            )
+
+            if is_async_upload:
+                status_code = 200
+                payload = {
+                    "ok": len(errors) == 0,
+                    "processed": processed,
+                    "uploaded_to_imagekit": uploaded_to_imagekit,
+                    "uploaded_from_zip": uploaded_from_zip,
+                    "uploaded_from_url": uploaded_from_url,
+                    "errors_count": len(errors),
+                    "errors": errors[:20],
+                    "message": summary_message,
+                    "download_result_csv_url": "?download=upload_result_csv",
+                }
+                return JsonResponse(payload, status=status_code)
+
             if errors:
                 messages.warning(
                     request,
-                    (
-                        f"Cartas procesadas: {processed}, subidas ImageKit: {uploaded_to_imagekit} "
-                        f"(ZIP: {uploaded_from_zip}, URL: {uploaded_from_url}), errores: {len(errors)}"
-                    ),
+                    summary_message,
                 )
                 messages.info(request, "Descargue el CSV resultado para ver qué filas se completaron y sus cdn_image_url.")
                 for err in errors[:10]:

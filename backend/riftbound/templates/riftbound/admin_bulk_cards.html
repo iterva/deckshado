@@ -86,12 +86,24 @@
   {% endif %}
 
   <p class="muted">Para subir imágenes locales a ImageKit en lote, use el campo ZIP de imágenes junto al CSV.</p>
-  <form method="post" enctype="multipart/form-data">
+  <form id="upload-csv-form" method="post" enctype="multipart/form-data">
     {% csrf_token %}
     <input type="hidden" name="action" value="upload_csv" />
     {{ form.as_p }}
     <button type="submit">Procesar CSV</button>
   </form>
+
+  <div id="upload-progress-box" style="display:none; margin-top:1rem; padding:0.9rem; border:1px solid #d6deea; border-radius:10px; background:#f7fbff; max-width:560px;">
+    <p id="upload-progress-label" class="muted" style="margin:0 0 0.4rem 0;">Subiendo archivos...</p>
+    <progress id="upload-progress" value="0" max="100" style="width:100%;"></progress>
+    <p id="upload-progress-status" class="muted" style="margin:0.5rem 0 0 0;">0%</p>
+  </div>
+
+  <div id="upload-summary-box" style="display:none; margin-top:1rem; padding:0.9rem; border:1px solid #d6deea; border-radius:10px; background:#fbfdff; max-width:720px;">
+    <p id="upload-summary-title" style="margin:0 0 0.35rem 0; font-weight:700;">Resultado de carga</p>
+    <p id="upload-summary-message" class="muted" style="margin:0;"></p>
+    <div id="upload-summary-errors" class="muted" style="margin-top:0.5rem;"></div>
+  </div>
 
   <div id="file-download-loader" style="display:none; margin-top:1rem; padding:0.9rem; border:1px solid #d6deea; border-radius:10px; background:#f7fbff; max-width:560px;">
     <p id="file-download-loader-label" class="muted" style="margin:0 0 0.4rem 0;">Descargando...</p>
@@ -230,71 +242,205 @@
     });
   });
 
-  const button = document.getElementById("download-all-images");
-  if (!button) {
-    return;
-  }
+  const uploadForm = document.getElementById("upload-csv-form");
+  const uploadBox = document.getElementById("upload-progress-box");
+  const uploadLabel = document.getElementById("upload-progress-label");
+  const uploadProgress = document.getElementById("upload-progress");
+  const uploadStatus = document.getElementById("upload-progress-status");
+  const uploadSummaryBox = document.getElementById("upload-summary-box");
+  const uploadSummaryMessage = document.getElementById("upload-summary-message");
+  const uploadSummaryErrors = document.getElementById("upload-summary-errors");
 
-  const status = document.getElementById("download-status");
-  const progress = document.getElementById("download-all-progress");
-  const total = parseInt(button.getAttribute("data-total") || "0", 10);
-
-  function setStatus(text) {
-    if (status) {
-      status.textContent = text;
+  function setUploadStatus(text) {
+    if (uploadStatus) {
+      uploadStatus.textContent = text;
     }
   }
 
-  button.addEventListener("click", function () {
-    if (!Number.isFinite(total) || total <= 0) {
-      setStatus("No hay imágenes para descargar.");
-      return;
-    }
+  if (uploadForm) {
+    uploadForm.addEventListener("submit", function (ev) {
+      ev.preventDefault();
 
-    setStatus("Iniciando descargas...");
-    if (progress) {
-      progress.style.display = "block";
-      progress.value = 0;
-      progress.max = 100;
-    }
-    button.disabled = true;
-    let index = 0;
+      const submitButton = uploadForm.querySelector("button[type='submit']");
+      if (submitButton) {
+        submitButton.disabled = true;
+      }
 
-    function triggerNext() {
-      if (index >= total) {
-        setStatus("Descarga masiva completada. Revise su carpeta Descargas.");
-        if (progress) {
-          progress.value = 100;
-          setTimeout(function () {
-            progress.style.display = "none";
-          }, 1200);
+      if (uploadSummaryBox) {
+        uploadSummaryBox.style.display = "none";
+      }
+
+      if (uploadBox) {
+        uploadBox.style.display = "block";
+      }
+      if (uploadLabel) {
+        uploadLabel.textContent = "Subiendo archivos...";
+      }
+      if (uploadProgress) {
+        uploadProgress.value = 0;
+        uploadProgress.max = 100;
+      }
+      setUploadStatus("0%");
+
+      const formData = new FormData(uploadForm);
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", uploadForm.getAttribute("action") || window.location.href, true);
+      xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+
+      xhr.upload.onprogress = function (event) {
+        if (!event.lengthComputable) {
+          if (uploadProgress) {
+            uploadProgress.removeAttribute("value");
+          }
+          setUploadStatus("Subiendo...");
+          return;
         }
-        button.disabled = false;
+
+        const pct = Math.min(100, Math.round((event.loaded / event.total) * 100));
+        if (uploadProgress) {
+          uploadProgress.value = pct;
+        }
+        setUploadStatus(pct + "% (" + humanSize(event.loaded) + " / " + humanSize(event.total) + ")");
+      };
+
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState !== 4) {
+          return;
+        }
+
+        if (submitButton) {
+          submitButton.disabled = false;
+        }
+
+        if (uploadLabel) {
+          uploadLabel.textContent = "Procesando en servidor...";
+        }
+
+        let payload = null;
+        try {
+          payload = xhr.responseType === "json" ? xhr.response : null;
+          if (!payload) {
+            payload = JSON.parse(xhr.responseText || "{}");
+          }
+        } catch (_) {
+          payload = null;
+        }
+
+        if (xhr.status >= 200 && xhr.status < 300 && payload) {
+          if (uploadProgress) {
+            uploadProgress.value = 100;
+          }
+          setUploadStatus("100% - Subida completada");
+
+          if (uploadSummaryBox && uploadSummaryMessage) {
+            uploadSummaryBox.style.display = "block";
+            uploadSummaryMessage.textContent = payload.message || "Carga completada.";
+          }
+
+          if (uploadSummaryErrors) {
+            const errs = Array.isArray(payload.errors) ? payload.errors : [];
+            if (errs.length) {
+              const preview = errs.slice(0, 10).join("\n");
+              uploadSummaryErrors.textContent = "Errores detectados:\n" + preview;
+              uploadSummaryErrors.style.whiteSpace = "pre-wrap";
+            } else {
+              uploadSummaryErrors.textContent = "";
+            }
+          }
+
+          if (payload.download_result_csv_url) {
+            if (uploadLabel) {
+              uploadLabel.textContent = "Subida completada. Descargando CSV resultado...";
+            }
+            fetchAndDownload(payload.download_result_csv_url, "riftbound_result.csv", "CSV resultado automático");
+          }
+        } else {
+          const message = (payload && payload.message) ? payload.message : "No se pudo procesar la carga.";
+          setUploadStatus("Error");
+          if (uploadSummaryBox && uploadSummaryMessage) {
+            uploadSummaryBox.style.display = "block";
+            uploadSummaryMessage.textContent = message;
+          }
+          if (uploadSummaryErrors && payload && payload.form_errors) {
+            uploadSummaryErrors.textContent = JSON.stringify(payload.form_errors);
+            uploadSummaryErrors.style.whiteSpace = "pre-wrap";
+          }
+        }
+
+        setTimeout(function () {
+          if (uploadBox) {
+            uploadBox.style.display = "none";
+          }
+        }, 1200);
+      };
+
+      xhr.send(formData);
+    });
+  }
+
+  const button = document.getElementById("download-all-images");
+  if (button) {
+    const status = document.getElementById("download-status");
+    const progress = document.getElementById("download-all-progress");
+    const total = parseInt(button.getAttribute("data-total") || "0", 10);
+
+    function setStatus(text) {
+      if (status) {
+        status.textContent = text;
+      }
+    }
+
+    button.addEventListener("click", function () {
+      if (!Number.isFinite(total) || total <= 0) {
+        setStatus("No hay imágenes para descargar.");
         return;
       }
 
-      const pct = Math.round((index / total) * 100);
-      setStatus("Descargando " + (index + 1) + " de " + total + "... (" + pct + "%)");
+      setStatus("Iniciando descargas...");
       if (progress) {
-        progress.value = pct;
+        progress.style.display = "block";
+        progress.value = 0;
+        progress.max = 100;
       }
-      const iframe = document.createElement("iframe");
-      iframe.style.display = "none";
-      iframe.src = "?download=image&i=" + index;
-      document.body.appendChild(iframe);
+      button.disabled = true;
+      let index = 0;
 
-      setTimeout(function () {
-        if (iframe.parentNode) {
-          iframe.parentNode.removeChild(iframe);
+      function triggerNext() {
+        if (index >= total) {
+          setStatus("Descarga masiva completada. Revise su carpeta Descargas.");
+          if (progress) {
+            progress.value = 100;
+            setTimeout(function () {
+              progress.style.display = "none";
+            }, 1200);
+          }
+          button.disabled = false;
+          return;
         }
-      }, 20000);
 
-      index += 1;
-      setTimeout(triggerNext, 350);
-    }
+        const pct = Math.round((index / total) * 100);
+        setStatus("Descargando " + (index + 1) + " de " + total + "... (" + pct + "%)");
+        if (progress) {
+          progress.value = pct;
+        }
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = "?download=image&i=" + index;
+        document.body.appendChild(iframe);
 
-    triggerNext();
-  });
+        setTimeout(function () {
+          if (iframe.parentNode) {
+            iframe.parentNode.removeChild(iframe);
+          }
+        }, 20000);
+
+        index += 1;
+        setTimeout(triggerNext, 350);
+      }
+
+      triggerNext();
+    });
+  }
 })();
 </script>
 {% endblock %}

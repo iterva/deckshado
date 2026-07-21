@@ -2648,13 +2648,20 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     return value.startsWith('http://') ? `https://${value.slice(7)}` : value;
   }
 
+  private imageUrlVariants(url: string | null | undefined): string[] {
+    const raw = (url || '').trim();
+    if (!raw) return [];
+    const https = this.toHttps(raw);
+    return raw === https ? [raw] : [raw, https];
+  }
+
   private cardImageCandidates(card: RiftboundCardLite | RiftboundCard | null | undefined): string[] {
     if (!card) return [];
     const candidates = [
-      this.toHttps(card.image),
-      this.toHttps(card.cdn_image_url),
-      this.toHttps(card.image_url),
-      this.toHttps(card.image_url_small),
+      ...this.imageUrlVariants(card.image),
+      ...this.imageUrlVariants(card.cdn_image_url),
+      ...this.imageUrlVariants(card.image_url),
+      ...this.imageUrlVariants(card.image_url_small),
     ].filter(Boolean);
     return Array.from(new Set(candidates));
   }
@@ -2886,13 +2893,17 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     const sel = this.wishlistShareSelection();
     const source = this.wishlistEntries();
     const filtered = sel.size > 0 ? source.filter(w => sel.has(w.id)) : source;
-    return filtered.slice(0, 20).map(w => ({
-      name: w.card_data.name || '',
-      image: w.card_data.image || '',
-      quantity: w.desired_quantity || 1,
-      foil: false,
-      price: null,
-    }));
+    return filtered.slice(0, 20).map(w => {
+      const imageCandidates = this.cardImageCandidates(w.card_data);
+      return {
+        name: w.card_data.name || '',
+        image: imageCandidates[0] || '',
+        imageCandidates,
+        quantity: w.desired_quantity || 1,
+        foil: false,
+        price: null,
+      };
+    });
   }
   isWishlistShareSelected(id: number): boolean {
     return this.wishlistShareSelection().has(id);

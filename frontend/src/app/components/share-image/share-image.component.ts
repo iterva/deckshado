@@ -3,6 +3,8 @@ import {
   Component,
   ElementRef,
   Input,
+  OnChanges,
+  SimpleChanges,
   ViewChild,
   signal,
 } from '@angular/core';
@@ -12,6 +14,7 @@ import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
 export interface ShareImageItem {
   name: string;
   image: string;
+  imageCandidates?: string[];
   quantity: number;
   foil?: boolean;
   price?: number | null;
@@ -66,9 +69,14 @@ export interface ShareImageItem {
       @for (it of items || []; track $index) {
         <div class="card">
           <div class="img-wrap">
-            @if (includeCardImages && it.image) {
-              <img [src]="it.image | thumb:400" [alt]="it.name" crossorigin="anonymous" />
-            } @else {
+            @if (includeCardImages && cardImageUrl(it, $index) && !isCardImageBroken($index)) {
+              <img [src]="cardImageUrl(it, $index)"
+                   [alt]="it.name"
+                   crossorigin="anonymous"
+                   [attr.data-share-index]="$index"
+                   (error)="onCardImageError($index, it, $event)" />
+            }
+            @if (!includeCardImages || !cardImageUrl(it, $index) || isCardImageBroken($index)) {
               <div class="img-fallback">{{ it.name }}</div>
             }
             @if ((it.quantity || 1) > 1) {
@@ -208,7 +216,7 @@ export interface ShareImageItem {
     }
   `],
 })
-export class ShareImageComponent {
+export class ShareImageComponent implements OnChanges {
   @Input() mode: 'buying' | 'selling' = 'buying';
   @Input() gameLabel = '';
   @Input() sellerName = '';
@@ -228,6 +236,16 @@ export class ShareImageComponent {
 
   readonly busy = signal(false);
   readonly toast = signal<string | null>(null);
+  private readonly imageFallbackStepBySlot = new Map<number, number>();
+  private readonly brokenImageSlots = new Set<number>();
+  private readonly thumbnailPipe = new ThumbnailPipe();
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['items']) {
+      this.imageFallbackStepBySlot.clear();
+      this.brokenImageSlots.clear();
+    }
+  }
 
   get headlineText(): string {
     const custom = (this.customHeadline || '').trim();
@@ -245,6 +263,117 @@ export class ShareImageComponent {
     if (n <= 3) return 3;
     if (n >= 15) return 5;
     return 4;
+  }
+
+  cardImageUrl(item: ShareImageItem, index: number): string {
+    const candidates = this.displayImageCandidates(item);
+    if (!candidates.length) return '';
+    const step = this.currentImageStep(index, candidates);
+    return candidates[step] || '';
+  }
+
+  isCardImageBroken(index: number): boolean {
+    return this.brokenImageSlots.has(index);
+  }
+
+  onCardImageError(index: number, item: ShareImageItem, event: Event): void {
+    const img = event.target as HTMLImageElement | null;
+    if (this.advanceCardImageFallback(index, item, img)) {
+      this.brokenImageSlots.delete(index);
+      return;
+    }
+    this.brokenImageSlots.add(index);
+    if (img) img.style.display = 'none';
+  }
+
+  private normalizeCandidateUrl(url: string | null | undefined): string {
+    return (url || '').trim();
+  }
+
+  private rawImageCandidates(item: ShareImageItem): string[] {
+    const raw = [item.image, ...(item.imageCandidates || [])]
+      .map((url) => this.normalizeCandidateUrl(url))
+      .filter(Boolean);
+    return Array.from(new Set(raw));
+  }
+
+  private displayImageCandidates(item: ShareImageItem): string[] {
+    const expanded: string[] = [];
+    for (const raw of this.rawImageCandidates(item)) {
+      const thumb = this.thumbnailPipe.transform(raw, 400);
+      if (thumb) expanded.push(thumb);
+      expanded.push(raw);
+    }
+    return Array.from(new Set(expanded.filter(Boolean)));
+  }
+
+  private currentImageStep(index: number, candidates: string[]): number {
+    if (!candidates.length) return 0;
+    const stored = this.imageFallbackStepBySlot.get(index) || 0;
+    return Math.min(stored, candidates.length - 1);
+  }
+
+  private hasRemainingImageFallback(index: number, item: ShareImageItem): boolean {
+    const candidates = this.displayImageCandidates(item);
+    if (!candidates.length) return false;
+    const step = this.currentImageStep(index, candidates);
+    return step < candidates.length - 1;
+  }
+
+  private advanceCardImageFallback(index: number, item: ShareImageItem, img?: HTMLImageElement | null): boolean {
+    const candidates = this.displayImageCandidates(item);
+    if (!candidates.length) return false;
+
+    const step = this.currentImageStep(index, candidates);
+    if (step >= candidates.length - 1) return false;
+
+    const nextStep = step + 1;
+    this.imageFallbackStepBySlot.set(index, nextStep);
+    if (img) img.src = candidates[nextStep];
+    return true;
+  }
+
+  private waitForImageReady(img: HTMLImageElement, itemIndex: number): Promise<void> {
+    return new Promise((resolve) => {
+      if (!Number.isFinite(itemIndex) || itemIndex < 0 || itemIndex >= this.items.length) {
+        resolve();
+        return;
+      }
+
+      const item = this.items[itemIndex];
+      const timeoutId = window.setTimeout(done, 6000);
+
+      const onLoad = () => done();
+      const onError = () => {
+        if (!this.hasRemainingImageFallback(itemIndex, item)) {
+          done();
+        }
+      };
+
+      function done() {
+        img.removeEventListener('load', onLoad);
+        img.removeEventListener('error', onError);
+        window.clearTimeout(timeoutId);
+        resolve();
+      }
+
+      img.addEventListener('load', onLoad);
+      img.addEventListener('error', onError);
+
+      if (img.complete) {
+        if (img.naturalWidth > 0) {
+          done();
+          return;
+        }
+        if (!this.hasRemainingImageFallback(itemIndex, item)) {
+          done();
+          return;
+        }
+        if (!this.advanceCardImageFallback(itemIndex, item, img)) {
+          done();
+        }
+      }
+    });
   }
 
   private drawRoundedRect(
@@ -332,8 +461,11 @@ export class ShareImageComponent {
     ctx.fillRect(0, 0, width, height);
 
     const includeImages = options.includeImages ?? this.includeCardImages;
+    const itemCandidateUrls = includeImages
+      ? this.items.map((it) => this.displayImageCandidates(it))
+      : [];
     const uniqueUrls = includeImages
-      ? Array.from(new Set(this.items.map((it) => (it.image || '').trim()).filter(Boolean)))
+      ? Array.from(new Set(itemCandidateUrls.flat().filter(Boolean)))
       : [];
 
     const loadedImages = new Map<string, HTMLImageElement>();
@@ -368,10 +500,40 @@ export class ShareImageComponent {
       ctx.fillStyle = '#1a2040';
       ctx.fill();
 
+      let loaded: HTMLImageElement | null = null;
       if (includeImages) {
-        const imgUrl = (it.image || '').trim();
-        const loaded = loadedImages.get(imgUrl);
-        if (loaded) {
+        const candidates = itemCandidateUrls[idx] || [];
+        const startStep = this.currentImageStep(idx, candidates);
+        let resolvedStep = -1;
+
+        for (let step = startStep; step < candidates.length; step++) {
+          const candidate = candidates[step];
+          const found = loadedImages.get(candidate);
+          if (found) {
+            loaded = found;
+            resolvedStep = step;
+            break;
+          }
+        }
+
+        if (!loaded) {
+          for (let step = 0; step < startStep; step++) {
+            const candidate = candidates[step];
+            const found = loadedImages.get(candidate);
+            if (found) {
+              loaded = found;
+              resolvedStep = step;
+              break;
+            }
+          }
+        }
+
+        if (resolvedStep >= 0 && resolvedStep !== startStep) {
+          this.imageFallbackStepBySlot.set(idx, resolvedStep);
+        }
+      }
+
+      if (loaded) {
           const ratio = loaded.width / loaded.height;
           const targetRatio = slotW / imgH;
           let drawW = slotW;
@@ -392,7 +554,6 @@ export class ShareImageComponent {
           ctx.clip();
           ctx.drawImage(loaded, dx, dy, drawW, drawH);
           ctx.restore();
-        }
       }
 
       this.drawRoundedRect(ctx, x + 1, y + 1, slotW - 2, imgH - 2, 9);
@@ -400,7 +561,7 @@ export class ShareImageComponent {
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      const hasRenderedImage = includeImages && loadedImages.has((it.image || '').trim());
+      const hasRenderedImage = !!loaded;
       if (!hasRenderedImage) {
         ctx.fillStyle = '#8ea0d0';
         ctx.font = '600 12px Segoe UI, Arial, sans-serif';
@@ -507,11 +668,10 @@ export class ShareImageComponent {
     await new Promise<void>(r => requestAnimationFrame(() => r()));
     // Esperar a que carguen las imágenes (evita capturar en blanco)
     const imgs = Array.from(el.querySelectorAll('img'));
-    await Promise.all(imgs.map(img =>
-      img.complete ? Promise.resolve() :
-      new Promise<void>(res => { img.addEventListener('load', () => res(), { once: true });
-                                  img.addEventListener('error', () => res(), { once: true }); })
-    ));
+    await Promise.all(imgs.map((img) => {
+      const itemIndex = Number((img as HTMLImageElement).dataset['shareIndex']);
+      return this.waitForImageReady(img as HTMLImageElement, itemIndex);
+    }));
 
     // Fija un ancho de celda uniforme para cada carta antes de capturar.
     const grid = el.querySelector<HTMLElement>('.grid');
@@ -596,6 +756,9 @@ export class ShareImageComponent {
   }
 
   private async renderWithFallback(): Promise<{ canvas: HTMLCanvasElement | null; fallbackUsed: boolean }> {
+    this.imageFallbackStepBySlot.clear();
+    this.brokenImageSlots.clear();
+
     // En modo sin imágenes remotas, evitar html2canvas por completo para no depender de parseo CSS.
     if (!this.includeCardImages) {
       return { canvas: await this.renderCanvasFallback({ includeImages: false }), fallbackUsed: true };

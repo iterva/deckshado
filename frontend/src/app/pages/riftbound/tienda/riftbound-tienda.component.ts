@@ -867,9 +867,10 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
 
   cardImageFallbacks(card: RiftboundCardLite | null | undefined): string[] {
     if (!card) return [];
-    return [card.image_url, card.image_url_small, card.cdn_image_url].filter(
-      (url): url is string => !!url,
-    );
+    const candidates = [card.image, card.image_url, card.image_url_small, card.cdn_image_url]
+      .map(url => (url || '').trim())
+      .filter((url): url is string => !!url);
+    return Array.from(new Set(candidates));
   }
 
   // ── Compartir imagen estilo CardIndex ──
@@ -884,22 +885,30 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
     return `Escríbeme para comprar · ${this.sellerHandle()}`;
   }
   shareStoreItems(): ShareImageItem[] {
-    return this.entries().slice(0, 20).map(e => ({
-      name: e.card_data.name || '',
-      image: e.card_data.image || '',
-      quantity: e.selling_quantity || 1,
-      foil: !!e.is_foil,
-      price: e.price ?? null,
-    }));
+    return this.entries().slice(0, 20).map(e => {
+      const imageCandidates = this.cardImageFallbacks(e.card_data);
+      return {
+        name: e.card_data.name || '',
+        image: this.entryCardImage(e) || imageCandidates[0] || '',
+        imageCandidates,
+        quantity: e.selling_quantity || 1,
+        foil: !!e.is_foil,
+        price: e.price ?? null,
+      };
+    });
   }
   shareWishlistItems(): ShareImageItem[] {
-    return this.wishlist().slice(0, 20).map(w => ({
-      name: w.card_data.name || '',
-      image: w.card_data.image || '',
-      quantity: w.desired_quantity || 1,
-      foil: false,
-      price: null,
-    }));
+    return this.wishlist().slice(0, 20).map(w => {
+      const imageCandidates = this.cardImageFallbacks(w.card_data);
+      return {
+        name: w.card_data.name || '',
+        image: imageCandidates[0] || '',
+        imageCandidates,
+        quantity: w.desired_quantity || 1,
+        foil: false,
+        price: null,
+      };
+    });
   }
 
   // ── Cart ──

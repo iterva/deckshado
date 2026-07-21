@@ -2694,13 +2694,18 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     return raw === https ? [raw] : [raw, https];
   }
 
-  private imageKitCandidatesFromCardNumber(cardNumber: string | null | undefined): string[] {
-    const raw = (cardNumber || '').trim().toUpperCase();
-    if (!raw) return [];
+  private cloudinaryFetchProxy(url: string | null | undefined): string {
+    const raw = (url || '').trim();
+    if (!raw) return '';
+    return `https://res.cloudinary.com/daobfx9yb/image/fetch/f_auto,q_auto/${encodeURIComponent(raw)}`;
+  }
 
-    const base = raw.match(/^(.*?\d+)[A-Z]$/)?.[1] || raw;
-    const variants = Array.from(new Set([raw, base]));
-    return variants.map((num) => `https://ik.imagekit.io/crttm6rou/deckshado/riftbound/cards_admin_bulk/${num}`);
+  private cloudinaryFetchVariants(url: string | null | undefined): string[] {
+    const raw = (url || '').trim();
+    if (!raw) return [];
+    const urls = this.imageUrlVariants(raw);
+    const proxied = urls.map((candidate) => this.cloudinaryFetchProxy(candidate)).filter(Boolean);
+    return Array.from(new Set(proxied));
   }
 
   private cardImageCandidates(card: RiftboundCardLite | RiftboundCard | null | undefined): string[] {
@@ -2718,7 +2723,9 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     if (!card) return [];
     const candidates = [
       ...this.imageUrlVariants(card.cdn_image_url),
-      ...this.imageKitCandidatesFromCardNumber(card.card_number),
+      ...this.cloudinaryFetchVariants(card.image),
+      ...this.cloudinaryFetchVariants(card.image_url),
+      ...this.cloudinaryFetchVariants(card.image_url_small),
       ...this.imageUrlVariants(card.image),
       ...this.imageUrlVariants(card.image_url),
       ...this.imageUrlVariants(card.image_url_small),

@@ -865,18 +865,45 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
     return card.image || card.image_url || card.image_url_small || card.cdn_image_url || '';
   }
 
+  private toHttps(url: string | null | undefined): string {
+    const value = (url || '').trim();
+    if (!value) return '';
+    return value.startsWith('http://') ? `https://${value.slice(7)}` : value;
+  }
+
+  private imageUrlVariants(url: string | null | undefined): string[] {
+    const raw = (url || '').trim();
+    if (!raw) return [];
+    const https = this.toHttps(raw);
+    return raw === https ? [raw] : [raw, https];
+  }
+
+  private cloudinaryFetchProxy(url: string | null | undefined): string {
+    const raw = (url || '').trim();
+    if (!raw) return '';
+    return `https://res.cloudinary.com/daobfx9yb/image/fetch/f_auto,q_auto/${encodeURIComponent(raw)}`;
+  }
+
+  private cloudinaryFetchVariants(url: string | null | undefined): string[] {
+    const raw = (url || '').trim();
+    if (!raw) return [];
+    const urls = this.imageUrlVariants(raw);
+    const proxied = urls.map((candidate) => this.cloudinaryFetchProxy(candidate)).filter(Boolean);
+    return Array.from(new Set(proxied));
+  }
+
   cardImageFallbacks(card: RiftboundCardLite | null | undefined): string[] {
     if (!card) return [];
-    const rawNumber = (card.card_number || '').trim().toUpperCase();
-    const baseNumber = rawNumber.match(/^(.*?\d+)[A-Z]$/)?.[1] || rawNumber;
-    const imageKitByNumber = Array.from(new Set([rawNumber, baseNumber].filter(Boolean))).map(
-      (num) => `https://ik.imagekit.io/crttm6rou/deckshado/riftbound/cards_admin_bulk/${num}`,
-    );
-
-    const candidates = [card.image, card.image_url, card.image_url_small, card.cdn_image_url]
-      .map(url => (url || '').trim())
-      .filter((url): url is string => !!url);
-    return Array.from(new Set([...(card.cdn_image_url ? [card.cdn_image_url] : []), ...imageKitByNumber, ...candidates]));
+    const candidates = [
+      ...this.imageUrlVariants(card.cdn_image_url),
+      ...this.cloudinaryFetchVariants(card.image),
+      ...this.cloudinaryFetchVariants(card.image_url),
+      ...this.cloudinaryFetchVariants(card.image_url_small),
+      ...this.imageUrlVariants(card.image),
+      ...this.imageUrlVariants(card.image_url),
+      ...this.imageUrlVariants(card.image_url_small),
+    ].filter(Boolean);
+    return Array.from(new Set(candidates));
   }
 
   // ── Compartir imagen estilo CardIndex ──

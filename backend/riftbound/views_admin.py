@@ -31,7 +31,6 @@ from .forms_admin import (
     RiftboundCardForm,
     RiftboundSetForm,
     SourceRiftboundGalleryForm,
-    ToggleRiftboundSetsForm,
     csv_rows,
     upsert_card_row,
     upsert_set_row,
@@ -785,18 +784,73 @@ def riftbound_admin_dashboard(request):
 @riftbound_admin_owner_required
 @require_http_methods(["GET", "POST"])
 def riftbound_admin_toggle_sets(request):
-    form = ToggleRiftboundSetsForm(request.POST or None)
-    if request.method == "POST" and form.is_valid():
-        selected = list(form.cleaned_data["set_ids"].values_list("id", flat=True))
-        active = form.cleaned_data["active"]
-        if not selected:
-            messages.error(request, "Seleccione al menos un set.")
-            return redirect("riftbound-admin-toggle-sets")
-        updated = RiftboundCard.objects.filter(set_id__in=selected).update(is_active=active)
-        messages.success(request, f"Se actualizaron {updated} cartas de Riftbound.")
+    sets_qs = RiftboundSet.objects.annotate(
+        card_total=Count("cards"),
+        active_cards=Count("cards", filter=Q(cards__is_active=True)),
+    ).order_by("code")
+    sets = list(sets_qs)
+
+    if request.method == "POST":
+        valid_ids = {item.id for item in sets}
+        checked_ids: set[int] = set()
+        for raw in request.POST.getlist("active_set_ids"):
+            try:
+                parsed = int(raw)
+            except (TypeError, ValueError):
+                continue
+            if parsed in valid_ids:
+                checked_ids.add(parsed)
+
+        unchecked_ids = valid_ids - checked_ids
+
+        sets_to_update: list[RiftboundSet] = []
+        for item in sets:
+            new_name = (request.POST.get(f"set_name_{item.id}") or "").strip()
+            if not new_name:
+                messages.error(request, f"El nombre del set {item.code} no puede estar vacío.")
+                return redirect("riftbound-admin-toggle-sets")
+            if new_name != item.name:
+                item.name = new_name
+                sets_to_update.append(item)
+
+        renamed = 0
+        if sets_to_update:
+            RiftboundSet.objects.bulk_update(sets_to_update, ["name"])
+            renamed = len(sets_to_update)
+
+        activated_cards = 0
+        deactivated_cards = 0
+        if checked_ids:
+            activated_cards = RiftboundCard.objects.filter(set_id__in=checked_ids).exclude(is_active=True).update(is_active=True)
+        if unchecked_ids:
+            deactivated_cards = RiftboundCard.objects.filter(set_id__in=unchecked_ids).exclude(is_active=False).update(is_active=False)
+
+        messages.success(
+            request,
+            (
+                f"Actualización completada. Sets renombrados: {renamed}. "
+                f"Cartas activadas: {activated_cards}. Cartas desactivadas: {deactivated_cards}."
+            ),
+        )
         return redirect("riftbound-admin-toggle-sets")
 
-    return render(request, "riftbound/admin_toggle_sets.html", {"form": form})
+    rows = []
+    for item in sets:
+        all_active = item.card_total > 0 and item.active_cards == item.card_total
+        partially_active = item.card_total > 0 and 0 < item.active_cards < item.card_total
+        rows.append(
+            {
+                "id": item.id,
+                "code": item.code,
+                "name": item.name,
+                "card_total": item.card_total,
+                "active_cards": item.active_cards,
+                "all_active": all_active,
+                "partially_active": partially_active,
+            }
+        )
+
+    return render(request, "riftbound/admin_toggle_sets.html", {"sets_rows": rows})
 
 
 @riftbound_admin_owner_required
@@ -1000,13 +1054,16 @@ def riftbound_admin_bulk_cards(request):
             uploaded_to_imagekit = 0
             uploaded_from_zip = 0
             uploaded_from_url = 0
+            created_set_codes: set[str] = set()
             errors: list[str] = []
             result_rows: list[dict[str, str]] = []
 
             do_upload = form.cleaned_data.get("upload_images_to_imagekit", False)
+            auto_create_missing_sets = form.cleaned_data.get("auto_create_missing_sets", True)
             imagekit_folder = form.cleaned_data.get("imagekit_folder", "").strip() or "deckshado/riftbound/cards_admin_bulk"
             images_zip_file = form.cleaned_data.get("images_zip_file")
             session_env = request.session.get(SESSION_KEY_IMAGEKIT) or {}
+            set_cache: dict[str, RiftboundSet] = {item.code: item for item in RiftboundSet.objects.only("id", "code", "name")}
 
             if do_upload and not session_env:
                 if is_async_upload:
@@ -1039,6 +1096,10 @@ def riftbound_admin_bulk_cards(request):
                     current_row = dict(row)
                     upload_source = "none"
                     try:
+                        current_set_code = (current_row.get("set_code") or "").strip().upper()
+                        missing_set_before = bool(
+                            auto_create_missing_sets and current_set_code and current_set_code not in set_cache
+                        )
                         source_image = (current_row.get("image_url") or current_row.get("cdn_image_url") or "").strip()
                         if do_upload:
                             file_name = current_row.get("card_number", "rb-card")
@@ -1078,7 +1139,13 @@ def riftbound_admin_bulk_cards(request):
                             else:
                                 raise ValueError("Sin imagen para subir: no se encontró en ZIP ni en image_url/cdn_image_url")
 
-                        upsert_card_row(current_row)
+                        upsert_card_row(
+                            current_row,
+                            auto_create_missing_set=auto_create_missing_sets,
+                            set_cache=set_cache,
+                        )
+                        if missing_set_before and current_set_code in set_cache:
+                            created_set_codes.add(current_set_code)
                         processed += 1
                         result_row = dict(current_row)
                         result_row["_upload_source"] = upload_source
@@ -1106,12 +1173,14 @@ def riftbound_admin_bulk_cards(request):
                     "uploaded_to_imagekit": uploaded_to_imagekit,
                     "uploaded_from_zip": uploaded_from_zip,
                     "uploaded_from_url": uploaded_from_url,
+                    "created_sets": sorted(created_set_codes),
                     "csv_text": _build_riftbound_upload_result_csv_text(result_rows),
                 }
 
             summary_message = (
                 f"Cartas procesadas: {processed}, subidas ImageKit: {uploaded_to_imagekit} "
-                f"(ZIP: {uploaded_from_zip}, URL: {uploaded_from_url}), errores: {len(errors)}"
+                f"(ZIP: {uploaded_from_zip}, URL: {uploaded_from_url}), sets creados: {len(created_set_codes)}, "
+                f"errores: {len(errors)}"
             )
 
             if is_async_upload:
@@ -1122,6 +1191,8 @@ def riftbound_admin_bulk_cards(request):
                     "uploaded_to_imagekit": uploaded_to_imagekit,
                     "uploaded_from_zip": uploaded_from_zip,
                     "uploaded_from_url": uploaded_from_url,
+                    "created_sets_count": len(created_set_codes),
+                    "created_sets": sorted(created_set_codes)[:30],
                     "errors_count": len(errors),
                     "errors": errors[:20],
                     "message": summary_message,
@@ -1142,9 +1213,11 @@ def riftbound_admin_bulk_cards(request):
                     request,
                     (
                         f"Carga de cartas Riftbound completada. Filas: {processed}, subidas ImageKit: {uploaded_to_imagekit} "
-                        f"(ZIP: {uploaded_from_zip}, URL: {uploaded_from_url})"
+                        f"(ZIP: {uploaded_from_zip}, URL: {uploaded_from_url}), sets creados: {len(created_set_codes)}"
                     ),
                 )
+                if created_set_codes:
+                    messages.info(request, f"Sets creados automáticamente: {', '.join(sorted(created_set_codes)[:20])}")
                 messages.info(request, "CSV resultado disponible para descarga con cdn_image_url actualizado.")
 
             return redirect("riftbound-admin-bulk-cards")

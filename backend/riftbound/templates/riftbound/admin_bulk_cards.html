@@ -18,15 +18,22 @@
     <p><strong>Fuente preparada:</strong> {{ prepared_source.source_url|default:"HTML manual" }}</p>
     <p class="muted">Filtro set_code: {{ prepared_source.set_code_filter|default:"ALL" }} | Cartas detectadas: {{ prepared_cards_total }}</p>
     {% if prepared_has_csv %}
-      <p><a href="?download=csv" class="js-file-download" data-download-label="CSV generado"><strong>Descargar CSV generado</strong></a></p>
+      <p>
+        <a href="?download=csv" class="js-file-download" data-download-label="CSV generado"><strong>Descargar CSV generado</strong></a>
+        <span id="inline-status-csv" class="muted" style="display:none; margin-left:0.7rem;"></span>
+      </p>
     {% else %}
       <p class="muted">No se generó CSV (active la opción correspondiente en el formulario).</p>
     {% endif %}
 
     {% if prepared_cards_total %}
-      <p><a href="?download=images_zip" class="js-file-download" data-download-label="ZIP de imágenes"><strong>Descargar ZIP con todas las imágenes</strong></a></p>
+      <p>
+        <a href="?download=images_zip" class="js-file-download" data-download-label="ZIP de imágenes"><strong>Descargar ZIP con todas las imágenes</strong></a>
+        <span id="inline-status-zip" class="muted" style="display:none; margin-left:0.7rem;"></span>
+      </p>
       <p>
         <button type="button" id="download-all-images" data-total="{{ prepared_cards_total }}">Descargar todas las imágenes</button>
+        <span id="inline-status-all" class="muted" style="display:none; margin-left:0.7rem;"></span>
       </p>
       <p id="download-status" class="muted"></p>
       <progress id="download-all-progress" value="0" max="100" style="width:100%; max-width:560px; display:none;"></progress>
@@ -144,7 +151,15 @@
     }
   }
 
-  async function fetchAndDownload(url, fallbackName, label) {
+  function setInlineStatus(el, text, isVisible) {
+    if (!el) {
+      return;
+    }
+    el.textContent = text;
+    el.style.display = isVisible ? "inline" : "none";
+  }
+
+  async function fetchAndDownload(url, fallbackName, label, inlineStatusEl) {
     const loaderWrap = document.getElementById("file-download-loader");
     const loaderProgress = document.getElementById("file-download-progress");
     const loaderStatus = document.getElementById("file-download-status");
@@ -159,6 +174,7 @@
     loaderProgress.removeAttribute("value");
     loaderStatus.textContent = "Iniciando descarga...";
     loaderLabel.textContent = "Descargando " + label + "...";
+    setInlineStatus(inlineStatusEl, "0%", true);
 
     try {
       const response = await fetch(url, { method: "GET" });
@@ -194,8 +210,10 @@
             const pct = Math.min(100, Math.round((received / total) * 100));
             loaderProgress.value = pct;
             loaderStatus.textContent = pct + "% (" + humanSize(received) + " / " + humanSize(total) + ")";
+            setInlineStatus(inlineStatusEl, pct + "%", true);
           } else {
             loaderStatus.textContent = "Descargado: " + humanSize(received);
+            setInlineStatus(inlineStatusEl, "Descargado " + humanSize(received), true);
           }
         }
       } else {
@@ -217,8 +235,10 @@
 
       loaderProgress.value = 100;
       loaderStatus.textContent = "100% - Descarga completada";
+      setInlineStatus(inlineStatusEl, "100% completada", true);
     } catch (error) {
       loaderStatus.textContent = "Error en descarga, intentando método directo...";
+      setInlineStatus(inlineStatusEl, "Error, reintentando...", true);
       setTimeout(function () {
         window.location.href = url;
       }, 250);
@@ -227,6 +247,9 @@
 
     setTimeout(function () {
       loaderWrap.style.display = "none";
+      if (inlineStatusEl && inlineStatusEl.textContent.indexOf("Error") < 0) {
+        setInlineStatus(inlineStatusEl, "", false);
+      }
     }, 1200);
   }
 
@@ -238,7 +261,10 @@
       const label = link.getAttribute("data-download-label") || "archivo";
       const isCsv = href.toLowerCase().indexOf("csv") >= 0;
       const fallbackName = isCsv ? "archivo.csv" : "archivo.zip";
-      fetchAndDownload(href, fallbackName, label);
+      const inlineTarget = isCsv
+        ? document.getElementById("inline-status-csv")
+        : document.getElementById("inline-status-zip");
+      fetchAndDownload(href, fallbackName, label, inlineTarget);
     });
   });
 
@@ -352,7 +378,7 @@
             if (uploadLabel) {
               uploadLabel.textContent = "Subida completada. Descargando CSV resultado...";
             }
-            fetchAndDownload(payload.download_result_csv_url, "riftbound_result.csv", "CSV resultado automático");
+            fetchAndDownload(payload.download_result_csv_url, "riftbound_result.csv", "CSV resultado automático", null);
           }
         } else {
           const message = (payload && payload.message) ? payload.message : "No se pudo procesar la carga.";
@@ -382,6 +408,7 @@
   if (button) {
     const status = document.getElementById("download-status");
     const progress = document.getElementById("download-all-progress");
+    const inlineAll = document.getElementById("inline-status-all");
     const total = parseInt(button.getAttribute("data-total") || "0", 10);
 
     function setStatus(text) {
@@ -393,10 +420,12 @@
     button.addEventListener("click", function () {
       if (!Number.isFinite(total) || total <= 0) {
         setStatus("No hay imágenes para descargar.");
+        setInlineStatus(inlineAll, "Sin imágenes", true);
         return;
       }
 
       setStatus("Iniciando descargas...");
+      setInlineStatus(inlineAll, "0%", true);
       if (progress) {
         progress.style.display = "block";
         progress.value = 0;
@@ -408,18 +437,23 @@
       function triggerNext() {
         if (index >= total) {
           setStatus("Descarga masiva completada. Revise su carpeta Descargas.");
+          setInlineStatus(inlineAll, "100% completada", true);
           if (progress) {
             progress.value = 100;
             setTimeout(function () {
               progress.style.display = "none";
             }, 1200);
           }
+          setTimeout(function () {
+            setInlineStatus(inlineAll, "", false);
+          }, 3200);
           button.disabled = false;
           return;
         }
 
         const pct = Math.round((index / total) * 100);
         setStatus("Descargando " + (index + 1) + " de " + total + "... (" + pct + "%)");
+        setInlineStatus(inlineAll, pct + "%", true);
         if (progress) {
           progress.value = pct;
         }

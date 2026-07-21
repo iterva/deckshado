@@ -64,6 +64,12 @@ class BulkRiftboundCardCsvForm(forms.Form):
         required=False,
         help_text="Opcional: ZIP de imágenes descargadas (un solo archivo). Se prioriza esta fuente para subir a ImageKit.",
     )
+    auto_create_missing_sets = forms.BooleanField(
+        required=False,
+        initial=True,
+        label="Crear sets faltantes automáticamente",
+        help_text="Si un set_code no existe (ej: VEN), se crea automáticamente con nombre igual al código.",
+    )
     upload_images_to_imagekit = forms.BooleanField(required=False, initial=False)
     imagekit_folder = forms.CharField(required=False, max_length=255, initial="deckshado/riftbound/cards_admin_bulk")
 
@@ -193,7 +199,12 @@ def _normalize_choice(value: str, allowed: set[str], default: str) -> str:
     return normalized if normalized in allowed else default
 
 
-def upsert_card_row(row: dict[str, str]) -> RiftboundCard:
+def upsert_card_row(
+    row: dict[str, str],
+    *,
+    auto_create_missing_set: bool = False,
+    set_cache: dict[str, RiftboundSet] | None = None,
+) -> RiftboundCard:
     card_number = row.get("card_number", "").strip().upper()
     name = row.get("name", "").strip()
     set_code = row.get("set_code", "").strip().upper()
@@ -201,9 +212,21 @@ def upsert_card_row(row: dict[str, str]) -> RiftboundCard:
     if not card_number or not name or not set_code:
         raise ValidationError("Cada fila requiere card_number, name y set_code")
 
-    set_obj = RiftboundSet.objects.filter(code=set_code).first()
+    set_obj = None
+    if set_cache is not None:
+        set_obj = set_cache.get(set_code)
+
+    if not set_obj:
+        set_obj = RiftboundSet.objects.filter(code=set_code).first()
+
+    if not set_obj and auto_create_missing_set:
+        set_obj = RiftboundSet.objects.create(code=set_code, name=set_code)
+
     if not set_obj:
         raise ValidationError(f"No existe set con código '{set_code}'")
+
+    if set_cache is not None:
+        set_cache[set_code] = set_obj
 
     card_type_allowed = {choice for choice, _ in RiftboundCard._meta.get_field("card_type").choices}
     rarity_allowed = {choice for choice, _ in RiftboundCard._meta.get_field("rarity").choices}

@@ -1817,6 +1817,8 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   // IDs cache
   private collectionIds: { [cardId: number]: number } = {};
   private wishlistIds = new Set<number>();
+  private wishlistHydratingCardIds = new Set<number>();
+  private wishlistHydratedCards = signal<Map<number, RiftboundCard>>(new Map<number, RiftboundCard>());
 
   // Preview
   previewCard = signal<RiftboundCardLite | null>(null);
@@ -2492,6 +2494,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     this.wishlistLoading.set(true);
     this.rb.listWishlist({ search: this.wishlistSearch || undefined, page: this.wishlistPage() }).subscribe({
       next: res => {
+        this.hydrateWishlistCardDetails(res.results);
         if (append) {
           this.wishlistEntries.update(arr => [...arr, ...res.results]);
         } else {
@@ -2508,6 +2511,42 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
       },
       error: () => { this.wishlistLoading.set(false); this.cdr.markForCheck(); },
     });
+  }
+
+  private hydrateWishlistCardDetails(entries: RiftboundWishlistEntry[]) {
+    for (const entry of entries) {
+      const lite = entry.card_data;
+      if (!lite?.id) continue;
+
+      if (this.wishlistHydratedCards().has(lite.id)) continue;
+      if (this.wishlistHydratingCardIds.has(lite.id)) continue;
+
+      const hasCardNumber = !!(lite.card_number || '').trim();
+      const hasCdn = !!(lite.cdn_image_url || '').trim();
+      const imageHost = (lite.image || lite.image_url || '').trim();
+      const isCmsOnly = /cmsassets\.rgpub\.io/i.test(imageHost) && !hasCdn;
+
+      // Solo hidrata cuando el payload lite no trae suficientes datos para fallback robusto.
+      if (hasCardNumber && !isCmsOnly) continue;
+
+      this.wishlistHydratingCardIds.add(lite.id);
+      this.rb.getCard(lite.id).subscribe({
+        next: (full) => {
+          this.wishlistHydratedCards.update(prev => {
+            const next = new Map(prev);
+            next.set(full.id, full);
+            return next;
+          });
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          // No bloquear UI si una carta no se puede hidratar.
+        },
+        complete: () => {
+          this.wishlistHydratingCardIds.delete(lite.id);
+        },
+      });
+    }
   }
   onWishlistSearch() {
     this.wishlistPage.set(1);
@@ -2902,9 +2941,11 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   wishlistShareItems(): ShareImageItem[] {
     const sel = this.wishlistShareSelection();
     const source = this.wishlistEntries();
+    const hydrated = this.wishlistHydratedCards();
     const filtered = sel.size > 0 ? source.filter(w => sel.has(w.id)) : source;
     return filtered.slice(0, 20).map(w => {
-      const imageCandidates = this.cardImageCandidates(w.card_data);
+      const card = hydrated.get(w.card_data.id) || w.card_data;
+      const imageCandidates = this.cardImageCandidates(card);
       return {
         name: w.card_data.name || '',
         image: imageCandidates[0] || '',

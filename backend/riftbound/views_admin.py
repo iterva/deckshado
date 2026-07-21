@@ -1,4 +1,5 @@
 import csv
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 import html
 import io
@@ -579,22 +580,42 @@ def _download_prepared_images_zip(request):
     used_names: set[str] = set()
     errors: list[str] = []
 
+    def _fetch_one(idx: int, item: dict):
+        image_url = str(item.get("image_url") or "").strip()
+        parsed = urlparse(image_url)
+        if parsed.netloc.lower() not in RIFTBOUND_IMAGE_HOSTS:
+            return idx, None, None, f"{idx}. Host no permitido: {image_url}"
+
+        try:
+            # Timeout corto para evitar que una imagen congele toda la descarga.
+            response = requests.get(image_url, timeout=(8, 20))
+            response.raise_for_status()
+        except Exception as exc:
+            return idx, None, None, f"{idx}. Error descargando {image_url}: {exc}"
+
+        file_name = _safe_download_name(item.get("file_name") or f"card_{idx}.png")
+        return idx, file_name, response.content, ""
+
+    fetched: list[tuple[int, str, bytes]] = []
+    max_workers = min(12, max(1, len(cards)))
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_map = {
+            executor.submit(_fetch_one, idx, item): idx
+            for idx, item in enumerate(cards, start=1)
+        }
+
+        for future in as_completed(future_map):
+            idx, file_name, content, error_text = future.result()
+            if error_text:
+                errors.append(error_text)
+                continue
+            if not file_name or content is None:
+                errors.append(f"{idx}. Respuesta inválida al descargar imagen")
+                continue
+            fetched.append((idx, file_name, content))
+
     with zipfile.ZipFile(zip_buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
-        for idx, item in enumerate(cards, start=1):
-            image_url = str(item.get("image_url") or "").strip()
-            parsed = urlparse(image_url)
-            if parsed.netloc.lower() not in RIFTBOUND_IMAGE_HOSTS:
-                errors.append(f"{idx}. Host no permitido: {image_url}")
-                continue
-
-            try:
-                response = requests.get(image_url, timeout=90)
-                response.raise_for_status()
-            except Exception as exc:
-                errors.append(f"{idx}. Error descargando {image_url}: {exc}")
-                continue
-
-            file_name = _safe_download_name(item.get("file_name") or f"card_{idx}.png")
+        for idx, file_name, content in sorted(fetched, key=lambda x: x[0]):
             name_root, dot, ext = file_name.rpartition(".")
             if not dot:
                 name_root = file_name
@@ -607,7 +628,7 @@ def _download_prepared_images_zip(request):
                 sequence += 1
 
             used_names.add(unique_name)
-            archive.writestr(unique_name, response.content)
+            archive.writestr(unique_name, content)
 
         if errors:
             archive.writestr("_errores_descarga.txt", "\n".join(errors))

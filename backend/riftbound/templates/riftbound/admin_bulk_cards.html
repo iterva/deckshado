@@ -18,17 +18,18 @@
     <p><strong>Fuente preparada:</strong> {{ prepared_source.source_url|default:"HTML manual" }}</p>
     <p class="muted">Filtro set_code: {{ prepared_source.set_code_filter|default:"ALL" }} | Cartas detectadas: {{ prepared_cards_total }}</p>
     {% if prepared_has_csv %}
-      <p><a href="?download=csv"><strong>Descargar CSV generado</strong></a></p>
+      <p><a href="?download=csv" class="js-file-download" data-download-label="CSV generado"><strong>Descargar CSV generado</strong></a></p>
     {% else %}
       <p class="muted">No se generó CSV (active la opción correspondiente en el formulario).</p>
     {% endif %}
 
     {% if prepared_cards_total %}
-      <p><a href="?download=images_zip"><strong>Descargar ZIP con todas las imágenes</strong></a></p>
+      <p><a href="?download=images_zip" class="js-file-download" data-download-label="ZIP de imágenes"><strong>Descargar ZIP con todas las imágenes</strong></a></p>
       <p>
         <button type="button" id="download-all-images" data-total="{{ prepared_cards_total }}">Descargar todas las imágenes</button>
       </p>
       <p id="download-status" class="muted"></p>
+      <progress id="download-all-progress" value="0" max="100" style="width:100%; max-width:560px; display:none;"></progress>
       <table>
         <thead>
           <tr>
@@ -72,7 +73,7 @@
   {% endif %}
 
   {% if upload_result_has_csv %}
-    <p><a href="?download=upload_result_csv"><strong>Descargar CSV resultado (con cdn_image_url)</strong></a></p>
+    <p><a href="?download=upload_result_csv" class="js-file-download" data-download-label="CSV resultado"><strong>Descargar CSV resultado (con cdn_image_url)</strong></a></p>
     <p class="muted">
       Filas: {{ upload_result.rows_total }} | OK: {{ upload_result.rows_ok }} | Error: {{ upload_result.rows_error }} |
       ImageKit: {{ upload_result.uploaded_to_imagekit }} (ZIP: {{ upload_result.uploaded_from_zip }}, URL: {{ upload_result.uploaded_from_url }})
@@ -91,16 +92,151 @@
     {{ form.as_p }}
     <button type="submit">Procesar CSV</button>
   </form>
+
+  <div id="file-download-loader" style="display:none; margin-top:1rem; padding:0.9rem; border:1px solid #d6deea; border-radius:10px; background:#f7fbff; max-width:560px;">
+    <p id="file-download-loader-label" class="muted" style="margin:0 0 0.4rem 0;">Descargando...</p>
+    <progress id="file-download-progress" value="0" max="100" style="width:100%;"></progress>
+    <p id="file-download-status" class="muted" style="margin:0.5rem 0 0 0;">0%</p>
+  </div>
 </div>
 
 <script>
 (function () {
+  function humanSize(bytes) {
+    if (!Number.isFinite(bytes) || bytes < 0) {
+      return "0 B";
+    }
+    const units = ["B", "KB", "MB", "GB"];
+    let value = bytes;
+    let idx = 0;
+    while (value >= 1024 && idx < units.length - 1) {
+      value /= 1024;
+      idx += 1;
+    }
+    return value.toFixed(value >= 10 || idx === 0 ? 0 : 1) + " " + units[idx];
+  }
+
+  function parseFileName(contentDisposition, fallback) {
+    if (!contentDisposition) {
+      return fallback;
+    }
+    const match = /filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i.exec(contentDisposition);
+    const raw = (match && (match[1] || match[2])) ? (match[1] || match[2]) : "";
+    if (!raw) {
+      return fallback;
+    }
+    try {
+      return decodeURIComponent(raw);
+    } catch (_) {
+      return raw;
+    }
+  }
+
+  async function fetchAndDownload(url, fallbackName, label) {
+    const loaderWrap = document.getElementById("file-download-loader");
+    const loaderProgress = document.getElementById("file-download-progress");
+    const loaderStatus = document.getElementById("file-download-status");
+    const loaderLabel = document.getElementById("file-download-loader-label");
+
+    if (!loaderWrap || !loaderProgress || !loaderStatus || !loaderLabel) {
+      window.location.href = url;
+      return;
+    }
+
+    loaderWrap.style.display = "block";
+    loaderProgress.removeAttribute("value");
+    loaderStatus.textContent = "Iniciando descarga...";
+    loaderLabel.textContent = "Descargando " + label + "...";
+
+    try {
+      const response = await fetch(url, { method: "GET" });
+      if (!response.ok) {
+        throw new Error("HTTP " + response.status);
+      }
+
+      const totalHeader = response.headers.get("content-length") || "";
+      const total = parseInt(totalHeader, 10);
+      const hasTotal = Number.isFinite(total) && total > 0;
+      if (hasTotal) {
+        loaderProgress.value = 0;
+        loaderProgress.max = 100;
+      } else {
+        loaderProgress.removeAttribute("value");
+      }
+
+      const reader = response.body ? response.body.getReader() : null;
+      const chunks = [];
+      let received = 0;
+
+      if (reader) {
+        while (true) {
+          const result = await reader.read();
+          if (result.done) {
+            break;
+          }
+          const chunk = result.value;
+          chunks.push(chunk);
+          received += chunk.length;
+
+          if (hasTotal) {
+            const pct = Math.min(100, Math.round((received / total) * 100));
+            loaderProgress.value = pct;
+            loaderStatus.textContent = pct + "% (" + humanSize(received) + " / " + humanSize(total) + ")";
+          } else {
+            loaderStatus.textContent = "Descargado: " + humanSize(received);
+          }
+        }
+      } else {
+        const blobFallback = await response.blob();
+        chunks.push(new Uint8Array(await blobFallback.arrayBuffer()));
+        received = blobFallback.size;
+      }
+
+      const blob = new Blob(chunks);
+      const fileName = parseFileName(response.headers.get("content-disposition"), fallbackName);
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(objectUrl);
+
+      loaderProgress.value = 100;
+      loaderStatus.textContent = "100% - Descarga completada";
+    } catch (error) {
+      loaderStatus.textContent = "Error en descarga, intentando método directo...";
+      setTimeout(function () {
+        window.location.href = url;
+      }, 250);
+      return;
+    }
+
+    setTimeout(function () {
+      loaderWrap.style.display = "none";
+    }, 1200);
+  }
+
+  const fileLinks = document.querySelectorAll("a.js-file-download");
+  fileLinks.forEach(function (link) {
+    link.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      const href = link.getAttribute("href") || "";
+      const label = link.getAttribute("data-download-label") || "archivo";
+      const isCsv = href.toLowerCase().indexOf("csv") >= 0;
+      const fallbackName = isCsv ? "archivo.csv" : "archivo.zip";
+      fetchAndDownload(href, fallbackName, label);
+    });
+  });
+
   const button = document.getElementById("download-all-images");
   if (!button) {
     return;
   }
 
   const status = document.getElementById("download-status");
+  const progress = document.getElementById("download-all-progress");
   const total = parseInt(button.getAttribute("data-total") || "0", 10);
 
   function setStatus(text) {
@@ -116,17 +252,32 @@
     }
 
     setStatus("Iniciando descargas...");
+    if (progress) {
+      progress.style.display = "block";
+      progress.value = 0;
+      progress.max = 100;
+    }
     button.disabled = true;
     let index = 0;
 
     function triggerNext() {
       if (index >= total) {
         setStatus("Descarga masiva completada. Revise su carpeta Descargas.");
+        if (progress) {
+          progress.value = 100;
+          setTimeout(function () {
+            progress.style.display = "none";
+          }, 1200);
+        }
         button.disabled = false;
         return;
       }
 
-      setStatus("Descargando " + (index + 1) + " de " + total + "...");
+      const pct = Math.round((index / total) * 100);
+      setStatus("Descargando " + (index + 1) + " de " + total + "... (" + pct + "%)");
+      if (progress) {
+        progress.value = pct;
+      }
       const iframe = document.createElement("iframe");
       iframe.style.display = "none";
       iframe.src = "?download=image&i=" + index;

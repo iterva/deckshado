@@ -103,10 +103,10 @@ class SourceRiftboundGalleryForm(forms.Form):
         help_text="Pegue aquí el código fuente HTML de la galería.",
     )
     set_code = forms.CharField(
-        label="Set code destino",
-        required=True,
+        label="Set code (filtro opcional)",
+        required=False,
         max_length=10,
-        help_text="Ejemplo: OGN, ARC",
+        help_text="Ejemplo: OGN, ARC. Deje vacío (o use TODOS) para incluir todas las cartas.",
     )
     max_cards = forms.IntegerField(
         label="Máximo de cartas a preparar",

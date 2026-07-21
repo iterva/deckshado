@@ -16,7 +16,7 @@
   {% if prepared_source %}
     <hr />
     <p><strong>Fuente preparada:</strong> {{ prepared_source.source_url|default:"HTML manual" }}</p>
-    <p class="muted">Set destino: {{ prepared_source.set_code }} | Cartas detectadas: {{ prepared_cards_total }}</p>
+    <p class="muted">Filtro set_code: {{ prepared_source.set_code_filter|default:"ALL" }} | Cartas detectadas: {{ prepared_cards_total }}</p>
     {% if prepared_has_csv %}
       <p><a href="?download=csv"><strong>Descargar CSV generado</strong></a></p>
     {% else %}
@@ -70,6 +70,20 @@
   {% else %}
     <p class="muted">No hay sesión ImageKit cargada. Puede cargar cartas sin subida de imágenes o cargar env de sesión.</p>
   {% endif %}
+
+  {% if upload_result_has_csv %}
+    <p><a href="?download=upload_result_csv"><strong>Descargar CSV resultado (con cdn_image_url)</strong></a></p>
+    <p class="muted">
+      Filas: {{ upload_result.rows_total }} | OK: {{ upload_result.rows_ok }} | Error: {{ upload_result.rows_error }} |
+      ImageKit: {{ upload_result.uploaded_to_imagekit }} (ZIP: {{ upload_result.uploaded_from_zip }}, URL: {{ upload_result.uploaded_from_url }})
+    </p>
+    <form method="post" style="margin-bottom: 0.75rem;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="clear_upload_result" />
+      <button type="submit">Limpiar CSV resultado</button>
+    </form>
+  {% endif %}
+
   <p class="muted">Para subir imágenes locales a ImageKit en lote, use el campo ZIP de imágenes junto al CSV.</p>
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}

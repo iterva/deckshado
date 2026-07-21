@@ -3,12 +3,16 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 import html
 import io
+from pathlib import Path
 import re
 import zipfile
-from functools import wraps
+from functools import lru_cache, wraps
 from urllib.parse import urlparse
 
 import requests
+from requests.adapters import HTTPAdapter
+from requests.exceptions import RequestException
+from urllib3.util.retry import Retry
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
@@ -17,6 +21,7 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.text import slugify
 from django.views.decorators.http import require_http_methods
@@ -141,7 +146,7 @@ def _extract_domains_from_value(value) -> list[str]:
                     return
             return
         if isinstance(node, dict):
-            for key in ("id", "slug", "code", "name", "value", "label", "title"):
+            for key in ("id", "slug", "code", "name", "value", "values", "label", "title", "type", "types"):
                 if key in node:
                     _walk(node.get(key))
                     if len(domains) >= 2:
@@ -176,6 +181,81 @@ def _extract_domains_from_gallery_item(item: dict) -> list[str]:
         _add(item.get(key))
 
     return domains[:2]
+
+
+def _normalize_domain_token(value: str) -> str:
+    token = str(value or "").strip().lower()
+    if token in RIFTBOUND_DOMAIN_ALLOWED:
+        return token
+
+    # Fallback tolerante para variantes de texto (ej: "Calm domain").
+    compact = re.sub(r"[^a-z]", " ", token)
+    for part in compact.split():
+        if part in RIFTBOUND_DOMAIN_ALLOWED:
+            return part
+    return ""
+
+
+@lru_cache(maxsize=1)
+def _riftcodex_domains_by_image_url() -> dict[str, list[str]]:
+    base_dir = Path(str(getattr(settings, "BASE_DIR", "") or "")).resolve()
+    candidates = [
+        base_dir / "riftcodex_all_cards.json",
+        base_dir.parent / "riftcodex_all_cards.json",
+    ]
+
+    source_path = None
+    for candidate in candidates:
+        if candidate.exists() and candidate.is_file():
+            source_path = candidate
+            break
+
+    if not source_path:
+        return {}
+
+    try:
+        with source_path.open("r", encoding="utf-8") as fh:
+            payload = json.load(fh)
+    except Exception:
+        return {}
+
+    if not isinstance(payload, list):
+        return {}
+
+    mapping: dict[str, list[str]] = {}
+    for item in payload:
+        if not isinstance(item, dict):
+            continue
+
+        media = item.get("media") or {}
+        classification = item.get("classification") or {}
+        image_url = _normalize_image_url(str(media.get("image_url") or "").strip())
+        domain_raw = classification.get("domain") or []
+
+        domains: list[str] = []
+        if isinstance(domain_raw, list):
+            candidates_raw = domain_raw
+        else:
+            candidates_raw = [domain_raw]
+
+        for raw in candidates_raw:
+            normalized = _normalize_domain_token(str(raw or ""))
+            if normalized and normalized not in domains:
+                domains.append(normalized)
+            if len(domains) >= 2:
+                break
+
+        if image_url and domains:
+            mapping.setdefault(image_url, domains[:2])
+
+    return mapping
+
+
+def _domains_from_riftcodex_image(image_url: str) -> list[str]:
+    normalized = _normalize_image_url(image_url)
+    if not normalized:
+        return []
+    return list(_riftcodex_domains_by_image_url().get(normalized, []))[:2]
 
 
 def _extract_cards_items_from_next_data(root) -> list[dict]:
@@ -283,6 +363,8 @@ def _collect_cards_from_next_data_html(
             rarity_id = "other"
 
         domains = _extract_domains_from_gallery_item(item)
+        if not domains:
+            domains = _domains_from_riftcodex_image(image_url)
         domain_1 = domains[0] if len(domains) >= 1 else ""
         domain_2 = domains[1] if len(domains) >= 2 else ""
 
@@ -470,6 +552,8 @@ def _collect_cards_from_riftbound_gallery_html(html_text: str, max_cards: int, s
 
         slug_name = slugify(name) or f"riftbound_{card_idx:03d}"
 
+        fallback_domains = _domains_from_riftcodex_image(image_url)
+
         cards.append(
             {
                 "card_number": card_number,
@@ -478,8 +562,8 @@ def _collect_cards_from_riftbound_gallery_html(html_text: str, max_cards: int, s
                 "slug": slug_name,
                 "card_type": "unit",
                 "rarity": "common",
-                "domain_1": "",
-                "domain_2": "",
+            "domain_1": fallback_domains[0] if len(fallback_domains) >= 1 else "",
+            "domain_2": fallback_domains[1] if len(fallback_domains) >= 2 else "",
                 "energy": "",
                 "power": "",
                 "might": "",
@@ -501,9 +585,60 @@ def _collect_cards_from_riftbound_gallery_html(html_text: str, max_cards: int, s
 
 
 def _collect_cards_from_riftbound_gallery(source_url: str, max_cards: int, set_code: str) -> list[dict[str, str]]:
-    response = requests.get(source_url, timeout=90)
-    response.raise_for_status()
-    return _collect_cards_from_riftbound_gallery_html(response.text, max_cards=max_cards, set_code=set_code)
+    session = requests.Session()
+    retry = Retry(
+        total=3,
+        connect=3,
+        read=3,
+        backoff_factor=1.2,
+        status_forcelist=(429, 500, 502, 503, 504),
+        allowed_methods=frozenset({"GET"}),
+        raise_on_status=False,
+    )
+    adapter = HTTPAdapter(max_retries=retry, pool_connections=4, pool_maxsize=8)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    session.headers.update(
+        {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/126.0.0.0 Safari/537.36"
+            ),
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9,es;q=0.8",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache",
+        }
+    )
+
+    parsed = urlparse(source_url)
+    hosts_to_try = [parsed.netloc]
+    for host in ["playriftbound.com", "www.playriftbound.com", "riftbound.leagueoflegends.com"]:
+        if host not in hosts_to_try:
+            hosts_to_try.append(host)
+
+    attempts: list[str] = []
+    try:
+        for host in hosts_to_try:
+            candidate_url = source_url
+            if parsed.netloc and host != parsed.netloc:
+                candidate_url = parsed._replace(netloc=host).geturl()
+            try:
+                response = session.get(candidate_url, timeout=(12, 90))
+                response.raise_for_status()
+                return _collect_cards_from_riftbound_gallery_html(response.text, max_cards=max_cards, set_code=set_code)
+            except (RequestException, ValueError) as exc:
+                attempts.append(f"{host}: {exc}")
+                continue
+    finally:
+        session.close()
+
+    detail = attempts[0] if attempts else "sin detalle"
+    raise ValueError(
+        "No se pudo abrir la galeria oficial despues de varios reintentos. "
+        f"Primer fallo: {detail}"
+    )
 
 
 def _build_prepared_source_payload(cleaned: dict) -> dict:
@@ -609,6 +744,114 @@ def _download_upload_result_csv(request):
     set_code = str(payload.get("set_code") or "RIFT").strip().upper()
     response = HttpResponse(csv_text, content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = f'attachment; filename="riftbound_bulk_cards_result_{set_code}.csv"'
+    return response
+
+
+def _download_missing_report_csv(request):
+    prepared_payload = _prepared_source_from_session(request)
+    prepared_cards = prepared_payload.get("cards") or []
+    if not prepared_cards:
+        return HttpResponseBadRequest("No hay fuente preparada para auditar faltantes.")
+
+    upload_payload = _upload_result_from_session(request)
+    upload_csv_text = upload_payload.get("csv_text") or ""
+
+    upload_by_card: dict[str, dict] = {}
+    if upload_csv_text:
+        reader = csv.DictReader(io.StringIO(upload_csv_text))
+        for row in reader:
+            key = _card_number_key(row.get("card_number", ""))
+            if not key:
+                continue
+            upload_by_card[key] = row
+
+    expected_numbers = []
+    for item in prepared_cards:
+        key = _card_number_key(item.get("card_number", ""))
+        if key:
+            expected_numbers.append(key)
+
+    db_rows = RiftboundCard.objects.filter(card_number__in=expected_numbers).select_related("set")
+    db_by_card = {_card_number_key(item.card_number): item for item in db_rows}
+
+    headers = [
+        "card_number",
+        "name",
+        "set_code_expected",
+        "reason_code",
+        "reason_detail",
+        "db_exists",
+        "db_set_code",
+        "db_is_active",
+        "db_has_image",
+        "upload_result",
+        "upload_error",
+    ]
+
+    buffer = io.StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=headers)
+    writer.writeheader()
+
+    for item in prepared_cards:
+        card_number = str(item.get("card_number") or "").strip().upper()
+        card_key = _card_number_key(card_number)
+        expected_set = str(item.get("set_code") or "").strip().upper()
+        expected_name = str(item.get("name") or "").strip()
+
+        db_card = db_by_card.get(card_key)
+        upload_row = upload_by_card.get(card_key) or {}
+        upload_result = str(upload_row.get("_result") or "").strip().lower()
+        upload_error = str(upload_row.get("_error") or "").strip()
+
+        reason_code = ""
+        reason_detail = ""
+        db_exists = "no"
+        db_set_code = ""
+        db_is_active = ""
+        db_has_image = ""
+
+        if not db_card:
+            reason_code = "missing_in_db"
+            if upload_result == "error" and upload_error:
+                reason_detail = upload_error
+            elif not upload_row:
+                reason_detail = "No se procesó en la última carga CSV registrada en sesión."
+            else:
+                reason_detail = "No existe registro de carta en la base de datos."
+        else:
+            db_exists = "yes"
+            db_set_code = str(getattr(db_card.set, "code", "") or "").strip().upper()
+            db_is_active = "yes" if db_card.is_active else "no"
+            db_has_image = "yes" if (db_card.cdn_image_url or db_card.image_url) else "no"
+
+            if expected_set and db_set_code and db_set_code != expected_set:
+                reason_code = "set_mismatch"
+                reason_detail = f"Esperado {expected_set}, en BD está {db_set_code}."
+            elif not db_card.is_active:
+                reason_code = "inactive_in_db"
+                reason_detail = "La carta existe pero está inactiva."
+
+        if reason_code:
+            writer.writerow(
+                {
+                    "card_number": card_number,
+                    "name": expected_name,
+                    "set_code_expected": expected_set,
+                    "reason_code": reason_code,
+                    "reason_detail": reason_detail,
+                    "db_exists": db_exists,
+                    "db_set_code": db_set_code,
+                    "db_is_active": db_is_active,
+                    "db_has_image": db_has_image,
+                    "upload_result": upload_result,
+                    "upload_error": upload_error,
+                }
+            )
+
+    csv_text = buffer.getvalue()
+    set_code = str(prepared_payload.get("set_code_filter") or prepared_payload.get("set_code") or "ALL").strip().upper()
+    response = HttpResponse(csv_text, content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="riftbound_missing_report_{set_code}.csv"'
     return response
 
 
@@ -746,6 +989,8 @@ def _open_images_zip_index(uploaded_file):
     archive = zipfile.ZipFile(zip_buffer)
     by_card: dict[str, str] = {}
     by_name: dict[str, str] = {}
+    name_members: dict[str, list[str]] = {}
+    card_members: dict[str, list[str]] = {}
     valid_ext = (".png", ".jpg", ".jpeg", ".webp")
 
     for info in archive.infolist():
@@ -757,15 +1002,41 @@ def _open_images_zip_index(uploaded_file):
         if not base_name.lower().endswith(valid_ext):
             continue
 
-        by_name.setdefault(base_name.lower(), info.filename)
+        name_key = base_name.lower()
+        if name_key not in name_members:
+            name_members[name_key] = []
+        name_members[name_key].append(info.filename)
+        by_name.setdefault(name_key, info.filename)
 
         stem = base_name.rsplit(".", 1)[0]
         prefix = stem.split("_", 1)[0]
         key = _card_number_key(prefix)
         if key:
+            if key not in card_members:
+                card_members[key] = []
+            card_members[key].append(info.filename)
             by_card.setdefault(key, info.filename)
 
-    return archive, by_card, by_name
+    duplicate_name_keys = sorted([key for key, members in name_members.items() if len(members) > 1])
+    duplicate_card_keys = sorted([key for key, members in card_members.items() if len(members) > 1])
+
+    warnings: list[str] = []
+    if duplicate_name_keys:
+        preview = ", ".join(duplicate_name_keys[:10])
+        extra = "" if len(duplicate_name_keys) <= 10 else f" (+{len(duplicate_name_keys) - 10} más)"
+        warnings.append(
+            "ZIP con nombres de archivo repetidos (se usará la primera coincidencia por nombre): "
+            f"{preview}{extra}"
+        )
+    if duplicate_card_keys:
+        preview = ", ".join(duplicate_card_keys[:10])
+        extra = "" if len(duplicate_card_keys) <= 10 else f" (+{len(duplicate_card_keys) - 10} más)"
+        warnings.append(
+            "ZIP con múltiples archivos para el mismo prefijo de carta (card_number): "
+            f"{preview}{extra}"
+        )
+
+    return archive, by_card, by_name, warnings
 
 
 def _find_image_member_for_row(row: dict[str, str], by_card: dict[str, str], by_name: dict[str, str]) -> str:
@@ -783,14 +1054,21 @@ def _find_image_member_for_row(row: dict[str, str], by_card: dict[str, str], by_
 
 
 def _redirect_next_or_default(request, default_view_name: str):
+    next_url = _safe_next_url(request)
+    if next_url:
+        return redirect(next_url)
+    return redirect(default_view_name)
+
+
+def _safe_next_url(request) -> str:
     next_url = (request.POST.get("next") or request.GET.get("next") or "").strip()
     if next_url and url_has_allowed_host_and_scheme(
         url=next_url,
         allowed_hosts={request.get_host()},
         require_https=request.is_secure(),
     ):
-        return redirect(next_url)
-    return redirect(default_view_name)
+        return next_url
+    return ""
 
 
 def riftbound_admin_owner_required(view_func):
@@ -935,11 +1213,17 @@ def riftbound_admin_toggle_sets(request):
 @require_http_methods(["GET", "POST"])
 def riftbound_admin_set_new(request):
     form = RiftboundSetForm(request.POST or None)
+    next_url = _safe_next_url(request)
+    back_url = reverse("riftbound-admin-dashboard")
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Set creado correctamente.")
-        return redirect("riftbound-admin-dashboard")
-    return render(request, "cards/admin_entity_form.html", {"title": "Nuevo set Riftbound", "form": form})
+        return _redirect_next_or_default(request, "riftbound-admin-dashboard")
+    return render(
+        request,
+        "cards/admin_entity_form.html",
+        {"title": "Nuevo set Riftbound", "form": form, "next_url": next_url, "back_url": back_url},
+    )
 
 
 @riftbound_admin_owner_required
@@ -947,11 +1231,17 @@ def riftbound_admin_set_new(request):
 def riftbound_admin_set_edit(request, set_id: int):
     set_obj = get_object_or_404(RiftboundSet, pk=set_id)
     form = RiftboundSetForm(request.POST or None, instance=set_obj)
+    next_url = _safe_next_url(request)
+    back_url = reverse("riftbound-admin-dashboard")
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Set actualizado correctamente.")
-        return redirect("riftbound-admin-dashboard")
-    return render(request, "cards/admin_entity_form.html", {"title": f"Editar set: {set_obj.code}", "form": form})
+        return _redirect_next_or_default(request, "riftbound-admin-dashboard")
+    return render(
+        request,
+        "cards/admin_entity_form.html",
+        {"title": f"Editar set: {set_obj.code}", "form": form, "next_url": next_url, "back_url": back_url},
+    )
 
 
 @riftbound_admin_owner_required
@@ -996,11 +1286,17 @@ def riftbound_admin_set_cards(request, set_id: int):
 @require_http_methods(["GET", "POST"])
 def riftbound_admin_card_new(request):
     form = RiftboundCardForm(request.POST or None)
+    next_url = _safe_next_url(request)
+    back_url = reverse("riftbound-admin-dashboard")
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Carta Riftbound creada correctamente.")
-        return redirect("riftbound-admin-dashboard")
-    return render(request, "cards/admin_entity_form.html", {"title": "Nueva carta Riftbound", "form": form})
+        return _redirect_next_or_default(request, "riftbound-admin-dashboard")
+    return render(
+        request,
+        "cards/admin_entity_form.html",
+        {"title": "Nueva carta Riftbound", "form": form, "next_url": next_url, "back_url": back_url},
+    )
 
 
 @riftbound_admin_owner_required
@@ -1008,22 +1304,34 @@ def riftbound_admin_card_new(request):
 def riftbound_admin_card_edit(request, card_id: int):
     card = get_object_or_404(RiftboundCard, pk=card_id)
     form = RiftboundCardForm(request.POST or None, instance=card)
+    next_url = _safe_next_url(request)
+    back_url = reverse("riftbound-admin-dashboard")
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Carta Riftbound actualizada correctamente.")
-        return redirect("riftbound-admin-dashboard")
-    return render(request, "cards/admin_entity_form.html", {"title": f"Editar carta: {card.name}", "form": form})
+        return _redirect_next_or_default(request, "riftbound-admin-dashboard")
+    return render(
+        request,
+        "cards/admin_entity_form.html",
+        {"title": f"Editar carta: {card.name}", "form": form, "next_url": next_url, "back_url": back_url},
+    )
 
 
 @riftbound_admin_owner_required
 @require_http_methods(["GET", "POST"])
 def riftbound_admin_banlist_new(request):
     form = RiftboundBanlistEntryForm(request.POST or None)
+    next_url = _safe_next_url(request)
+    back_url = reverse("riftbound-admin-dashboard")
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Entrada de banlist Riftbound creada correctamente.")
-        return redirect("riftbound-admin-dashboard")
-    return render(request, "cards/admin_entity_form.html", {"title": "Nueva entrada banlist Riftbound", "form": form})
+        return _redirect_next_or_default(request, "riftbound-admin-dashboard")
+    return render(
+        request,
+        "cards/admin_entity_form.html",
+        {"title": "Nueva entrada banlist Riftbound", "form": form, "next_url": next_url, "back_url": back_url},
+    )
 
 
 @riftbound_admin_owner_required
@@ -1031,11 +1339,17 @@ def riftbound_admin_banlist_new(request):
 def riftbound_admin_banlist_edit(request, entry_id: int):
     entry = get_object_or_404(RiftboundBanlistEntry, pk=entry_id)
     form = RiftboundBanlistEntryForm(request.POST or None, instance=entry)
+    next_url = _safe_next_url(request)
+    back_url = reverse("riftbound-admin-dashboard")
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Entrada de banlist Riftbound actualizada correctamente.")
         return _redirect_next_or_default(request, "riftbound-admin-dashboard")
-    return render(request, "cards/admin_entity_form.html", {"title": f"Editar banlist: {entry.card.name}", "form": form})
+    return render(
+        request,
+        "cards/admin_entity_form.html",
+        {"title": f"Editar banlist: {entry.card.name}", "form": form, "next_url": next_url, "back_url": back_url},
+    )
 
 
 @riftbound_admin_owner_required
@@ -1083,6 +1397,8 @@ def riftbound_admin_bulk_cards(request):
             return _download_prepared_csv(request)
         if download_kind in {"upload_result_csv", "result_csv"}:
             return _download_upload_result_csv(request)
+        if download_kind in {"missing_report", "faltantes"}:
+            return _download_missing_report_csv(request)
         if download_kind == "image":
             return _download_prepared_image(request)
         if download_kind in {"images_zip", "zip"}:
@@ -1105,6 +1421,12 @@ def riftbound_admin_bulk_cards(request):
                             request,
                             "No se pudo abrir la URL desde el servidor por restricción de proxy. "
                             "Use 'Desde archivo HTML' o 'Pegando HTML' para preparar la fuente.",
+                        )
+                    elif "SSL" in exc_text or "UNEXPECTED_EOF_WHILE_READING" in exc_text or "SSLEOFError" in exc_text:
+                        messages.error(
+                            request,
+                            "La galeria oficial cerro la conexion SSL de forma temporal. "
+                            "Se aplicaron reintentos automaticos; si persiste, use 'Desde archivo HTML' o 'Pegando HTML'.",
                         )
                     else:
                         messages.error(request, f"No se pudo preparar la fuente: {exc}")
@@ -1176,15 +1498,20 @@ def riftbound_admin_bulk_cards(request):
             archive = None
             archive_by_card: dict[str, str] = {}
             archive_by_name: dict[str, str] = {}
+            zip_warnings: list[str] = []
 
             if do_upload and images_zip_file:
                 try:
-                    archive, archive_by_card, archive_by_name = _open_images_zip_index(images_zip_file)
+                    archive, archive_by_card, archive_by_name, zip_warnings = _open_images_zip_index(images_zip_file)
                 except Exception as exc:
                     if is_async_upload:
                         return JsonResponse({"ok": False, "message": f"ZIP de imágenes inválido: {exc}"}, status=400)
                     messages.error(request, f"ZIP de imágenes inválido: {exc}")
                     return redirect("riftbound-admin-bulk-cards")
+
+                if zip_warnings and not is_async_upload:
+                    for warn in zip_warnings[:5]:
+                        messages.warning(request, warn)
 
             try:
                 for idx, row in enumerate(csv_rows(form.cleaned_data["csv_file"]), start=2):
@@ -1298,6 +1625,7 @@ def riftbound_admin_bulk_cards(request):
                     "uploaded_from_url": uploaded_from_url,
                     "created_sets_count": len(created_set_codes),
                     "created_sets": sorted(created_set_codes)[:30],
+                    "warnings": zip_warnings[:10],
                     "errors_count": len(errors),
                     "errors": errors[:20],
                     "message": summary_message,

@@ -22,6 +22,9 @@
         <a href="?download=csv" class="js-file-download" data-download-label="CSV generado"><strong>Descargar CSV generado</strong></a>
         <span id="inline-status-csv" class="muted" style="display:none; margin-left:0.7rem;"></span>
       </p>
+      <p>
+        <a href="?download=missing_report" class="js-file-download" data-download-label="Reporte de faltantes"><strong>Descargar reporte de faltantes (con motivo)</strong></a>
+      </p>
     {% else %}
       <p class="muted">No se generó CSV (active la opción correspondiente en el formulario).</p>
     {% endif %}
@@ -310,8 +313,34 @@
 
       const formData = new FormData(uploadForm);
       const xhr = new XMLHttpRequest();
+      let waitingServerAfterUpload = false;
+      let waitingTick = 0;
+      let waitingTimer = null;
+
+      function stopWaitingTimer() {
+        if (waitingTimer) {
+          clearInterval(waitingTimer);
+          waitingTimer = null;
+        }
+      }
+
+      function startWaitingTimer() {
+        if (waitingTimer) {
+          return;
+        }
+        waitingTimer = setInterval(function () {
+          waitingTick += 1;
+          if (uploadLabel) {
+            const dots = ".".repeat((waitingTick % 3) + 1);
+            uploadLabel.textContent = "Archivo subido. Procesando en servidor" + dots;
+          }
+          setUploadStatus("Procesando cartas e imágenes en ImageKit. Esto puede tardar varios minutos.");
+        }, 1200);
+      }
+
       xhr.open("POST", uploadForm.getAttribute("action") || window.location.href, true);
       xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+      xhr.timeout = 30 * 60 * 1000;
 
       xhr.upload.onprogress = function (event) {
         if (!event.lengthComputable) {
@@ -327,12 +356,46 @@
           uploadProgress.value = pct;
         }
         setUploadStatus(pct + "% (" + humanSize(event.loaded) + " / " + humanSize(event.total) + ")");
+
+        if (pct >= 100 && !waitingServerAfterUpload) {
+          waitingServerAfterUpload = true;
+          if (uploadLabel) {
+            uploadLabel.textContent = "Archivo subido. Iniciando procesamiento en servidor...";
+          }
+          startWaitingTimer();
+        }
+      };
+
+      xhr.onerror = function () {
+        stopWaitingTimer();
+        if (submitButton) {
+          submitButton.disabled = false;
+        }
+        setUploadStatus("Error de red");
+        if (uploadSummaryBox && uploadSummaryMessage) {
+          uploadSummaryBox.style.display = "block";
+          uploadSummaryMessage.textContent = "Error de red durante la carga. Revise su conexión e intente nuevamente.";
+        }
+      };
+
+      xhr.ontimeout = function () {
+        stopWaitingTimer();
+        if (submitButton) {
+          submitButton.disabled = false;
+        }
+        setUploadStatus("Tiempo de espera agotado");
+        if (uploadSummaryBox && uploadSummaryMessage) {
+          uploadSummaryBox.style.display = "block";
+          uploadSummaryMessage.textContent = "El servidor tardó demasiado en responder (timeout de 30 minutos).";
+        }
       };
 
       xhr.onreadystatechange = function () {
         if (xhr.readyState !== 4) {
           return;
         }
+
+        stopWaitingTimer();
 
         if (submitButton) {
           submitButton.disabled = false;
@@ -365,9 +428,21 @@
 
           if (uploadSummaryErrors) {
             const errs = Array.isArray(payload.errors) ? payload.errors : [];
+            const warns = Array.isArray(payload.warnings) ? payload.warnings : [];
+            const lines = [];
+            if (warns.length) {
+              lines.push("Advertencias detectadas:");
+              lines.push(warns.slice(0, 10).join("\n"));
+            }
             if (errs.length) {
-              const preview = errs.slice(0, 10).join("\n");
-              uploadSummaryErrors.textContent = "Errores detectados:\n" + preview;
+              if (lines.length) {
+                lines.push("");
+              }
+              lines.push("Errores detectados:");
+              lines.push(errs.slice(0, 10).join("\n"));
+            }
+            if (lines.length) {
+              uploadSummaryErrors.textContent = lines.join("\n");
               uploadSummaryErrors.style.whiteSpace = "pre-wrap";
             } else {
               uploadSummaryErrors.textContent = "";

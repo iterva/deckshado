@@ -107,7 +107,7 @@
           <td>{{ c.energy|default:"-" }}</td>
           <td>{{ c.power|default:"-" }}</td>
           <td>{{ c.might|default:"-" }}</td>
-          <td class="row-actions"><a href="{% url 'riftbound-admin-card-edit' c.id %}">Editar carta</a></td>
+          <td class="row-actions"><a href="{% url 'riftbound-admin-card-edit' c.id %}?next={{ request.get_full_path|urlencode }}">Editar carta</a></td>
         </tr>
       {% empty %}
         <tr><td colspan="10">Sin resultados.</td></tr>
@@ -233,7 +233,7 @@
           <td>{{ s.name }}</td>
           <td class="row-actions">
             <a href="{% url 'riftbound-admin-set-cards' s.id %}">Ver cartas</a>
-            <a href="{% url 'riftbound-admin-set-edit' s.id %}">Editar set</a>
+            <a href="{% url 'riftbound-admin-set-edit' s.id %}?next={{ request.get_full_path|urlencode }}">Editar set</a>
           </td>
         </tr>
       {% empty %}

@@ -15,6 +15,7 @@ from django.db.models import Count, Q
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.text import slugify
 from django.views.decorators.http import require_http_methods
 
@@ -346,6 +347,24 @@ def cards_admin_owner_required(view_func):
     return _wrapped
 
 
+def _safe_next_url(request) -> str:
+    next_url = (request.POST.get("next") or request.GET.get("next") or "").strip()
+    if next_url and url_has_allowed_host_and_scheme(
+        url=next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return next_url
+    return ""
+
+
+def _redirect_next_or_default(request, default_view_name: str):
+    next_url = _safe_next_url(request)
+    if next_url:
+        return redirect(next_url)
+    return redirect(default_view_name)
+
+
 @cards_admin_owner_required
 @require_http_methods(["GET", "POST"])
 def cards_admin_dashboard(request):
@@ -467,11 +486,12 @@ def cards_admin_toggle_editions(request):
 @require_http_methods(["GET", "POST"])
 def cards_admin_season_new(request):
     form = SeasonForm(request.POST or None)
+    next_url = _safe_next_url(request)
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Temporada creada correctamente.")
-        return redirect("cards-admin-dashboard")
-    return render(request, "cards/admin_entity_form.html", {"title": "Nueva temporada", "form": form})
+        return _redirect_next_or_default(request, "cards-admin-dashboard")
+    return render(request, "cards/admin_entity_form.html", {"title": "Nueva temporada", "form": form, "next_url": next_url})
 
 
 @cards_admin_owner_required
@@ -479,22 +499,24 @@ def cards_admin_season_new(request):
 def cards_admin_season_edit(request, season_id: int):
     season = get_object_or_404(Season, pk=season_id)
     form = SeasonForm(request.POST or None, instance=season)
+    next_url = _safe_next_url(request)
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Temporada actualizada correctamente.")
-        return redirect("cards-admin-dashboard")
-    return render(request, "cards/admin_entity_form.html", {"title": f"Editar temporada: {season.name}", "form": form})
+        return _redirect_next_or_default(request, "cards-admin-dashboard")
+    return render(request, "cards/admin_entity_form.html", {"title": f"Editar temporada: {season.name}", "form": form, "next_url": next_url})
 
 
 @cards_admin_owner_required
 @require_http_methods(["GET", "POST"])
 def cards_admin_edition_new(request):
     form = EditionForm(request.POST or None)
+    next_url = _safe_next_url(request)
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Edición creada correctamente.")
-        return redirect("cards-admin-dashboard")
-    return render(request, "cards/admin_entity_form.html", {"title": "Nueva edición", "form": form})
+        return _redirect_next_or_default(request, "cards-admin-dashboard")
+    return render(request, "cards/admin_entity_form.html", {"title": "Nueva edición", "form": form, "next_url": next_url})
 
 
 @cards_admin_owner_required
@@ -502,22 +524,24 @@ def cards_admin_edition_new(request):
 def cards_admin_edition_edit(request, edition_id: int):
     edition = get_object_or_404(Edition, pk=edition_id)
     form = EditionForm(request.POST or None, instance=edition)
+    next_url = _safe_next_url(request)
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Edición actualizada correctamente.")
-        return redirect("cards-admin-dashboard")
-    return render(request, "cards/admin_entity_form.html", {"title": f"Editar edición: {edition.title}", "form": form})
+        return _redirect_next_or_default(request, "cards-admin-dashboard")
+    return render(request, "cards/admin_entity_form.html", {"title": f"Editar edición: {edition.title}", "form": form, "next_url": next_url})
 
 
 @cards_admin_owner_required
 @require_http_methods(["GET", "POST"])
 def cards_admin_card_new(request):
     form = CardForm(request.POST or None)
+    next_url = _safe_next_url(request)
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Carta creada correctamente.")
-        return redirect("cards-admin-dashboard")
-    return render(request, "cards/admin_entity_form.html", {"title": "Nueva carta", "form": form})
+        return _redirect_next_or_default(request, "cards-admin-dashboard")
+    return render(request, "cards/admin_entity_form.html", {"title": "Nueva carta", "form": form, "next_url": next_url})
 
 
 @cards_admin_owner_required
@@ -525,22 +549,24 @@ def cards_admin_card_new(request):
 def cards_admin_card_edit(request, card_id: int):
     card = get_object_or_404(Card, pk=card_id)
     form = CardForm(request.POST or None, instance=card)
+    next_url = _safe_next_url(request)
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Carta actualizada correctamente.")
-        return redirect("cards-admin-dashboard")
-    return render(request, "cards/admin_entity_form.html", {"title": f"Editar carta: {card.name}", "form": form})
+        return _redirect_next_or_default(request, "cards-admin-dashboard")
+    return render(request, "cards/admin_entity_form.html", {"title": f"Editar carta: {card.name}", "form": form, "next_url": next_url})
 
 
 @cards_admin_owner_required
 @require_http_methods(["GET", "POST"])
 def cards_admin_banlist_new(request):
     form = BanlistEntryForm(request.POST or None)
+    next_url = _safe_next_url(request)
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Entrada de banlist creada correctamente.")
-        return redirect("cards-admin-dashboard")
-    return render(request, "cards/admin_entity_form.html", {"title": "Nueva entrada banlist", "form": form})
+        return _redirect_next_or_default(request, "cards-admin-dashboard")
+    return render(request, "cards/admin_entity_form.html", {"title": "Nueva entrada banlist", "form": form, "next_url": next_url})
 
 
 @cards_admin_owner_required
@@ -548,11 +574,12 @@ def cards_admin_banlist_new(request):
 def cards_admin_banlist_edit(request, entry_id: int):
     entry = get_object_or_404(BanlistEntry, pk=entry_id)
     form = BanlistEntryForm(request.POST or None, instance=entry)
+    next_url = _safe_next_url(request)
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Entrada de banlist actualizada correctamente.")
-        return redirect("cards-admin-dashboard")
-    return render(request, "cards/admin_entity_form.html", {"title": f"Editar banlist: {entry.card_name}", "form": form})
+        return _redirect_next_or_default(request, "cards-admin-dashboard")
+    return render(request, "cards/admin_entity_form.html", {"title": f"Editar banlist: {entry.card_name}", "form": form, "next_url": next_url})
 
 
 @cards_admin_owner_required

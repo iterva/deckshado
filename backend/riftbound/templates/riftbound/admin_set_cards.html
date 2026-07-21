@@ -55,7 +55,7 @@
           <td>{{ c.might|default:"-" }}</td>
           <td>{{ c.description|default:"-"|truncatechars:140 }}</td>
           <td>{{ c.is_active|yesno:"Sí,No" }}</td>
-          <td class="row-actions"><a href="{% url 'riftbound-admin-card-edit' c.id %}">Editar carta</a></td>
+          <td class="row-actions"><a href="{% url 'riftbound-admin-card-edit' c.id %}?next={{ request.get_full_path|urlencode }}">Editar carta</a></td>
         </tr>
       {% empty %}
         <tr><td colspan="11">No hay cartas para mostrar.</td></tr>

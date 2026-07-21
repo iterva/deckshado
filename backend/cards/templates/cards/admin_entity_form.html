@@ -4,9 +4,18 @@
   <h1>{{ title }}</h1>
   <form method="post">
     {% csrf_token %}
+    {% if next_url %}
+      <input type="hidden" name="next" value="{{ next_url }}">
+    {% endif %}
     {{ form.as_p }}
     <button type="submit">Guardar</button>
-    <a href="{% url 'cards-admin-dashboard' %}">Volver</a>
+    {% if next_url %}
+      <a href="{{ next_url }}">Volver</a>
+    {% elif back_url %}
+      <a href="{{ back_url }}">Volver</a>
+    {% else %}
+      <a href="{% url 'cards-admin-dashboard' %}">Volver</a>
+    {% endif %}
   </form>
 </div>
 {% endblock %}

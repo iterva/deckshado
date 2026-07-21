@@ -45,7 +45,7 @@
           <td>{{ row.obj.cost|default:"-" }}</td>
           <td>{{ row.obj.damage|default:"-" }}</td>
           <td>{{ row.obj.ability|default:"-"|truncatechars:140 }}</td>
-          <td class="row-actions"><a href="{% url 'cards-admin-card-edit' row.obj.id %}">Editar carta</a></td>
+          <td class="row-actions"><a href="{% url 'cards-admin-card-edit' row.obj.id %}?next={{ request.get_full_path|urlencode }}">Editar carta</a></td>
         </tr>
       {% empty %}
         <tr><td colspan="9">No hay cartas para mostrar.</td></tr>

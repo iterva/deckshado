@@ -53,7 +53,7 @@
             />
           </td>
           <td>
-            <a href="{% url 'riftbound-admin-set-edit' row.id %}">Editar</a>
+            <a href="{% url 'riftbound-admin-set-edit' row.id %}?next={{ request.get_full_path|urlencode }}">Editar</a>
           </td>
         </tr>
         {% empty %}

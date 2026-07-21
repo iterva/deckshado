@@ -867,10 +867,16 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
 
   cardImageFallbacks(card: RiftboundCardLite | null | undefined): string[] {
     if (!card) return [];
+    const rawNumber = (card.card_number || '').trim().toUpperCase();
+    const baseNumber = rawNumber.match(/^(.*?\d+)[A-Z]$/)?.[1] || rawNumber;
+    const imageKitByNumber = Array.from(new Set([rawNumber, baseNumber].filter(Boolean))).map(
+      (num) => `https://ik.imagekit.io/crttm6rou/deckshado/riftbound/cards_admin_bulk/${num}`,
+    );
+
     const candidates = [card.image, card.image_url, card.image_url_small, card.cdn_image_url]
       .map(url => (url || '').trim())
       .filter((url): url is string => !!url);
-    return Array.from(new Set(candidates));
+    return Array.from(new Set([...(card.cdn_image_url ? [card.cdn_image_url] : []), ...imageKitByNumber, ...candidates]));
   }
 
   // ── Compartir imagen estilo CardIndex ──

@@ -2655,11 +2655,21 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     return raw === https ? [raw] : [raw, https];
   }
 
+  private imageKitCandidatesFromCardNumber(cardNumber: string | null | undefined): string[] {
+    const raw = (cardNumber || '').trim().toUpperCase();
+    if (!raw) return [];
+
+    const base = raw.match(/^(.*?\d+)[A-Z]$/)?.[1] || raw;
+    const variants = Array.from(new Set([raw, base]));
+    return variants.map((num) => `https://ik.imagekit.io/crttm6rou/deckshado/riftbound/cards_admin_bulk/${num}`);
+  }
+
   private cardImageCandidates(card: RiftboundCardLite | RiftboundCard | null | undefined): string[] {
     if (!card) return [];
     const candidates = [
-      ...this.imageUrlVariants(card.image),
       ...this.imageUrlVariants(card.cdn_image_url),
+      ...this.imageKitCandidatesFromCardNumber(card.card_number),
+      ...this.imageUrlVariants(card.image),
       ...this.imageUrlVariants(card.image_url),
       ...this.imageUrlVariants(card.image_url_small),
     ].filter(Boolean);

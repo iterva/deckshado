@@ -1,9 +1,11 @@
 """Tests for cards app: banlist endpoint, card list filtering, search."""
+from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APITestCase
 
-from cards.models import Edition, Card, BanlistEntry, CardType, Race
+from cards.models import BanlistEntry, Card, CardType, Edition, Format, Race
 
 
 class BanlistEndpointTests(APITestCase):
@@ -95,3 +97,49 @@ class CardListSearchTests(APITestCase):
         results = resp.data.get("results", resp.data)
         names = [c["name"] for c in results]
         self.assertIn("Samurai del Norte", names)
+
+
+@override_settings(CARDS_ADMIN_OWNER_USERNAME="iterva")
+class CardsAdminToggleEditionsTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            username="iterva",
+            email="iterva@test.local",
+            password="test-pass-123",
+            is_staff=True,
+        )
+        self.client.force_login(self.owner)
+
+    def test_active_checked_syncs_selection_and_unselection(self):
+        fmt = Format.objects.create(code="imp", name="Imperio")
+        kept = Edition.objects.create(myl_id="e1", slug="e1", title="Ed 1", format=fmt, active=True)
+        removed = Edition.objects.create(myl_id="e2", slug="e2", title="Ed 2", format=fmt, active=True)
+        added = Edition.objects.create(myl_id="e3", slug="e3", title="Ed 3", format=fmt, active=False)
+
+        url = reverse("cards-admin-toggle-editions")
+        response = self.client.post(url, {"edition_ids": [kept.id, added.id], "active": "on"})
+
+        self.assertEqual(response.status_code, 302)
+        kept.refresh_from_db()
+        removed.refresh_from_db()
+        added.refresh_from_db()
+
+        self.assertTrue(kept.active)
+        self.assertFalse(removed.active)
+        self.assertTrue(added.active)
+
+    def test_active_unchecked_deactivates_only_selected(self):
+        fmt = Format.objects.create(code="fx", name="Fenix")
+        target = Edition.objects.create(myl_id="f1", slug="f1", title="Fx 1", format=fmt, active=True)
+        untouched = Edition.objects.create(myl_id="f2", slug="f2", title="Fx 2", format=fmt, active=True)
+
+        url = reverse("cards-admin-toggle-editions")
+        response = self.client.post(url, {"edition_ids": [target.id]})
+
+        self.assertEqual(response.status_code, 302)
+        target.refresh_from_db()
+        untouched.refresh_from_db()
+
+        self.assertFalse(target.active)
+        self.assertTrue(untouched.active)

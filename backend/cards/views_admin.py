@@ -466,16 +466,32 @@ def cards_admin_toggle_editions(request):
         selected_ids = list(form.cleaned_data["edition_ids"].values_list("id", flat=True))
         selected_format = form.cleaned_data.get("format")
 
-        queryset = Edition.objects.all()
+        scope_qs = Edition.objects.all()
+        if selected_format:
+            scope_qs = scope_qs.filter(format=selected_format)
+
+        if desired_active:
+            if not selected_ids and not selected_format:
+                messages.error(request, "Seleccione ediciones o un formato para aplicar el cambio.")
+                return redirect("cards-admin-toggle-editions")
+
+            selected_scope_qs = scope_qs.filter(id__in=selected_ids)
+            activated = selected_scope_qs.update(active=True)
+            deactivated = scope_qs.exclude(id__in=selected_ids).update(active=False)
+            messages.success(
+                request,
+                f"Se sincronizaron ediciones: {activated} activadas y {deactivated} desactivadas.",
+            )
+            return redirect("cards-admin-toggle-editions")
+
         if selected_ids:
-            queryset = queryset.filter(id__in=selected_ids)
+            updated = scope_qs.filter(id__in=selected_ids).update(active=False)
         elif selected_format:
-            queryset = queryset.filter(format=selected_format)
+            updated = scope_qs.update(active=False)
         else:
             messages.error(request, "Seleccione ediciones o un formato para aplicar el cambio.")
             return redirect("cards-admin-toggle-editions")
 
-        updated = queryset.update(active=desired_active)
         messages.success(request, f"Se actualizaron {updated} ediciones.")
         return redirect("cards-admin-toggle-editions")
 

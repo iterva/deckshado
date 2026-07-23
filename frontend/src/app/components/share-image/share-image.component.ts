@@ -38,7 +38,7 @@ export interface ShareImageItem {
   selector: 'app-share-image',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ThumbnailPipe, DecimalPipe],
+  imports: [CommonModule, DecimalPipe],
   template: `
   <div class="share-toolbar">
     <button type="button" class="btn btn-sm btn-primary"

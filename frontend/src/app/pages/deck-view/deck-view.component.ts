@@ -12,6 +12,16 @@ import { RelativeTimePipe } from '../../pipes/relative-time.pipe';
 
 type ViewMode = 'grid' | 'list' | 'stats';
 type SocialTab = 'none' | 'comments' | 'snapshots' | 'changelog' | 'suggestions';
+type StackOrientation = 'down' | 'up' | 'left' | 'right' | 'center';
+type ExportSortBy = 'original' | 'type' | 'name' | 'cost' | 'quantity';
+type ExportSortDir = 'asc' | 'desc';
+type ExportBackgroundMode = 'default' | 'color';
+
+interface ExportDeckEntry {
+  trackId: string;
+  quantity: number;
+  card_detail: Card;
+}
 
 @Component({
   selector: 'app-deck-view',
@@ -29,6 +39,22 @@ export class DeckViewComponent implements OnInit {
   socialTab: SocialTab = 'none';
   // Menú kebab
   showMoreMenu = false;
+  // Menú de orientación del apilado de cartas
+  showStackOrientationMenu = false;
+  // Modal de opciones de exportación
+  showExportOptionsModal = false;
+  stackOrientation: StackOrientation = 'down';
+  private readonly stackOrientationStorageKey = 'deck-view:stack-orientation';
+  private readonly exportOptionsStorageKey = 'deck-view:export-options';
+
+  exportSortBy: ExportSortBy = 'original';
+  exportSortDir: ExportSortDir = 'asc';
+  exportSeparateCards = false;
+  exportShowNumbers = true;
+  exportShowQr = true;
+  exportBackgroundMode: ExportBackgroundMode = 'default';
+  exportBackgroundColor = '#181926';
+  exportQrDataUrl: string | null = null;
   // Sidedeck colapsable
   sideOpen = true;
   // Hand simulator como modal global
@@ -328,6 +354,40 @@ export class DeckViewComponent implements OnInit {
     try {
       const saved = localStorage.getItem('deck-view:mode') as ViewMode | null;
       if (saved === 'grid' || saved === 'list' || saved === 'stats') this.viewMode = saved;
+
+      const savedOrientation = localStorage.getItem(this.stackOrientationStorageKey) as StackOrientation | null;
+      if (savedOrientation === 'down' || savedOrientation === 'up' || savedOrientation === 'left' || savedOrientation === 'right' || savedOrientation === 'center') {
+        this.stackOrientation = savedOrientation;
+      }
+
+      const rawExportOptions = localStorage.getItem(this.exportOptionsStorageKey);
+      if (rawExportOptions) {
+        const parsed = JSON.parse(rawExportOptions) as Partial<{
+          sortBy: ExportSortBy;
+          sortDir: ExportSortDir;
+          separate: boolean;
+          showNumbers: boolean;
+          showQr: boolean;
+          backgroundMode: ExportBackgroundMode;
+          backgroundColor: string;
+        }>;
+        if (parsed.sortBy === 'original' || parsed.sortBy === 'type' || parsed.sortBy === 'name' || parsed.sortBy === 'cost' || parsed.sortBy === 'quantity') {
+          this.exportSortBy = parsed.sortBy;
+        }
+        if (parsed.sortDir === 'asc' || parsed.sortDir === 'desc') {
+          this.exportSortDir = parsed.sortDir;
+        }
+        if (typeof parsed.separate === 'boolean') this.exportSeparateCards = parsed.separate;
+        if (typeof parsed.showNumbers === 'boolean') this.exportShowNumbers = parsed.showNumbers;
+        if (typeof parsed.showQr === 'boolean') this.exportShowQr = parsed.showQr;
+        if (parsed.backgroundMode === 'default' || parsed.backgroundMode === 'color') {
+          this.exportBackgroundMode = parsed.backgroundMode;
+        }
+        if (typeof parsed.backgroundColor === 'string') {
+          const normalizedBg = this.normalizeHexColor(parsed.backgroundColor);
+          if (normalizedBg) this.exportBackgroundColor = normalizedBg;
+        }
+      }
     } catch {}
 
     const id = Number(this.route.snapshot.paramMap.get('id'));
@@ -344,6 +404,7 @@ export class DeckViewComponent implements OnInit {
       // SEO
       this.titleService.setTitle(`${deck.name} — ShadowForge`);
       this.metaService.updateTag({ name: 'description', content: `Mazo ${deck.name} por ${deck.owner_username} — ${this.formatLabel} · ${deck.card_count} cartas` });
+      this.ensureExportQr();
       // Load changelog + snapshots if owner
       if (this.isOwner) {
         this.deckService.getChangelog(deck.id).subscribe({
@@ -608,6 +669,112 @@ export class DeckViewComponent implements OnInit {
     try { localStorage.setItem('deck-view:mode', mode); } catch {}
   }
 
+  toggleStackOrientationMenu(e?: Event) {
+    if (e) e.stopPropagation();
+    this.showMoreMenu = false;
+    this.showExportOptionsModal = false;
+    this.showStackOrientationMenu = !this.showStackOrientationMenu;
+  }
+
+  setStackOrientation(orientation: StackOrientation) {
+    this.stackOrientation = orientation;
+    this.showStackOrientationMenu = false;
+    try { localStorage.setItem(this.stackOrientationStorageKey, orientation); } catch {}
+  }
+
+  openExportOptionsModal(e?: Event) {
+    if (e) e.stopPropagation();
+    this.showMoreMenu = false;
+    this.showStackOrientationMenu = false;
+    this.showExportOptionsModal = true;
+  }
+
+  closeExportOptionsModal() {
+    this.showExportOptionsModal = false;
+  }
+
+  setExportSortBy(sortBy: ExportSortBy) {
+    this.exportSortBy = sortBy;
+    this.persistExportOptions();
+  }
+
+  toggleExportSortDir() {
+    this.exportSortDir = this.exportSortDir === 'asc' ? 'desc' : 'asc';
+    this.persistExportOptions();
+  }
+
+  setExportSeparateCards(value: boolean) {
+    this.exportSeparateCards = value;
+    this.persistExportOptions();
+  }
+
+  setExportShowNumbers(value: boolean) {
+    this.exportShowNumbers = value;
+    this.persistExportOptions();
+  }
+
+  setExportShowQr(value: boolean) {
+    this.exportShowQr = value;
+    if (value) this.ensureExportQr();
+    this.persistExportOptions();
+  }
+
+  setExportBackgroundMode(mode: ExportBackgroundMode) {
+    this.exportBackgroundMode = mode;
+    this.persistExportOptions();
+  }
+
+  onExportBackgroundColorInput(value: string) {
+    const normalized = this.normalizeHexColor(value);
+    if (!normalized) return;
+    this.exportBackgroundMode = 'color';
+    this.exportBackgroundColor = normalized;
+    this.persistExportOptions();
+  }
+
+  onExportBackgroundHexChange(value: string) {
+    const normalized = this.normalizeHexColor(value);
+    if (!normalized) return;
+    this.exportBackgroundMode = 'color';
+    this.exportBackgroundColor = normalized;
+    this.persistExportOptions();
+  }
+
+  private normalizeHexColor(value: string | null | undefined): string | null {
+    if (!value) return null;
+    const raw = value.trim();
+    if (!raw) return null;
+    const prefixed = raw.startsWith('#') ? raw : `#${raw}`;
+    if (/^#[0-9a-fA-F]{3}$/.test(prefixed)) {
+      const r = prefixed[1];
+      const g = prefixed[2];
+      const b = prefixed[3];
+      return `#${r}${r}${g}${g}${b}${b}`.toLowerCase();
+    }
+    if (/^#[0-9a-fA-F]{6}$/.test(prefixed)) {
+      return prefixed.toLowerCase();
+    }
+    return null;
+  }
+
+  get exportBackgroundResolved(): string {
+    return this.exportBackgroundMode === 'color' ? this.exportBackgroundColor : this.getRaceBackground();
+  }
+
+  private persistExportOptions() {
+    try {
+      localStorage.setItem(this.exportOptionsStorageKey, JSON.stringify({
+        sortBy: this.exportSortBy,
+        sortDir: this.exportSortDir,
+        separate: this.exportSeparateCards,
+        showNumbers: this.exportShowNumbers,
+        showQr: this.exportShowQr,
+        backgroundMode: this.exportBackgroundMode,
+        backgroundColor: this.exportBackgroundColor,
+      }));
+    } catch {}
+  }
+
   /** Tabs sociales (toggle). */
   setSocialTab(tab: SocialTab) {
     this.socialTab = (this.socialTab === tab) ? 'none' : tab;
@@ -618,6 +785,8 @@ export class DeckViewComponent implements OnInit {
 
   toggleMoreMenu(e?: Event) {
     if (e) { e.stopPropagation(); }
+    this.showStackOrientationMenu = false;
+    this.showExportOptionsModal = false;
     this.showMoreMenu = !this.showMoreMenu;
   }
 
@@ -632,6 +801,8 @@ export class DeckViewComponent implements OnInit {
     if (ev.key === 'Escape') {
       if (this.previewCard) { this.hidePreview(); return; }
       if (this.showHandModal) { this.showHandModal = false; return; }
+      if (this.showStackOrientationMenu) { this.showStackOrientationMenu = false; return; }
+      if (this.showExportOptionsModal) { this.showExportOptionsModal = false; return; }
       if (this.showMoreMenu) { this.showMoreMenu = false; return; }
       if (this.presentationMode) { this.togglePresentation(); return; }
     }
@@ -644,10 +815,16 @@ export class DeckViewComponent implements OnInit {
   /** Cerrar el menú "más" si se hace click afuera. */
   @HostListener('document:click')
   onDocClick() {
+    let changed = false;
     if (this.showMoreMenu) {
       this.showMoreMenu = false;
-      this.cdr.detectChanges();
+      changed = true;
     }
+    if (this.showStackOrientationMenu) {
+      this.showStackOrientationMenu = false;
+      changed = true;
+    }
+    if (changed) this.cdr.detectChanges();
   }
 
   private isTypingTarget(t: EventTarget | null): boolean {
@@ -685,7 +862,7 @@ export class DeckViewComponent implements OnInit {
       const targetWidth = this.exportOrientation === 'horizontal' ? 1200 : 650;
       const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(el, {
-        backgroundColor: this.getRaceBackground(),
+        backgroundColor: this.exportBackgroundResolved,
         useCORS: true, allowTaint: true, scale: 2,
         width: targetWidth,
         height: el.scrollHeight,
@@ -765,6 +942,105 @@ export class DeckViewComponent implements OnInit {
       }
     }
     return cards;
+  }
+
+  get isPublicDeck(): boolean {
+    return !!this.deck?.is_public;
+  }
+
+  get publicDeckUrl(): string {
+    if (!this.deck) return '';
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    return `${origin}/decks/${this.deck.id}`;
+  }
+
+  get exportMainEntries(): ExportDeckEntry[] {
+    return this.buildExportEntries(this.deck?.entries || [], 'm');
+  }
+
+  get exportSideEntries(): ExportDeckEntry[] {
+    return this.buildExportEntries(this.deck?.sideboard_entries || [], 's');
+  }
+
+  private buildExportEntries(entries: any[], prefix: string): ExportDeckEntry[] {
+    const sorted = this.sortExportEntries(entries || []);
+    if (!this.exportSeparateCards) {
+      return sorted.map((e: any) => ({
+        trackId: `${prefix}-${e.id}`,
+        quantity: e.quantity,
+        card_detail: e.card_detail,
+      }));
+    }
+
+    const expanded: ExportDeckEntry[] = [];
+    for (const e of sorted) {
+      for (let i = 0; i < e.quantity; i++) {
+        expanded.push({
+          trackId: `${prefix}-${e.id}-${i}`,
+          quantity: 1,
+          card_detail: e.card_detail,
+        });
+      }
+    }
+    return expanded;
+  }
+
+  private sortExportEntries(entries: any[]): any[] {
+    const copy = [...entries];
+    if (this.exportSortBy === 'original') return copy;
+
+    const dir = this.exportSortDir === 'asc' ? 1 : -1;
+    const normalize = (v: string | null | undefined) => (v || '').toLowerCase();
+    const toCost = (v: unknown) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 999;
+    };
+
+    copy.sort((a, b) => {
+      switch (this.exportSortBy) {
+        case 'type': {
+          const av = this.typeOrder[a.card_detail?.type_name ?? ''] ?? 99;
+          const bv = this.typeOrder[b.card_detail?.type_name ?? ''] ?? 99;
+          if (av !== bv) return (av - bv) * dir;
+          return normalize(a.card_detail?.name).localeCompare(normalize(b.card_detail?.name)) * dir;
+        }
+        case 'name':
+          return normalize(a.card_detail?.name).localeCompare(normalize(b.card_detail?.name)) * dir;
+        case 'cost': {
+          const av = toCost(a.card_detail?.cost);
+          const bv = toCost(b.card_detail?.cost);
+          if (av !== bv) return (av - bv) * dir;
+          return normalize(a.card_detail?.name).localeCompare(normalize(b.card_detail?.name)) * dir;
+        }
+        case 'quantity':
+          if (a.quantity !== b.quantity) return (a.quantity - b.quantity) * dir;
+          return normalize(a.card_detail?.name).localeCompare(normalize(b.card_detail?.name)) * dir;
+        default:
+          return 0;
+      }
+    });
+
+    return copy;
+  }
+
+  private async ensureExportQr() {
+    if (!this.isPublicDeck || !this.exportShowQr) {
+      this.exportQrDataUrl = null;
+      return;
+    }
+    if (this.exportQrDataUrl) return;
+    try {
+      const qrcode = await import('qrcode');
+      this.exportQrDataUrl = await qrcode.toDataURL(this.publicDeckUrl, {
+        width: 180,
+        margin: 1,
+        color: { dark: '#0f1923', light: '#0000' },
+      });
+      this.cdr.detectChanges();
+    } catch (err) {
+      console.warn('No se pudo generar QR para exportación:', err);
+      this.exportQrDataUrl = null;
+    }
   }
 
   private readonly formatNames: Record<string, string> = {
@@ -981,7 +1257,7 @@ export class DeckViewComponent implements OnInit {
       await this.nextRenderTick();
       await this.waitForExportImages(el);
 
-      const bgColor = this.getRaceBackground();
+      const bgColor = this.exportBackgroundResolved;
       // Force a layout flush so the offscreen export area has its final size
       // before html2canvas measures it (prevents collapsed/vertical output on mobile).
       await this.nextRenderTick();

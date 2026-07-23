@@ -75,6 +75,42 @@
         </button>
       </div>
 
+      <div class="orient-wrapper" (click)="$event.stopPropagation()">
+        <button class="action-btn" (click)="toggleStackOrientationMenu($event)" [attr.aria-expanded]="showStackOrientationMenu" title="Orientación de apilado">
+          <i class="bi"
+             [class.bi-arrow-up-square-fill]="stackOrientation === 'up'"
+             [class.bi-arrow-down-square-fill]="stackOrientation === 'down'"
+             [class.bi-arrow-left-square-fill]="stackOrientation === 'left'"
+             [class.bi-arrow-right-square-fill]="stackOrientation === 'right'"
+             [class.bi-square-fill]="stackOrientation === 'center'"></i><span>Orientación</span>
+        </button>
+        @if (showStackOrientationMenu) {
+          <div class="orient-menu" role="menu" aria-label="Orientación de cartas">
+            <button role="menuitemradio" [attr.aria-checked]="stackOrientation === 'center'" [class.active]="stackOrientation === 'center'" (click)="setStackOrientation('center')">
+              <i class="bi bi-square"></i> Centro
+            </button>
+            <button role="menuitemradio" [attr.aria-checked]="stackOrientation === 'up'" [class.active]="stackOrientation === 'up'" (click)="setStackOrientation('up')">
+              <i class="bi bi-arrow-up-square"></i> Hacia arriba
+            </button>
+            <button role="menuitemradio" [attr.aria-checked]="stackOrientation === 'down'" [class.active]="stackOrientation === 'down'" (click)="setStackOrientation('down')">
+              <i class="bi bi-arrow-down-square"></i> Hacia abajo
+            </button>
+            <button role="menuitemradio" [attr.aria-checked]="stackOrientation === 'left'" [class.active]="stackOrientation === 'left'" (click)="setStackOrientation('left')">
+              <i class="bi bi-arrow-left-square"></i> Hacia la izquierda
+            </button>
+            <button role="menuitemradio" [attr.aria-checked]="stackOrientation === 'right'" [class.active]="stackOrientation === 'right'" (click)="setStackOrientation('right')">
+              <i class="bi bi-arrow-right-square"></i> Hacia la derecha
+            </button>
+          </div>
+        }
+      </div>
+
+      <div class="export-options-wrapper" (click)="$event.stopPropagation()">
+        <button class="action-btn" (click)="openExportOptionsModal($event)" [attr.aria-expanded]="showExportOptionsModal" title="Opciones de imagen">
+          <i class="bi bi-sliders2"></i><span>Imagen</span>
+        </button>
+      </div>
+
       <div class="action-spacer"></div>
 
       <button class="action-btn" (click)="showHandModal = true" title="Probar mano (8 cartas)">
@@ -143,8 +179,109 @@
       </div>
     </div>
 
+    @if (showExportOptionsModal) {
+      <div class="export-modal-overlay" (click)="closeExportOptionsModal()">
+        <div class="export-modal" role="dialog" aria-modal="true" aria-label="Opciones para generar imagen" (click)="$event.stopPropagation()">
+          <div class="export-modal-head">
+            <h3>Exportar imagen</h3>
+            <button type="button" class="export-modal-close" (click)="closeExportOptionsModal()" aria-label="Cerrar">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+
+          <div class="export-modal-body">
+            <div class="export-opt-section">
+              <span class="export-opt-title">Formato</span>
+              <div class="export-opt-row two">
+                <button type="button" class="opt-chip" [class.active]="exportOrientation === 'horizontal'" (click)="exportOrientation = 'horizontal'">
+                  <i class="bi bi-arrows-angle-expand"></i> Horizontal
+                </button>
+                <button type="button" class="opt-chip" [class.active]="exportOrientation === 'vertical'" (click)="exportOrientation = 'vertical'">
+                  <i class="bi bi-arrows-angle-contract"></i> Vertical
+                </button>
+              </div>
+            </div>
+
+            <div class="export-opt-section">
+              <span class="export-opt-title">Background</span>
+              <div class="export-opt-row two">
+                <button type="button" class="opt-chip" [class.active]="exportBackgroundMode === 'default'" (click)="setExportBackgroundMode('default')">
+                  Default
+                </button>
+                <button type="button" class="opt-chip" [class.active]="exportBackgroundMode === 'color'" (click)="setExportBackgroundMode('color')">
+                  Color
+                </button>
+              </div>
+              <div class="bg-color-row" [class.disabled]="exportBackgroundMode !== 'color'">
+                <input type="color"
+                       class="bg-color-picker"
+                       [value]="exportBackgroundColor"
+                       [disabled]="exportBackgroundMode !== 'color'"
+                       (input)="onExportBackgroundColorInput($any($event.target).value)">
+                <input type="text"
+                       class="bg-color-hex"
+                       [value]="exportBackgroundColor"
+                       [disabled]="exportBackgroundMode !== 'color'"
+                       placeholder="#181926"
+                       (change)="onExportBackgroundHexChange($any($event.target).value)">
+              </div>
+            </div>
+
+            <div class="export-opt-section">
+              <span class="export-opt-title">Orden de cartas</span>
+              <div class="export-opt-row">
+                <select [ngModel]="exportSortBy" (ngModelChange)="setExportSortBy($event)">
+                  <option value="original">Original del mazo</option>
+                  <option value="type">Tipo</option>
+                  <option value="cost">Coste</option>
+                  <option value="name">Nombre</option>
+                  <option value="quantity">Cantidad</option>
+                </select>
+                <button type="button" class="dir-btn" (click)="toggleExportSortDir()" [title]="exportSortDir === 'asc' ? 'Ascendente' : 'Descendente'">
+                  <i class="bi" [class.bi-sort-down]="exportSortDir === 'asc'" [class.bi-sort-up]="exportSortDir === 'desc'"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="export-opt-section">
+              <span class="export-opt-title">Display Options</span>
+              <div class="export-opt-row two">
+                <button type="button" class="opt-chip" [class.active]="!exportSeparateCards" (click)="setExportSeparateCards(false)">
+                  Efecto apilado
+                </button>
+                <button type="button" class="opt-chip" [class.active]="exportSeparateCards" (click)="setExportSeparateCards(true)">
+                  Separadas
+                </button>
+              </div>
+              <label class="opt-toggle">
+                <input type="checkbox" [checked]="exportShowNumbers" (change)="setExportShowNumbers($any($event.target).checked)">
+                <span>Mostrar números (x2, x3)</span>
+              </label>
+              <label class="opt-toggle" [class.disabled]="!isPublicDeck">
+                <input type="checkbox"
+                       [checked]="exportShowQr && isPublicDeck"
+                       [disabled]="!isPublicDeck"
+                       (change)="setExportShowQr($any($event.target).checked)">
+                <span>Mostrar QR del mazo público</span>
+              </label>
+              @if (!isPublicDeck) {
+                <small class="opt-note">El QR solo aparece si el mazo es público.</small>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
     <!-- Hidden export area (rendered offscreen, captured by html2canvas) -->
-    <div #deckContent class="deck-export-area" [class.export-horizontal]="exportOrientation === 'horizontal'" [class.export-vertical]="exportOrientation === 'vertical'" [class.export-visible]="exporting">
+            <div #deckContent
+          class="deck-export-area"
+          [attr.data-stack-orientation]="stackOrientation"
+              [class.export-separated]="exportSeparateCards"
+          [class.export-horizontal]="exportOrientation === 'horizontal'"
+          [class.export-vertical]="exportOrientation === 'vertical'"
+         [class.export-visible]="exporting"
+         [style.background]="exportBackgroundResolved">
       <div class="export-header">
         <h2 class="export-deck-name">{{ deck.name }}</h2>
         <div class="export-meta">
@@ -155,18 +292,18 @@
         </div>
       </div>
       <div class="export-card-grid">
-        @for (entry of deck.entries; track entry.id) {
+        @for (entry of exportMainEntries; track entry.trackId) {
           <div class="export-card-stack" [class.export-qty-2]="entry.quantity === 2" [class.export-qty-3]="entry.quantity >= 3">
             <span class="export-card-name">{{ entry.card_detail.name }}</span>
             <div class="export-card-imgs">
-              @if (entry.quantity >= 3) {
+              @if (!exportSeparateCards && stackOrientation !== 'center' && entry.quantity >= 3) {
                 <img class="export-shadow es3" [src]="getExportImageUrl(entry.card_detail.image_url)" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
               }
-              @if (entry.quantity >= 2) {
+              @if (!exportSeparateCards && stackOrientation !== 'center' && entry.quantity >= 2) {
                 <img class="export-shadow es2" [src]="getExportImageUrl(entry.card_detail.image_url)" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
               }
               <img class="export-top" [src]="getExportImageUrl(entry.card_detail.image_url)" [alt]="entry.card_detail.name" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
-              @if (entry.quantity > 1) {
+              @if (exportShowNumbers && !exportSeparateCards && entry.quantity > 1) {
                 <span class="export-qty-badge">x{{ entry.quantity }}</span>
               }
             </div>
@@ -176,18 +313,18 @@
       @if (deck.sideboard_entries && deck.sideboard_entries.length > 0) {
         <h3 class="export-side-title">Sidedeck</h3>
         <div class="export-card-grid">
-          @for (entry of deck.sideboard_entries; track entry.id) {
+          @for (entry of exportSideEntries; track entry.trackId) {
             <div class="export-card-stack" [class.export-qty-2]="entry.quantity === 2" [class.export-qty-3]="entry.quantity >= 3">
               <span class="export-card-name">{{ entry.card_detail.name }}</span>
               <div class="export-card-imgs">
-                @if (entry.quantity >= 3) {
+                @if (!exportSeparateCards && stackOrientation !== 'center' && entry.quantity >= 3) {
                   <img class="export-shadow es3" [src]="getExportImageUrl(entry.card_detail.image_url)" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
                 }
-                @if (entry.quantity >= 2) {
+                @if (!exportSeparateCards && stackOrientation !== 'center' && entry.quantity >= 2) {
                   <img class="export-shadow es2" [src]="getExportImageUrl(entry.card_detail.image_url)" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
                 }
                 <img class="export-top" [src]="getExportImageUrl(entry.card_detail.image_url)" [alt]="entry.card_detail.name" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
-                @if (entry.quantity > 1) {
+                @if (exportShowNumbers && !exportSeparateCards && entry.quantity > 1) {
                   <span class="export-qty-badge">x{{ entry.quantity }}</span>
                 }
               </div>
@@ -195,11 +332,21 @@
           }
         </div>
       }
+      @if (isPublicDeck && exportShowQr && exportQrDataUrl) {
+        <div class="export-qr-block">
+          <img class="export-qr-img" [src]="exportQrDataUrl" alt="QR del mazo" crossorigin="anonymous">
+          <div class="export-qr-meta">
+            <strong>Escanea para ver el mazo</strong>
+            <span>{{ deck.name }}</span>
+            <small>{{ publicDeckUrl }}</small>
+          </div>
+        </div>
+      }
     </div>
 
     <!-- Normal web view -->
     @if (viewMode === 'grid') {
-      <div class="card-grid">
+      <div class="card-grid" [attr.data-stack-orientation]="stackOrientation">
         @for (entry of deck.entries; track entry.id) {
           <div class="card-stack" [class.qty-2]="entry.quantity === 2" [class.qty-3]="entry.quantity >= 3">
             @if (entry.quantity >= 3) {
@@ -383,7 +530,7 @@
       </button>
       @if (sideOpen) {
       @if (viewMode === 'grid') {
-        <div class="card-grid side-grid">
+        <div class="card-grid side-grid" [attr.data-stack-orientation]="stackOrientation">
           @for (entry of deck.sideboard_entries; track entry.id) {
             <div class="card-stack" [class.qty-2]="entry.quantity === 2" [class.qty-3]="entry.quantity >= 3">
               @if (entry.quantity >= 3) {

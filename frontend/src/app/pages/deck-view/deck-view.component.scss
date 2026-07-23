@@ -784,13 +784,13 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.5);
     transition: transform 0.15s;
 
-    &.s2 { transform: translate(10px, 10px); z-index: 1; }
-    &.s3 { transform: translate(20px, 20px); z-index: 0; }
+    &.s2 { transform: translate(0, 10px); z-index: 1; }
+    &.s3 { transform: translate(0, 20px); z-index: 0; }
   }
 
   &:hover .stack-shadow {
-    &.s2 { transform: translate(6px, 6px); }
-    &.s3 { transform: translate(12px, 12px); }
+    &.s2 { transform: translate(0, 6px); }
+    &.s3 { transform: translate(0, 12px); }
   }
 
   .stack-top {
@@ -1651,8 +1651,8 @@
         pointer-events: none;
         box-shadow: 0 2px 6px rgba(0,0,0,0.6);
 
-        &.es2 { transform: translate(3px, 3px); z-index: 1; }
-        &.es3 { transform: translate(6px, 6px); z-index: 0; }
+        &.es2 { transform: translate(0, 3px); z-index: 1; }
+        &.es3 { transform: translate(0, 6px); z-index: 0; }
       }
 
       .export-top {
@@ -1693,11 +1693,9 @@
 
     // Add padding for stacked cards so shadows aren't clipped
     &.export-qty-2 .export-card-imgs {
-      padding-right: 3px;
       padding-bottom: 3px;
     }
     &.export-qty-3 .export-card-imgs {
-      padding-right: 6px;
       padding-bottom: 6px;
     }
   }
@@ -1848,13 +1846,13 @@
     }
 
     .stack-shadow {
-      &.s2 { transform: translate(3px, 3px); }
-      &.s3 { transform: translate(6px, 6px); }
+      &.s2 { transform: translate(0, 3px); }
+      &.s3 { transform: translate(0, 6px); }
     }
 
     &:hover .stack-shadow {
-      &.s2 { transform: translate(3px, 3px); }
-      &.s3 { transform: translate(6px, 6px); }
+      &.s2 { transform: translate(0, 3px); }
+      &.s3 { transform: translate(0, 6px); }
     }
 
     .img-wrapper {
@@ -1921,11 +1919,9 @@
 
   // compensate stacked card offsets so they don't clip
   .card-stack.qty-2 {
-    padding-right: 3px;
     padding-bottom: 3px;
   }
   .card-stack.qty-3 {
-    padding-right: 6px;
     padding-bottom: 6px;
   }
 

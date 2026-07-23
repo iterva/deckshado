@@ -763,6 +763,7 @@
 }
 
 .card-stack {
+  --stack-top-offset: 0;
   position: relative;
   width: 150px;
   // fixed height: card ~182px + 20px max offset + some padding
@@ -785,12 +786,12 @@
     transition: transform 0.15s;
 
     &.s2 { transform: translate(0, 10px); z-index: 1; }
-    &.s3 { transform: translate(0, 20px); z-index: 0; }
+    &.s3 { transform: translate(0, 0); z-index: 0; }
   }
 
   &:hover .stack-shadow {
     &.s2 { transform: translate(0, 6px); }
-    &.s3 { transform: translate(0, 12px); }
+    &.s3 { transform: translate(0, 0); }
   }
 
   .stack-top {
@@ -803,6 +804,7 @@
     position: relative;
     z-index: 2;
     width: 130px;
+    margin-top: var(--stack-top-offset);
     border-radius: 6px;
     overflow: hidden;
 
@@ -839,7 +841,7 @@
 
   .cover-badge {
     position: absolute;
-    top: -6px;
+    top: calc(var(--stack-top-offset) - 6px);
     left: -6px;
     z-index: 4;
     background: #ffbd39;
@@ -867,6 +869,17 @@
     padding: 2px 7px;
     border-radius: 10px;
     pointer-events: none;
+  }
+
+  &.qty-2 {
+    --stack-top-offset: 10px;
+
+    .stack-shadow.s2 { transform: translate(0, 0); }
+    &:hover .stack-shadow.s2 { transform: translate(0, 0); }
+  }
+
+  &.qty-3 {
+    --stack-top-offset: 20px;
   }
 
 }
@@ -1837,6 +1850,7 @@
   }
 
   .card-stack {
+    --stack-top-offset: 0;
     width: auto;
     height: auto;
     aspect-ratio: auto;
@@ -1848,12 +1862,23 @@
 
     .stack-shadow {
       &.s2 { transform: translate(0, 3px); }
-      &.s3 { transform: translate(0, 6px); }
+      &.s3 { transform: translate(0, 0); }
     }
 
     &:hover .stack-shadow {
       &.s2 { transform: translate(0, 3px); }
-      &.s3 { transform: translate(0, 6px); }
+      &.s3 { transform: translate(0, 0); }
+    }
+
+    &.qty-2 {
+      --stack-top-offset: 3px;
+
+      .stack-shadow.s2 { transform: translate(0, 0); }
+      &:hover .stack-shadow.s2 { transform: translate(0, 0); }
+    }
+
+    &.qty-3 {
+      --stack-top-offset: 6px;
     }
 
     .img-wrapper {

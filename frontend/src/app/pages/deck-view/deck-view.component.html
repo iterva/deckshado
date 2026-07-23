@@ -160,12 +160,12 @@
             <span class="export-card-name">{{ entry.card_detail.name }}</span>
             <div class="export-card-imgs">
               @if (entry.quantity >= 3) {
-                <img class="export-shadow es3" [src]="entry.card_detail.image_url | thumb:350" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
+                <img class="export-shadow es3" [src]="getExportImageUrl(entry.card_detail.image_url)" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
               }
               @if (entry.quantity >= 2) {
-                <img class="export-shadow es2" [src]="entry.card_detail.image_url | thumb:350" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
+                <img class="export-shadow es2" [src]="getExportImageUrl(entry.card_detail.image_url)" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
               }
-              <img class="export-top" [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
+              <img class="export-top" [src]="getExportImageUrl(entry.card_detail.image_url)" [alt]="entry.card_detail.name" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
               @if (entry.quantity > 1) {
                 <span class="export-qty-badge">x{{ entry.quantity }}</span>
               }
@@ -181,12 +181,12 @@
               <span class="export-card-name">{{ entry.card_detail.name }}</span>
               <div class="export-card-imgs">
                 @if (entry.quantity >= 3) {
-                  <img class="export-shadow es3" [src]="entry.card_detail.image_url | thumb:350" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
+                  <img class="export-shadow es3" [src]="getExportImageUrl(entry.card_detail.image_url)" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
                 }
                 @if (entry.quantity >= 2) {
-                  <img class="export-shadow es2" [src]="entry.card_detail.image_url | thumb:350" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
+                  <img class="export-shadow es2" [src]="getExportImageUrl(entry.card_detail.image_url)" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
                 }
-                <img class="export-top" [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
+                <img class="export-top" [src]="getExportImageUrl(entry.card_detail.image_url)" [alt]="entry.card_detail.name" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
                 @if (entry.quantity > 1) {
                   <span class="export-qty-badge">x{{ entry.quantity }}</span>
                 }

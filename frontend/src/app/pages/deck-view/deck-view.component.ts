@@ -677,9 +677,11 @@ export class DeckViewComponent implements OnInit {
     this.cdr.detectChanges();
     try {
       const el = this.deckContent.nativeElement as HTMLElement;
+      await this.nextRenderTick();
+      await this.waitForExportImages(el);
       // Force layout to settle at the orientation's intended width before measuring,
       // otherwise on mobile the captured layout collapses (vertical-looking export).
-      await new Promise<void>(r => requestAnimationFrame(() => r()));
+      await this.nextRenderTick();
       const targetWidth = this.exportOrientation === 'horizontal' ? 1200 : 650;
       const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(el, {
@@ -881,8 +883,52 @@ export class DeckViewComponent implements OnInit {
       return;
     }
 
+    // If source is an external URL without CORS, retry through Cloudinary fetch.
+    const cloudinaryFetch = this.toCloudinaryFetchUrl(originalUrl);
+    if (cloudinaryFetch && cloudinaryFetch !== current && fallbackStage !== 'fetch') {
+      img.dataset['fallbackStage'] = 'fetch';
+      img.onerror = null;
+      img.src = cloudinaryFetch;
+      img.onerror = (e) => this.handleDeckImageError(e, originalUrl);
+      return;
+    }
+
     img.onerror = null;
     img.src = this.deckImagePlaceholder;
+  }
+
+  private toCloudinaryFetchUrl(url: string | null | undefined): string | null {
+    if (!url || typeof url !== 'string') return null;
+    const clean = url.trim();
+    if (!clean) return null;
+
+    const lower = clean.toLowerCase();
+    if (lower.startsWith('data:') || lower.startsWith('blob:')) return null;
+    if (lower.includes('res.cloudinary.com/')) return null;
+
+    const normalized = clean.startsWith('//') ? `https:${clean}` : clean;
+    const encoded = encodeURIComponent(normalized);
+    return `https://res.cloudinary.com/daobfx9yb/image/fetch/${encoded}`;
+  }
+
+  private isCdnCanvasSafeUrl(url: string): boolean {
+    const lower = url.toLowerCase();
+    if (lower.includes('ik.imagekit.io/')) return true;
+    if (lower.includes('res.cloudinary.com/')) return true;
+    if (lower.includes('.r2.dev/') || lower.includes('.r2.cloudflarestorage.com/')) return true;
+    return false;
+  }
+
+  getExportImageUrl(url: string | null | undefined): string {
+    const thumb = this.thumbPipe.transform(url ?? '', 350);
+    if (!thumb) return this.deckImagePlaceholder;
+
+    const rewritten = this.rewriteLegacyCloudinaryUrl(thumb) || thumb;
+    const lower = rewritten.toLowerCase();
+    if (lower.startsWith('data:') || lower.startsWith('blob:')) return rewritten;
+    if (this.isCdnCanvasSafeUrl(rewritten)) return rewritten;
+
+    return this.toCloudinaryFetchUrl(rewritten) || rewritten;
   }
 
   private rewriteLegacyCloudinaryUrl(url: string | null | undefined): string | null {
@@ -931,24 +977,14 @@ export class DeckViewComponent implements OnInit {
     this.exporting = true;
     this.cdr.detectChanges();
     try {
-      // Preload all images in the export area before capturing
       const el = this.deckContent.nativeElement as HTMLElement;
-      const imgs = Array.from(el.querySelectorAll('img')) as HTMLImageElement[];
-      await Promise.all(imgs.map(img => {
-        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
-        return new Promise<void>((resolve) => {
-          img.onload = () => resolve();
-          img.onerror = () => resolve(); // don't block on broken images
-          // Force load by reassigning src (handles lazy images)
-          img.loading = 'eager';
-          img.src = img.src;
-        });
-      }));
+      await this.nextRenderTick();
+      await this.waitForExportImages(el);
 
       const bgColor = this.getRaceBackground();
       // Force a layout flush so the offscreen export area has its final size
       // before html2canvas measures it (prevents collapsed/vertical output on mobile).
-      await new Promise<void>(r => requestAnimationFrame(() => r()));
+      await this.nextRenderTick();
       const targetWidth = this.exportOrientation === 'horizontal' ? 1200 : 650;
       const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(el, {
@@ -970,5 +1006,23 @@ export class DeckViewComponent implements OnInit {
     }
     this.exporting = false;
     this.cdr.detectChanges();
+  }
+
+  private nextRenderTick(): Promise<void> {
+    return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  }
+
+  private waitForExportImages(el: HTMLElement): Promise<void[]> {
+    const imgs = Array.from(el.querySelectorAll('img')) as HTMLImageElement[];
+    return Promise.all(imgs.map((img) => {
+      img.loading = 'eager';
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      return new Promise<void>((resolve) => {
+        const done = () => resolve();
+        img.addEventListener('load', done, { once: true });
+        img.addEventListener('error', done, { once: true });
+        if (img.complete) resolve();
+      });
+    }));
   }
 }

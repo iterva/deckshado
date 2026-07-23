@@ -74,7 +74,7 @@ class CardListView(generics.ListAPIView):
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        qs = Card.objects.select_related("edition", "rarity", "race", "card_type").only(
+        qs = Card.objects.filter(edition__active=True).select_related("edition", "rarity", "race", "card_type").only(
             "id", "myl_id", "edid", "slug", "name", "cost", "damage", "ability",
             "custom_image_url",
             "edition__slug", "edition__title", "edition__myl_id",
@@ -211,8 +211,10 @@ class CardListView(generics.ListAPIView):
 
 class CardDetailView(generics.RetrieveAPIView):
     serializer_class = CardDetailSerializer
-    queryset = Card.objects.select_related("edition", "rarity", "race", "card_type").exclude(
-        edition__format__code__in=HIDDEN_CARD_FORMAT_CODES
+    queryset = Card.objects.select_related("edition", "rarity", "race", "card_type").filter(
+        edition__active=True,
+    ).exclude(
+        edition__format__code__in=HIDDEN_CARD_FORMAT_CODES,
     )
     lookup_field = "pk"
     permission_classes = [permissions.AllowAny]
@@ -224,7 +226,9 @@ class EditionListView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        qs = Edition.objects.select_related("format").exclude(format__code__in=HIDDEN_CARD_FORMAT_CODES)
+        qs = Edition.objects.select_related("format").filter(active=True).exclude(
+            format__code__in=HIDDEN_CARD_FORMAT_CODES,
+        )
         fmt = self.request.query_params.get("fmt")
         if fmt:
             if fmt == "esc":
@@ -277,12 +281,13 @@ class CardsByFormatView(generics.ListAPIView):
 
     def get_queryset(self):
         format_code = self.kwargs["format_code"]
+        base_qs = Card.objects.filter(edition__active=True)
         if format_code in HIDDEN_CARD_FORMAT_CODES:
             qs = Card.objects.none()
         elif format_code == "esc":
-            qs = Card.objects.filter(edition__slug__in=ESC_EDITION_SLUGS)
+            qs = base_qs.filter(edition__slug__in=ESC_EDITION_SLUGS)
         else:
-            qs = Card.objects.filter(edition__format__code=format_code)
+            qs = base_qs.filter(edition__format__code=format_code)
         return qs.select_related("edition", "rarity", "race", "card_type").only(
             "id", "myl_id", "edid", "slug", "name", "cost", "damage", "ability",
             "custom_image_url",

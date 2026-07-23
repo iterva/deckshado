@@ -99,6 +99,69 @@ class CardListSearchTests(APITestCase):
         self.assertIn("Samurai del Norte", names)
 
 
+class PublicCardsActiveEditionFilterTests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.fmt = Format.objects.create(code="imp", name="Imperio")
+        cls.active_edition = Edition.objects.create(
+            myl_id="aed",
+            slug="active-ed",
+            title="Active Edition",
+            format=cls.fmt,
+            active=True,
+        )
+        cls.inactive_edition = Edition.objects.create(
+            myl_id="ied",
+            slug="inactive-ed",
+            title="Inactive Edition",
+            format=cls.fmt,
+            active=False,
+        )
+        cls.active_card = Card.objects.create(
+            myl_id="ac1",
+            edid="001",
+            slug="active-card",
+            name="Active Card",
+            edition=cls.active_edition,
+        )
+        cls.inactive_card = Card.objects.create(
+            myl_id="ic1",
+            edid="001",
+            slug="inactive-card",
+            name="Inactive Card",
+            edition=cls.inactive_edition,
+        )
+
+    def test_card_list_excludes_cards_from_inactive_editions(self):
+        response = self.client.get(reverse("card-list"), {"fmt": "imp"})
+
+        self.assertEqual(response.status_code, 200)
+        results = response.data.get("results", response.data)
+        names = [item["name"] for item in results]
+        self.assertIn("Active Card", names)
+        self.assertNotIn("Inactive Card", names)
+
+    def test_cards_by_format_excludes_cards_from_inactive_editions(self):
+        response = self.client.get(reverse("cards-by-format", kwargs={"format_code": "imp"}))
+
+        self.assertEqual(response.status_code, 200)
+        names = [item["name"] for item in response.data]
+        self.assertIn("Active Card", names)
+        self.assertNotIn("Inactive Card", names)
+
+    def test_card_detail_returns_404_for_inactive_edition_card(self):
+        response = self.client.get(reverse("card-detail", kwargs={"pk": self.inactive_card.pk}))
+        self.assertEqual(response.status_code, 404)
+
+    def test_edition_list_excludes_inactive_editions(self):
+        response = self.client.get(reverse("edition-list"), {"fmt": "imp"})
+
+        self.assertEqual(response.status_code, 200)
+        slugs = [item["slug"] for item in response.data]
+        self.assertIn("active-ed", slugs)
+        self.assertNotIn("inactive-ed", slugs)
+
+
 @override_settings(CARDS_ADMIN_OWNER_USERNAME="iterva")
 class CardsAdminToggleEditionsTests(TestCase):
     def setUp(self):

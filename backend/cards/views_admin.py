@@ -10,6 +10,7 @@ import requests
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
+from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
 from django.http import HttpResponse, HttpResponseBadRequest
@@ -48,6 +49,11 @@ MYL_IMAGE_HOSTS = {"api.myl.cl"}
 RIFTBOUND_IMAGE_HOSTS = {"cmsassets.rgpub.io"}
 
 _IMG_TAG_RE = re.compile(r"<img\b[^>]*>", re.IGNORECASE)
+
+
+def _invalidate_cards_public_cache() -> None:
+    # Edition activation affects cached list/detail responses; clear once after bulk updates.
+    cache.clear()
 
 
 def _safe_download_name(raw: str, fallback: str = "card.png") -> str:
@@ -478,6 +484,7 @@ def cards_admin_toggle_editions(request):
             selected_scope_qs = scope_qs.filter(id__in=selected_ids)
             activated = selected_scope_qs.update(active=True)
             deactivated = scope_qs.exclude(id__in=selected_ids).update(active=False)
+            _invalidate_cards_public_cache()
             messages.success(
                 request,
                 f"Se sincronizaron ediciones: {activated} activadas y {deactivated} desactivadas.",
@@ -492,6 +499,7 @@ def cards_admin_toggle_editions(request):
             messages.error(request, "Seleccione ediciones o un formato para aplicar el cambio.")
             return redirect("cards-admin-toggle-editions")
 
+        _invalidate_cards_public_cache()
         messages.success(request, f"Se actualizaron {updated} ediciones.")
         return redirect("cards-admin-toggle-editions")
 

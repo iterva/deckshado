@@ -1500,7 +1500,10 @@ export class DeckViewComponent implements OnInit {
       await this.nextRenderTick();
       await this.waitForExportImages(el);
       await this.nextRenderTick();
-      const targetWidth = this.exportOrientation === 'horizontal' ? 1200 : 780;
+      const fallbackWidth = this.exportOrientation === 'horizontal' ? 1200 : 780;
+      const measuredWidth = Math.round(el.getBoundingClientRect().width);
+      const targetWidth = measuredWidth > 0 ? measuredWidth : fallbackWidth;
+      const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : targetWidth;
       const html2canvas = (await import('html2canvas')).default;
       return await html2canvas(el, {
         backgroundColor: this.exportBackgroundResolved,
@@ -1509,7 +1512,7 @@ export class DeckViewComponent implements OnInit {
         scale: 2,
         width: targetWidth,
         height: el.scrollHeight,
-        windowWidth: targetWidth,
+        windowWidth: viewportWidth,
         windowHeight: el.scrollHeight,
       });
     } catch (e) {

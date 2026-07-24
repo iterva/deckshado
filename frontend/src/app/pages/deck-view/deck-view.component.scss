@@ -579,6 +579,14 @@
     }
   }
 
+  .bg-subtitle {
+    display: block;
+    margin-top: 0.55rem;
+    color: #a9bacd;
+    font-size: 0.73rem;
+    font-weight: 600;
+  }
+
   .export-logo-upload-row {
     display: flex;
     align-items: center;
@@ -2289,12 +2297,14 @@
 
 // Export area - hidden by default, shown during capture
 .deck-export-area {
+  --export-text-color: #c8d6e5;
   --export-top-x: 0px;
   --export-top-y: 0px;
   --export-s2-x: 0px;
   --export-s2-y: 10px;
   --export-s3-x: 0px;
   --export-s3-y: 20px;
+  --export-name-gap: 16px;
 
   position: fixed;
   left: -9999px;
@@ -2354,7 +2364,7 @@
     .export-deck-name {
       font-size: 1.6rem;
       font-weight: 700;
-      color: #c8963e;
+      color: var(--export-text-color);
       margin: 0 0 0.3rem;
       font-style: italic;
     }
@@ -2362,12 +2372,13 @@
     .export-meta {
       display: flex;
       gap: 1.5rem;
-      color: #8899aa;
+      color: var(--export-text-color);
       font-size: 0.85rem;
       flex-wrap: wrap;
+      opacity: 0.92;
 
       strong {
-        color: #c8963e;
+        color: var(--export-text-color);
       }
     }
   }
@@ -2386,7 +2397,23 @@
   .export-card-stack {
     position: relative;
     width: 150px;
-    height: 205px;
+    height: 223px;
+
+    .export-card-name {
+      display: block;
+      width: 130px;
+      margin-left: var(--export-top-x);
+      text-align: center;
+      color: var(--export-text-color);
+      font-size: 0.6rem;
+      font-weight: 600;
+      line-height: 1.2;
+      margin-bottom: 3px;
+      padding: 0 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
 
     &.is-banned img {
       filter: grayscale(70%) brightness(0.62);
@@ -2407,7 +2434,7 @@
 
     .export-shadow {
       position: absolute;
-      top: 0;
+      top: var(--export-name-gap);
       left: 0;
       pointer-events: none;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
@@ -2421,7 +2448,7 @@
       z-index: 2;
       width: 130px;
       margin-left: var(--export-top-x);
-      margin-top: var(--export-top-y);
+      margin-top: calc(var(--export-top-y) + var(--export-name-gap));
       border-radius: 6px;
       overflow: hidden;
 
@@ -2550,7 +2577,7 @@
   }
 
   .export-qr-name {
-    color: #c8d6e5;
+    color: var(--export-text-color);
     font-size: 0.64rem;
     font-weight: 600;
     line-height: 1.2;
@@ -2561,11 +2588,11 @@
   }
 
   .export-side-title {
-    color: #2ac5c5;
+    color: var(--export-text-color);
     font-size: 1rem;
     margin: 1rem 0 0.5rem;
     padding-top: 0.8rem;
-    border-top: 1px solid #2ac5c5;
+    border-top: 1px solid rgba(200, 214, 229, 0.5);
   }
 
   // Horizontal: matching deck-grid card geometry

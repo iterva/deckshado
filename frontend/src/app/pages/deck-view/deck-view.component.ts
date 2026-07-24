@@ -54,6 +54,7 @@ export class DeckViewComponent implements OnInit {
   exportShowQr = true;
   exportBackgroundMode: ExportBackgroundMode = 'default';
   exportBackgroundColor = '#181926';
+  exportTextColor = '#c8d6e5';
   exportQrDataUrl: string | null = null;
   exportLogoDataUrl: string | null = null;
   exportLogoName = '';
@@ -378,6 +379,7 @@ export class DeckViewComponent implements OnInit {
           showQr: boolean;
           backgroundMode: ExportBackgroundMode;
           backgroundColor: string;
+          textColor: string;
           typeOrder: string[];
         }>;
         if (parsed.sortBy === 'original' || parsed.sortBy === 'type' || parsed.sortBy === 'name' || parsed.sortBy === 'cost' || parsed.sortBy === 'quantity') {
@@ -395,6 +397,10 @@ export class DeckViewComponent implements OnInit {
         if (typeof parsed.backgroundColor === 'string') {
           const normalizedBg = this.normalizeHexColor(parsed.backgroundColor);
           if (normalizedBg) this.exportBackgroundColor = normalizedBg;
+        }
+        if (typeof parsed.textColor === 'string') {
+          const normalizedText = this.normalizeHexColor(parsed.textColor);
+          if (normalizedText) this.exportTextColor = normalizedText;
         }
         if (Array.isArray(parsed.typeOrder)) {
           this.exportTypeOrder = this.dedupeTypeOrder(parsed.typeOrder);
@@ -774,6 +780,20 @@ export class DeckViewComponent implements OnInit {
     this.persistExportOptions();
   }
 
+  onExportTextColorInput(value: string) {
+    const normalized = this.normalizeHexColor(value);
+    if (!normalized) return;
+    this.exportTextColor = normalized;
+    this.persistExportOptions();
+  }
+
+  onExportTextHexChange(value: string) {
+    const normalized = this.normalizeHexColor(value);
+    if (!normalized) return;
+    this.exportTextColor = normalized;
+    this.persistExportOptions();
+  }
+
   onExportLogoSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -923,6 +943,7 @@ export class DeckViewComponent implements OnInit {
         showQr: this.exportShowQr,
         backgroundMode: this.exportBackgroundMode,
         backgroundColor: this.exportBackgroundColor,
+        textColor: this.exportTextColor,
         typeOrder: this.exportTypeOrder,
       }));
     } catch {}

@@ -117,6 +117,7 @@ export class ProfileEditComponent implements AfterViewInit {
     const reader = new FileReader();
     reader.onload = () => this.avatarPreview.set(reader.result as string);
     reader.readAsDataURL(file);
+    input.value = '';
   }
 
   saveProfile() {

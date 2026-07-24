@@ -7,7 +7,7 @@
 
     <!-- Avatar section -->
     <div class="avatar-section">
-      <div class="avatar-circle" (click)="avatarInput.click()">
+      <div class="avatar-circle" (click)="avatarCameraInput.click()">
         @if (avatarPreview()) {
           <img [src]="avatarPreview()!" alt="Preview" class="avatar-img" />
         } @else if (auth.user()?.avatar_url) {
@@ -22,7 +22,18 @@
           <span>Cambiar</span>
         </div>
       </div>
+      <input #avatarCameraInput type="file" accept="image/*" capture="user" hidden (change)="onAvatarSelected($event)" />
       <input #avatarInput type="file" accept="image/*" hidden (change)="onAvatarSelected($event)" />
+      <div class="avatar-actions">
+        <button type="button" class="avatar-action-btn" (click)="avatarCameraInput.click()">
+          <i class="bi bi-camera-fill"></i>
+          Tomar foto
+        </button>
+        <button type="button" class="avatar-action-btn secondary" (click)="avatarInput.click()">
+          <i class="bi bi-image"></i>
+          Elegir archivo
+        </button>
+      </div>
     </div>
 
     <!-- Profile form -->

@@ -273,30 +273,49 @@
               <span class="export-opt-title">Logo (opcional)</span>
               <input #exportLogoInput type="file" accept="image/*" hidden (change)="onExportLogoSelected($event)">
               <div class="export-logo-upload-row">
-                <button type="button" class="opt-chip" (click)="exportLogoInput.click()">
-                  <i class="bi bi-upload"></i> Subir logo
+                <button type="button" class="mini-browse-btn" (click)="exportLogoInput.click()" title="Subir logo desde tu equipo">
+                  Examinar
                 </button>
-                <button type="button" class="opt-chip" [disabled]="!exportLogoDataUrl" (click)="clearExportLogo()">
-                  <i class="bi bi-trash3"></i> Quitar logo
+                <span class="export-logo-file-name">{{ exportLogoName || 'Ningun archivo seleccionado' }}</span>
+                <button type="button" class="mini-clear-btn" [disabled]="!exportLogoDataUrl" (click)="clearExportLogo()">
+                  Quitar
                 </button>
               </div>
-              <div class="export-logo-preview-card">
-                <div class="export-logo-preview-canvas">
-                  @if (exportLogoDataUrl) {
-                    <img class="export-logo-preview-img" [src]="exportLogoDataUrl" alt="Previsualizacion del logo" crossorigin="anonymous">
-                  } @else {
-                    <span class="export-logo-preview-empty">Sin logo</span>
-                  }
+              <div class="export-logo-dropzone"
+                   [class.drag-over]="exportLogoDragOver"
+                   (dragenter)="onExportLogoDragEnter($event)"
+                   (dragover)="onExportLogoDragOver($event)"
+                   (dragleave)="onExportLogoDragLeave($event)"
+                   (drop)="onExportLogoDrop($event)">
+                <div class="export-logo-preview-card">
+                  <div class="export-logo-preview-canvas">
+                    @if (exportLogoDataUrl) {
+                      <img class="export-logo-preview-img" [src]="exportLogoDataUrl" alt="Previsualizacion del logo" crossorigin="anonymous">
+                    } @else {
+                      <span class="export-logo-preview-empty">Sin logo</span>
+                    }
+                  </div>
+                  <div class="export-logo-preview-meta">
+                    <strong>{{ exportLogoName || 'Logo temporal' }}</strong>
+                    <span>No se guarda. Solo se usa para esta imagen.</span>
+                  </div>
                 </div>
-                <div class="export-logo-preview-meta">
-                  <strong>{{ exportLogoName || 'Logo temporal' }}</strong>
-                  <span>No se guarda. Solo se usa para esta imagen.</span>
-                </div>
+                <small class="export-logo-drop-hint">Tambien puedes arrastrar y soltar el logo aqui.</small>
               </div>
               @if (exportLogoError) {
                 <small class="opt-note">{{ exportLogoError }}</small>
               }
             </div>
+          </div>
+
+          <div class="export-modal-foot">
+            <button type="button" class="export-foot-btn ghost" (click)="closeExportOptionsModal()">
+              Cerrar
+            </button>
+            <button type="button" class="export-foot-btn primary" [disabled]="exporting" (click)="exportImage()">
+              <i class="bi bi-download"></i>
+              {{ exporting ? 'Generando...' : 'Exportar imagen' }}
+            </button>
           </div>
         </div>
       </div>

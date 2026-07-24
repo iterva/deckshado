@@ -58,6 +58,8 @@ export class DeckViewComponent implements OnInit {
   exportLogoDataUrl: string | null = null;
   exportLogoName = '';
   exportLogoError = '';
+  exportLogoDragOver = false;
+  private exportLogoDragDepth = 0;
   // Sidedeck colapsable
   sideOpen = true;
   // Hand simulator como modal global
@@ -748,16 +750,52 @@ export class DeckViewComponent implements OnInit {
     const file = input.files?.[0];
     if (!file) return;
 
+    this.loadExportLogoFromFile(file);
+    input.value = '';
+  }
+
+  onExportLogoDragEnter(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.exportLogoDragDepth += 1;
+    this.exportLogoDragOver = true;
+  }
+
+  onExportLogoDragOver(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+    this.exportLogoDragOver = true;
+  }
+
+  onExportLogoDragLeave(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.exportLogoDragDepth = Math.max(0, this.exportLogoDragDepth - 1);
+    if (this.exportLogoDragDepth === 0) {
+      this.exportLogoDragOver = false;
+    }
+  }
+
+  onExportLogoDrop(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.exportLogoDragDepth = 0;
+    this.exportLogoDragOver = false;
+    const file = event.dataTransfer?.files?.[0];
+    if (!file) return;
+    this.loadExportLogoFromFile(file);
+  }
+
+  private loadExportLogoFromFile(file: File) {
     this.exportLogoError = '';
     if (!file.type.startsWith('image/')) {
       this.exportLogoError = 'Selecciona una imagen valida para el logo.';
-      input.value = '';
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
       this.exportLogoError = 'El logo no puede superar 5 MB.';
-      input.value = '';
       return;
     }
 
@@ -775,13 +813,14 @@ export class DeckViewComponent implements OnInit {
       this.cdr.detectChanges();
     };
     reader.readAsDataURL(file);
-    input.value = '';
   }
 
   clearExportLogo() {
     this.exportLogoDataUrl = null;
     this.exportLogoName = '';
     this.exportLogoError = '';
+    this.exportLogoDragDepth = 0;
+    this.exportLogoDragOver = false;
   }
 
   private normalizeHexColor(value: string | null | undefined): string | null {

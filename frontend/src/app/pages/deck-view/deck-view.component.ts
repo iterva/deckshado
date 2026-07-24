@@ -1215,17 +1215,36 @@ export class DeckViewComponent implements OnInit {
     }
     if (this.exportQrDataUrl) return;
     try {
-      const qrcode = await import('qrcode');
-      this.exportQrDataUrl = await qrcode.toDataURL(this.publicDeckUrl, {
-        width: 180,
-        margin: 1,
-        color: { dark: '#0f1923', light: '#0000' },
-      });
+      this.exportQrDataUrl = await this.buildExportQrDataUrl(this.publicDeckUrl);
+      if (!this.exportQrDataUrl) {
+        throw new Error('No se encontro un generador QR compatible.');
+      }
       this.cdr.detectChanges();
     } catch (err) {
       console.warn('No se pudo generar QR para exportación:', err);
       this.exportQrDataUrl = null;
     }
+  }
+
+  private async buildExportQrDataUrl(value: string): Promise<string | null> {
+    const qrcodeModule: any = await import('qrcode');
+    const toDataURL: ((text: string, options?: any) => Promise<string>) | undefined =
+      typeof qrcodeModule?.toDataURL === 'function'
+        ? qrcodeModule.toDataURL.bind(qrcodeModule)
+        : typeof qrcodeModule?.default?.toDataURL === 'function'
+          ? qrcodeModule.default.toDataURL.bind(qrcodeModule.default)
+          : typeof qrcodeModule?.default === 'function'
+            ? qrcodeModule.default
+            : undefined;
+
+    if (!toDataURL) return null;
+
+    return toDataURL(value, {
+      width: 180,
+      margin: 1,
+      // Fondo sólido para garantizar legibilidad en html2canvas.
+      color: { dark: '#0a1320', light: '#ffffff' },
+    });
   }
 
   private readonly formatNames: Record<string, string> = {
@@ -1452,7 +1471,7 @@ export class DeckViewComponent implements OnInit {
       await this.nextRenderTick();
       await this.waitForExportImages(el);
       await this.nextRenderTick();
-      const targetWidth = this.exportOrientation === 'horizontal' ? 1200 : 650;
+      const targetWidth = this.exportOrientation === 'horizontal' ? 1200 : 780;
       const html2canvas = (await import('html2canvas')).default;
       return await html2canvas(el, {
         backgroundColor: this.exportBackgroundResolved,

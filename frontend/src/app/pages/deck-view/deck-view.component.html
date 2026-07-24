@@ -380,29 +380,31 @@
           [class.export-vertical]="exportOrientation === 'vertical'"
          [class.export-visible]="exporting"
          [style.background]="exportBackgroundResolved">
-      <div class="export-header">
-        <h2 class="export-deck-name">{{ deck.name }}</h2>
-        <div class="export-meta">
-          @if (raceLabel) { <span>Raza: {{ raceLabel }}</span> }
-          <span>Formato: {{ formatLabel }}</span>
-          <span>Fecha: {{ todayFormatted }}</span>
-          <span>Creado por: <strong>{{ deck.owner_username }}</strong></span>
-        </div>
-      </div>
       <div class="export-card-grid">
         @for (entry of exportMainEntries; track entry.trackId) {
-          <div class="export-card-stack" [class.export-qty-2]="entry.quantity === 2" [class.export-qty-3]="entry.quantity >= 3">
-            <span class="export-card-name">{{ entry.card_detail.name }}</span>
+          <div class="export-card-stack"
+               [class.export-qty-2]="entry.quantity === 2"
+               [class.export-qty-3]="entry.quantity >= 3"
+               [class.is-banned]="getBanStatus(entry.card_detail)?.status === 'banned'"
+               [class.is-limited]="!!getBanStatus(entry.card_detail) && getBanStatus(entry.card_detail)?.status !== 'banned'">
+            @if (!exportSeparateCards && stackOrientation !== 'center' && entry.quantity >= 3) {
+              <img class="export-shadow es3" [src]="getExportImageUrl(entry.card_detail.image_url)" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
+            }
+            @if (!exportSeparateCards && stackOrientation !== 'center' && entry.quantity >= 2) {
+              <img class="export-shadow es2" [src]="getExportImageUrl(entry.card_detail.image_url)" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
+            }
             <div class="export-card-imgs">
-              @if (!exportSeparateCards && stackOrientation !== 'center' && entry.quantity >= 3) {
-                <img class="export-shadow es3" [src]="getExportImageUrl(entry.card_detail.image_url)" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
-              }
-              @if (!exportSeparateCards && stackOrientation !== 'center' && entry.quantity >= 2) {
-                <img class="export-shadow es2" [src]="getExportImageUrl(entry.card_detail.image_url)" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
-              }
               <img class="export-top" [src]="getExportImageUrl(entry.card_detail.image_url)" [alt]="entry.card_detail.name" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
               @if (exportShowNumbers && !exportSeparateCards && entry.quantity > 1) {
                 <span class="export-qty-badge">x{{ entry.quantity }}</span>
+              }
+              @if (getBanStatus(entry.card_detail); as ban) {
+                <span class="export-ban-overlay" [class.banned]="ban.status === 'banned'" [class.limited]="ban.status !== 'banned'" [title]="ban.status === 'banned' ? 'Baneada' : 'Limitada'">
+                  @if (ban.status === 'banned') { <i class="bi bi-slash-circle-fill"></i> }
+                  @else if (ban.status === 'limited_1') { <span>L1</span> }
+                  @else if (ban.status === 'limited_2') { <span>L2</span> }
+                  @else { <i class="bi bi-exclamation-triangle-fill"></i> }
+                </span>
               }
             </div>
           </div>
@@ -412,18 +414,29 @@
         <h3 class="export-side-title">Sidedeck</h3>
         <div class="export-card-grid">
           @for (entry of exportSideEntries; track entry.trackId) {
-            <div class="export-card-stack" [class.export-qty-2]="entry.quantity === 2" [class.export-qty-3]="entry.quantity >= 3">
-              <span class="export-card-name">{{ entry.card_detail.name }}</span>
+            <div class="export-card-stack"
+                 [class.export-qty-2]="entry.quantity === 2"
+                 [class.export-qty-3]="entry.quantity >= 3"
+                 [class.is-banned]="getBanStatus(entry.card_detail)?.status === 'banned'"
+                 [class.is-limited]="!!getBanStatus(entry.card_detail) && getBanStatus(entry.card_detail)?.status !== 'banned'">
+              @if (!exportSeparateCards && stackOrientation !== 'center' && entry.quantity >= 3) {
+                <img class="export-shadow es3" [src]="getExportImageUrl(entry.card_detail.image_url)" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
+              }
+              @if (!exportSeparateCards && stackOrientation !== 'center' && entry.quantity >= 2) {
+                <img class="export-shadow es2" [src]="getExportImageUrl(entry.card_detail.image_url)" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
+              }
               <div class="export-card-imgs">
-                @if (!exportSeparateCards && stackOrientation !== 'center' && entry.quantity >= 3) {
-                  <img class="export-shadow es3" [src]="getExportImageUrl(entry.card_detail.image_url)" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
-                }
-                @if (!exportSeparateCards && stackOrientation !== 'center' && entry.quantity >= 2) {
-                  <img class="export-shadow es2" [src]="getExportImageUrl(entry.card_detail.image_url)" aria-hidden="true" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
-                }
                 <img class="export-top" [src]="getExportImageUrl(entry.card_detail.image_url)" [alt]="entry.card_detail.name" crossorigin="anonymous" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
                 @if (exportShowNumbers && !exportSeparateCards && entry.quantity > 1) {
                   <span class="export-qty-badge">x{{ entry.quantity }}</span>
+                }
+                @if (getBanStatus(entry.card_detail); as ban) {
+                  <span class="export-ban-overlay" [class.banned]="ban.status === 'banned'" [class.limited]="ban.status !== 'banned'" [title]="ban.status === 'banned' ? 'Baneada' : 'Limitada'">
+                    @if (ban.status === 'banned') { <i class="bi bi-slash-circle-fill"></i> }
+                    @else if (ban.status === 'limited_1') { <span>L1</span> }
+                    @else if (ban.status === 'limited_2') { <span>L2</span> }
+                    @else { <i class="bi bi-exclamation-triangle-fill"></i> }
+                  </span>
                 }
               </div>
             </div>

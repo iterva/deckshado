@@ -52,6 +52,8 @@ export class CardListComponent implements OnInit, AfterViewInit, OnDestroy {
   private cardsSentinelRef?: ElementRef<HTMLElement>;
   private cardsObserver?: IntersectionObserver;
   private contentScrollEl: HTMLElement | null = null;
+  private searchDebounceTimer: number | null = null;
+  private readonly searchDebounceMs = 2000;
 
   constructor(private cardService: CardService, private cdr: ChangeDetectorRef, private titleService: Title, private route: ActivatedRoute) {}
 
@@ -91,6 +93,7 @@ export class CardListComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy() {
     this.cardsObserver?.disconnect();
     this.detachContentScrollListener();
+    this.clearSearchDebounce();
   }
 
   loadFilters() {
@@ -142,10 +145,20 @@ export class CardListComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onSearch() {
+    this.clearSearchDebounce();
     this.reloadCards();
   }
 
+  onSearchInput() {
+    this.clearSearchDebounce();
+    this.searchDebounceTimer = window.setTimeout(() => {
+      this.searchDebounceTimer = null;
+      this.reloadCards();
+    }, this.searchDebounceMs);
+  }
+
   onFilterChange() {
+    this.clearSearchDebounce();
     this.reloadCards();
   }
 
@@ -188,6 +201,12 @@ export class CardListComponent implements OnInit, AfterViewInit, OnDestroy {
   private onContentScroll = () => {
     this.tryInfiniteScrollFallback();
   };
+
+  private clearSearchDebounce() {
+    if (this.searchDebounceTimer === null) return;
+    window.clearTimeout(this.searchDebounceTimer);
+    this.searchDebounceTimer = null;
+  }
 
   private tryInfiniteScrollFallback() {
     if (!this.isNearPageBottom()) return;

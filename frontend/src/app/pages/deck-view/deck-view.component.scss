@@ -2295,16 +2295,12 @@
   --export-s2-y: 10px;
   --export-s3-x: 0px;
   --export-s3-y: 20px;
-  --export-pad-2-right: 0px;
-  --export-pad-2-bottom: 10px;
-  --export-pad-3-right: 0px;
-  --export-pad-3-bottom: 20px;
 
   position: fixed;
   left: -9999px;
   top: 0;
   background: #0a1628;
-  padding: 1.5rem;
+  padding: 1rem;
   font-family: 'Segoe UI', Arial, sans-serif;
 
   &[data-stack-orientation='up'] {
@@ -2314,10 +2310,6 @@
     --export-s2-y: 10px;
     --export-s3-x: 0px;
     --export-s3-y: 0px;
-    --export-pad-2-right: 0px;
-    --export-pad-2-bottom: 20px;
-    --export-pad-3-right: 0px;
-    --export-pad-3-bottom: 20px;
   }
 
   &[data-stack-orientation='left'] {
@@ -2327,10 +2319,6 @@
     --export-s2-y: 0px;
     --export-s3-x: 0px;
     --export-s3-y: 0px;
-    --export-pad-2-right: 20px;
-    --export-pad-2-bottom: 0px;
-    --export-pad-3-right: 20px;
-    --export-pad-3-bottom: 0px;
   }
 
   &[data-stack-orientation='right'] {
@@ -2340,10 +2328,6 @@
     --export-s2-y: 0px;
     --export-s3-x: 20px;
     --export-s3-y: 0px;
-    --export-pad-2-right: 10px;
-    --export-pad-2-bottom: 0px;
-    --export-pad-3-right: 20px;
-    --export-pad-3-bottom: 0px;
   }
 
   &[data-stack-orientation='center'] {
@@ -2353,10 +2337,6 @@
     --export-s2-y: 0px;
     --export-s3-x: 0px;
     --export-s3-y: 0px;
-    --export-pad-2-right: 0px;
-    --export-pad-2-bottom: 0px;
-    --export-pad-3-right: 0px;
-    --export-pad-3-bottom: 0px;
 
     .export-card-stack .export-shadow { display: none; }
   }
@@ -2394,45 +2374,60 @@
 
   .export-card-grid {
     display: grid;
-    gap: 20px 16px;
-    padding: 0.8rem;
-    background: #0e1e36;
-    border-radius: 8px;
-    border: 1px solid #1a3050;
+    grid-template-columns: repeat(auto-fill, 150px);
+    gap: 14px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    justify-content: center;
   }
 
   .export-card-stack {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    position: relative;
+    width: 150px;
+    height: 205px;
+
+    &.is-banned img {
+      filter: grayscale(70%) brightness(0.62);
+    }
+
+    &.is-limited img {
+      filter: brightness(0.86);
+    }
+
+    img {
+      width: 130px;
+      height: auto;
+      border-radius: 6px;
+      display: block;
+      border: 1px solid #1a3050;
+      background: #16213e;
+    }
+
+    .export-shadow {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+
+      &.es2 { transform: translate(var(--export-s2-x), var(--export-s2-y)); z-index: 1; }
+      &.es3 { transform: translate(var(--export-s3-x), var(--export-s3-y)); z-index: 0; }
+    }
 
     .export-card-imgs {
       position: relative;
-      width: 100%;
-
-      img {
-        width: 100%;
-        height: auto;
-        border-radius: 4px;
-        display: block;
-        border: 1px solid #1a3050;
-      }
-
-      .export-shadow {
-        position: absolute;
-        top: 0;
-        left: 0;
-        pointer-events: none;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.6);
-
-        &.es2 { transform: translate(var(--export-s2-x), var(--export-s2-y)); z-index: 1; }
-        &.es3 { transform: translate(var(--export-s3-x), var(--export-s3-y)); z-index: 0; }
-      }
+      z-index: 2;
+      width: 130px;
+      margin-left: var(--export-top-x);
+      margin-top: var(--export-top-y);
+      border-radius: 6px;
+      overflow: hidden;
 
       .export-top {
         position: relative;
         z-index: 2;
-        transform: translate(var(--export-top-x), var(--export-top-y));
       }
 
       .export-qty-badge {
@@ -2449,43 +2444,44 @@
         pointer-events: none;
         border: 1px solid rgba(255, 189, 57, 0.4);
       }
-    }
 
-    .export-card-name {
-      display: block;
-      width: 100%;
-      text-align: center;
-      color: #c8d6e5;
-      font-size: 0.6rem;
-      font-weight: 600;
-      line-height: 1.2;
-      margin-bottom: 3px;
-      padding: 0 2px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+      .export-ban-overlay {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        z-index: 5;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.74rem;
+        font-weight: 700;
+        color: #fff;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
 
-    // Add padding for stacked cards so shadows aren't clipped
-    &.export-qty-2 .export-card-imgs {
-      padding-right: var(--export-pad-2-right);
-      padding-bottom: var(--export-pad-2-bottom);
-    }
-    &.export-qty-3 .export-card-imgs {
-      padding-right: var(--export-pad-3-right);
-      padding-bottom: var(--export-pad-3-bottom);
+        &.banned {
+          background: #dc3545;
+        }
+
+        &.limited {
+          background: #f59e0b;
+          color: #1a1a2e;
+        }
+      }
     }
   }
 
   &.export-separated {
     .export-card-stack {
+      height: auto;
+
+      .export-shadow { display: none !important; }
+
       .export-card-imgs {
-        padding-right: 0 !important;
-        padding-bottom: 0 !important;
-
-        .export-shadow { display: none !important; }
-
-        .export-top { transform: translate(0, 0) !important; }
+        margin-left: 0 !important;
+        margin-top: 0 !important;
       }
     }
   }
@@ -2572,21 +2568,21 @@
     border-top: 1px solid #2ac5c5;
   }
 
-  // Horizontal: wide layout, ~9 cards per row
+  // Horizontal: matching deck-grid card geometry
   &.export-horizontal {
     width: 1200px;
 
     .export-card-grid {
-      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      grid-template-columns: repeat(auto-fill, 150px);
     }
   }
 
-  // Vertical: narrow layout, ~5 cards per row
+  // Vertical: same card geometry with narrower canvas
   &.export-vertical {
-    width: 650px;
+    width: 780px;
 
     .export-card-grid {
-      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      grid-template-columns: repeat(auto-fill, 150px);
     }
   }
 }

@@ -199,6 +199,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:4300",
     "https://shadow-forge-deck.vercel.app",
     "https://dev-preprod-shadow-forge-deck.vercel.app",
+    "https://deckshado-ec1kbeg85-latshir110-3242s-projects.vercel.app",
 ] + [o.strip() for o in _cors_extra if o.strip()]
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://.*shadow-forge-deck.*\.vercel\.app$",
@@ -234,6 +235,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://frontend-cyan-alpha-34.vercel.app",
     "https://shadow-forge-deck.vercel.app",
     "https://dev-preprod-shadow-forge-deck.vercel.app",
+    "https://deckshado-ec1kbeg85-latshir110-3242s-projects.vercel.app",
 ]
 
 # MyL API

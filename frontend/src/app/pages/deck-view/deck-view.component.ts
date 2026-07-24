@@ -60,6 +60,9 @@ export class DeckViewComponent implements OnInit {
   exportLogoError = '';
   exportLogoDragOver = false;
   private exportLogoDragDepth = 0;
+  exportTypeOrder: string[] = ['Oro', 'Aliado', 'Talismán', 'Arma', 'Tótem'];
+  showExportPreviewModal = false;
+  exportPreviewDataUrl: string | null = null;
   // Sidedeck colapsable
   sideOpen = true;
   // Hand simulator como modal global
@@ -375,6 +378,7 @@ export class DeckViewComponent implements OnInit {
           showQr: boolean;
           backgroundMode: ExportBackgroundMode;
           backgroundColor: string;
+          typeOrder: string[];
         }>;
         if (parsed.sortBy === 'original' || parsed.sortBy === 'type' || parsed.sortBy === 'name' || parsed.sortBy === 'cost' || parsed.sortBy === 'quantity') {
           this.exportSortBy = parsed.sortBy;
@@ -392,6 +396,9 @@ export class DeckViewComponent implements OnInit {
           const normalizedBg = this.normalizeHexColor(parsed.backgroundColor);
           if (normalizedBg) this.exportBackgroundColor = normalizedBg;
         }
+        if (Array.isArray(parsed.typeOrder)) {
+          this.exportTypeOrder = this.dedupeTypeOrder(parsed.typeOrder);
+        }
       }
     } catch {}
 
@@ -402,6 +409,7 @@ export class DeckViewComponent implements OnInit {
       this.liked = (deck as any).user_liked || false;
       this.sortEntries();
       this.buildGroups();
+      this.syncExportTypeOrderFromDeck();
       this.loading = false;
       this.preloadImages();
       this.loadBanlist();
@@ -691,6 +699,7 @@ export class DeckViewComponent implements OnInit {
     if (e) e.stopPropagation();
     this.showMoreMenu = false;
     this.showStackOrientationMenu = false;
+    this.showExportPreviewModal = false;
     this.showExportOptionsModal = true;
   }
 
@@ -698,8 +707,28 @@ export class DeckViewComponent implements OnInit {
     this.showExportOptionsModal = false;
   }
 
+  backToExportOptions() {
+    this.showExportPreviewModal = false;
+    this.showExportOptionsModal = true;
+  }
+
+  closeExportPreview() {
+    this.showExportPreviewModal = false;
+  }
+
   setExportSortBy(sortBy: ExportSortBy) {
     this.exportSortBy = sortBy;
+    this.persistExportOptions();
+  }
+
+  moveExportTypeOrder(typeName: string, direction: 'up' | 'down') {
+    const idx = this.exportTypeOrder.findIndex((x) => x === typeName);
+    if (idx === -1) return;
+    const target = direction === 'up' ? idx - 1 : idx + 1;
+    if (target < 0 || target >= this.exportTypeOrder.length) return;
+    const copy = [...this.exportTypeOrder];
+    [copy[idx], copy[target]] = [copy[target], copy[idx]];
+    this.exportTypeOrder = copy;
     this.persistExportOptions();
   }
 
@@ -823,6 +852,46 @@ export class DeckViewComponent implements OnInit {
     this.exportLogoDragOver = false;
   }
 
+  async generateExportPreview() {
+    const canvas = await this.renderExportCanvas();
+    if (!canvas) return;
+    this.exportPreviewDataUrl = canvas.toDataURL('image/png');
+    this.showExportOptionsModal = false;
+    this.showExportPreviewModal = true;
+    this.cdr.detectChanges();
+  }
+
+  downloadExportPreview() {
+    if (!this.exportPreviewDataUrl) return;
+    const link = document.createElement('a');
+    link.download = `${this.deck?.name || 'mazo'}.png`;
+    link.href = this.exportPreviewDataUrl;
+    link.click();
+  }
+
+  async copyExportPreviewToClipboard() {
+    if (!this.exportPreviewDataUrl) return;
+    if (!('clipboard' in navigator) || !(navigator.clipboard as any).write) {
+      this.downloadExportPreview();
+      return;
+    }
+    try {
+      const response = await fetch(this.exportPreviewDataUrl);
+      const blob = await response.blob();
+      await (navigator.clipboard as any).write([
+        new (window as any).ClipboardItem({ 'image/png': blob }),
+      ]);
+      this.shareToast = true;
+      this.cdr.detectChanges();
+      setTimeout(() => {
+        this.shareToast = false;
+        this.cdr.detectChanges();
+      }, 2000);
+    } catch (e) {
+      console.error('Error copiando preview al portapapeles:', e);
+    }
+  }
+
   private normalizeHexColor(value: string | null | undefined): string | null {
     if (!value) return null;
     const raw = value.trim();
@@ -854,6 +923,7 @@ export class DeckViewComponent implements OnInit {
         showQr: this.exportShowQr,
         backgroundMode: this.exportBackgroundMode,
         backgroundColor: this.exportBackgroundColor,
+        typeOrder: this.exportTypeOrder,
       }));
     } catch {}
   }
@@ -883,6 +953,7 @@ export class DeckViewComponent implements OnInit {
   onKeydown(ev: KeyboardEvent) {
     if (ev.key === 'Escape') {
       if (this.previewCard) { this.hidePreview(); return; }
+      if (this.showExportPreviewModal) { this.closeExportPreview(); return; }
       if (this.showHandModal) { this.showHandModal = false; return; }
       if (this.showStackOrientationMenu) { this.showStackOrientationMenu = false; return; }
       if (this.showExportOptionsModal) { this.showExportOptionsModal = false; return; }
@@ -933,25 +1004,9 @@ export class DeckViewComponent implements OnInit {
       this.exportImage();
       return;
     }
-    this.exporting = true;
-    this.cdr.detectChanges();
+    const canvas = await this.renderExportCanvas();
+    if (!canvas) return;
     try {
-      const el = this.deckContent.nativeElement as HTMLElement;
-      await this.nextRenderTick();
-      await this.waitForExportImages(el);
-      // Force layout to settle at the orientation's intended width before measuring,
-      // otherwise on mobile the captured layout collapses (vertical-looking export).
-      await this.nextRenderTick();
-      const targetWidth = this.exportOrientation === 'horizontal' ? 1200 : 650;
-      const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(el, {
-        backgroundColor: this.exportBackgroundResolved,
-        useCORS: true, allowTaint: true, scale: 2,
-        width: targetWidth,
-        height: el.scrollHeight,
-        windowWidth: targetWidth,
-        windowHeight: el.scrollHeight,
-      });
       const blob: Blob | null = await new Promise(res => canvas.toBlob(b => res(b), 'image/png'));
       if (blob) {
         await (navigator.clipboard as any).write([
@@ -963,8 +1018,6 @@ export class DeckViewComponent implements OnInit {
     } catch (e) {
       console.error('Error copiando imagen:', e);
     }
-    this.exporting = false;
-    this.cdr.detectChanges();
   }
 
   private loadBanlist() {
@@ -1082,8 +1135,8 @@ export class DeckViewComponent implements OnInit {
     copy.sort((a, b) => {
       switch (this.exportSortBy) {
         case 'type': {
-          const av = this.typeOrder[a.card_detail?.type_name ?? ''] ?? 99;
-          const bv = this.typeOrder[b.card_detail?.type_name ?? ''] ?? 99;
+          const av = this.getExportTypeSortWeight(a.card_detail?.type_name);
+          const bv = this.getExportTypeSortWeight(b.card_detail?.type_name);
           if (av !== bv) return (av - bv) * dir;
           return normalize(a.card_detail?.name).localeCompare(normalize(b.card_detail?.name)) * dir;
         }
@@ -1104,6 +1157,55 @@ export class DeckViewComponent implements OnInit {
     });
 
     return copy;
+  }
+
+  private syncExportTypeOrderFromDeck() {
+    if (!this.deck) return;
+    const entries = [...(this.deck.entries || []), ...(this.deck.sideboard_entries || [])];
+    const found = new Set<string>();
+    for (const entry of entries) {
+      const type = (entry?.card_detail?.type_name || 'Otro').trim() || 'Otro';
+      found.add(type);
+    }
+    if (found.size === 0) return;
+
+    const fallback = [...found].sort((a, b) => {
+      const av = this.typeOrder[a] ?? 99;
+      const bv = this.typeOrder[b] ?? 99;
+      if (av !== bv) return av - bv;
+      return a.localeCompare(b, 'es');
+    });
+
+    const kept = this.exportTypeOrder.filter((x) => [...found].some((f) => this.normalizeTypeForOrder(f) === this.normalizeTypeForOrder(x)));
+    const missing = fallback.filter((x) => !kept.some((k) => this.normalizeTypeForOrder(k) === this.normalizeTypeForOrder(x)));
+    this.exportTypeOrder = this.dedupeTypeOrder([...kept, ...missing]);
+  }
+
+  private dedupeTypeOrder(values: string[]): string[] {
+    const out: string[] = [];
+    for (const raw of values || []) {
+      const item = (raw || '').trim();
+      if (!item) continue;
+      if (out.some((x) => this.normalizeTypeForOrder(x) === this.normalizeTypeForOrder(item))) continue;
+      out.push(item);
+    }
+    return out;
+  }
+
+  private normalizeTypeForOrder(value: string): string {
+    return (value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+  }
+
+  private getExportTypeSortWeight(typeName: string | null | undefined): number {
+    const normalized = this.normalizeTypeForOrder(typeName || '');
+    const idx = this.exportTypeOrder.findIndex((x) => this.normalizeTypeForOrder(x) === normalized);
+    if (idx !== -1) return idx;
+    const fallback = this.typeOrder[typeName ?? ''] ?? 999;
+    return this.exportTypeOrder.length + fallback;
   }
 
   private async ensureExportQr() {
@@ -1332,22 +1434,28 @@ export class DeckViewComponent implements OnInit {
   }
 
   async exportImage() {
-    if (!this.deckContent || this.exporting) return;
+    const canvas = await this.renderExportCanvas();
+    if (!canvas) return;
+    const link = document.createElement('a');
+    link.download = `${this.deck?.name || 'mazo'}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
+
+  private async renderExportCanvas(): Promise<HTMLCanvasElement | null> {
+    if (!this.deckContent || this.exporting) return null;
     this.exporting = true;
     this.cdr.detectChanges();
     try {
+      await this.ensureExportQr();
       const el = this.deckContent.nativeElement as HTMLElement;
       await this.nextRenderTick();
       await this.waitForExportImages(el);
-
-      const bgColor = this.exportBackgroundResolved;
-      // Force a layout flush so the offscreen export area has its final size
-      // before html2canvas measures it (prevents collapsed/vertical output on mobile).
       await this.nextRenderTick();
       const targetWidth = this.exportOrientation === 'horizontal' ? 1200 : 650;
       const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(el, {
-        backgroundColor: bgColor,
+      return await html2canvas(el, {
+        backgroundColor: this.exportBackgroundResolved,
         useCORS: true,
         allowTaint: true,
         scale: 2,
@@ -1356,15 +1464,13 @@ export class DeckViewComponent implements OnInit {
         windowWidth: targetWidth,
         windowHeight: el.scrollHeight,
       });
-      const link = document.createElement('a');
-      link.download = `${this.deck?.name || 'mazo'}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
     } catch (e) {
-      console.error('Error exporting image:', e);
+      console.error('Error generando canvas de exportación:', e);
+      return null;
+    } finally {
+      this.exporting = false;
+      this.cdr.detectChanges();
     }
-    this.exporting = false;
-    this.cdr.detectChanges();
   }
 
   private nextRenderTick(): Promise<void> {

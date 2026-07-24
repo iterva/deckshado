@@ -241,6 +241,21 @@
                   <i class="bi" [class.bi-sort-down]="exportSortDir === 'asc'" [class.bi-sort-up]="exportSortDir === 'desc'"></i>
                 </button>
               </div>
+              @if (exportSortBy === 'type') {
+                <div class="type-order-list">
+                  @for (typeName of exportTypeOrder; track typeName; let idx = $index) {
+                    <div class="type-order-item">
+                      <span class="type-order-rank">{{ idx + 1 }}</span>
+                      <span class="type-order-name">{{ typeName }}</span>
+                      <div class="type-order-actions">
+                        <button type="button" class="type-order-btn" [disabled]="idx === 0" (click)="moveExportTypeOrder(typeName, 'up')" aria-label="Subir tipo">↑</button>
+                        <button type="button" class="type-order-btn" [disabled]="idx === exportTypeOrder.length - 1" (click)="moveExportTypeOrder(typeName, 'down')" aria-label="Bajar tipo">↓</button>
+                      </div>
+                    </div>
+                  }
+                </div>
+                <small class="opt-note">Define manualmente el orden de tipos para la exportación.</small>
+              }
             </div>
 
             <div class="export-opt-section">
@@ -312,11 +327,46 @@
             <button type="button" class="export-foot-btn ghost" (click)="closeExportOptionsModal()">
               Cerrar
             </button>
-            <button type="button" class="export-foot-btn primary" [disabled]="exporting" (click)="exportImage()">
+            <button type="button" class="export-foot-btn secondary" [disabled]="exporting" (click)="exportImage()">
               <i class="bi bi-download"></i>
-              {{ exporting ? 'Generando...' : 'Exportar imagen' }}
+              Exportar directo
+            </button>
+            <button type="button" class="export-foot-btn primary" [disabled]="exporting" (click)="generateExportPreview()">
+              <i class="bi bi-image"></i>
+              {{ exporting ? 'Generando...' : 'Generar preview' }}
             </button>
           </div>
+        </div>
+      </div>
+    }
+
+    @if (showExportPreviewModal) {
+      <div class="export-preview-overlay" (click)="closeExportPreview()">
+        <div class="export-preview-modal" role="dialog" aria-modal="true" aria-label="Preview de exportación" (click)="$event.stopPropagation()">
+          <div class="export-preview-head">
+            <h3>Preview de exportación</h3>
+            <button type="button" class="export-preview-close" (click)="closeExportPreview()" aria-label="Cerrar preview">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+          <p class="export-preview-subtitle">Revisa la imagen antes de descargarla.</p>
+          <button type="button" class="export-preview-back" (click)="backToExportOptions()">
+            ← Volver a ajustes
+          </button>
+
+          @if (exportPreviewDataUrl) {
+            <div class="export-preview-frame">
+              <img [src]="exportPreviewDataUrl" alt="Preview de exportación" crossorigin="anonymous">
+            </div>
+            <div class="export-preview-actions">
+              <button type="button" class="preview-action-btn primary" (click)="downloadExportPreview()">
+                <i class="bi bi-download"></i> Descargar imagen
+              </button>
+              <button type="button" class="preview-action-btn" (click)="copyExportPreviewToClipboard()">
+                <i class="bi bi-clipboard"></i> Copiar al portapapeles
+              </button>
+            </div>
+          }
         </div>
       </div>
     }
@@ -381,22 +431,18 @@
         </div>
       }
       @if (exportLogoDataUrl || (isPublicDeck && exportShowQr && exportQrDataUrl)) {
-        <div class="export-qr-block">
-          <div class="export-qr-media">
-            @if (exportLogoDataUrl) {
-              <div class="export-logo-slot" title="Logo temporal de exportacion">
-                <img class="export-logo-img" [src]="exportLogoDataUrl" alt="Logo" crossorigin="anonymous">
-              </div>
-            }
-            @if (isPublicDeck && exportShowQr && exportQrDataUrl) {
-              <img class="export-qr-img" [src]="exportQrDataUrl" alt="QR del mazo" crossorigin="anonymous">
-            }
-          </div>
+        <div class="export-branding-block" [class.no-qr]="!(isPublicDeck && exportShowQr && exportQrDataUrl)">
           @if (isPublicDeck && exportShowQr && exportQrDataUrl) {
-            <div class="export-qr-meta">
-              <strong>Escanea para ver el mazo</strong>
-              <span>{{ deck.name }}</span>
-              <small>{{ publicDeckUrl }}</small>
+            <img class="export-qr-img" [src]="exportQrDataUrl" alt="QR del mazo" crossorigin="anonymous">
+            <div class="export-qr-caption-row">
+              @if (exportLogoDataUrl) {
+                <img class="export-logo-micro-under" [src]="exportLogoDataUrl" alt="Logo mini" crossorigin="anonymous">
+              }
+              <small class="export-qr-name">{{ deck.name }}</small>
+            </div>
+          } @else if (exportLogoDataUrl) {
+            <div class="export-logo-slot" title="Logo temporal de exportacion">
+              <img class="export-logo-img" [src]="exportLogoDataUrl" alt="Logo" crossorigin="anonymous">
             </div>
           }
         </div>

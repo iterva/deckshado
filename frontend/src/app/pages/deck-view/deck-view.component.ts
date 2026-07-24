@@ -372,6 +372,7 @@ export class DeckViewComponent implements OnInit {
       const rawExportOptions = localStorage.getItem(this.exportOptionsStorageKey);
       if (rawExportOptions) {
         const parsed = JSON.parse(rawExportOptions) as Partial<{
+          stackOrientation: StackOrientation;
           sortBy: ExportSortBy;
           sortDir: ExportSortDir;
           separate: boolean;
@@ -387,6 +388,9 @@ export class DeckViewComponent implements OnInit {
         }
         if (parsed.sortDir === 'asc' || parsed.sortDir === 'desc') {
           this.exportSortDir = parsed.sortDir;
+        }
+        if (this.isValidStackOrientation(parsed.stackOrientation)) {
+          this.stackOrientation = parsed.stackOrientation;
         }
         if (typeof parsed.separate === 'boolean') this.exportSeparateCards = parsed.separate;
         if (typeof parsed.showNumbers === 'boolean') this.exportShowNumbers = parsed.showNumbers;
@@ -699,6 +703,7 @@ export class DeckViewComponent implements OnInit {
     this.stackOrientation = orientation;
     this.showStackOrientationMenu = false;
     try { localStorage.setItem(this.stackOrientationStorageKey, orientation); } catch {}
+    this.persistExportOptions();
   }
 
   openExportOptionsModal(e?: Event) {
@@ -936,6 +941,7 @@ export class DeckViewComponent implements OnInit {
   private persistExportOptions() {
     try {
       localStorage.setItem(this.exportOptionsStorageKey, JSON.stringify({
+        stackOrientation: this.stackOrientation,
         sortBy: this.exportSortBy,
         sortDir: this.exportSortDir,
         separate: this.exportSeparateCards,
@@ -1488,6 +1494,8 @@ export class DeckViewComponent implements OnInit {
     this.cdr.detectChanges();
     try {
       await this.ensureExportQr();
+      this.syncStackOrientationFromStorage();
+      this.cdr.detectChanges();
       const el = this.deckContent.nativeElement as HTMLElement;
       await this.nextRenderTick();
       await this.waitForExportImages(el);
@@ -1529,5 +1537,18 @@ export class DeckViewComponent implements OnInit {
         if (img.complete) resolve();
       });
     }));
+  }
+
+  private isValidStackOrientation(value: unknown): value is StackOrientation {
+    return value === 'down' || value === 'up' || value === 'left' || value === 'right' || value === 'center';
+  }
+
+  private syncStackOrientationFromStorage() {
+    try {
+      const saved = localStorage.getItem(this.stackOrientationStorageKey);
+      if (this.isValidStackOrientation(saved)) {
+        this.stackOrientation = saved;
+      }
+    } catch {}
   }
 }

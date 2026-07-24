@@ -55,6 +55,9 @@ export class DeckViewComponent implements OnInit {
   exportBackgroundMode: ExportBackgroundMode = 'default';
   exportBackgroundColor = '#181926';
   exportQrDataUrl: string | null = null;
+  exportLogoDataUrl: string | null = null;
+  exportLogoName = '';
+  exportLogoError = '';
   // Sidedeck colapsable
   sideOpen = true;
   // Hand simulator como modal global
@@ -738,6 +741,47 @@ export class DeckViewComponent implements OnInit {
     this.exportBackgroundMode = 'color';
     this.exportBackgroundColor = normalized;
     this.persistExportOptions();
+  }
+
+  onExportLogoSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    this.exportLogoError = '';
+    if (!file.type.startsWith('image/')) {
+      this.exportLogoError = 'Selecciona una imagen valida para el logo.';
+      input.value = '';
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      this.exportLogoError = 'El logo no puede superar 5 MB.';
+      input.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.exportLogoDataUrl = typeof reader.result === 'string' ? reader.result : null;
+      this.exportLogoName = file.name;
+      this.exportLogoError = '';
+      this.cdr.detectChanges();
+    };
+    reader.onerror = () => {
+      this.exportLogoDataUrl = null;
+      this.exportLogoName = '';
+      this.exportLogoError = 'No se pudo leer la imagen del logo.';
+      this.cdr.detectChanges();
+    };
+    reader.readAsDataURL(file);
+    input.value = '';
+  }
+
+  clearExportLogo() {
+    this.exportLogoDataUrl = null;
+    this.exportLogoName = '';
+    this.exportLogoError = '';
   }
 
   private normalizeHexColor(value: string | null | undefined): string | null {

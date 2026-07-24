@@ -268,6 +268,35 @@
                 <small class="opt-note">El QR solo aparece si el mazo es público.</small>
               }
             </div>
+
+            <div class="export-opt-section">
+              <span class="export-opt-title">Logo (opcional)</span>
+              <input #exportLogoInput type="file" accept="image/*" hidden (change)="onExportLogoSelected($event)">
+              <div class="export-logo-upload-row">
+                <button type="button" class="opt-chip" (click)="exportLogoInput.click()">
+                  <i class="bi bi-upload"></i> Subir logo
+                </button>
+                <button type="button" class="opt-chip" [disabled]="!exportLogoDataUrl" (click)="clearExportLogo()">
+                  <i class="bi bi-trash3"></i> Quitar logo
+                </button>
+              </div>
+              <div class="export-logo-preview-card">
+                <div class="export-logo-preview-canvas">
+                  @if (exportLogoDataUrl) {
+                    <img class="export-logo-preview-img" [src]="exportLogoDataUrl" alt="Previsualizacion del logo" crossorigin="anonymous">
+                  } @else {
+                    <span class="export-logo-preview-empty">Sin logo</span>
+                  }
+                </div>
+                <div class="export-logo-preview-meta">
+                  <strong>{{ exportLogoName || 'Logo temporal' }}</strong>
+                  <span>No se guarda. Solo se usa para esta imagen.</span>
+                </div>
+              </div>
+              @if (exportLogoError) {
+                <small class="opt-note">{{ exportLogoError }}</small>
+              }
+            </div>
           </div>
         </div>
       </div>
@@ -332,14 +361,25 @@
           }
         </div>
       }
-      @if (isPublicDeck && exportShowQr && exportQrDataUrl) {
+      @if (exportLogoDataUrl || (isPublicDeck && exportShowQr && exportQrDataUrl)) {
         <div class="export-qr-block">
-          <img class="export-qr-img" [src]="exportQrDataUrl" alt="QR del mazo" crossorigin="anonymous">
-          <div class="export-qr-meta">
-            <strong>Escanea para ver el mazo</strong>
-            <span>{{ deck.name }}</span>
-            <small>{{ publicDeckUrl }}</small>
+          <div class="export-qr-media">
+            @if (exportLogoDataUrl) {
+              <div class="export-logo-slot" title="Logo temporal de exportacion">
+                <img class="export-logo-img" [src]="exportLogoDataUrl" alt="Logo" crossorigin="anonymous">
+              </div>
+            }
+            @if (isPublicDeck && exportShowQr && exportQrDataUrl) {
+              <img class="export-qr-img" [src]="exportQrDataUrl" alt="QR del mazo" crossorigin="anonymous">
+            }
           </div>
+          @if (isPublicDeck && exportShowQr && exportQrDataUrl) {
+            <div class="export-qr-meta">
+              <strong>Escanea para ver el mazo</strong>
+              <span>{{ deck.name }}</span>
+              <small>{{ publicDeckUrl }}</small>
+            </div>
+          }
         </div>
       }
     </div>

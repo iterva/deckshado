@@ -350,6 +350,71 @@
     }
   }
 
+  .export-logo-upload-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45rem;
+  }
+
+  .export-logo-preview-card {
+    margin-top: 0.55rem;
+    border: 1px solid #32485c;
+    border-radius: 9px;
+    padding: 0.55rem;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    background: rgba(8, 14, 22, 0.28);
+  }
+
+  .export-logo-preview-canvas {
+    width: 88px;
+    height: 88px;
+    border-radius: 8px;
+    border: 1px dashed rgba(159, 184, 209, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .export-logo-preview-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  .export-logo-preview-empty {
+    color: #8da2b8;
+    font-size: 0.74rem;
+    text-align: center;
+    padding: 0 0.35rem;
+  }
+
+  .export-logo-preview-meta {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+
+    strong {
+      color: #d9e9f9;
+      font-size: 0.82rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    span {
+      color: #9ab1c7;
+      font-size: 0.74rem;
+      line-height: 1.3;
+    }
+  }
+
 .social-btn {
   display: inline-flex; align-items: center; gap: 0.4rem;
   padding: 0.42rem 0.85rem;
@@ -2136,8 +2201,35 @@
     background: #0d1a2a;
     padding: 0.75rem;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.75rem;
+  }
+
+  .export-qr-media {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex-shrink: 0;
+  }
+
+  .export-logo-slot {
+    width: 88px;
+    height: 88px;
+    border-radius: 8px;
+    border: 1px dashed rgba(176, 203, 230, 0.42);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .export-logo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
   }
 
   .export-qr-img {

@@ -2305,6 +2305,7 @@
   --export-s3-x: 0px;
   --export-s3-y: 20px;
   --export-name-gap: 16px;
+  --export-label-height: 12px;
 
   position: fixed;
   left: -9999px;
@@ -2400,15 +2401,18 @@
     height: 223px;
 
     .export-card-name {
+      position: absolute;
+      top: 0;
+      left: var(--export-top-x);
       display: block;
       width: 130px;
-      margin-left: var(--export-top-x);
       text-align: center;
       color: var(--export-text-color);
       font-size: 0.6rem;
       font-weight: 600;
-      line-height: 1.2;
-      margin-bottom: 3px;
+      line-height: var(--export-label-height);
+      height: var(--export-label-height);
+      margin: 0;
       padding: 0 2px;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -2434,7 +2438,7 @@
 
     .export-shadow {
       position: absolute;
-      top: var(--export-name-gap);
+      top: calc(var(--export-label-height) + var(--export-name-gap));
       left: 0;
       pointer-events: none;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
@@ -2448,7 +2452,7 @@
       z-index: 2;
       width: 130px;
       margin-left: var(--export-top-x);
-      margin-top: calc(var(--export-top-y) + var(--export-name-gap));
+      margin-top: calc(var(--export-label-height) + var(--export-top-y) + var(--export-name-gap));
       border-radius: 6px;
       overflow: hidden;
 

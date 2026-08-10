@@ -2725,13 +2725,13 @@
     --stack-top-x: 0px;
     --stack-top-y: 0px;
     --stack-s2-x: 0px;
-    --stack-s2-y: 3px;
+    --stack-s2-y: 10px;
     --stack-s3-x: 0px;
-    --stack-s3-y: 6px;
+    --stack-s3-y: 20px;
     --stack-s2-hover-x: 0px;
-    --stack-s2-hover-y: 3px;
+    --stack-s2-hover-y: 6px;
     --stack-s3-hover-x: 0px;
-    --stack-s3-hover-y: 6px;
+    --stack-s3-hover-y: 12px;
 
     grid-template-columns: repeat(6, 1fr);
     gap: 14px 10px;
@@ -2741,25 +2741,25 @@
 
   .card-grid[data-stack-orientation='up'] {
     --stack-top-x: 0px;
-    --stack-top-y: 6px;
+    --stack-top-y: 20px;
     --stack-s2-x: 0px;
-    --stack-s2-y: 3px;
+    --stack-s2-y: 10px;
     --stack-s3-x: 0px;
     --stack-s3-y: 0px;
     --stack-s2-hover-x: 0px;
-    --stack-s2-hover-y: 3px;
+    --stack-s2-hover-y: 14px;
     --stack-s3-hover-x: 0px;
     --stack-s3-hover-y: 0px;
   }
 
   .card-grid[data-stack-orientation='left'] {
-    --stack-top-x: 6px;
+    --stack-top-x: 20px;
     --stack-top-y: 0px;
-    --stack-s2-x: 3px;
+    --stack-s2-x: 10px;
     --stack-s2-y: 0px;
     --stack-s3-x: 0px;
     --stack-s3-y: 0px;
-    --stack-s2-hover-x: 3px;
+    --stack-s2-hover-x: 14px;
     --stack-s2-hover-y: 0px;
     --stack-s3-hover-x: 0px;
     --stack-s3-hover-y: 0px;
@@ -2768,13 +2768,13 @@
   .card-grid[data-stack-orientation='right'] {
     --stack-top-x: 0px;
     --stack-top-y: 0px;
-    --stack-s2-x: 3px;
+    --stack-s2-x: 10px;
     --stack-s2-y: 0px;
-    --stack-s3-x: 6px;
+    --stack-s3-x: 20px;
     --stack-s3-y: 0px;
-    --stack-s2-hover-x: 3px;
+    --stack-s2-hover-x: 6px;
     --stack-s2-hover-y: 0px;
-    --stack-s3-hover-x: 6px;
+    --stack-s3-hover-x: 12px;
     --stack-s3-hover-y: 0px;
   }
 

@@ -507,12 +507,12 @@ function typeRank(t?: string): number {
                     </div>
 
                     <div class="rb-export-brand">
-                      <div class="rb-export-qr" aria-hidden="true">
-                        <span class="qr-corner tl"></span>
-                        <span class="qr-corner tr"></span>
-                        <span class="qr-corner bl"></span>
-                      </div>
-                      <div class="rb-export-brand-mark">riftbound.gg</div>
+                      @if (exportQrDataUrl(); as qrUrl) {
+                        <img class="rb-export-qr-image" [src]="qrUrl" alt="QR del mazo" />
+                      } @else {
+                        <div class="rb-export-qr-fallback" aria-hidden="true">SF</div>
+                      }
+                      <div class="rb-export-brand-mark">shadowforge</div>
                       <p class="rb-export-url">{{ exportDeckPathLabel() }}</p>
                     </div>
                   </header>
@@ -1683,44 +1683,27 @@ function typeRank(t?: string): number {
       justify-content: flex-end;
       gap: .45rem;
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-qr {
+    .deck-export-area.export-capture.capture-horizontal .rb-export-qr-image,
+    .deck-export-area.export-capture.capture-horizontal .rb-export-qr-fallback {
       width: 108px;
       height: 108px;
       border-radius: 10px;
       border: 3px solid #ebeff4;
-      background:
-        radial-gradient(circle at 17% 16%, #111 0 2px, transparent 2px),
-        radial-gradient(circle at 72% 19%, #111 0 2px, transparent 2px),
-        radial-gradient(circle at 45% 38%, #111 0 2px, transparent 2px),
-        radial-gradient(circle at 66% 53%, #111 0 2px, transparent 2px),
-        radial-gradient(circle at 30% 62%, #111 0 2px, transparent 2px),
-        radial-gradient(circle at 52% 74%, #111 0 2px, transparent 2px),
-        radial-gradient(circle at 74% 78%, #111 0 2px, transparent 2px),
-        repeating-linear-gradient(0deg, rgba(17,17,17,.1) 0 3px, rgba(17,17,17,0) 3px 6px),
-        repeating-linear-gradient(90deg, rgba(17,17,17,.1) 0 3px, rgba(17,17,17,0) 3px 6px),
-        #f8fbff;
-      position: relative;
       box-shadow: 0 10px 30px rgba(0,0,0,.28);
+      overflow: hidden;
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-qr .qr-corner {
-      position: absolute;
-      width: 24px;
-      height: 24px;
-      border: 4px solid #111;
-      border-radius: 4px;
-      background: #f8fbff;
+    .deck-export-area.export-capture.capture-horizontal .rb-export-qr-image {
+      background: #ffffff;
+      object-fit: cover;
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-qr .qr-corner.tl {
-      top: 7px;
-      left: 7px;
-    }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-qr .qr-corner.tr {
-      top: 7px;
-      right: 7px;
-    }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-qr .qr-corner.bl {
-      bottom: 7px;
-      left: 7px;
+    .deck-export-area.export-capture.capture-horizontal .rb-export-qr-fallback {
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #ffffff, #d8e2ef);
+      color: #1b2738;
+      font-size: 1.55rem;
+      font-weight: 800;
+      letter-spacing: .05em;
     }
     .deck-export-area.export-capture.capture-horizontal .rb-export-brand-mark {
       color: #f6bf57;
@@ -2047,6 +2030,7 @@ export class RiftboundDeckViewComponent implements OnInit {
   showExportOptionsModal = signal(false);
   showExportPreviewModal = signal(false);
   exportPreviewDataUrl = signal<string | null>(null);
+  exportQrDataUrl = signal<string | null>(null);
   exporting = signal(false);
   captureMode = signal(false);
   shareToast = signal(false);
@@ -2302,6 +2286,52 @@ export class RiftboundDeckViewComponent implements OnInit {
       return `${host}${url.pathname}`;
     } catch {
       return 'shadow-forge-deck.vercel.app';
+    }
+  }
+
+  private exportDeckShareUrl(): string {
+    const d = this.deck();
+    const origin = window.location.origin;
+    if (d?.id) return `${origin}/riftbound/decks/${d.id}`;
+    try {
+      const url = new URL(window.location.href);
+      url.search = '';
+      url.hash = '';
+      return url.toString();
+    } catch {
+      return window.location.href;
+    }
+  }
+
+  private async ensureExportQrDataUrl(): Promise<void> {
+    const shareUrl = this.exportDeckShareUrl();
+    if (!shareUrl) {
+      this.exportQrDataUrl.set(null);
+      return;
+    }
+
+    try {
+      const qrModule = await import('qrcode');
+      const anyModule = qrModule as any;
+      const toDataURL = anyModule?.toDataURL ?? anyModule?.default?.toDataURL;
+      if (typeof toDataURL !== 'function') {
+        this.exportQrDataUrl.set(null);
+        return;
+      }
+
+      const qrDataUrl = await toDataURL(shareUrl, {
+        errorCorrectionLevel: 'M',
+        margin: 1,
+        scale: 5,
+        color: {
+          dark: '#111111',
+          light: '#ffffff',
+        },
+      });
+      this.exportQrDataUrl.set(qrDataUrl);
+    } catch (error) {
+      console.error('No se pudo generar QR para exportación:', error);
+      this.exportQrDataUrl.set(null);
     }
   }
 
@@ -2663,6 +2693,11 @@ export class RiftboundDeckViewComponent implements OnInit {
     if (previousViewMode !== 'grid') this.viewMode.set('grid');
 
     try {
+      if (this.orientation() === 'horizontal') {
+        await this.ensureExportQrDataUrl();
+      } else {
+        this.exportQrDataUrl.set(null);
+      }
       this.cdr.detectChanges();
       await this.nextRenderTick();
       await this.waitForImages(el);
@@ -2711,6 +2746,7 @@ export class RiftboundDeckViewComponent implements OnInit {
       this.captureMode.set(false);
       this.sideOpen.set(previousSideOpen);
       if (previousViewMode !== this.viewMode()) this.viewMode.set(previousViewMode);
+      this.exportQrDataUrl.set(null);
       this.exportSafeImageMode.set(false);
       this.exporting.set(false);
       this.cdr.detectChanges();

@@ -1008,11 +1008,13 @@ function typeRank(t?: string): number {
       padding: .5rem;
       overflow: auto;
       max-height: 68vh;
+      display: flex;
+      justify-content: center;
     }
     .export-preview-frame img {
-      width: auto;
-      min-width: 100%;
-      max-width: none;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
       height: auto;
       border-radius: 8px;
       display: block;

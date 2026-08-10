@@ -169,6 +169,12 @@ function typeRank(t?: string): number {
                         [class.active]="stackOrientation() === 'right'" (click)="setStackOrientation('right')">
                   <i class="bi bi-arrow-right-square-fill"></i> Hacia la derecha
                 </button>
+                <div class="orient-divider" aria-hidden="true"></div>
+                <button role="menuitemcheckbox" [attr.aria-checked]="stackEffect()"
+                        [class.active]="stackEffect()" (click)="setStackEffect(!stackEffect())">
+                  <i class="bi" [class.bi-layers-fill]="stackEffect()" [class.bi-square]="!stackEffect()"></i>
+                  Efecto apilado: {{ stackEffect() ? 'Sí' : 'No' }}
+                </button>
               </div>
             }
           </div>
@@ -266,6 +272,14 @@ function typeRank(t?: string): number {
                       <i class="bi bi-square-fill"></i> Centro
                     </button>
                   </div>
+                  <div class="export-opt-row two" style="margin-top:.5rem">
+                    <button type="button" class="opt-chip" [class.active]="stackEffect()" (click)="setStackEffect(true)">
+                      <i class="bi bi-layers-fill"></i> Efecto apilado: Sí
+                    </button>
+                    <button type="button" class="opt-chip" [class.active]="!stackEffect()" (click)="setStackEffect(false)">
+                      <i class="bi bi-square"></i> Efecto apilado: No
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -328,6 +342,7 @@ function typeRank(t?: string): number {
              [class.export-capture]="captureMode()"
              [class.capture-horizontal]="captureMode() && orientation() === 'horizontal'"
              [class.capture-vertical]="captureMode() && orientation() === 'vertical'"
+             [class.stack-effect-off]="!stackEffect()"
              [attr.data-orientation]="orientation()"
              [attr.data-stack-orientation]="stackOrientation()">
 
@@ -1066,6 +1081,11 @@ function typeRank(t?: string): number {
       background: rgba(79,195,247,.2); color: #fff; font-weight: 600;
     }
     .orient-menu button.active i { color: #8bd9ff; }
+    .orient-divider {
+      height: 1px;
+      margin: .35rem 0;
+      background: rgba(120,145,175,.35);
+    }
 
     .export-modal-overlay {
       position: fixed; inset: 0; z-index: 1400;
@@ -1372,17 +1392,24 @@ function typeRank(t?: string): number {
     .shadow.s2 { transform: translate(var(--stack-s2-x), var(--stack-s2-y)); filter: brightness(.6); z-index: 0; }
     .shadow.s3 { transform: translate(var(--stack-s3-x), var(--stack-s3-y)); filter: brightness(.4); z-index: -1; }
     .card-stack .top { z-index: 1; transform: translate(var(--stack-top-x), var(--stack-top-y)); }
+    .deck-export-area.stack-effect-off .card-stack .shadow {
+      display: none;
+    }
+    .deck-export-area.stack-effect-off .card-stack.qty-2,
+    .deck-export-area.stack-effect-off .card-stack.qty-3 {
+      margin: 0;
+    }
     .qty-badge {
-      position: absolute; top: 6px; left: 6px; z-index: 3;
+      position: absolute; right: 6px; bottom: 6px; z-index: 3;
       background: linear-gradient(135deg, #e94560 0%, #ff6b7d 100%);
-      color: #0f0f23; font-weight: 800; font-size: .82rem;
-      padding: .15rem .5rem; border-radius: 999px;
+      color: #0f0f23; font-weight: 800; font-size: .68rem;
+      padding: .08rem .38rem; border-radius: 999px;
       box-shadow: 0 2px 8px rgba(0,0,0,.5);
     }
     .ban-overlay {
-      position: absolute; top: 6px; right: 6px; z-index: 3;
-      padding: .15rem .5rem; border-radius: 999px;
-      font-weight: 800; font-size: .72rem;
+      position: absolute; top: 6px; left: 6px; z-index: 3;
+      padding: .08rem .36rem; border-radius: 999px;
+      font-weight: 800; font-size: .63rem;
       box-shadow: 0 2px 8px rgba(0,0,0,.5);
     }
     .ban-overlay.ban-banned { background: #dc3545; color: #fff; }
@@ -1540,11 +1567,11 @@ function typeRank(t?: string): number {
 
     /* Cover star (owner) */
     .cover-star {
-      position: absolute; top: 6px; left: 6px; z-index: 3;
-      width: 28px; height: 28px; display: grid; place-items: center;
+      position: absolute; top: 6px; right: 6px; z-index: 3;
+      width: 22px; height: 22px; display: grid; place-items: center;
       padding: 0;
       background: rgba(0,0,0,.55); border: 1px solid rgba(200,155,60,.55);
-      color: #c8c8da; border-radius: 50%; font-size: 1rem; line-height: 1;
+      color: #c8c8da; border-radius: 50%; font-size: .78rem; line-height: 1;
       cursor: pointer; transition: all .15s; opacity: 0; pointer-events: none;
     }
     .card-stack:hover .cover-star,
@@ -1556,10 +1583,10 @@ function typeRank(t?: string): number {
       .cover-star { opacity: 0; pointer-events: none; }
     }
     .cover-badge {
-      position: absolute; top: 6px; right: 6px; z-index: 3;
-      width: 22px; height: 22px; display: grid; place-items: center;
+      position: absolute; left: 6px; bottom: 6px; z-index: 3;
+      width: 16px; height: 16px; display: grid; place-items: center;
       background: linear-gradient(135deg, #e94560, #ff6b7d);
-      color: #0f0f23; border-radius: 50%; font-size: .85rem; font-weight: 700;
+      color: #0f0f23; border-radius: 50%; font-size: .62rem; font-weight: 700;
       box-shadow: 0 2px 8px rgba(200,155,60,.5);
     }
 
@@ -2065,6 +2092,7 @@ export class RiftboundDeckViewComponent implements OnInit {
   private imageFallbackNonce = signal(0);
   private exportSafeImageMode = signal(false);
   private readonly stackOrientationStorageKey = 'rb-deck-view:stack-orientation';
+  private readonly stackEffectStorageKey = 'rb-deck-view:stack-effect';
 
   @ViewChild('deckContent') deckContent?: ElementRef<HTMLElement>;
 
@@ -2090,6 +2118,7 @@ export class RiftboundDeckViewComponent implements OnInit {
   toastMsg = signal('Enlace copiado');
   orientation = signal<Orientation>('vertical');
   stackOrientation = signal<StackOrientation>('down');
+  stackEffect = signal(true);
   settingCover = signal(false);
 
   // Hand test (mulligan)
@@ -2239,6 +2268,9 @@ export class RiftboundDeckViewComponent implements OnInit {
       if (so === 'vertical' || so === 'horizontal') this.orientation.set(so);
       const stack = localStorage.getItem(this.stackOrientationStorageKey) as StackOrientation | null;
       if (this.isValidStackOrientation(stack)) this.stackOrientation.set(stack);
+      const stackEffect = localStorage.getItem(this.stackEffectStorageKey);
+      if (stackEffect === '0') this.stackEffect.set(false);
+      if (stackEffect === '1') this.stackEffect.set(true);
     } catch { /* noop */ }
 
     const id = +this.route.snapshot.paramMap.get('id')!;
@@ -2436,6 +2468,11 @@ export class RiftboundDeckViewComponent implements OnInit {
     this.stackOrientation.set(o);
     this.showStackOrientationMenu.set(false);
     try { localStorage.setItem(this.stackOrientationStorageKey, o); } catch { /* noop */ }
+  }
+
+  setStackEffect(enabled: boolean) {
+    this.stackEffect.set(enabled);
+    try { localStorage.setItem(this.stackEffectStorageKey, enabled ? '1' : '0'); } catch { /* noop */ }
   }
 
   openExportOptionsModal(e?: Event) {

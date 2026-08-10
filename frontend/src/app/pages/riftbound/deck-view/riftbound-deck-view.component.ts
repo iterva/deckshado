@@ -2059,7 +2059,7 @@ export class RiftboundDeckViewComponent implements OnInit {
       await this.nextRenderTick();
 
       const targetWidth = this.orientation() === 'horizontal' ? 1680 : 1140;
-      const targetHeight = this.orientation() === 'horizontal' ? 1890 : 3040;
+      const targetHeight = this.orientation() === 'horizontal' ? 945 : 1520;
       const html2canvas = (await import('html2canvas')).default;
       const sourceCanvas = await html2canvas(el, {
         backgroundColor: '#0a1628',

@@ -1427,10 +1427,12 @@ export class DeckViewComponent implements OnInit {
   }
 
   getExportImageUrl(url: string | null | undefined): string {
-    const thumb = this.thumbPipe.transform(url ?? '', 350);
-    if (!thumb) return this.deckImagePlaceholder;
+    const source = (url ?? '').trim();
+    const thumb = this.thumbPipe.transform(source, 350);
+    const candidate = (thumb || source || '').trim();
+    if (!candidate) return this.deckImagePlaceholder;
 
-    const rewritten = this.rewriteLegacyCloudinaryUrl(thumb) || thumb;
+    const rewritten = this.rewriteLegacyCloudinaryUrl(candidate) || candidate;
     const lower = rewritten.toLowerCase();
     if (lower.startsWith('data:') || lower.startsWith('blob:')) return rewritten;
     if (this.isCdnCanvasSafeUrl(rewritten)) return rewritten;
@@ -1492,23 +1494,17 @@ export class DeckViewComponent implements OnInit {
     if (!this.deckContent || this.exporting) return null;
     this.exporting = true;
     this.cdr.detectChanges();
-    let cleanupCaptureTarget: (() => void) | null = null;
     try {
       await this.ensureExportQr();
       this.syncStackOrientationFromStorage();
       this.cdr.detectChanges();
-      const liveGridCapture = this.viewMode === 'grid' ? this.buildLiveGridCaptureTarget() : null;
-      if (liveGridCapture) {
-        cleanupCaptureTarget = liveGridCapture.cleanup;
-      }
-      const el = (liveGridCapture?.element ?? this.deckContent.nativeElement) as HTMLElement;
+      const el = this.deckContent.nativeElement as HTMLElement;
       await this.nextRenderTick();
       await this.waitForExportImages(el);
       await this.nextRenderTick();
       const fallbackWidth = this.exportOrientation === 'horizontal' ? 1200 : 780;
-      const measuredWidth = Math.round(el.getBoundingClientRect().width);
-      const targetWidth = measuredWidth > 0 ? measuredWidth : fallbackWidth;
-      const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : targetWidth;
+      const targetWidth = fallbackWidth;
+      const viewportWidth = targetWidth;
       const html2canvas = (await import('html2canvas')).default;
       return await html2canvas(el, {
         backgroundColor: this.exportBackgroundResolved,
@@ -1524,73 +1520,9 @@ export class DeckViewComponent implements OnInit {
       console.error('Error generando canvas de exportación:', e);
       return null;
     } finally {
-      cleanupCaptureTarget?.();
       this.exporting = false;
       this.cdr.detectChanges();
     }
-  }
-
-  private buildLiveGridCaptureTarget(): { element: HTMLElement; cleanup: () => void } | null {
-    const mainGrid = document.querySelector('.card-grid:not(.side-grid)') as HTMLElement | null;
-    if (!mainGrid) return null;
-    const mainGridWidth = Math.round(mainGrid.getBoundingClientRect().width);
-    const exportRoot = this.deckContent?.nativeElement as HTMLElement | undefined;
-
-    const host = document.createElement('div');
-    host.className = 'deck-export-area';
-    host.setAttribute('data-stack-orientation', this.stackOrientation);
-    host.style.position = 'fixed';
-    host.style.left = '-9999px';
-    host.style.top = '0';
-    host.style.pointerEvents = 'none';
-    host.style.zIndex = '-1';
-    host.style.display = 'flex';
-    host.style.flexDirection = 'column';
-    host.style.gap = '0.6rem';
-    host.style.padding = '0';
-    host.style.background = this.exportBackgroundResolved;
-    if (mainGridWidth > 0) {
-      host.style.width = `${mainGridWidth}px`;
-    }
-
-    const mainGridClone = mainGrid.cloneNode(true) as HTMLElement;
-    mainGridClone.style.width = '100%';
-    mainGridClone.style.margin = '0';
-
-    if (!this.exportShowNumbers) {
-      mainGridClone.querySelectorAll('.qty-badge').forEach((el) => el.remove());
-    }
-
-    host.appendChild(mainGridClone);
-
-    const sideToggle = document.querySelector('.side-toggle') as HTMLElement | null;
-    if (sideToggle) {
-      host.appendChild(sideToggle.cloneNode(true));
-    }
-
-    const sideGrid = document.querySelector('.card-grid.side-grid') as HTMLElement | null;
-    if (sideGrid) {
-      const sideGridClone = sideGrid.cloneNode(true) as HTMLElement;
-      sideGridClone.style.width = '100%';
-      sideGridClone.style.margin = '0';
-      if (!this.exportShowNumbers) {
-        sideGridClone.querySelectorAll('.qty-badge').forEach((el) => el.remove());
-      }
-      host.appendChild(sideGridClone);
-    }
-
-    const branding = exportRoot?.querySelector('.export-branding-block') as HTMLElement | null;
-    if (branding) {
-      host.appendChild(branding.cloneNode(true));
-    }
-
-    document.body.appendChild(host);
-    return {
-      element: host,
-      cleanup: () => {
-        host.remove();
-      },
-    };
   }
 
   private nextRenderTick(): Promise<void> {

@@ -1115,6 +1115,9 @@ function typeRank(t?: string): number {
     .card-stack {
       position: relative; aspect-ratio: 63/88; padding: 0;
       background: transparent; border: none; cursor: pointer;
+      width: 100%;
+      max-width: 150px;
+      justify-self: center;
       transition: transform .15s; outline: none;
     }
     .card-stack:hover { transform: translateY(-4px); }
@@ -1478,6 +1481,9 @@ function typeRank(t?: string): number {
       .card-grid {
         grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
         gap: 1.25rem .75rem;
+      }
+      .card-stack {
+        max-width: 112px;
       }
       .export-preview-actions {
         grid-template-columns: 1fr;
@@ -2053,8 +2059,9 @@ export class RiftboundDeckViewComponent implements OnInit {
       await this.nextRenderTick();
 
       const targetWidth = this.orientation() === 'horizontal' ? 1680 : 1140;
+      const targetHeight = this.orientation() === 'horizontal' ? 1890 : 3040;
       const html2canvas = (await import('html2canvas')).default;
-      return await html2canvas(el, {
+      const sourceCanvas = await html2canvas(el, {
         backgroundColor: '#0a1628',
         useCORS: true,
         allowTaint: false,
@@ -2064,6 +2071,29 @@ export class RiftboundDeckViewComponent implements OnInit {
         windowWidth: targetWidth,
         windowHeight: el.scrollHeight,
       });
+
+      const outputCanvas = document.createElement('canvas');
+      outputCanvas.width = targetWidth * 2;
+      outputCanvas.height = targetHeight * 2;
+      const ctx = outputCanvas.getContext('2d');
+      if (!ctx) return sourceCanvas;
+
+      ctx.fillStyle = '#0a1628';
+      ctx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      const fitScale = Math.min(
+        outputCanvas.width / sourceCanvas.width,
+        outputCanvas.height / sourceCanvas.height,
+      );
+      const drawWidth = Math.round(sourceCanvas.width * fitScale);
+      const drawHeight = Math.round(sourceCanvas.height * fitScale);
+      const offsetX = Math.floor((outputCanvas.width - drawWidth) / 2);
+      const offsetY = Math.floor((outputCanvas.height - drawHeight) / 2);
+      ctx.drawImage(sourceCanvas, offsetX, offsetY, drawWidth, drawHeight);
+
+      return outputCanvas;
     } catch (e) {
       console.error('Error generando imagen exportable:', e);
       return null;

@@ -1006,9 +1006,13 @@ function typeRank(t?: string): number {
       border-radius: 10px;
       background: #0b141d;
       padding: .5rem;
+      overflow: auto;
+      max-height: 68vh;
     }
     .export-preview-frame img {
-      width: 100%;
+      width: auto;
+      min-width: 100%;
+      max-width: none;
       height: auto;
       border-radius: 8px;
       display: block;
@@ -1117,7 +1121,8 @@ function typeRank(t?: string): number {
     .card-stack:focus-visible { outline: 2px solid #e94560; outline-offset: 4px; border-radius: 6px; }
     .card-stack .top, .card-stack .shadow {
       position: absolute; inset: 0; width: 100%; height: 100%;
-      object-fit: cover; border-radius: 6px;
+      object-fit: contain; border-radius: 6px;
+      background: #0b1320;
       box-shadow: 0 4px 14px rgba(0,0,0,.4);
     }
     .card-stack.banned .top { filter: grayscale(.8) brightness(.6); }
@@ -1348,10 +1353,10 @@ function typeRank(t?: string): number {
       border-radius: 0;
     }
     .deck-export-area.export-capture.capture-horizontal {
-      width: 1200px;
+      width: 1680px;
     }
     .deck-export-area.export-capture.capture-vertical {
-      width: 780px;
+      width: 1140px;
     }
     .deck-export-area.export-capture .zone-section.side-zone {
       margin-top: 1.2rem;
@@ -1366,18 +1371,74 @@ function typeRank(t?: string): number {
       color: #eaf2ff;
     }
     .deck-export-area.export-capture .card-grid {
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 1.2rem .9rem;
+      --stack-top-x: 0px;
+      --stack-top-y: 0px;
+      --stack-s2-x: 12px;
+      --stack-s2-y: 12px;
+      --stack-s3-x: 24px;
+      --stack-s3-y: 24px;
+
+      gap: 1.35rem 1rem;
       align-items: start;
     }
+    .deck-export-area.export-capture .card-grid[data-stack-orientation='up'] {
+      --stack-top-x: 0px;
+      --stack-top-y: 24px;
+      --stack-s2-x: 0px;
+      --stack-s2-y: 12px;
+      --stack-s3-x: 0px;
+      --stack-s3-y: 0px;
+    }
+    .deck-export-area.export-capture .card-grid[data-stack-orientation='left'] {
+      --stack-top-x: 24px;
+      --stack-top-y: 0px;
+      --stack-s2-x: 12px;
+      --stack-s2-y: 0px;
+      --stack-s3-x: 0px;
+      --stack-s3-y: 0px;
+    }
+    .deck-export-area.export-capture .card-grid[data-stack-orientation='right'] {
+      --stack-top-x: 0px;
+      --stack-top-y: 0px;
+      --stack-s2-x: 12px;
+      --stack-s2-y: 0px;
+      --stack-s3-x: 24px;
+      --stack-s3-y: 0px;
+    }
+    .deck-export-area.export-capture .card-grid[data-stack-orientation='center'] {
+      --stack-top-x: 0px;
+      --stack-top-y: 0px;
+      --stack-s2-x: 0px;
+      --stack-s2-y: 0px;
+      --stack-s3-x: 0px;
+      --stack-s3-y: 0px;
+    }
     .deck-export-area.export-capture.capture-horizontal .card-grid {
-      grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
     .deck-export-area.export-capture.capture-vertical .card-grid {
-      grid-template-columns: repeat(auto-fill, minmax(138px, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .deck-export-area.export-capture .card-stack {
+      width: 100%;
+      max-width: 360px;
+      margin-inline: auto;
+    }
+    .deck-export-area.export-capture .card-stack .top,
+    .deck-export-area.export-capture .card-stack .shadow {
+      object-fit: contain;
+      background: #0b141d;
+      border: 1px solid #1f3550;
+      border-radius: 10px;
+    }
+    .deck-export-area.export-capture .card-stack .qty-badge {
+      font-size: 1rem;
+      padding: .2rem .6rem;
     }
     .deck-export-area.export-capture .card-name {
       color: #d5e2f0;
+      bottom: -1.5rem;
+      font-size: .82rem;
     }
 
     /* Social bar (likes / comentarios / compartir / clonar) */
@@ -1994,7 +2055,7 @@ export class RiftboundDeckViewComponent implements OnInit {
       await this.waitForImages(el);
       await this.nextRenderTick();
 
-      const targetWidth = this.orientation() === 'horizontal' ? 1200 : 780;
+      const targetWidth = this.orientation() === 'horizontal' ? 1680 : 1140;
       const html2canvas = (await import('html2canvas')).default;
       return await html2canvas(el, {
         backgroundColor: '#0a1628',

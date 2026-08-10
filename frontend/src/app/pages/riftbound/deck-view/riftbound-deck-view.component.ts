@@ -1760,8 +1760,6 @@ function typeRank(t?: string): number {
     .deck-export-area.export-capture.capture-horizontal .zone-other { grid-column: span 4; }
     .deck-export-area.export-capture.capture-horizontal .zone-side-deck {
       grid-column: 1 / -1;
-      border-color: rgba(246,191,87,.36);
-      background: linear-gradient(180deg, rgba(246,191,87,.08), rgba(8,15,25,.45));
     }
     .deck-export-area.export-capture.capture-horizontal .zone-runes .card-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));

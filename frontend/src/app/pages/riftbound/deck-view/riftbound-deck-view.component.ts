@@ -482,7 +482,7 @@ function typeRank(t?: string): number {
                 @let isSide = z === 'side';
                 @let entries = entriesByZone(z);
                 @if (entries.length) {
-                  <section class="zone-section" [class.collapsed]="isSide && !sideOpen()" [class.side-zone]="isSide">
+                  <section class="zone-section" [class.collapsed]="isSide && !sideOpen()" [class.side-zone]="isSide" [attr.data-zone]="z">
                     <h2 class="zone-title"
                         [class.is-toggle]="isSide"
                         (click)="isSide && sideOpen.set(!sideOpen())">
@@ -1356,14 +1356,53 @@ function typeRank(t?: string): number {
     }
     .deck-export-area.export-capture.capture-horizontal {
       width: 1680px;
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: .7rem .8rem;
+      align-items: start;
     }
     .deck-export-area.export-capture.capture-vertical {
       width: 1140px;
+    }
+    .deck-export-area.export-capture .zone-section {
+      margin-bottom: .55rem;
+    }
+    .deck-export-area.export-capture.capture-horizontal .zone-section {
+      margin: 0;
+      padding: .5rem;
+      border: 1px solid rgba(200,214,229,.2);
+      border-radius: 10px;
+      background: rgba(8,15,25,.45);
+    }
+    .deck-export-area.export-capture.capture-horizontal .zone-section[data-zone='champion'] {
+      order: 1;
+      grid-column: span 3;
+    }
+    .deck-export-area.export-capture.capture-horizontal .zone-section[data-zone='rune'] {
+      order: 2;
+      grid-column: span 4;
+    }
+    .deck-export-area.export-capture.capture-horizontal .zone-section[data-zone='bg'] {
+      order: 3;
+      grid-column: span 5;
+    }
+    .deck-export-area.export-capture.capture-horizontal .zone-section[data-zone='main'] {
+      order: 4;
+      grid-column: span 9;
+    }
+    .deck-export-area.export-capture.capture-horizontal .zone-section[data-zone='side'] {
+      order: 5;
+      grid-column: span 3;
     }
     .deck-export-area.export-capture .zone-section.side-zone {
       margin-top: 1.2rem;
       padding-top: .9rem;
       border-top: 1px solid rgba(200,214,229,.5);
+    }
+    .deck-export-area.export-capture.capture-horizontal .zone-section.side-zone {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: 0;
     }
     .deck-export-area.export-capture .zone-section.side-zone .zone-title {
       color: #dce8f6;
@@ -1371,6 +1410,8 @@ function typeRank(t?: string): number {
     }
     .deck-export-area.export-capture .zone-title {
       color: #eaf2ff;
+      margin-bottom: .45rem;
+      font-size: .95rem;
     }
     .deck-export-area.export-capture .card-grid {
       --stack-top-x: 0px;
@@ -1416,15 +1457,28 @@ function typeRank(t?: string): number {
       --stack-s3-y: 0px;
     }
     .deck-export-area.export-capture.capture-horizontal .card-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(8, minmax(0, 1fr));
     }
     .deck-export-area.export-capture.capture-vertical .card-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+    .deck-export-area.export-capture.capture-horizontal .zone-section[data-zone='champion'] .card-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .deck-export-area.export-capture.capture-horizontal .zone-section[data-zone='rune'] .card-grid,
+    .deck-export-area.export-capture.capture-horizontal .zone-section[data-zone='bg'] .card-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .deck-export-area.export-capture.capture-horizontal .zone-section[data-zone='main'] .card-grid {
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+    .deck-export-area.export-capture.capture-horizontal .zone-section[data-zone='side'] .card-grid {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
     .deck-export-area.export-capture .card-stack {
       width: 100%;
-      max-width: 360px;
-      margin-inline: auto;
+      max-width: none;
+      margin-inline: 0;
     }
     .deck-export-area.export-capture .card-stack .top,
     .deck-export-area.export-capture .card-stack .shadow {
@@ -1433,14 +1487,19 @@ function typeRank(t?: string): number {
       border: 1px solid #1f3550;
       border-radius: 10px;
     }
+    .deck-export-area.export-capture .card-stack .shadow {
+      display: none;
+    }
+    .deck-export-area.export-capture .card-stack.qty-2,
+    .deck-export-area.export-capture .card-stack.qty-3 {
+      margin: 0;
+    }
     .deck-export-area.export-capture .card-stack .qty-badge {
-      font-size: 1rem;
-      padding: .2rem .6rem;
+      font-size: .86rem;
+      padding: .12rem .44rem;
     }
     .deck-export-area.export-capture .card-name {
-      color: #d5e2f0;
-      bottom: -1.5rem;
-      font-size: .82rem;
+      display: none;
     }
 
     /* Social bar (likes / comentarios / compartir / clonar) */

@@ -2002,12 +2002,16 @@ function typeRank(t?: string): number {
         margin-bottom: 1.45rem;
       }
       .card-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 1.35rem .7rem;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1rem .5rem;
       }
       .card-stack {
         width: 100%;
         max-width: none;
+      }
+      .card-name {
+        font-size: .64rem;
+        bottom: -1.15rem;
       }
       /* En móvil ocultamos sombras de apilado para que todas las cartas se perciban del mismo tamaño. */
       .card-stack .shadow {

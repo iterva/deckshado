@@ -1121,8 +1121,7 @@ function typeRank(t?: string): number {
     .card-stack:focus-visible { outline: 2px solid #e94560; outline-offset: 4px; border-radius: 6px; }
     .card-stack .top, .card-stack .shadow {
       position: absolute; inset: 0; width: 100%; height: 100%;
-      object-fit: contain; border-radius: 6px;
-      background: #0b1320;
+      object-fit: cover; border-radius: 6px;
       box-shadow: 0 4px 14px rgba(0,0,0,.4);
     }
     .card-stack.banned .top { filter: grayscale(.8) brightness(.6); }

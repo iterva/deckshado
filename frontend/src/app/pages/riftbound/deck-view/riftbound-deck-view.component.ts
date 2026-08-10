@@ -1980,11 +1980,11 @@ function typeRank(t?: string): number {
 
     @media (max-width: 880px) {
       .card-grid {
-        grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
         gap: 1.25rem .75rem;
       }
       .card-stack {
-        max-width: 112px;
+        max-width: 118px;
       }
       .export-preview-actions {
         grid-template-columns: 1fr;
@@ -1994,6 +1994,57 @@ function typeRank(t?: string): number {
       }
       .action-btn span {
         display: none;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .zone-section {
+        margin-bottom: 1.45rem;
+      }
+      .card-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.35rem .7rem;
+      }
+      .card-stack {
+        width: 100%;
+        max-width: none;
+      }
+      /* En móvil ocultamos sombras de apilado para que todas las cartas se perciban del mismo tamaño. */
+      .card-stack .shadow {
+        display: none;
+      }
+      .card-stack.qty-2,
+      .card-stack.qty-3 {
+        margin: 0;
+      }
+
+      .export-preview-modal {
+        width: min(96vw, 560px);
+        max-height: 90vh;
+        padding: .75rem;
+      }
+      .export-preview-head h3 {
+        font-size: 1.2rem;
+      }
+      .export-preview-subtitle {
+        font-size: .9rem;
+        margin-bottom: .45rem;
+      }
+      .export-preview-back {
+        font-size: .9rem;
+        margin-bottom: .55rem;
+      }
+      .export-preview-frame {
+        padding: .35rem;
+        max-height: 60vh;
+        overflow: hidden;
+      }
+      .export-preview-frame img {
+        width: auto;
+        max-width: 100%;
+        max-height: 54vh;
+        margin-inline: auto;
+        object-fit: contain;
       }
     }
   `],

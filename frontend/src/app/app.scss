@@ -970,3 +970,40 @@
     }
   }
 }
+
+@media (max-width: 420px) {
+  .navbar {
+    padding: 0 0.55rem;
+    gap: 0.35rem;
+
+    .navbar-brand .logo {
+      gap: 0.35rem;
+
+      .logo-icon {
+        font-size: 1.18rem;
+      }
+
+      .logo-text {
+        font-size: 0.98rem;
+      }
+    }
+
+    .navbar-actions {
+      gap: 0.22rem;
+
+      .search-toggle,
+      .notif-btn,
+      .theme-toggle,
+      .game-toggle,
+      .avatar-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 0.94rem;
+      }
+
+      .cache-reset-btn {
+        display: none;
+      }
+    }
+  }
+}

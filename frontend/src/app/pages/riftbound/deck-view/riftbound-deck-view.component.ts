@@ -518,7 +518,7 @@ function typeRank(t?: string): number {
                               <img class="top" [src]="img" [alt]="e.card_data?.name || ''"
                                    (error)="onCardImageError(e.card_data, $event)" />
                             } @else {
-                              <div class="top placeholder">{{ e.card_data?.card_number }}</div>
+                              <div class="top placeholder">{{ e.card_data?.card_number || 'SIN IMG' }}</div>
                             }
                             @if (e.quantity > 1) {
                               <span class="qty-badge">×{{ e.quantity }}</span>
@@ -1646,7 +1646,32 @@ export class RiftboundDeckViewComponent implements OnInit {
     const urls = [card.cdn_image_url, card.image_url, card.image_url_small, card.image]
       .map((url) => this.normalizeImageUrl(url))
       .filter(Boolean);
-    return Array.from(new Set(urls));
+    const withRiotVariants = urls.flatMap((url) => [url, ...this.riotImageVariants(url)]);
+    return Array.from(new Set(withRiotVariants));
+  }
+
+  private riotImageVariants(url: string | null | undefined): string[] {
+    const value = this.normalizeImageUrl(url);
+    if (!value) return [];
+    try {
+      const parsed = new URL(value, window.location.origin);
+      const host = parsed.hostname.toLowerCase();
+      if (!host.endsWith('.rgpub.io')) return [];
+      if (!parsed.search) return [];
+      const withoutQuery = `${parsed.origin}${parsed.pathname}`;
+      return [withoutQuery];
+    } catch {
+      return [];
+    }
+  }
+
+  private cloudinaryFetchVariants(url: string | null | undefined): string[] {
+    const value = this.normalizeImageUrl(url);
+    if (!value) return [];
+    const lower = value.toLowerCase();
+    if (lower.startsWith('data:') || lower.startsWith('blob:')) return [];
+    if (lower.includes('res.cloudinary.com/')) return [];
+    return [`https://res.cloudinary.com/daobfx9yb/image/fetch/f_auto,q_auto/${encodeURIComponent(value)}`];
   }
 
   private isExportSafeImageUrl(url: string): boolean {
@@ -1669,8 +1694,9 @@ export class RiftboundDeckViewComponent implements OnInit {
 
   private prioritizedImageCandidates(candidates: string[]): string[] {
     if (!this.exportSafeImageMode()) return candidates;
-    const safe = candidates.filter((url) => this.isExportSafeImageUrl(url));
-    return safe;
+    const expanded = candidates.flatMap((url) => [url, ...this.cloudinaryFetchVariants(url)]);
+    const safe = expanded.filter((url) => this.isExportSafeImageUrl(url));
+    return Array.from(new Set(safe));
   }
 
   cardImageUrl(card: CardImageLike | null | undefined): string {

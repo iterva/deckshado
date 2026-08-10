@@ -1534,8 +1534,11 @@ export class DeckViewComponent implements OnInit {
     const mainGrid = document.querySelector('.card-grid:not(.side-grid)') as HTMLElement | null;
     if (!mainGrid) return null;
     const mainGridWidth = Math.round(mainGrid.getBoundingClientRect().width);
+    const exportRoot = this.deckContent?.nativeElement as HTMLElement | undefined;
 
     const host = document.createElement('div');
+    host.className = 'deck-export-area';
+    host.setAttribute('data-stack-orientation', this.stackOrientation);
     host.style.position = 'fixed';
     host.style.left = '-9999px';
     host.style.top = '0';
@@ -1544,12 +1547,20 @@ export class DeckViewComponent implements OnInit {
     host.style.display = 'flex';
     host.style.flexDirection = 'column';
     host.style.gap = '0.6rem';
+    host.style.padding = '0';
+    host.style.background = this.exportBackgroundResolved;
     if (mainGridWidth > 0) {
       host.style.width = `${mainGridWidth}px`;
     }
 
     const mainGridClone = mainGrid.cloneNode(true) as HTMLElement;
     mainGridClone.style.width = '100%';
+    mainGridClone.style.margin = '0';
+
+    if (!this.exportShowNumbers) {
+      mainGridClone.querySelectorAll('.qty-badge').forEach((el) => el.remove());
+    }
+
     host.appendChild(mainGridClone);
 
     const sideToggle = document.querySelector('.side-toggle') as HTMLElement | null;
@@ -1561,7 +1572,16 @@ export class DeckViewComponent implements OnInit {
     if (sideGrid) {
       const sideGridClone = sideGrid.cloneNode(true) as HTMLElement;
       sideGridClone.style.width = '100%';
+      sideGridClone.style.margin = '0';
+      if (!this.exportShowNumbers) {
+        sideGridClone.querySelectorAll('.qty-badge').forEach((el) => el.remove());
+      }
       host.appendChild(sideGridClone);
+    }
+
+    const branding = exportRoot?.querySelector('.export-branding-block') as HTMLElement | null;
+    if (branding) {
+      host.appendChild(branding.cloneNode(true));
     }
 
     document.body.appendChild(host);

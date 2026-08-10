@@ -786,9 +786,6 @@ function typeRank(t?: string): number {
                                   {{ d.cover_card === e.card_data?.id ? '★' : '☆' }}
                                 </button>
                               }
-                              @if (d.cover_card === e.card_data?.id) {
-                                <span class="cover-badge" title="Portada del mazo">★</span>
-                              }
                               <span class="card-name">{{ e.card_data?.name }}</span>
                             </div>
                           }
@@ -1569,6 +1566,8 @@ function typeRank(t?: string): number {
     .cover-star {
       position: absolute; top: 6px; right: 6px; z-index: 3;
       width: 22px; height: 22px; display: grid; place-items: center;
+      min-width: 0;
+      min-height: 0;
       padding: 0;
       background: rgba(0,0,0,.55); border: 1px solid rgba(200,155,60,.55);
       color: #c8c8da; border-radius: 50%; font-size: .78rem; line-height: 1;
@@ -1582,14 +1581,6 @@ function typeRank(t?: string): number {
     @media (hover: none) and (pointer: coarse) {
       .cover-star { opacity: 0; pointer-events: none; }
     }
-    .cover-badge {
-      position: absolute; left: 6px; bottom: 6px; z-index: 3;
-      width: 16px; height: 16px; display: grid; place-items: center;
-      background: linear-gradient(135deg, #e94560, #ff6b7d);
-      color: #0f0f23; border-radius: 50%; font-size: .62rem; font-weight: 700;
-      box-shadow: 0 2px 8px rgba(200,155,60,.5);
-    }
-
     /* Preview extras */
     .preview-ban {
       margin: .25rem 0 .5rem; padding: .4rem .65rem; border-radius: 6px;

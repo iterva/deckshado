@@ -1489,6 +1489,14 @@ function typeRank(t?: string): number {
       border: 1px solid #1f3550;
       border-radius: 10px;
     }
+    .deck-export-area.export-capture .card-stack .placeholder {
+      border: 1px solid #1f3550;
+      border-radius: 10px;
+      color: #d5e2f0;
+      font-size: .72rem;
+      text-align: center;
+      padding: .35rem;
+    }
     .deck-export-area.export-capture .card-stack .shadow {
       display: none;
     }
@@ -1675,7 +1683,9 @@ export class RiftboundDeckViewComponent implements OnInit {
       if (!broken?.has(url)) return url;
     }
 
-    return candidates[0];
+    // Si todas las URLs candidatas ya fallaron, devolvemos vacío para renderizar
+    // el placeholder y evitar celdas negras/vacías en la exportación.
+    return '';
   }
 
   onCardImageError(card: CardImageLike | null | undefined, event: Event) {

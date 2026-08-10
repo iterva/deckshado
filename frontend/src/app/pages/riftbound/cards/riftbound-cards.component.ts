@@ -394,7 +394,7 @@ const RARITIES = [
 })
 export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy {
   private rb = inject(RiftboundService);
-  private brokenImageUrlsByCard = new Map<number, Set<string>>();
+  private brokenImageUrlsByCard = new Map<string, Set<string>>();
   private imageFallbackNonce = signal(0);
 
   readonly colors = COLORS;
@@ -438,10 +438,42 @@ export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy
 
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
 
+  private cardImageKey(card: RiftboundCardLite | RiftboundCard): string {
+    return String(card.id ?? card.card_number ?? card.name ?? 'unknown');
+  }
+
+  private toHttps(url: string | null | undefined): string {
+    const value = (url || '').trim();
+    if (!value) return '';
+    return value.startsWith('http://') ? `https://${value.slice(7)}` : value;
+  }
+
+  private imageUrlVariants(url: string | null | undefined): string[] {
+    const raw = (url || '').trim();
+    if (!raw) return [];
+    const https = this.toHttps(raw);
+    return raw === https ? [raw] : [raw, https];
+  }
+
+  private cloudinaryFetchVariants(url: string | null | undefined): string[] {
+    const variants = this.imageUrlVariants(url);
+    if (!variants.length) return [];
+    return variants.map((candidate) =>
+      `https://res.cloudinary.com/daobfx9yb/image/fetch/f_auto,q_auto/${encodeURIComponent(candidate)}`
+    );
+  }
+
   private candidateImageUrls(card: RiftboundCardLite | RiftboundCard): string[] {
-    const candidates = [card.image, card.cdn_image_url, card.image_url, card.image_url_small]
-      .map((url) => (url || '').trim())
-      .filter(Boolean);
+    const candidates = [
+      ...this.imageUrlVariants(card.cdn_image_url),
+      ...this.cloudinaryFetchVariants(card.image_url),
+      ...this.cloudinaryFetchVariants(card.image_url_small),
+      ...this.cloudinaryFetchVariants(card.image),
+      ...this.imageUrlVariants(card.image_url),
+      ...this.imageUrlVariants(card.image_url_small),
+      ...this.imageUrlVariants(card.image),
+    ].filter(Boolean);
+
     return Array.from(new Set(candidates));
   }
 
@@ -449,7 +481,7 @@ export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy
     this.imageFallbackNonce();
     if (!card) return '';
 
-    const broken = this.brokenImageUrlsByCard.get(card.id);
+    const broken = this.brokenImageUrlsByCard.get(this.cardImageKey(card));
     for (const url of this.candidateImageUrls(card)) {
       if (!broken?.has(url)) return url;
     }
@@ -464,10 +496,11 @@ export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy
       .filter(Boolean);
     if (!failedUrls.length) return;
 
-    let broken = this.brokenImageUrlsByCard.get(card.id);
+    const key = this.cardImageKey(card);
+    let broken = this.brokenImageUrlsByCard.get(key);
     if (!broken) {
       broken = new Set<string>();
-      this.brokenImageUrlsByCard.set(card.id, broken);
+      this.brokenImageUrlsByCard.set(key, broken);
     }
 
     let changed = false;

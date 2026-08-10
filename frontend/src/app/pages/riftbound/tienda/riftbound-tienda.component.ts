@@ -149,7 +149,7 @@ interface RiftboundCartItem {
       <div class="cards-grid">
         @for (e of entries(); track e.id) {
           <div class="store-card">
-            <div class="card-image" (click)="preview.set(e.card_data)">
+            <div class="card-image" (click)="openPreview(e.card_data)">
               @if (entryCardImage(e)) {
                 <app-card-photo-carousel
                   [cardImage]="entryCardImage(e)"
@@ -209,7 +209,7 @@ interface RiftboundCartItem {
         <div class="cards-grid">
           @for (w of wishlist(); track w.id) {
             <div class="store-card">
-              <div class="card-image" (click)="preview.set(w.card_data)">
+              <div class="card-image" (click)="openPreview(w.card_data)">
                 @if (w.card_data.image) {
                   <img [src]="w.card_data.image" [alt]="w.card_data.name" loading="lazy" />
                 } @else { <div class="img-fallback">{{ w.card_data.card_number }}</div> }
@@ -305,10 +305,12 @@ interface RiftboundCartItem {
     }
 
     @if (preview(); as pc) {
-      <div class="modal-overlay" (click)="preview.set(null)">
+      <div class="modal-overlay" (click)="closePreview()">
         <div class="modal" (click)="$event.stopPropagation()">
-          <button class="close-btn" (click)="preview.set(null)">✕</button>
-          @if (pc.image) { <img [src]="pc.image" [alt]="pc.name" class="detail-image" /> }
+          <button class="close-btn" (click)="closePreview()">✕</button>
+          @if (previewImageUrl(pc); as img) {
+            <img [src]="img" [alt]="pc.name" class="detail-image" (error)="onPreviewImageError(pc, $event)" />
+          }
           <div class="detail-info">
             <h2>{{ pc.name }}</h2>
             <p class="card-meta">{{ pc.card_number }}</p>
@@ -660,6 +662,7 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
   page = signal(1);
   hasMore = signal(false);
   preview = signal<RiftboundCardLite | null>(null);
+  previewImageStep = signal(0);
   private storeSentinelRef?: ElementRef<HTMLElement>;
   private storeObserver?: IntersectionObserver;
   private contentScrollEl: HTMLElement | null = null;
@@ -904,6 +907,37 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
       ...this.imageUrlVariants(card.image_url_small),
     ].filter(Boolean);
     return Array.from(new Set(candidates));
+  }
+
+  openPreview(card: RiftboundCardLite) {
+    this.preview.set(card);
+    this.previewImageStep.set(0);
+  }
+
+  closePreview() {
+    this.preview.set(null);
+    this.previewImageStep.set(0);
+  }
+
+  previewImageUrl(card: RiftboundCardLite | null | undefined): string {
+    if (!card) return '';
+    const candidates = this.cardImageFallbacks(card);
+    if (!candidates.length) return '';
+    const step = Math.min(this.previewImageStep(), candidates.length - 1);
+    return candidates[step] || '';
+  }
+
+  onPreviewImageError(card: RiftboundCardLite | null | undefined, event: Event) {
+    if (!card) return;
+    const candidates = this.cardImageFallbacks(card);
+    if (!candidates.length) return;
+
+    const nextStep = this.previewImageStep() + 1;
+    if (nextStep >= candidates.length) return;
+
+    this.previewImageStep.set(nextStep);
+    const img = event.target as HTMLImageElement | null;
+    if (img) img.src = candidates[nextStep];
   }
 
   // ── Compartir imagen estilo CardIndex ──

@@ -16,6 +16,7 @@ import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.compo
 
 type ViewMode = 'grid' | 'list' | 'stats';
 type Orientation = 'vertical' | 'horizontal';
+type StackOrientation = 'down' | 'up' | 'left' | 'right' | 'center';
 type CardImageLike = {
   id?: number | null;
   card_number?: string | null;
@@ -134,6 +135,49 @@ function typeRank(t?: string): number {
 
           <div class="action-spacer"></div>
 
+          <div class="orient-menu-wrap" (click)="$event.stopPropagation()">
+            <button class="action-btn" (click)="toggleStackOrientationMenu($event)"
+                    aria-haspopup="menu" [attr.aria-expanded]="showStackOrientationMenu()"
+                    title="Orientación de apilado">
+              <i class="bi"
+                 [class.bi-arrow-up-square-fill]="stackOrientation() === 'up'"
+                 [class.bi-arrow-down-square-fill]="stackOrientation() === 'down'"
+                 [class.bi-arrow-left-square-fill]="stackOrientation() === 'left'"
+                 [class.bi-arrow-right-square-fill]="stackOrientation() === 'right'"
+                 [class.bi-square-fill]="stackOrientation() === 'center'"></i>
+              <span>Orientación</span>
+            </button>
+            @if (showStackOrientationMenu()) {
+              <div class="orient-menu" role="menu" aria-label="Orientación de cartas">
+                <button role="menuitemradio" [attr.aria-checked]="stackOrientation() === 'center'"
+                        [class.active]="stackOrientation() === 'center'" (click)="setStackOrientation('center')">
+                  <i class="bi bi-square-fill"></i> Centro
+                </button>
+                <button role="menuitemradio" [attr.aria-checked]="stackOrientation() === 'up'"
+                        [class.active]="stackOrientation() === 'up'" (click)="setStackOrientation('up')">
+                  <i class="bi bi-arrow-up-square-fill"></i> Hacia arriba
+                </button>
+                <button role="menuitemradio" [attr.aria-checked]="stackOrientation() === 'down'"
+                        [class.active]="stackOrientation() === 'down'" (click)="setStackOrientation('down')">
+                  <i class="bi bi-arrow-down-square-fill"></i> Hacia abajo
+                </button>
+                <button role="menuitemradio" [attr.aria-checked]="stackOrientation() === 'left'"
+                        [class.active]="stackOrientation() === 'left'" (click)="setStackOrientation('left')">
+                  <i class="bi bi-arrow-left-square-fill"></i> Hacia la izquierda
+                </button>
+                <button role="menuitemradio" [attr.aria-checked]="stackOrientation() === 'right'"
+                        [class.active]="stackOrientation() === 'right'" (click)="setStackOrientation('right')">
+                  <i class="bi bi-arrow-right-square-fill"></i> Hacia la derecha
+                </button>
+              </div>
+            }
+          </div>
+
+          <button class="action-btn" (click)="openExportOptionsModal($event)" [attr.aria-expanded]="showExportOptionsModal()"
+                  title="Opciones de imagen">
+            <i class="bi bi-sliders2"></i><span>Imagen</span>
+          </button>
+
           <button class="action-btn" (click)="openHandTest()" title="Probar mano de apertura">
             <i class="bi bi-hand-index"></i><span>Probar mano</span>
           </button>
@@ -163,23 +207,12 @@ function typeRank(t?: string): number {
                 <button role="menuitem" (click)="exportText(); showMoreMenu.set(false)">
                   <i class="bi bi-file-text"></i> Copiar como texto
                 </button>
-                <button role="menuitem" (click)="exportImage(); showMoreMenu.set(false)" [disabled]="exporting()">
-                  <i class="bi bi-camera"></i> Descargar imagen
-                </button>
-                <button role="menuitem" (click)="copyImageToClipboard(); showMoreMenu.set(false)" [disabled]="exporting()">
-                  <i class="bi bi-clipboard-check"></i> Imagen al portapapeles
+                <button role="menuitem" (click)="openExportOptionsModal($event); showMoreMenu.set(false)">
+                  <i class="bi bi-camera"></i> Exportar imagen...
                 </button>
                 <button role="menuitem" (click)="exportJson(); showMoreMenu.set(false)">
                   <i class="bi bi-filetype-json"></i> Descargar JSON
                 </button>
-                <div class="more-divider"></div>
-                <label class="more-select" (click)="$event.stopPropagation()">
-                  <span>Orientación:</span>
-                  <select [ngModel]="orientation()" (ngModelChange)="setOrientation($event)">
-                    <option value="vertical">Vertical</option>
-                    <option value="horizontal">Horizontal</option>
-                  </select>
-                </label>
                 @if (isOwner()) {
                   <div class="more-divider"></div>
                   <button role="menuitem" class="danger" (click)="deleteDeck(); showMoreMenu.set(false)">
@@ -190,6 +223,93 @@ function typeRank(t?: string): number {
             }
           </div>
         </div>
+
+        @if (showExportOptionsModal()) {
+          <div class="export-modal-overlay" (click)="closeExportOptionsModal()">
+            <div class="export-modal" role="dialog" aria-modal="true" aria-label="Opciones para generar imagen" (click)="$event.stopPropagation()">
+              <div class="export-modal-head">
+                <h3>Exportar imagen</h3>
+                <button type="button" class="export-modal-close" (click)="closeExportOptionsModal()" aria-label="Cerrar">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
+
+              <div class="export-modal-body">
+                <div class="export-opt-section">
+                  <span class="export-opt-title">Formato</span>
+                  <div class="export-opt-row two">
+                    <button type="button" class="opt-chip" [class.active]="orientation() === 'horizontal'" (click)="setOrientation('horizontal')">
+                      <i class="bi bi-arrows-angle-expand"></i> Horizontal
+                    </button>
+                    <button type="button" class="opt-chip" [class.active]="orientation() === 'vertical'" (click)="setOrientation('vertical')">
+                      <i class="bi bi-arrows-angle-contract"></i> Vertical
+                    </button>
+                  </div>
+                </div>
+
+                <div class="export-opt-section">
+                  <span class="export-opt-title">Apilado de cartas</span>
+                  <div class="export-opt-row two">
+                    <button type="button" class="opt-chip" [class.active]="stackOrientation() === 'up'" (click)="setStackOrientation('up')">
+                      <i class="bi bi-arrow-up-square-fill"></i> Arriba
+                    </button>
+                    <button type="button" class="opt-chip" [class.active]="stackOrientation() === 'down'" (click)="setStackOrientation('down')">
+                      <i class="bi bi-arrow-down-square-fill"></i> Abajo
+                    </button>
+                    <button type="button" class="opt-chip" [class.active]="stackOrientation() === 'left'" (click)="setStackOrientation('left')">
+                      <i class="bi bi-arrow-left-square-fill"></i> Izquierda
+                    </button>
+                    <button type="button" class="opt-chip" [class.active]="stackOrientation() === 'right'" (click)="setStackOrientation('right')">
+                      <i class="bi bi-arrow-right-square-fill"></i> Derecha
+                    </button>
+                    <button type="button" class="opt-chip" [class.active]="stackOrientation() === 'center'" (click)="setStackOrientation('center')">
+                      <i class="bi bi-square-fill"></i> Centro
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="export-modal-foot">
+                <button type="button" class="export-foot-btn" (click)="closeExportOptionsModal()">Cancelar</button>
+                <button type="button" class="export-foot-btn primary" [disabled]="exporting()" (click)="generateExportPreview()">
+                  <i class="bi bi-camera"></i>
+                  {{ exporting() ? 'Generando...' : 'Generar preview' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (showExportPreviewModal()) {
+          <div class="export-preview-overlay" (click)="closeExportPreview()">
+            <div class="export-preview-modal" role="dialog" aria-modal="true" aria-label="Preview de exportación" (click)="$event.stopPropagation()">
+              <div class="export-preview-head">
+                <h3>Preview</h3>
+                <button type="button" class="export-preview-close" (click)="closeExportPreview()" aria-label="Cerrar preview">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
+              <p class="export-preview-subtitle">Revisa la imagen antes de descargarla.</p>
+              <button type="button" class="export-preview-back" (click)="backToExportOptions()">
+                ← Volver a opciones
+              </button>
+
+              @if (exportPreviewDataUrl(); as previewUrl) {
+                <div class="export-preview-frame">
+                  <img [src]="previewUrl" alt="Preview exportado del mazo" />
+                </div>
+                <div class="export-preview-actions">
+                  <button type="button" class="preview-action-btn" (click)="copyExportPreviewToClipboard()">
+                    <i class="bi bi-clipboard-check"></i> Copiar
+                  </button>
+                  <button type="button" class="preview-action-btn primary" (click)="downloadExportPreview()">
+                    <i class="bi bi-download"></i> Descargar
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        }
 
         <!-- Errores de validación arriba -->
         @if (validationErrors().length) {
@@ -202,7 +322,14 @@ function typeRank(t?: string): number {
         }
 
         <!-- Área exportable -->
-        <div #deckContent class="deck-export-area" [class.export-horizontal]="orientation() === 'horizontal'" [attr.data-orientation]="orientation()">
+           <div #deckContent class="deck-export-area"
+             [class.export-horizontal]="orientation() === 'horizontal'"
+             [class.export-vertical]="orientation() === 'vertical'"
+             [class.export-capture]="captureMode()"
+             [class.capture-horizontal]="captureMode() && orientation() === 'horizontal'"
+             [class.capture-vertical]="captureMode() && orientation() === 'vertical'"
+             [attr.data-orientation]="orientation()"
+             [attr.data-stack-orientation]="stackOrientation()">
 
           @switch (viewMode()) {
 
@@ -355,7 +482,7 @@ function typeRank(t?: string): number {
                 @let isSide = z === 'side';
                 @let entries = entriesByZone(z);
                 @if (entries.length) {
-                  <section class="zone-section" [class.collapsed]="isSide && !sideOpen()">
+                  <section class="zone-section" [class.collapsed]="isSide && !sideOpen()" [class.side-zone]="isSide">
                     <h2 class="zone-title"
                         [class.is-toggle]="isSide"
                         (click)="isSide && sideOpen.set(!sideOpen())">
@@ -366,7 +493,7 @@ function typeRank(t?: string): number {
                       }
                     </h2>
                     @if (!isSide || sideOpen()) {
-                      <div class="card-grid">
+                      <div class="card-grid" [attr.data-stack-orientation]="stackOrientation()">
                         @for (e of entries; track e.id || e.card) {
                           @let bs = getBanStatus(e);
                            <div class="card-stack"
@@ -683,6 +810,235 @@ function typeRank(t?: string): number {
     }
     .more-menu button:hover { background: #2a2a4a; color: #fff; }
 
+    .orient-menu-wrap { position: relative; }
+    .orient-menu {
+      position: absolute; top: calc(100% + 6px); left: 0; z-index: 60;
+      min-width: 220px; background: #0f1923; border: 1px solid #2a3a4a;
+      border-radius: 10px; padding: .35rem; box-shadow: 0 12px 30px rgba(0,0,0,.6);
+    }
+    .orient-menu button {
+      display: flex; align-items: center; gap: .55rem; width: 100%;
+      padding: .5rem .65rem; border: 0; border-radius: 7px;
+      background: transparent; color: #c0c8d4; text-align: left; font-size: .84rem;
+      cursor: pointer;
+    }
+    .orient-menu button i { width: 16px; color: #8ea1b6; }
+    .orient-menu button:hover {
+      background: rgba(79,195,247,.12); color: #fff;
+    }
+    .orient-menu button:hover i { color: #8bd9ff; }
+    .orient-menu button.active {
+      background: rgba(79,195,247,.2); color: #fff; font-weight: 600;
+    }
+    .orient-menu button.active i { color: #8bd9ff; }
+
+    .export-modal-overlay {
+      position: fixed; inset: 0; z-index: 1400;
+      background: rgba(6,10,16,.74);
+      display: flex; align-items: center; justify-content: center;
+      padding: 1rem;
+    }
+    .export-modal {
+      width: min(680px, 96vw);
+      max-height: 90vh;
+      overflow: auto;
+      border-radius: 14px;
+      border: 1px solid #31495d;
+      background: #0f1923;
+      box-shadow: 0 20px 50px rgba(0,0,0,.65);
+    }
+    .export-modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .9rem .95rem .75rem;
+      border-bottom: 1px solid #263d52;
+    }
+    .export-modal-head h3 {
+      margin: 0;
+      color: #e8f3ff;
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+    .export-modal-close {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid #31495d;
+      background: #13202e;
+      color: #cfe1f1;
+      cursor: pointer;
+    }
+    .export-modal-body {
+      padding: .9rem .95rem;
+      display: flex;
+      flex-direction: column;
+      gap: .9rem;
+    }
+    .export-opt-section {
+      padding: .7rem;
+      border-radius: 10px;
+      border: 1px solid #2c455c;
+      background: rgba(19,32,46,.45);
+    }
+    .export-opt-title {
+      display: block;
+      color: #d8e6f6;
+      font-size: .86rem;
+      font-weight: 700;
+      margin-bottom: .55rem;
+    }
+    .export-opt-row {
+      display: grid;
+      gap: .5rem;
+    }
+    .export-opt-row.two {
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    }
+    .opt-chip {
+      height: 38px;
+      border-radius: 9px;
+      border: 1px solid #2f4760;
+      background: #141f2b;
+      color: #dbe8f5;
+      font-size: .84rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .4rem;
+      cursor: pointer;
+    }
+    .opt-chip.active {
+      background: #d3a84a;
+      border-color: #d3a84a;
+      color: #1a1a1a;
+    }
+    .export-modal-foot {
+      display: flex;
+      justify-content: flex-end;
+      gap: .5rem;
+      padding: .8rem .95rem 1rem;
+      border-top: 1px solid #263d52;
+    }
+    .export-foot-btn {
+      min-width: 132px;
+      height: 40px;
+      border-radius: 9px;
+      border: 1px solid #2f4760;
+      background: #141f2b;
+      color: #dbe8f5;
+      font-size: .86rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .45rem;
+      cursor: pointer;
+    }
+    .export-foot-btn.primary {
+      background: #d3a84a;
+      border-color: #d3a84a;
+      color: #1a1a1a;
+    }
+    .export-foot-btn:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .export-preview-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1450;
+      background: rgba(6,10,16,.78);
+      backdrop-filter: blur(2px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .export-preview-modal {
+      width: min(1000px, 97vw);
+      max-height: 92vh;
+      overflow: auto;
+      border-radius: 14px;
+      border: 1px solid #31495d;
+      background: #0f1923;
+      box-shadow: 0 20px 50px rgba(0,0,0,.65);
+      padding: .95rem;
+    }
+    .export-preview-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .export-preview-head h3 {
+      margin: 0;
+      color: #e8f3ff;
+      font-size: 1.45rem;
+      font-weight: 700;
+    }
+    .export-preview-close {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid #31495d;
+      background: #13202e;
+      color: #cfe1f1;
+      cursor: pointer;
+    }
+    .export-preview-subtitle {
+      margin: .35rem 0 .55rem;
+      color: #a9bacd;
+      font-size: .95rem;
+    }
+    .export-preview-back {
+      border: 0;
+      background: transparent;
+      color: #bfcfdf;
+      font-size: .95rem;
+      margin-bottom: .7rem;
+      cursor: pointer;
+      padding: 0;
+    }
+    .export-preview-frame {
+      border: 1px solid #22384d;
+      border-radius: 10px;
+      background: #0b141d;
+      padding: .5rem;
+    }
+    .export-preview-frame img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      display: block;
+    }
+    .export-preview-actions {
+      margin-top: .75rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .55rem;
+    }
+    .preview-action-btn {
+      height: 46px;
+      border-radius: 9px;
+      border: 1px solid #2f4760;
+      background: #141f2b;
+      color: #dbe8f5;
+      font-size: .92rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      cursor: pointer;
+    }
+    .preview-action-btn.primary {
+      background: #d3a84a;
+      border-color: #d3a84a;
+      color: #1a1a1a;
+    }
+
     /* Errors */
     .errors-box {
       margin: 1.25rem 0; padding: .85rem 1rem;
@@ -709,9 +1065,49 @@ function typeRank(t?: string): number {
 
     /* Card grid (stacks) */
     .card-grid {
+      --stack-top-x: 0px;
+      --stack-top-y: 0px;
+      --stack-s2-x: 6px;
+      --stack-s2-y: 6px;
+      --stack-s3-x: 12px;
+      --stack-s3-y: 12px;
+
       display: grid; gap: 1.5rem 1.1rem;
       grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     }
+    .card-grid[data-stack-orientation='up'] {
+      --stack-top-x: 0px;
+      --stack-top-y: 12px;
+      --stack-s2-x: 0px;
+      --stack-s2-y: 6px;
+      --stack-s3-x: 0px;
+      --stack-s3-y: 0px;
+    }
+    .card-grid[data-stack-orientation='left'] {
+      --stack-top-x: 12px;
+      --stack-top-y: 0px;
+      --stack-s2-x: 6px;
+      --stack-s2-y: 0px;
+      --stack-s3-x: 0px;
+      --stack-s3-y: 0px;
+    }
+    .card-grid[data-stack-orientation='right'] {
+      --stack-top-x: 0px;
+      --stack-top-y: 0px;
+      --stack-s2-x: 6px;
+      --stack-s2-y: 0px;
+      --stack-s3-x: 12px;
+      --stack-s3-y: 0px;
+    }
+    .card-grid[data-stack-orientation='center'] {
+      --stack-top-x: 0px;
+      --stack-top-y: 0px;
+      --stack-s2-x: 0px;
+      --stack-s2-y: 0px;
+      --stack-s3-x: 0px;
+      --stack-s3-y: 0px;
+    }
+    .card-grid[data-stack-orientation='center'] .card-stack .shadow { display: none; }
     .card-stack {
       position: relative; aspect-ratio: 63/88; padding: 0;
       background: transparent; border: none; cursor: pointer;
@@ -729,9 +1125,9 @@ function typeRank(t?: string): number {
       display: grid; place-items: center;
       background: #16213e; color: #c8c8da; padding: 1rem; text-align: center;
     }
-    .shadow.s2 { transform: translate(6px, 6px); filter: brightness(.6); z-index: 0; }
-    .shadow.s3 { transform: translate(12px, 12px); filter: brightness(.4); z-index: -1; }
-    .card-stack .top { z-index: 1; }
+    .shadow.s2 { transform: translate(var(--stack-s2-x), var(--stack-s2-y)); filter: brightness(.6); z-index: 0; }
+    .shadow.s3 { transform: translate(var(--stack-s3-x), var(--stack-s3-y)); filter: brightness(.4); z-index: -1; }
+    .card-stack .top { z-index: 1; transform: translate(var(--stack-top-x), var(--stack-top-y)); }
     .qty-badge {
       position: absolute; top: 6px; left: 6px; z-index: 3;
       background: linear-gradient(135deg, #e94560 0%, #ff6b7d 100%);
@@ -752,7 +1148,7 @@ function typeRank(t?: string): number {
       text-align: center; font-size: .75rem; color: #c8c8da;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .card-stack.qty-2, .card-stack.qty-3 { margin-right: 14px; margin-bottom: 14px; }
+    .card-stack.qty-2, .card-stack.qty-3 { margin: 9px; }
 
     /* List view */
     .list-view .list-zone { margin-bottom: 1.5rem; }
@@ -937,20 +1333,51 @@ function typeRank(t?: string): number {
     }
     .copy-cn:hover { color: #e94560; }
 
-    /* More menu select */
+    /* More menu */
     .more-divider { height: 1px; background: #2a3a4a; margin: .35rem 0; }
-    .more-select {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: .5rem; padding: .45rem .75rem; color: #c8c8da; font-size: .88rem;
-    }
-    .more-select select {
-      background: #16213e; color: #fff; border: 1px solid #2a3a4a;
-      border-radius: 6px; padding: .25rem .45rem; font-family: inherit;
-    }
 
-    /* Horizontal export orientation: cards in tighter rows */
-    #deckContent.export-horizontal .card-grid {
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    /* Export capture (always desktop layout) */
+    .deck-export-area.export-capture {
+      position: fixed;
+      left: -10000px;
+      top: 0;
+      z-index: -1;
+      background: #0a1628;
+      padding: 1rem;
+      box-sizing: border-box;
+      border-radius: 0;
+    }
+    .deck-export-area.export-capture.capture-horizontal {
+      width: 1200px;
+    }
+    .deck-export-area.export-capture.capture-vertical {
+      width: 780px;
+    }
+    .deck-export-area.export-capture .zone-section.side-zone {
+      margin-top: 1.2rem;
+      padding-top: .9rem;
+      border-top: 1px solid rgba(200,214,229,.5);
+    }
+    .deck-export-area.export-capture .zone-section.side-zone .zone-title {
+      color: #dce8f6;
+      border-bottom-color: rgba(200,214,229,.35);
+    }
+    .deck-export-area.export-capture .zone-title {
+      color: #eaf2ff;
+    }
+    .deck-export-area.export-capture .card-grid {
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 1.2rem .9rem;
+      align-items: start;
+    }
+    .deck-export-area.export-capture.capture-horizontal .card-grid {
+      grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+    }
+    .deck-export-area.export-capture.capture-vertical .card-grid {
+      grid-template-columns: repeat(auto-fill, minmax(138px, 1fr));
+    }
+    .deck-export-area.export-capture .card-name {
+      color: #d5e2f0;
     }
 
     /* Social bar (likes / comentarios / compartir / clonar) */
@@ -986,6 +1413,22 @@ function typeRank(t?: string): number {
       color: #6b7a8a; font-size: .85rem; text-align: center; padding: .5rem;
     }
     .hand-actions { display: flex; gap: .5rem; justify-content: flex-end; flex-wrap: wrap; }
+
+    @media (max-width: 880px) {
+      .card-grid {
+        grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+        gap: 1.25rem .75rem;
+      }
+      .export-preview-actions {
+        grid-template-columns: 1fr;
+      }
+      .export-modal {
+        width: min(460px, 95vw);
+      }
+      .action-btn span {
+        display: none;
+      }
+    }
   `],
 })
 export class RiftboundDeckViewComponent implements OnInit {
@@ -999,6 +1442,7 @@ export class RiftboundDeckViewComponent implements OnInit {
   private brokenImageUrlsByKey = new Map<string, Set<string>>();
   private imageFallbackNonce = signal(0);
   private exportSafeImageMode = signal(false);
+  private readonly stackOrientationStorageKey = 'rb-deck-view:stack-orientation';
 
   @ViewChild('deckContent') deckContent?: ElementRef<HTMLElement>;
 
@@ -1013,10 +1457,16 @@ export class RiftboundDeckViewComponent implements OnInit {
   sideOpen = signal(true);
   presentationMode = signal(false);
   showMoreMenu = signal(false);
+  showStackOrientationMenu = signal(false);
+  showExportOptionsModal = signal(false);
+  showExportPreviewModal = signal(false);
+  exportPreviewDataUrl = signal<string | null>(null);
   exporting = signal(false);
+  captureMode = signal(false);
   shareToast = signal(false);
   toastMsg = signal('Enlace copiado');
   orientation = signal<Orientation>('vertical');
+  stackOrientation = signal<StackOrientation>('down');
   settingCover = signal(false);
 
   // Hand test (mulligan)
@@ -1072,7 +1522,10 @@ export class RiftboundDeckViewComponent implements OnInit {
       const parsed = new URL(value, window.location.origin);
       if (parsed.origin === window.location.origin) return true;
       const host = parsed.hostname.toLowerCase();
-      return host.endsWith('.imagekit.io');
+      return host.endsWith('.imagekit.io')
+        || host.endsWith('res.cloudinary.com')
+        || host.endsWith('.r2.dev')
+        || host.endsWith('.r2.cloudflarestorage.com');
     } catch {
       return false;
     }
@@ -1134,6 +1587,8 @@ export class RiftboundDeckViewComponent implements OnInit {
       if (saved === 'grid' || saved === 'list' || saved === 'stats') this.viewMode.set(saved);
       const so = localStorage.getItem('rb-deck-view:orientation') as Orientation | null;
       if (so === 'vertical' || so === 'horizontal') this.orientation.set(so);
+      const stack = localStorage.getItem(this.stackOrientationStorageKey) as StackOrientation | null;
+      if (this.isValidStackOrientation(stack)) this.stackOrientation.set(stack);
     } catch { /* noop */ }
 
     const id = +this.route.snapshot.paramMap.get('id')!;
@@ -1210,6 +1665,41 @@ export class RiftboundDeckViewComponent implements OnInit {
   setOrientation(o: Orientation) {
     this.orientation.set(o);
     try { localStorage.setItem('rb-deck-view:orientation', o); } catch { /* noop */ }
+  }
+
+  toggleStackOrientationMenu(e?: Event) {
+    e?.stopPropagation();
+    this.showMoreMenu.set(false);
+    this.showExportOptionsModal.set(false);
+    this.showStackOrientationMenu.set(!this.showStackOrientationMenu());
+  }
+
+  setStackOrientation(o: StackOrientation) {
+    if (!this.isValidStackOrientation(o)) return;
+    this.stackOrientation.set(o);
+    this.showStackOrientationMenu.set(false);
+    try { localStorage.setItem(this.stackOrientationStorageKey, o); } catch { /* noop */ }
+  }
+
+  openExportOptionsModal(e?: Event) {
+    e?.stopPropagation();
+    this.showMoreMenu.set(false);
+    this.showStackOrientationMenu.set(false);
+    this.showExportPreviewModal.set(false);
+    this.showExportOptionsModal.set(true);
+  }
+
+  closeExportOptionsModal() {
+    this.showExportOptionsModal.set(false);
+  }
+
+  backToExportOptions() {
+    this.showExportPreviewModal.set(false);
+    this.showExportOptionsModal.set(true);
+  }
+
+  closeExportPreview() {
+    this.showExportPreviewModal.set(false);
   }
 
   // ── Cover card (owner) ──
@@ -1323,6 +1813,8 @@ export class RiftboundDeckViewComponent implements OnInit {
   // ── More menu ──
   toggleMoreMenu(e?: Event) {
     e?.stopPropagation();
+    this.showStackOrientationMenu.set(false);
+    this.showExportOptionsModal.set(false);
     this.showMoreMenu.set(!this.showMoreMenu());
   }
 
@@ -1418,52 +1910,24 @@ export class RiftboundDeckViewComponent implements OnInit {
   }
 
   async exportImage() {
-    const el = this.deckContent?.nativeElement;
-    if (!el || this.exporting()) return;
-    this.exporting.set(true);
-    this.exportSafeImageMode.set(true);
-    try {
-      this.cdr.detectChanges();
-      await this.nextRenderTick();
-      await this.waitForImages(el);
-      const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(el, {
-        backgroundColor: '#0a0a1e',
-        useCORS: true, allowTaint: false, scale: 2,
-        windowWidth: el.scrollWidth, windowHeight: el.scrollHeight,
-      });
-      const link = document.createElement('a');
-      link.download = `${this.deck()?.name || 'mazo'}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    } catch (e) {
-      console.error('Error exportando imagen:', e);
-    } finally {
-      this.exportSafeImageMode.set(false);
-      this.exporting.set(false);
-      this.cdr.detectChanges();
-    }
+    const canvas = await this.renderExportCanvas();
+    if (!canvas) return;
+    const link = document.createElement('a');
+    link.download = `${this.deck()?.name || 'mazo'}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
   }
 
   async copyImageToClipboard() {
-    const el = this.deckContent?.nativeElement;
-    if (!el || this.exporting()) return;
+    if (this.exporting()) return;
     const navAny = navigator as Navigator & { clipboard?: { write?: (items: ClipboardItem[]) => Promise<void> } };
     if (!navAny.clipboard?.write || typeof (window as Window & typeof globalThis & { ClipboardItem?: typeof ClipboardItem }).ClipboardItem === 'undefined') {
       return this.exportImage();
     }
-    this.exporting.set(true);
-    this.exportSafeImageMode.set(true);
+
+    const canvas = await this.renderExportCanvas();
+    if (!canvas) return;
     try {
-      this.cdr.detectChanges();
-      await this.nextRenderTick();
-      await this.waitForImages(el);
-      const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(el, {
-        backgroundColor: '#0a0a1e',
-        useCORS: true, allowTaint: false, scale: 2,
-        windowWidth: el.scrollWidth, windowHeight: el.scrollHeight,
-      });
       const blob: Blob | null = await new Promise(res => canvas.toBlob(b => res(b), 'image/png'));
       if (blob) {
         await navAny.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
@@ -1471,7 +1935,84 @@ export class RiftboundDeckViewComponent implements OnInit {
       }
     } catch (e) {
       console.error('Error copiando imagen:', e);
+    }
+  }
+
+  async generateExportPreview() {
+    const canvas = await this.renderExportCanvas();
+    if (!canvas) return;
+    this.exportPreviewDataUrl.set(canvas.toDataURL('image/png'));
+    this.showExportOptionsModal.set(false);
+    this.showExportPreviewModal.set(true);
+    this.cdr.detectChanges();
+  }
+
+  downloadExportPreview() {
+    const dataUrl = this.exportPreviewDataUrl();
+    if (!dataUrl) return;
+    const link = document.createElement('a');
+    link.download = `${this.deck()?.name || 'mazo'}.png`;
+    link.href = dataUrl;
+    link.click();
+  }
+
+  async copyExportPreviewToClipboard() {
+    const dataUrl = this.exportPreviewDataUrl();
+    if (!dataUrl) return;
+    if (!('clipboard' in navigator) || !(navigator.clipboard as any).write) {
+      this.downloadExportPreview();
+      return;
+    }
+    try {
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      await (navigator.clipboard as any).write([
+        new (window as any).ClipboardItem({ 'image/png': blob }),
+      ]);
+      this.fireToast('Imagen copiada');
+    } catch (e) {
+      console.error('Error copiando preview al portapapeles:', e);
+    }
+  }
+
+  private async renderExportCanvas(): Promise<HTMLCanvasElement | null> {
+    const el = this.deckContent?.nativeElement;
+    if (!el || this.exporting()) return null;
+
+    const previousViewMode = this.viewMode();
+    const previousSideOpen = this.sideOpen();
+
+    this.exporting.set(true);
+    this.exportSafeImageMode.set(true);
+    this.captureMode.set(true);
+    this.sideOpen.set(true);
+    if (previousViewMode !== 'grid') this.viewMode.set('grid');
+
+    try {
+      this.cdr.detectChanges();
+      await this.nextRenderTick();
+      await this.waitForImages(el);
+      await this.nextRenderTick();
+
+      const targetWidth = this.orientation() === 'horizontal' ? 1200 : 780;
+      const html2canvas = (await import('html2canvas')).default;
+      return await html2canvas(el, {
+        backgroundColor: '#0a1628',
+        useCORS: true,
+        allowTaint: false,
+        scale: 2,
+        width: targetWidth,
+        height: el.scrollHeight,
+        windowWidth: targetWidth,
+        windowHeight: el.scrollHeight,
+      });
+    } catch (e) {
+      console.error('Error generando imagen exportable:', e);
+      return null;
     } finally {
+      this.captureMode.set(false);
+      this.sideOpen.set(previousSideOpen);
+      if (previousViewMode !== this.viewMode()) this.viewMode.set(previousViewMode);
       this.exportSafeImageMode.set(false);
       this.exporting.set(false);
       this.cdr.detectChanges();
@@ -1504,7 +2045,10 @@ export class RiftboundDeckViewComponent implements OnInit {
   onKeydown(ev: KeyboardEvent) {
     if (ev.key === 'Escape') {
       if (this.previewEntry()) { this.closePreview(); return; }
+      if (this.showExportPreviewModal()) { this.closeExportPreview(); return; }
       if (this.showHandModal()) { this.closeHandModal(); return; }
+      if (this.showStackOrientationMenu()) { this.showStackOrientationMenu.set(false); return; }
+      if (this.showExportOptionsModal()) { this.showExportOptionsModal.set(false); return; }
       if (this.showMoreMenu()) { this.showMoreMenu.set(false); return; }
       if (this.presentationMode()) { this.togglePresentation(); return; }
     }
@@ -1516,6 +2060,11 @@ export class RiftboundDeckViewComponent implements OnInit {
   @HostListener('document:click')
   onDocClick() {
     if (this.showMoreMenu()) this.showMoreMenu.set(false);
+    if (this.showStackOrientationMenu()) this.showStackOrientationMenu.set(false);
+  }
+
+  private isValidStackOrientation(value: unknown): value is StackOrientation {
+    return value === 'down' || value === 'up' || value === 'left' || value === 'right' || value === 'center';
   }
 
   private isTyping(t: EventTarget | null): boolean {

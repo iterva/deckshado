@@ -1492,17 +1492,23 @@ export class DeckViewComponent implements OnInit {
     if (!this.deckContent || this.exporting) return null;
     this.exporting = true;
     this.cdr.detectChanges();
+    let cleanupCaptureTarget: (() => void) | null = null;
     try {
       await this.ensureExportQr();
       this.syncStackOrientationFromStorage();
       this.cdr.detectChanges();
-      const el = this.deckContent.nativeElement as HTMLElement;
+      const liveGridCapture = this.viewMode === 'grid' ? this.buildLiveGridCaptureTarget() : null;
+      if (liveGridCapture) {
+        cleanupCaptureTarget = liveGridCapture.cleanup;
+      }
+      const el = (liveGridCapture?.element ?? this.deckContent.nativeElement) as HTMLElement;
       await this.nextRenderTick();
       await this.waitForExportImages(el);
       await this.nextRenderTick();
       const fallbackWidth = this.exportOrientation === 'horizontal' ? 1200 : 780;
-      const targetWidth = fallbackWidth;
-      const viewportWidth = targetWidth;
+      const measuredWidth = Math.round(el.getBoundingClientRect().width);
+      const targetWidth = measuredWidth > 0 ? measuredWidth : fallbackWidth;
+      const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : targetWidth;
       const html2canvas = (await import('html2canvas')).default;
       return await html2canvas(el, {
         backgroundColor: this.exportBackgroundResolved,
@@ -1518,9 +1524,45 @@ export class DeckViewComponent implements OnInit {
       console.error('Error generando canvas de exportación:', e);
       return null;
     } finally {
+      cleanupCaptureTarget?.();
       this.exporting = false;
       this.cdr.detectChanges();
     }
+  }
+
+  private buildLiveGridCaptureTarget(): { element: HTMLElement; cleanup: () => void } | null {
+    const mainGrid = document.querySelector('.card-grid:not(.side-grid)') as HTMLElement | null;
+    if (!mainGrid) return null;
+
+    const host = document.createElement('div');
+    host.style.position = 'fixed';
+    host.style.left = '-9999px';
+    host.style.top = '0';
+    host.style.pointerEvents = 'none';
+    host.style.zIndex = '-1';
+    host.style.display = 'flex';
+    host.style.flexDirection = 'column';
+    host.style.gap = '0.6rem';
+
+    host.appendChild(mainGrid.cloneNode(true));
+
+    const sideToggle = document.querySelector('.side-toggle') as HTMLElement | null;
+    if (sideToggle) {
+      host.appendChild(sideToggle.cloneNode(true));
+    }
+
+    const sideGrid = document.querySelector('.card-grid.side-grid') as HTMLElement | null;
+    if (sideGrid) {
+      host.appendChild(sideGrid.cloneNode(true));
+    }
+
+    document.body.appendChild(host);
+    return {
+      element: host,
+      cleanup: () => {
+        host.remove();
+      },
+    };
   }
 
   private nextRenderTick(): Promise<void> {

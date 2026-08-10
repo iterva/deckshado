@@ -1533,6 +1533,7 @@ export class DeckViewComponent implements OnInit {
   private buildLiveGridCaptureTarget(): { element: HTMLElement; cleanup: () => void } | null {
     const mainGrid = document.querySelector('.card-grid:not(.side-grid)') as HTMLElement | null;
     if (!mainGrid) return null;
+    const mainGridWidth = Math.round(mainGrid.getBoundingClientRect().width);
 
     const host = document.createElement('div');
     host.style.position = 'fixed';
@@ -1543,8 +1544,13 @@ export class DeckViewComponent implements OnInit {
     host.style.display = 'flex';
     host.style.flexDirection = 'column';
     host.style.gap = '0.6rem';
+    if (mainGridWidth > 0) {
+      host.style.width = `${mainGridWidth}px`;
+    }
 
-    host.appendChild(mainGrid.cloneNode(true));
+    const mainGridClone = mainGrid.cloneNode(true) as HTMLElement;
+    mainGridClone.style.width = '100%';
+    host.appendChild(mainGridClone);
 
     const sideToggle = document.querySelector('.side-toggle') as HTMLElement | null;
     if (sideToggle) {
@@ -1553,7 +1559,9 @@ export class DeckViewComponent implements OnInit {
 
     const sideGrid = document.querySelector('.card-grid.side-grid') as HTMLElement | null;
     if (sideGrid) {
-      host.appendChild(sideGrid.cloneNode(true));
+      const sideGridClone = sideGrid.cloneNode(true) as HTMLElement;
+      sideGridClone.style.width = '100%';
+      host.appendChild(sideGridClone);
     }
 
     document.body.appendChild(host);

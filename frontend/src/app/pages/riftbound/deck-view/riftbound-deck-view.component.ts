@@ -1659,6 +1659,7 @@ export class RiftboundDeckViewComponent implements OnInit {
       const host = parsed.hostname.toLowerCase();
       return host.endsWith('.imagekit.io')
         || host.endsWith('res.cloudinary.com')
+        || host.endsWith('.rgpub.io')
         || host.endsWith('.r2.dev')
         || host.endsWith('.r2.cloudflarestorage.com');
     } catch {

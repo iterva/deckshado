@@ -899,12 +899,12 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
     if (!card) return [];
     const candidates = [
       ...this.imageUrlVariants(card.cdn_image_url),
-      ...this.cloudinaryFetchVariants(card.image),
-      ...this.cloudinaryFetchVariants(card.image_url),
-      ...this.cloudinaryFetchVariants(card.image_url_small),
       ...this.imageUrlVariants(card.image),
       ...this.imageUrlVariants(card.image_url),
       ...this.imageUrlVariants(card.image_url_small),
+      ...this.cloudinaryFetchVariants(card.image),
+      ...this.cloudinaryFetchVariants(card.image_url),
+      ...this.cloudinaryFetchVariants(card.image_url_small),
     ].filter(Boolean);
     return Array.from(new Set(candidates));
   }

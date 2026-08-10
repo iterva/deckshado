@@ -1568,7 +1568,7 @@ export class RiftboundDeckViewComponent implements OnInit {
 
   private candidateImageUrls(card: CardImageLike | null | undefined): string[] {
     if (!card) return [];
-    const urls = [card.image, card.cdn_image_url, card.image_url, card.image_url_small]
+    const urls = [card.cdn_image_url, card.image_url, card.image_url_small, card.image]
       .map((url) => this.normalizeImageUrl(url))
       .filter(Boolean);
     return Array.from(new Set(urls));
@@ -1612,8 +1612,6 @@ export class RiftboundDeckViewComponent implements OnInit {
   }
 
   onCardImageError(card: CardImageLike | null | undefined, event: Event) {
-    // During export capture we avoid mutating fallback state from transient errors.
-    if (this.exportSafeImageMode()) return;
     if (!card) return;
     const key = this.cardImageKey(card);
     if (!key) return;

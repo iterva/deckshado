@@ -46,6 +46,7 @@ export class TiendaComponent implements OnInit, AfterViewInit, OnDestroy {
   storeHasMore = false;
   notFound = false;
   previewCard: Card | null = null;
+  previewImageStep = 0;
   viewPhotoUrl: string | null = null;
   showContactModal = false;
   showCart = false;
@@ -551,6 +552,55 @@ export class TiendaComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   exportPdf() { window.print(); }
+
+  openPreviewCard(card: Card | null | undefined) {
+    if (!card) return;
+    this.previewCard = card;
+    this.previewImageStep = 0;
+  }
+
+  closePreviewCard() {
+    this.previewCard = null;
+    this.previewImageStep = 0;
+  }
+
+  private normalizePreviewImageUrl(url: string | null | undefined): string {
+    const value = (url || '').trim();
+    if (!value) return '';
+    return value.startsWith('http://') ? `https://${value.slice(7)}` : value;
+  }
+
+  private cloudinaryFetchProxy(url: string): string {
+    return `https://res.cloudinary.com/daobfx9yb/image/fetch/f_auto,q_auto/${encodeURIComponent(url)}`;
+  }
+
+  private previewImageCandidates(card: Card | null | undefined): string[] {
+    if (!card) return [];
+    const raw = [
+      this.normalizePreviewImageUrl(card.image_url),
+      this.normalizePreviewImageUrl((card as any)?.image),
+    ].filter(Boolean);
+
+    const proxied = raw.map((url) => this.cloudinaryFetchProxy(url));
+    return Array.from(new Set([...raw, ...proxied]));
+  }
+
+  previewModalImageUrl(card: Card | null | undefined): string {
+    const candidates = this.previewImageCandidates(card);
+    if (!candidates.length) return '';
+    const step = Math.min(this.previewImageStep, candidates.length - 1);
+    return candidates[step] || '';
+  }
+
+  onPreviewModalImageError(event: Event) {
+    const candidates = this.previewImageCandidates(this.previewCard);
+    if (!candidates.length) return;
+    const nextStep = this.previewImageStep + 1;
+    if (nextStep >= candidates.length) return;
+    this.previewImageStep = nextStep;
+    const img = event.target as HTMLImageElement | null;
+    if (img) img.src = candidates[nextStep];
+  }
 
   // ── Compartir imagen estilo CardIndex ──
   get sellerHandle(): string {

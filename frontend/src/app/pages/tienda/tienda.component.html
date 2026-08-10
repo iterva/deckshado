@@ -233,7 +233,7 @@
           @if (entry.in_my_wishlist) {
             <span class="wl-flag" title="Está en tu wishlist">❤️</span>
           }
-          <div class="card-image" (click)="previewCard = entry.card_detail">
+          <div class="card-image" (click)="openPreviewCard(entry.card_detail)">
             <app-card-photo-carousel
               [cardImage]="entry.card_detail.image_url"
               [photos]="[entry.photo_url, entry.photo_url_2]"
@@ -320,7 +320,7 @@
       <div class="store-grid">
         @for (w of wishlistEntries; track w.id) {
           <div class="store-card wishlist-card">
-            <div class="card-image" (click)="previewCard = w.card_detail">
+            <div class="card-image" (click)="openPreviewCard(w.card_detail)">
               <img [src]="w.card_detail.image_url | thumb:350" [alt]="w.card_detail.name" loading="lazy"
                 (error)="$any($event.target).src = w.card_detail.image_url" />
             </div>
@@ -452,10 +452,13 @@
 
     <!-- Preview Modal -->
     @if (previewCard) {
-      <div class="modal-overlay" (click)="previewCard = null">
+      <div class="modal-overlay" (click)="closePreviewCard()">
         <div class="preview-modal" (click)="$event.stopPropagation()">
-          <button class="close-btn" (click)="previewCard = null">✕</button>
-          <img [src]="previewCard.image_url" [alt]="previewCard.name" class="preview-image" />
+          <button class="close-btn" (click)="closePreviewCard()">✕</button>
+          <img [src]="previewModalImageUrl(previewCard)"
+               [alt]="previewCard.name"
+               class="preview-image"
+               (error)="onPreviewModalImageError($event)" />
         </div>
       </div>
     }

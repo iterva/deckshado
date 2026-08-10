@@ -477,75 +477,310 @@ function typeRank(t?: string): number {
             }
 
             @default {
-              <!-- Grid (default) -->
-              @for (z of zones; track z) {
-                @let isSide = z === 'side';
-                @let entries = entriesByZone(z);
-                @if (entries.length) {
-                  <section class="zone-section" [class.collapsed]="isSide && !sideOpen()" [class.side-zone]="isSide" [attr.data-zone]="z">
-                    <h2 class="zone-title"
-                        [class.is-toggle]="isSide"
-                        (click)="isSide && sideOpen.set(!sideOpen())">
-                      <span class="zone-name">{{ labels[z] }}</span>
-                      <span class="zone-count">{{ countZone(z) }}</span>
-                      @if (isSide) {
-                        <span class="side-caret">{{ sideOpen() ? '▾' : '▸' }}</span>
+              @if (captureMode() && orientation() === 'horizontal') {
+                @let coverCard = exportCoverCardData();
+                @let runeEntries = entriesByZone('rune');
+                @let battlefieldEntries = entriesByZone('bg');
+                @let unitEntries = exportMainEntriesByType('unit');
+                @let spellEntries = exportMainEntriesByType('spell');
+                @let gearEntries = exportMainEntriesByType('gear');
+                @let otherMainEntries = exportMainEntriesByType('other');
+                @let sideEntries = entriesByZone('side');
+
+                <section class="rb-export-layout">
+                  <div class="rb-export-top-line" aria-hidden="true"></div>
+
+                  <header class="rb-export-head">
+                    <div class="rb-export-head-main">
+                      @if (cardImageUrl(coverCard); as coverImg) {
+                        <img class="rb-export-cover" [src]="coverImg" [alt]="d.name"
+                             (error)="onCardImageError(coverCard, $event)" />
+                      } @else {
+                        <div class="rb-export-cover rb-export-cover-empty">LEGEND</div>
                       }
-                    </h2>
-                    @if (!isSide || sideOpen()) {
-                      <div class="card-grid" [attr.data-stack-orientation]="stackOrientation()">
-                        @for (e of entries; track e.id || e.card) {
-                          @let bs = getBanStatus(e);
-                           <div class="card-stack"
-                             role="button"
-                             tabindex="0"
-                             [class.qty-2]="e.quantity === 2"
-                             [class.qty-3]="e.quantity >= 3"
-                             [class.banned]="bs?.status === 'banned'"
-                             (click)="openPreview(e)"
-                             (keydown.enter)="openPreview(e)"
-                             (keydown.space)="onCardStackSpace($event, e)"
-                             [title]="e.card_data?.name || ''">
-                            @if (e.quantity >= 3 && cardImageUrl(e.card_data); as img) {
-                              <img class="shadow s3" [src]="img" aria-hidden="true"
-                                   (error)="onCardImageError(e.card_data, $event)" />
-                            }
-                            @if (e.quantity >= 2 && cardImageUrl(e.card_data); as img) {
-                              <img class="shadow s2" [src]="img" aria-hidden="true"
-                                   (error)="onCardImageError(e.card_data, $event)" />
-                            }
-                            @if (cardImageUrl(e.card_data); as img) {
-                              <img class="top" [src]="img" [alt]="e.card_data?.name || ''"
-                                   (error)="onCardImageError(e.card_data, $event)" />
-                            } @else {
-                              <div class="top placeholder">{{ e.card_data?.card_number || 'SIN IMG' }}</div>
-                            }
-                            @if (e.quantity > 1) {
-                              <span class="qty-badge">×{{ e.quantity }}</span>
-                            }
-                            @if (bs) {
-                              <span class="ban-overlay" [class.ban-banned]="bs.status === 'banned'"
-                                    [class.ban-limited]="bs.status !== 'banned'"
-                                    [title]="banTooltip(bs)">{{ banShort(bs) }}</span>
-                            }
-                            @if (isOwner() && e.card_data?.id) {
-                              <button type="button"
-                                      class="cover-star"
-                                      [class.is-cover]="d.cover_card === e.card_data?.id"
-                                      (click)="toggleCover($event, e)"
-                                      [title]="d.cover_card === e.card_data?.id ? 'Portada actual (clic para quitar)' : 'Fijar como portada del mazo'">
-                                {{ d.cover_card === e.card_data?.id ? '★' : '☆' }}
-                              </button>
-                            }
-                            @if (d.cover_card === e.card_data?.id) {
-                              <span class="cover-badge" title="Portada del mazo">★</span>
-                            }
-                            <span class="card-name">{{ e.card_data?.name }}</span>
-                          </div>
-                        }
+
+                      <div class="rb-export-copy">
+                        <p class="rb-export-kicker">STANDARD · {{ totalCards() }} CARDS</p>
+                        <h2 class="rb-export-title">{{ d.name }}</h2>
+                        <p class="rb-export-date">{{ formatExportDate(d.updated_at) }}</p>
                       </div>
+                    </div>
+
+                    <div class="rb-export-brand">
+                      <div class="rb-export-qr" aria-hidden="true">
+                        <span class="qr-corner tl"></span>
+                        <span class="qr-corner tr"></span>
+                        <span class="qr-corner bl"></span>
+                      </div>
+                      <div class="rb-export-brand-mark">riftbound.gg</div>
+                      <p class="rb-export-url">{{ exportDeckPathLabel() }}</p>
+                    </div>
+                  </header>
+
+                  <div class="rb-export-zone-grid" [attr.data-stack-orientation]="stackOrientation()">
+                    @if (runeEntries.length) {
+                      <section class="rb-export-zone zone-runes">
+                        <h3 class="rb-export-zone-title">Runes <span>{{ sumEntryQuantity(runeEntries) }}</span></h3>
+                        <div class="card-grid" [attr.data-stack-orientation]="stackOrientation()">
+                          @for (e of runeEntries; track e.id || e.card) {
+                            <div class="card-stack" [class.qty-2]="e.quantity === 2" [class.qty-3]="e.quantity >= 3"
+                                 [title]="e.card_data?.name || ''">
+                              @if (e.quantity >= 3 && cardImageUrl(e.card_data); as img) {
+                                <img class="shadow s3" [src]="img" aria-hidden="true" (error)="onCardImageError(e.card_data, $event)" />
+                              }
+                              @if (e.quantity >= 2 && cardImageUrl(e.card_data); as img) {
+                                <img class="shadow s2" [src]="img" aria-hidden="true" (error)="onCardImageError(e.card_data, $event)" />
+                              }
+                              @if (cardImageUrl(e.card_data); as img) {
+                                <img class="top" [src]="img" [alt]="e.card_data?.name || ''" (error)="onCardImageError(e.card_data, $event)" />
+                              } @else {
+                                <div class="top placeholder">{{ e.card_data?.card_number || 'SIN IMG' }}</div>
+                              }
+                              @if (e.quantity > 1) {
+                                <span class="qty-badge">×{{ e.quantity }}</span>
+                              }
+                            </div>
+                          }
+                        </div>
+                      </section>
                     }
-                  </section>
+
+                    @if (battlefieldEntries.length) {
+                      <section class="rb-export-zone zone-battlefields">
+                        <h3 class="rb-export-zone-title">Battlefields <span>{{ sumEntryQuantity(battlefieldEntries) }}</span></h3>
+                        <div class="card-grid" [attr.data-stack-orientation]="stackOrientation()">
+                          @for (e of battlefieldEntries; track e.id || e.card) {
+                            <div class="card-stack" [class.qty-2]="e.quantity === 2" [class.qty-3]="e.quantity >= 3"
+                                 [title]="e.card_data?.name || ''">
+                              @if (e.quantity >= 3 && cardImageUrl(e.card_data); as img) {
+                                <img class="shadow s3" [src]="img" aria-hidden="true" (error)="onCardImageError(e.card_data, $event)" />
+                              }
+                              @if (e.quantity >= 2 && cardImageUrl(e.card_data); as img) {
+                                <img class="shadow s2" [src]="img" aria-hidden="true" (error)="onCardImageError(e.card_data, $event)" />
+                              }
+                              @if (cardImageUrl(e.card_data); as img) {
+                                <img class="top" [src]="img" [alt]="e.card_data?.name || ''" (error)="onCardImageError(e.card_data, $event)" />
+                              } @else {
+                                <div class="top placeholder">{{ e.card_data?.card_number || 'SIN IMG' }}</div>
+                              }
+                              @if (e.quantity > 1) {
+                                <span class="qty-badge">×{{ e.quantity }}</span>
+                              }
+                            </div>
+                          }
+                        </div>
+                      </section>
+                    }
+
+                    @if (unitEntries.length) {
+                      <section class="rb-export-zone zone-units">
+                        <h3 class="rb-export-zone-title">Units <span>{{ sumEntryQuantity(unitEntries) }}</span></h3>
+                        <div class="card-grid" [attr.data-stack-orientation]="stackOrientation()">
+                          @for (e of unitEntries; track e.id || e.card) {
+                            <div class="card-stack" [class.qty-2]="e.quantity === 2" [class.qty-3]="e.quantity >= 3"
+                                 [title]="e.card_data?.name || ''">
+                              @if (e.quantity >= 3 && cardImageUrl(e.card_data); as img) {
+                                <img class="shadow s3" [src]="img" aria-hidden="true" (error)="onCardImageError(e.card_data, $event)" />
+                              }
+                              @if (e.quantity >= 2 && cardImageUrl(e.card_data); as img) {
+                                <img class="shadow s2" [src]="img" aria-hidden="true" (error)="onCardImageError(e.card_data, $event)" />
+                              }
+                              @if (cardImageUrl(e.card_data); as img) {
+                                <img class="top" [src]="img" [alt]="e.card_data?.name || ''" (error)="onCardImageError(e.card_data, $event)" />
+                              } @else {
+                                <div class="top placeholder">{{ e.card_data?.card_number || 'SIN IMG' }}</div>
+                              }
+                              @if (e.quantity > 1) {
+                                <span class="qty-badge">×{{ e.quantity }}</span>
+                              }
+                            </div>
+                          }
+                        </div>
+                      </section>
+                    }
+
+                    @if (spellEntries.length) {
+                      <section class="rb-export-zone zone-spells">
+                        <h3 class="rb-export-zone-title">Spells <span>{{ sumEntryQuantity(spellEntries) }}</span></h3>
+                        <div class="card-grid" [attr.data-stack-orientation]="stackOrientation()">
+                          @for (e of spellEntries; track e.id || e.card) {
+                            <div class="card-stack" [class.qty-2]="e.quantity === 2" [class.qty-3]="e.quantity >= 3"
+                                 [title]="e.card_data?.name || ''">
+                              @if (e.quantity >= 3 && cardImageUrl(e.card_data); as img) {
+                                <img class="shadow s3" [src]="img" aria-hidden="true" (error)="onCardImageError(e.card_data, $event)" />
+                              }
+                              @if (e.quantity >= 2 && cardImageUrl(e.card_data); as img) {
+                                <img class="shadow s2" [src]="img" aria-hidden="true" (error)="onCardImageError(e.card_data, $event)" />
+                              }
+                              @if (cardImageUrl(e.card_data); as img) {
+                                <img class="top" [src]="img" [alt]="e.card_data?.name || ''" (error)="onCardImageError(e.card_data, $event)" />
+                              } @else {
+                                <div class="top placeholder">{{ e.card_data?.card_number || 'SIN IMG' }}</div>
+                              }
+                              @if (e.quantity > 1) {
+                                <span class="qty-badge">×{{ e.quantity }}</span>
+                              }
+                            </div>
+                          }
+                        </div>
+                      </section>
+                    }
+
+                    @if (gearEntries.length) {
+                      <section class="rb-export-zone zone-gear">
+                        <h3 class="rb-export-zone-title">Gear <span>{{ sumEntryQuantity(gearEntries) }}</span></h3>
+                        <div class="card-grid" [attr.data-stack-orientation]="stackOrientation()">
+                          @for (e of gearEntries; track e.id || e.card) {
+                            <div class="card-stack" [class.qty-2]="e.quantity === 2" [class.qty-3]="e.quantity >= 3"
+                                 [title]="e.card_data?.name || ''">
+                              @if (e.quantity >= 3 && cardImageUrl(e.card_data); as img) {
+                                <img class="shadow s3" [src]="img" aria-hidden="true" (error)="onCardImageError(e.card_data, $event)" />
+                              }
+                              @if (e.quantity >= 2 && cardImageUrl(e.card_data); as img) {
+                                <img class="shadow s2" [src]="img" aria-hidden="true" (error)="onCardImageError(e.card_data, $event)" />
+                              }
+                              @if (cardImageUrl(e.card_data); as img) {
+                                <img class="top" [src]="img" [alt]="e.card_data?.name || ''" (error)="onCardImageError(e.card_data, $event)" />
+                              } @else {
+                                <div class="top placeholder">{{ e.card_data?.card_number || 'SIN IMG' }}</div>
+                              }
+                              @if (e.quantity > 1) {
+                                <span class="qty-badge">×{{ e.quantity }}</span>
+                              }
+                            </div>
+                          }
+                        </div>
+                      </section>
+                    }
+
+                    @if (otherMainEntries.length) {
+                      <section class="rb-export-zone zone-other">
+                        <h3 class="rb-export-zone-title">Other Main <span>{{ sumEntryQuantity(otherMainEntries) }}</span></h3>
+                        <div class="card-grid" [attr.data-stack-orientation]="stackOrientation()">
+                          @for (e of otherMainEntries; track e.id || e.card) {
+                            <div class="card-stack" [class.qty-2]="e.quantity === 2" [class.qty-3]="e.quantity >= 3"
+                                 [title]="e.card_data?.name || ''">
+                              @if (e.quantity >= 3 && cardImageUrl(e.card_data); as img) {
+                                <img class="shadow s3" [src]="img" aria-hidden="true" (error)="onCardImageError(e.card_data, $event)" />
+                              }
+                              @if (e.quantity >= 2 && cardImageUrl(e.card_data); as img) {
+                                <img class="shadow s2" [src]="img" aria-hidden="true" (error)="onCardImageError(e.card_data, $event)" />
+                              }
+                              @if (cardImageUrl(e.card_data); as img) {
+                                <img class="top" [src]="img" [alt]="e.card_data?.name || ''" (error)="onCardImageError(e.card_data, $event)" />
+                              } @else {
+                                <div class="top placeholder">{{ e.card_data?.card_number || 'SIN IMG' }}</div>
+                              }
+                              @if (e.quantity > 1) {
+                                <span class="qty-badge">×{{ e.quantity }}</span>
+                              }
+                            </div>
+                          }
+                        </div>
+                      </section>
+                    }
+
+                    @if (sideEntries.length) {
+                      <section class="rb-export-zone zone-side-deck">
+                        <h3 class="rb-export-zone-title">Side Deck <span>{{ sumEntryQuantity(sideEntries) }}</span></h3>
+                        <div class="card-grid" [attr.data-stack-orientation]="stackOrientation()">
+                          @for (e of sideEntries; track e.id || e.card) {
+                            <div class="card-stack" [class.qty-2]="e.quantity === 2" [class.qty-3]="e.quantity >= 3"
+                                 [title]="e.card_data?.name || ''">
+                              @if (e.quantity >= 3 && cardImageUrl(e.card_data); as img) {
+                                <img class="shadow s3" [src]="img" aria-hidden="true" (error)="onCardImageError(e.card_data, $event)" />
+                              }
+                              @if (e.quantity >= 2 && cardImageUrl(e.card_data); as img) {
+                                <img class="shadow s2" [src]="img" aria-hidden="true" (error)="onCardImageError(e.card_data, $event)" />
+                              }
+                              @if (cardImageUrl(e.card_data); as img) {
+                                <img class="top" [src]="img" [alt]="e.card_data?.name || ''" (error)="onCardImageError(e.card_data, $event)" />
+                              } @else {
+                                <div class="top placeholder">{{ e.card_data?.card_number || 'SIN IMG' }}</div>
+                              }
+                              @if (e.quantity > 1) {
+                                <span class="qty-badge">×{{ e.quantity }}</span>
+                              }
+                            </div>
+                          }
+                        </div>
+                      </section>
+                    }
+                  </div>
+
+                  <footer class="rb-export-summary">{{ exportSummaryLine() }}</footer>
+                </section>
+              } @else {
+                <!-- Grid (default) -->
+                @for (z of zones; track z) {
+                  @let isSide = z === 'side';
+                  @let entries = entriesByZone(z);
+                  @if (entries.length) {
+                    <section class="zone-section" [class.collapsed]="isSide && !sideOpen()" [class.side-zone]="isSide" [attr.data-zone]="z">
+                      <h2 class="zone-title"
+                          [class.is-toggle]="isSide"
+                          (click)="isSide && sideOpen.set(!sideOpen())">
+                        <span class="zone-name">{{ labels[z] }}</span>
+                        <span class="zone-count">{{ countZone(z) }}</span>
+                        @if (isSide) {
+                          <span class="side-caret">{{ sideOpen() ? '▾' : '▸' }}</span>
+                        }
+                      </h2>
+                      @if (!isSide || sideOpen()) {
+                        <div class="card-grid" [attr.data-stack-orientation]="stackOrientation()">
+                          @for (e of entries; track e.id || e.card) {
+                            @let bs = getBanStatus(e);
+                             <div class="card-stack"
+                               role="button"
+                               tabindex="0"
+                               [class.qty-2]="e.quantity === 2"
+                               [class.qty-3]="e.quantity >= 3"
+                               [class.banned]="bs?.status === 'banned'"
+                               (click)="openPreview(e)"
+                               (keydown.enter)="openPreview(e)"
+                               (keydown.space)="onCardStackSpace($event, e)"
+                               [title]="e.card_data?.name || ''">
+                              @if (e.quantity >= 3 && cardImageUrl(e.card_data); as img) {
+                                <img class="shadow s3" [src]="img" aria-hidden="true"
+                                     (error)="onCardImageError(e.card_data, $event)" />
+                              }
+                              @if (e.quantity >= 2 && cardImageUrl(e.card_data); as img) {
+                                <img class="shadow s2" [src]="img" aria-hidden="true"
+                                     (error)="onCardImageError(e.card_data, $event)" />
+                              }
+                              @if (cardImageUrl(e.card_data); as img) {
+                                <img class="top" [src]="img" [alt]="e.card_data?.name || ''"
+                                     (error)="onCardImageError(e.card_data, $event)" />
+                              } @else {
+                                <div class="top placeholder">{{ e.card_data?.card_number || 'SIN IMG' }}</div>
+                              }
+                              @if (e.quantity > 1) {
+                                <span class="qty-badge">×{{ e.quantity }}</span>
+                              }
+                              @if (bs) {
+                                <span class="ban-overlay" [class.ban-banned]="bs.status === 'banned'"
+                                      [class.ban-limited]="bs.status !== 'banned'"
+                                      [title]="banTooltip(bs)">{{ banShort(bs) }}</span>
+                              }
+                              @if (isOwner() && e.card_data?.id) {
+                                <button type="button"
+                                        class="cover-star"
+                                        [class.is-cover]="d.cover_card === e.card_data?.id"
+                                        (click)="toggleCover($event, e)"
+                                        [title]="d.cover_card === e.card_data?.id ? 'Portada actual (clic para quitar)' : 'Fijar como portada del mazo'">
+                                  {{ d.cover_card === e.card_data?.id ? '★' : '☆' }}
+                                </button>
+                              }
+                              @if (d.cover_card === e.card_data?.id) {
+                                <span class="cover-badge" title="Portada del mazo">★</span>
+                              }
+                              <span class="card-name">{{ e.card_data?.name }}</span>
+                            </div>
+                          }
+                        </div>
+                      }
+                    </section>
+                  }
                 }
               }
             }
@@ -1363,6 +1598,222 @@ function typeRank(t?: string): number {
       gap: .7rem .8rem;
       align-items: start;
     }
+
+    .deck-export-area.export-capture.capture-horizontal .rb-export-layout {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      gap: .6rem;
+      min-height: 100%;
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-top-line {
+      height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #d04f45 0%, #ea6d4f 35%, #a04a7a 70%, #6d5ecf 100%);
+      opacity: .9;
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-head {
+      display: flex;
+      justify-content: space-between;
+      gap: .8rem;
+      padding-bottom: .55rem;
+      border-bottom: 1px solid rgba(200,214,229,.28);
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-head-main {
+      display: flex;
+      align-items: stretch;
+      gap: .8rem;
+      min-width: 0;
+      flex: 1;
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-cover {
+      width: 88px;
+      height: 124px;
+      border-radius: 9px;
+      object-fit: cover;
+      border: 1px solid rgba(200,214,229,.3);
+      box-shadow: 0 8px 24px rgba(0,0,0,.35);
+      flex-shrink: 0;
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-cover-empty {
+      display: grid;
+      place-items: center;
+      background: linear-gradient(140deg, #253045, #101a2b);
+      color: #f0d080;
+      font-size: .72rem;
+      letter-spacing: .08em;
+      font-weight: 700;
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-copy {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: .2rem;
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-kicker {
+      margin: 0;
+      color: #c7d5e8;
+      font-size: .72rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-title {
+      margin: 0;
+      font-size: 2.05rem;
+      line-height: 1.08;
+      font-weight: 800;
+      color: #f8fbff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-date {
+      margin: 0;
+      color: #c7d5e8;
+      font-size: .95rem;
+      font-weight: 500;
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-brand {
+      min-width: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: flex-end;
+      gap: .45rem;
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-qr {
+      width: 108px;
+      height: 108px;
+      border-radius: 10px;
+      border: 3px solid #ebeff4;
+      background:
+        radial-gradient(circle at 17% 16%, #111 0 2px, transparent 2px),
+        radial-gradient(circle at 72% 19%, #111 0 2px, transparent 2px),
+        radial-gradient(circle at 45% 38%, #111 0 2px, transparent 2px),
+        radial-gradient(circle at 66% 53%, #111 0 2px, transparent 2px),
+        radial-gradient(circle at 30% 62%, #111 0 2px, transparent 2px),
+        radial-gradient(circle at 52% 74%, #111 0 2px, transparent 2px),
+        radial-gradient(circle at 74% 78%, #111 0 2px, transparent 2px),
+        repeating-linear-gradient(0deg, rgba(17,17,17,.1) 0 3px, rgba(17,17,17,0) 3px 6px),
+        repeating-linear-gradient(90deg, rgba(17,17,17,.1) 0 3px, rgba(17,17,17,0) 3px 6px),
+        #f8fbff;
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0,0,0,.28);
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-qr .qr-corner {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border: 4px solid #111;
+      border-radius: 4px;
+      background: #f8fbff;
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-qr .qr-corner.tl {
+      top: 7px;
+      left: 7px;
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-qr .qr-corner.tr {
+      top: 7px;
+      right: 7px;
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-qr .qr-corner.bl {
+      bottom: 7px;
+      left: 7px;
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-brand-mark {
+      color: #f6bf57;
+      font-weight: 800;
+      font-size: 1.65rem;
+      letter-spacing: -.01em;
+      text-transform: lowercase;
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-url {
+      margin: 0;
+      max-width: 100%;
+      color: #9db3ca;
+      font-size: .78rem;
+      text-align: right;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-zone-grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: .55rem;
+      align-items: start;
+      flex: 1;
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-zone {
+      padding: .45rem;
+      border-radius: 10px;
+      border: 1px solid rgba(200,214,229,.2);
+      background: rgba(8,15,25,.45);
+      min-width: 0;
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-zone-title {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      justify-content: space-between;
+      margin: 0 0 .35rem;
+      color: #f8fbff;
+      font-size: .95rem;
+      line-height: 1;
+      font-weight: 700;
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-zone-title span {
+      color: #f6bf57;
+      font-size: .92rem;
+      font-weight: 800;
+    }
+    .deck-export-area.export-capture.capture-horizontal .zone-runes { grid-column: span 2; }
+    .deck-export-area.export-capture.capture-horizontal .zone-battlefields { grid-column: span 4; }
+    .deck-export-area.export-capture.capture-horizontal .zone-units { grid-column: span 6; }
+    .deck-export-area.export-capture.capture-horizontal .zone-spells { grid-column: span 8; }
+    .deck-export-area.export-capture.capture-horizontal .zone-gear { grid-column: span 4; }
+    .deck-export-area.export-capture.capture-horizontal .zone-other { grid-column: span 4; }
+    .deck-export-area.export-capture.capture-horizontal .zone-side-deck {
+      grid-column: 1 / -1;
+      border-color: rgba(246,191,87,.36);
+      background: linear-gradient(180deg, rgba(246,191,87,.08), rgba(8,15,25,.45));
+    }
+    .deck-export-area.export-capture.capture-horizontal .zone-runes .card-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .deck-export-area.export-capture.capture-horizontal .zone-battlefields .card-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .deck-export-area.export-capture.capture-horizontal .zone-units .card-grid {
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+    }
+    .deck-export-area.export-capture.capture-horizontal .zone-spells .card-grid {
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+    .deck-export-area.export-capture.capture-horizontal .zone-gear .card-grid,
+    .deck-export-area.export-capture.capture-horizontal .zone-other .card-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .deck-export-area.export-capture.capture-horizontal .zone-side-deck .card-grid {
+      grid-template-columns: repeat(11, minmax(0, 1fr));
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-zone .card-grid {
+      gap: .82rem .55rem;
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-zone .card-stack {
+      max-width: none;
+    }
+    .deck-export-area.export-capture.capture-horizontal .rb-export-summary {
+      border-top: 1px solid rgba(200,214,229,.24);
+      padding-top: .5rem;
+      color: #c7d5e8;
+      font-size: .85rem;
+      font-weight: 600;
+      letter-spacing: .01em;
+    }
+
     .deck-export-area.export-capture.capture-vertical {
       width: 1140px;
     }
@@ -1805,6 +2256,67 @@ export class RiftboundDeckViewComponent implements OnInit {
 
   countZone(z: RiftboundZone): number {
     return this.entriesByZone(z).reduce((s, e) => s + e.quantity, 0);
+  }
+
+  exportCoverCardData(): CardImageLike | null {
+    const d = this.deck();
+    if (!d) return null;
+    if (d.cover_card_data) return d.cover_card_data;
+
+    const championCard = this.entriesByZone('champion')[0]?.card_data;
+    if (championCard) return championCard;
+
+    return this.entriesByZone('main')[0]?.card_data ?? null;
+  }
+
+  exportMainEntriesByType(type: 'unit' | 'spell' | 'gear' | 'other'): RiftboundDeckEntry[] {
+    const main = this.entriesByZone('main');
+    const known = new Set(['unit', 'spell', 'gear']);
+
+    if (type === 'other') {
+      return main.filter((entry) => !known.has((entry.card_data?.card_type ?? '').toLowerCase()));
+    }
+
+    return main.filter((entry) => (entry.card_data?.card_type ?? '').toLowerCase() === type);
+  }
+
+  sumEntryQuantity(entries: RiftboundDeckEntry[]): number {
+    return entries.reduce((sum, entry) => sum + entry.quantity, 0);
+  }
+
+  formatExportDate(value: string): string {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(date);
+  }
+
+  exportDeckPathLabel(): string {
+    try {
+      const url = new URL(window.location.href);
+      const host = url.hostname.replace(/^www\./i, '');
+      return `${host}${url.pathname}`;
+    } catch {
+      return 'shadow-forge-deck.vercel.app';
+    }
+  }
+
+  exportSummaryLine(): string {
+    const summary = [
+      `${this.countZone('champion')} Legend`,
+      `${this.countZone('rune')} Runes`,
+      `${this.countZone('bg')} Battlefields`,
+      `${this.sumEntryQuantity(this.exportMainEntriesByType('unit'))} Units`,
+      `${this.sumEntryQuantity(this.exportMainEntriesByType('spell'))} Spells`,
+      `${this.sumEntryQuantity(this.exportMainEntriesByType('gear'))} Gear`,
+    ];
+    const sideCount = this.countZone('side');
+    if (sideCount > 0) summary.push(`${sideCount} Side Deck`);
+    return summary.join(' · ');
   }
 
   formatDate(s: string): string {

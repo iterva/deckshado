@@ -1399,11 +1399,11 @@ function typeRank(t?: string): number {
     .card-stack .top, .card-stack .shadow {
       position: absolute;
       top: var(--stack-reserve-top, 0px);
-      right: var(--stack-reserve-right, 0px);
-      bottom: var(--stack-reserve-bottom, 0px);
       left: var(--stack-reserve-left, 0px);
-      width: auto;
-      height: auto;
+      right: auto;
+      bottom: auto;
+      width: calc(100% - var(--stack-reserve-left, 0px) - var(--stack-reserve-right, 0px));
+      height: calc(100% - var(--stack-reserve-top, 0px) - var(--stack-reserve-bottom, 0px));
       object-fit: cover; border-radius: 6px;
       box-shadow: 0 4px 14px rgba(0,0,0,.4);
     }

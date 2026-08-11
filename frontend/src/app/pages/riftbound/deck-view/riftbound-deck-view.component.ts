@@ -1325,13 +1325,13 @@ function typeRank(t?: string): number {
     .card-grid {
       --stack-top-x: 0px;
       --stack-top-y: 0px;
-      --stack-s2-x: 6px;
-      --stack-s2-y: 6px;
-      --stack-s3-x: 12px;
-      --stack-s3-y: 12px;
+      --stack-s2-x: 10px;
+      --stack-s2-y: 10px;
+      --stack-s3-x: 20px;
+      --stack-s3-y: 20px;
       --stack-reserve-top: 0px;
-      --stack-reserve-right: 12px;
-      --stack-reserve-bottom: 12px;
+      --stack-reserve-right: 20px;
+      --stack-reserve-bottom: 20px;
       --stack-reserve-left: 0px;
 
       display: grid; gap: 1.5rem 1.1rem;
@@ -1339,37 +1339,37 @@ function typeRank(t?: string): number {
     }
     .card-grid[data-stack-orientation='up'] {
       --stack-top-x: 0px;
-      --stack-top-y: 12px;
+      --stack-top-y: 20px;
       --stack-s2-x: 0px;
-      --stack-s2-y: 6px;
+      --stack-s2-y: 10px;
       --stack-s3-x: 0px;
       --stack-s3-y: 0px;
-      --stack-reserve-top: 12px;
+      --stack-reserve-top: 20px;
       --stack-reserve-right: 0px;
       --stack-reserve-bottom: 0px;
       --stack-reserve-left: 0px;
     }
     .card-grid[data-stack-orientation='left'] {
-      --stack-top-x: 12px;
+      --stack-top-x: 20px;
       --stack-top-y: 0px;
-      --stack-s2-x: 6px;
+      --stack-s2-x: 10px;
       --stack-s2-y: 0px;
       --stack-s3-x: 0px;
       --stack-s3-y: 0px;
       --stack-reserve-top: 0px;
       --stack-reserve-right: 0px;
       --stack-reserve-bottom: 0px;
-      --stack-reserve-left: 12px;
+      --stack-reserve-left: 20px;
     }
     .card-grid[data-stack-orientation='right'] {
       --stack-top-x: 0px;
       --stack-top-y: 0px;
-      --stack-s2-x: 6px;
+      --stack-s2-x: 10px;
       --stack-s2-y: 0px;
-      --stack-s3-x: 12px;
+      --stack-s3-x: 20px;
       --stack-s3-y: 0px;
       --stack-reserve-top: 0px;
-      --stack-reserve-right: 12px;
+      --stack-reserve-right: 20px;
       --stack-reserve-bottom: 0px;
       --stack-reserve-left: 0px;
     }
@@ -2084,8 +2084,67 @@ function typeRank(t?: string): number {
         margin-bottom: 1.45rem;
       }
       .card-grid {
+        --stack-top-x: 0px;
+        --stack-top-y: 0px;
+        --stack-s2-x: 10px;
+        --stack-s2-y: 10px;
+        --stack-s3-x: 20px;
+        --stack-s3-y: 20px;
+        --stack-reserve-top: 0px;
+        --stack-reserve-right: 20px;
+        --stack-reserve-bottom: 20px;
+        --stack-reserve-left: 0px;
+
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 1rem .5rem;
+      }
+      .card-grid[data-stack-orientation='up'] {
+        --stack-top-x: 0px;
+        --stack-top-y: 20px;
+        --stack-s2-x: 0px;
+        --stack-s2-y: 10px;
+        --stack-s3-x: 0px;
+        --stack-s3-y: 0px;
+        --stack-reserve-top: 20px;
+        --stack-reserve-right: 0px;
+        --stack-reserve-bottom: 0px;
+        --stack-reserve-left: 0px;
+      }
+      .card-grid[data-stack-orientation='left'] {
+        --stack-top-x: 20px;
+        --stack-top-y: 0px;
+        --stack-s2-x: 10px;
+        --stack-s2-y: 0px;
+        --stack-s3-x: 0px;
+        --stack-s3-y: 0px;
+        --stack-reserve-top: 0px;
+        --stack-reserve-right: 0px;
+        --stack-reserve-bottom: 0px;
+        --stack-reserve-left: 20px;
+      }
+      .card-grid[data-stack-orientation='right'] {
+        --stack-top-x: 0px;
+        --stack-top-y: 0px;
+        --stack-s2-x: 10px;
+        --stack-s2-y: 0px;
+        --stack-s3-x: 20px;
+        --stack-s3-y: 0px;
+        --stack-reserve-top: 0px;
+        --stack-reserve-right: 20px;
+        --stack-reserve-bottom: 0px;
+        --stack-reserve-left: 0px;
+      }
+      .card-grid[data-stack-orientation='center'] {
+        --stack-top-x: 0px;
+        --stack-top-y: 0px;
+        --stack-s2-x: 0px;
+        --stack-s2-y: 0px;
+        --stack-s3-x: 0px;
+        --stack-s3-y: 0px;
+        --stack-reserve-top: 0px;
+        --stack-reserve-right: 0px;
+        --stack-reserve-bottom: 0px;
+        --stack-reserve-left: 0px;
       }
       .card-stack {
         width: 100%;
@@ -2094,10 +2153,6 @@ function typeRank(t?: string): number {
       .card-name {
         font-size: .64rem;
         bottom: -1.15rem;
-      }
-      /* En móvil ocultamos sombras de apilado para que todas las cartas se perciban del mismo tamaño. */
-      .card-stack .shadow {
-        display: none;
       }
       .card-stack.qty-2,
       .card-stack.qty-3 {

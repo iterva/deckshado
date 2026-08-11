@@ -1398,11 +1398,10 @@ function typeRank(t?: string): number {
     .card-stack:focus-visible { outline: 2px solid #e94560; outline-offset: 4px; border-radius: 6px; }
     .card-stack .top, .card-stack .shadow {
       position: absolute;
-      inset:
-        var(--stack-reserve-top)
-        var(--stack-reserve-right)
-        var(--stack-reserve-bottom)
-        var(--stack-reserve-left);
+      top: var(--stack-reserve-top, 0px);
+      right: var(--stack-reserve-right, 0px);
+      bottom: var(--stack-reserve-bottom, 0px);
+      left: var(--stack-reserve-left, 0px);
       width: auto;
       height: auto;
       object-fit: cover; border-radius: 6px;

@@ -1417,6 +1417,7 @@ function typeRank(t?: string): number {
       max-width: 150px;
       justify-self: center;
       transition: transform .15s; outline: none;
+      isolation: isolate;
     }
     .card-stack:hover { transform: translateY(-4px); }
     .card-stack:focus-visible { outline: 2px solid #e94560; outline-offset: 4px; border-radius: 6px; }
@@ -1428,8 +1429,9 @@ function typeRank(t?: string): number {
       bottom: auto;
       width: calc(100% - var(--stack-reserve-left, 0px) - var(--stack-reserve-right, 0px));
       height: calc(100% - var(--stack-reserve-top, 0px) - var(--stack-reserve-bottom, 0px));
-      object-fit: cover; border-radius: 6px;
+      object-fit: contain; border-radius: 6px;
       box-shadow: 0 4px 14px rgba(0,0,0,.4);
+      background: #0b1320;
     }
     .card-stack.banned .top { filter: grayscale(.8) brightness(.6); }
     .card-stack .placeholder {
@@ -1442,7 +1444,7 @@ function typeRank(t?: string): number {
         calc(var(--stack-s2-y) * var(--stack-intensity-mult, 1))
       );
       filter: brightness(.6);
-      z-index: 0;
+      z-index: 1;
     }
     .shadow.s3 {
       transform: translate(
@@ -1450,10 +1452,10 @@ function typeRank(t?: string): number {
         calc(var(--stack-s3-y) * var(--stack-intensity-mult, 1))
       );
       filter: brightness(.4);
-      z-index: -1;
+      z-index: 0;
     }
     .card-stack .top {
-      z-index: 1;
+      z-index: 2;
       transform: translate(
         calc(var(--stack-top-x) * var(--stack-intensity-mult, 1)),
         calc(var(--stack-top-y) * var(--stack-intensity-mult, 1))
@@ -1468,9 +1470,6 @@ function typeRank(t?: string): number {
     .deck-export-area.stack-effect-off .card-stack.qty-2,
     .deck-export-area.stack-effect-off .card-stack.qty-3 {
       margin: 0;
-    }
-    .deck-export-area:not(.stack-effect-off) .card-stack .qty-badge {
-      display: none;
     }
     .deck-export-area.stack-effect-off .card-grid {
       --stack-top-x: 0px;

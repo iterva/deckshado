@@ -79,8 +79,13 @@ class CardListSerializer(serializers.ModelSerializer):
 
         fallback = self._default_myl_image_url(obj)
 
-        # Prefer custom URL for promo/extra cards
-        custom = getattr(obj, 'custom_image_url', None)
+        # Las URLs administradas manualmente tienen prioridad sobre el legado.
+        # ImageKit es el CDN principal y Cloudinary actúa como respaldo.
+        custom = (
+            getattr(obj, 'imagekit_image_url', None)
+            or getattr(obj, 'cloudinary_image_url', None)
+            or getattr(obj, 'custom_image_url', None)
+        )
         if custom:
             rewritten_url = self._rewrite_legacy_cloudinary_url(custom)
             if rewritten_url:

@@ -2031,11 +2031,9 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
     const name = (card.name || '').toLowerCase();
     const startsWithChampionName = name.startsWith(`${key},`) || name.startsWith(`${key} -`);
 
-    // Regla principal: comparte tag del legend y tiene semantica de Champion Unit.
-    if (hasChampionTag) return hasChampionUnitTag || startsWithChampionName;
-
-    // Fallback para datos incompletos/legacy sin subtypes fiables en API.
-    return startsWithChampionName;
+    // Las fuentes oficiales pueden omitir subtipos en unidades de campeón
+    // (por ejemplo, Akali). El nombre del campeón es un respaldo válido.
+    return (hasChampionTag && hasChampionUnitTag) || startsWithChampionName;
   }
 
   /** Tag del champion derivado del legend (subtypes -> fallback nombre). */

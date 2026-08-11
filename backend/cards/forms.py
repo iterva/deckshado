@@ -50,8 +50,16 @@ class CardForm(forms.ModelForm):
             "damage",
             "ability",
             "flavour",
+            "imagekit_image_url",
+            "cloudinary_image_url",
             "custom_image_url",
         ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["imagekit_image_url"].label = "URL ImageKit"
+        self.fields["cloudinary_image_url"].label = "URL Cloudinary"
+        self.fields["custom_image_url"].label = "URL personalizada heredada (opcional)"
 
 
 class BanlistEntryForm(forms.ModelForm):

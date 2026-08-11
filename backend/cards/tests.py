@@ -6,6 +6,7 @@ from django.urls import reverse
 from rest_framework.test import APITestCase
 
 from cards.models import BanlistEntry, Card, CardType, Edition, Format, Race
+from cards.serializers import CardListSerializer
 
 
 class BanlistEndpointTests(APITestCase):
@@ -97,6 +98,26 @@ class CardListSearchTests(APITestCase):
         results = resp.data.get("results", resp.data)
         names = [c["name"] for c in results]
         self.assertIn("Samurai del Norte", names)
+
+
+class CardImageCdnPriorityTests(TestCase):
+    def test_imagekit_url_has_priority_over_cloudinary_and_legacy_url(self):
+        edition = Edition.objects.create(myl_id="cdn-ed", slug="cdn-ed", title="CDN Edition")
+        card = Card.objects.create(
+            myl_id="custom-cdn-card",
+            edid="001",
+            slug="cdn-card",
+            name="Carta CDN",
+            edition=edition,
+            imagekit_image_url="https://ik.imagekit.io/deckshadow/cards/cdn-card.png",
+            cloudinary_image_url="https://res.cloudinary.com/daobfx9yb/image/upload/cdn-card.png",
+            custom_image_url="https://example.test/legacy-card.png",
+        )
+
+        self.assertEqual(
+            CardListSerializer(card).data["image_url"],
+            "https://ik.imagekit.io/deckshadow/cards/cdn-card.png",
+        )
 
 
 class PublicCardsActiveEditionFilterTests(APITestCase):

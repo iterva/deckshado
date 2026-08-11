@@ -55,6 +55,11 @@ class RiftboundSetForm(forms.ModelForm):
 class RiftboundCardForm(forms.ModelForm):
     domain_1 = forms.ChoiceField(required=False, choices=DOMAIN_CHOICES, label="Dominio 1")
     domain_2 = forms.ChoiceField(required=False, choices=DOMAIN_CHOICES, label="Dominio 2")
+    subtypes_text = forms.CharField(
+        required=False,
+        label="Subtipos",
+        help_text="Separe los subtipos o tags con comas. Ejemplo: Akali, Champion Unit.",
+    )
 
     class Meta:
         model = RiftboundCard
@@ -64,6 +69,7 @@ class RiftboundCardForm(forms.ModelForm):
             "slug",
             "set",
             "card_type",
+            "supertype",
             "rarity",
             "variant",
             "energy",
@@ -72,7 +78,10 @@ class RiftboundCardForm(forms.ModelForm):
             "description",
             "flavor",
             "image_url",
+            "image_url_small",
             "cdn_image_url",
+            "source_url",
+            "raw",
             "is_active",
         ]
 
@@ -81,6 +90,10 @@ class RiftboundCardForm(forms.ModelForm):
         current = [str(c).lower() for c in (getattr(self.instance, "colors", []) or []) if _normalize_domain(c)]
         self.fields["domain_1"].initial = current[0] if len(current) >= 1 else ""
         self.fields["domain_2"].initial = current[1] if len(current) >= 2 else ""
+        self.fields["subtypes_text"].initial = ", ".join(getattr(self.instance, "subtypes", []) or [])
+        self.fields["image_url"].label = "URL ImageKit / imagen principal"
+        self.fields["cdn_image_url"].label = "URL Cloudinary / CDN alternativo"
+        self.fields["raw"].widget = forms.Textarea(attrs={"rows": 6})
 
     def clean(self):
         cleaned = super().clean()
@@ -89,11 +102,17 @@ class RiftboundCardForm(forms.ModelForm):
         if d1 and d2 and d1 == d2:
             raise ValidationError("No puede repetir el mismo dominio en Dominio 1 y Dominio 2.")
         cleaned["_domains_clean"] = [d for d in (d1, d2) if d]
+        cleaned["_subtypes_clean"] = list(dict.fromkeys(
+            subtype.strip()
+            for subtype in (cleaned.get("subtypes_text") or "").split(",")
+            if subtype.strip()
+        ))
         return cleaned
 
     def save(self, commit=True):
         instance = super().save(commit=False)
         instance.colors = self.cleaned_data.get("_domains_clean", [])
+        instance.subtypes = self.cleaned_data.get("_subtypes_clean", [])
         if commit:
             instance.save()
             self.save_m2m()

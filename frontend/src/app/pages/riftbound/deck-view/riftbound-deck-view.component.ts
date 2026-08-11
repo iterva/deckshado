@@ -17,6 +17,7 @@ import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.compo
 type ViewMode = 'grid' | 'list' | 'stats';
 type Orientation = 'vertical' | 'horizontal';
 type StackOrientation = 'down' | 'up' | 'left' | 'right' | 'center';
+type StackIntensity = 'soft' | 'normal' | 'strong';
 type CardImageLike = {
   id?: number | null;
   card_number?: string | null;
@@ -280,6 +281,18 @@ function typeRank(t?: string): number {
                       <i class="bi bi-square"></i> Efecto apilado: No
                     </button>
                   </div>
+                  <span class="export-opt-title" style="margin-top:.7rem">Intensidad del apilado</span>
+                  <div class="export-opt-row two">
+                    <button type="button" class="opt-chip" [class.active]="stackIntensity() === 'soft'" (click)="setStackIntensity('soft')">
+                      <i class="bi bi-sliders"></i> Suave
+                    </button>
+                    <button type="button" class="opt-chip" [class.active]="stackIntensity() === 'normal'" (click)="setStackIntensity('normal')">
+                      <i class="bi bi-sliders2"></i> Normal
+                    </button>
+                    <button type="button" class="opt-chip" [class.active]="stackIntensity() === 'strong'" (click)="setStackIntensity('strong')">
+                      <i class="bi bi-sliders2-vertical"></i> Fuerte
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -343,6 +356,9 @@ function typeRank(t?: string): number {
              [class.capture-horizontal]="captureMode() && orientation() === 'horizontal'"
              [class.capture-vertical]="captureMode() && orientation() === 'vertical'"
              [class.stack-effect-off]="!stackEffect()"
+             [class.stack-intensity-soft]="stackIntensity() === 'soft'"
+             [class.stack-intensity-normal]="stackIntensity() === 'normal'"
+             [class.stack-intensity-strong]="stackIntensity() === 'strong'"
              [attr.data-orientation]="orientation()"
              [attr.data-stack-orientation]="stackOrientation()">
 
@@ -1059,9 +1075,13 @@ function typeRank(t?: string): number {
 
     .orient-menu-wrap { position: relative; }
     .orient-menu {
-      position: absolute; top: calc(100% + 6px); left: 0; z-index: 60;
+      position: absolute; top: calc(100% + 6px); right: 0; left: auto; z-index: 60;
       min-width: 220px; background: #0f1923; border: 1px solid #2a3a4a;
       border-radius: 10px; padding: .35rem; box-shadow: 0 12px 30px rgba(0,0,0,.6);
+      max-width: min(320px, calc(100vw - 18px));
+      max-height: min(72vh, 520px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
     }
     .orient-menu button {
       display: flex; align-items: center; gap: .55rem; width: 100%;
@@ -1323,6 +1343,7 @@ function typeRank(t?: string): number {
 
     /* Card grid (stacks) */
     .card-grid {
+      --stack-intensity-mult: 1;
       --stack-top-x: 0px;
       --stack-top-y: 0px;
       --stack-s2-x: 10px;
@@ -1337,6 +1358,9 @@ function typeRank(t?: string): number {
       display: grid; gap: 1.5rem 1.1rem;
       grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     }
+    .deck-export-area.stack-intensity-soft .card-grid { --stack-intensity-mult: .65; }
+    .deck-export-area.stack-intensity-normal .card-grid { --stack-intensity-mult: 1; }
+    .deck-export-area.stack-intensity-strong .card-grid { --stack-intensity-mult: 1.35; }
     .card-grid[data-stack-orientation='up'] {
       --stack-top-x: 0px;
       --stack-top-y: 20px;
@@ -1412,9 +1436,29 @@ function typeRank(t?: string): number {
       display: grid; place-items: center;
       background: #16213e; color: #c8c8da; padding: 1rem; text-align: center;
     }
-    .shadow.s2 { transform: translate(var(--stack-s2-x), var(--stack-s2-y)); filter: brightness(.6); z-index: 0; }
-    .shadow.s3 { transform: translate(var(--stack-s3-x), var(--stack-s3-y)); filter: brightness(.4); z-index: -1; }
-    .card-stack .top { z-index: 1; transform: translate(var(--stack-top-x), var(--stack-top-y)); }
+    .shadow.s2 {
+      transform: translate(
+        calc(var(--stack-s2-x) * var(--stack-intensity-mult, 1)),
+        calc(var(--stack-s2-y) * var(--stack-intensity-mult, 1))
+      );
+      filter: brightness(.6);
+      z-index: 0;
+    }
+    .shadow.s3 {
+      transform: translate(
+        calc(var(--stack-s3-x) * var(--stack-intensity-mult, 1)),
+        calc(var(--stack-s3-y) * var(--stack-intensity-mult, 1))
+      );
+      filter: brightness(.4);
+      z-index: -1;
+    }
+    .card-stack .top {
+      z-index: 1;
+      transform: translate(
+        calc(var(--stack-top-x) * var(--stack-intensity-mult, 1)),
+        calc(var(--stack-top-y) * var(--stack-intensity-mult, 1))
+      );
+    }
     .deck-export-area.stack-effect-off .card-stack .shadow {
       display: none;
     }
@@ -1917,8 +1961,8 @@ function typeRank(t?: string): number {
       --stack-s3-x: 24px;
       --stack-s3-y: 24px;
       --stack-reserve-top: 0px;
-      --stack-reserve-right: 24px;
-      --stack-reserve-bottom: 24px;
+      --stack-reserve-right: 33px;
+      --stack-reserve-bottom: 33px;
       --stack-reserve-left: 0px;
 
       gap: 1.35rem 1rem;
@@ -1931,7 +1975,7 @@ function typeRank(t?: string): number {
       --stack-s2-y: 12px;
       --stack-s3-x: 0px;
       --stack-s3-y: 0px;
-      --stack-reserve-top: 24px;
+      --stack-reserve-top: 33px;
       --stack-reserve-right: 0px;
       --stack-reserve-bottom: 0px;
       --stack-reserve-left: 0px;
@@ -1946,7 +1990,7 @@ function typeRank(t?: string): number {
       --stack-reserve-top: 0px;
       --stack-reserve-right: 0px;
       --stack-reserve-bottom: 0px;
-      --stack-reserve-left: 24px;
+      --stack-reserve-left: 33px;
     }
     .deck-export-area.export-capture .card-grid[data-stack-orientation='right'] {
       --stack-top-x: 0px;
@@ -1956,7 +2000,7 @@ function typeRank(t?: string): number {
       --stack-s3-x: 24px;
       --stack-s3-y: 0px;
       --stack-reserve-top: 0px;
-      --stack-reserve-right: 24px;
+      --stack-reserve-right: 33px;
       --stack-reserve-bottom: 0px;
       --stack-reserve-left: 0px;
     }
@@ -2080,6 +2124,12 @@ function typeRank(t?: string): number {
     }
 
     @media (max-width: 640px) {
+      .orient-menu {
+        right: 0;
+        left: auto;
+        min-width: 0;
+        width: min(320px, calc(100vw - 18px));
+      }
       .zone-section {
         margin-bottom: 1.45rem;
       }
@@ -2203,6 +2253,7 @@ export class RiftboundDeckViewComponent implements OnInit {
   private exportSafeImageMode = signal(false);
   private readonly stackOrientationStorageKey = 'rb-deck-view:stack-orientation';
   private readonly stackEffectStorageKey = 'rb-deck-view:stack-effect';
+  private readonly stackIntensityStorageKey = 'rb-deck-view:stack-intensity';
 
   @ViewChild('deckContent') deckContent?: ElementRef<HTMLElement>;
 
@@ -2229,6 +2280,7 @@ export class RiftboundDeckViewComponent implements OnInit {
   orientation = signal<Orientation>('vertical');
   stackOrientation = signal<StackOrientation>('down');
   stackEffect = signal(true);
+  stackIntensity = signal<StackIntensity>('normal');
   settingCover = signal(false);
 
   // Hand test (mulligan)
@@ -2400,6 +2452,8 @@ export class RiftboundDeckViewComponent implements OnInit {
       const stackEffect = localStorage.getItem(this.stackEffectStorageKey);
       if (stackEffect === '0') this.stackEffect.set(false);
       if (stackEffect === '1') this.stackEffect.set(true);
+      const stackIntensity = localStorage.getItem(this.stackIntensityStorageKey) as StackIntensity | null;
+      if (this.isValidStackIntensity(stackIntensity)) this.stackIntensity.set(stackIntensity);
     } catch { /* noop */ }
 
     const id = +this.route.snapshot.paramMap.get('id')!;
@@ -2602,6 +2656,12 @@ export class RiftboundDeckViewComponent implements OnInit {
   setStackEffect(enabled: boolean) {
     this.stackEffect.set(enabled);
     try { localStorage.setItem(this.stackEffectStorageKey, enabled ? '1' : '0'); } catch { /* noop */ }
+  }
+
+  setStackIntensity(level: StackIntensity) {
+    if (!this.isValidStackIntensity(level)) return;
+    this.stackIntensity.set(level);
+    try { localStorage.setItem(this.stackIntensityStorageKey, level); } catch { /* noop */ }
   }
 
   openExportOptionsModal(e?: Event) {
@@ -3036,6 +3096,10 @@ export class RiftboundDeckViewComponent implements OnInit {
 
   private isValidStackOrientation(value: unknown): value is StackOrientation {
     return value === 'down' || value === 'up' || value === 'left' || value === 'right' || value === 'center';
+  }
+
+  private isValidStackIntensity(value: unknown): value is StackIntensity {
+    return value === 'soft' || value === 'normal' || value === 'strong';
   }
 
   private isTyping(t: EventTarget | null): boolean {

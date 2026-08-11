@@ -1392,9 +1392,15 @@ function typeRank(t?: string): number {
     .deck-export-area.stack-effect-off .card-stack .shadow {
       display: none;
     }
+    .deck-export-area.stack-effect-off .card-stack .top {
+      transform: translate(0, 0);
+    }
     .deck-export-area.stack-effect-off .card-stack.qty-2,
     .deck-export-area.stack-effect-off .card-stack.qty-3 {
       margin: 0;
+    }
+    .deck-export-area.stack-effect-off .card-stack .qty-badge {
+      display: none;
     }
     .qty-badge {
       position: absolute; right: 6px; bottom: 6px; z-index: 3;
@@ -1533,7 +1539,7 @@ function typeRank(t?: string): number {
 
     /* Exporting overlay */
     .exporting-overlay {
-      position: fixed; inset: 0; z-index: 1200;
+      position: fixed; inset: 0; z-index: 1600;
       background: rgba(0,0,0,.7); display: grid; place-items: center;
     }
     .exporting-box {
@@ -1947,7 +1953,7 @@ function typeRank(t?: string): number {
       text-align: center;
       padding: .35rem;
     }
-    .deck-export-area.export-capture .card-stack .shadow {
+    .deck-export-area.export-capture.stack-effect-off .card-stack .shadow {
       display: none;
     }
     .deck-export-area.export-capture .card-stack.qty-2,

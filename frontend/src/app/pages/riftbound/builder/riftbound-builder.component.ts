@@ -1826,7 +1826,7 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
 
   // ── Mutadores ──
   addToZone(c: RiftboundCardLite, z: RiftboundZone) {
-    // Límite duro de tamaño de zona (main: 40, side: 8, etc.).
+    // Límite duro de tamaño de zona (main: 40, side: 10, etc.).
     if (z === 'main' && this.zoneCount('main') >= this.rules.main) return;
     if (z === 'side' && this.zoneCount('side') >= this.rules.side) return;
     const list = [...this.entries()[z]];
@@ -1852,7 +1852,7 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   inc(e: BuilderEntry) {
     const max = this.maxCopiesForEntry(e);
     if (e.quantity >= max) return;
-    // Respeta el tamaño máximo de la zona (main: 40, side: 8, …).
+    // Respeta el tamaño máximo de la zona (main: 40, side: 10, …).
     if (e.zone === 'main' && this.zoneCount('main') >= this.rules.main) return;
     if (e.zone === 'side' && this.zoneCount('side') >= this.rules.side) return;
     e.quantity += 1;

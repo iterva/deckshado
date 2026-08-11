@@ -5,7 +5,7 @@ Reglas oficiales (fuente: Deckbuilding Primer + Core Rules de Riot):
 - Rune Deck: 12 runas exactas.
 - Champion Legend: 1 carta exacta.
 - Battlefields: 3 cartas DISTINTAS (no se permiten duplicados).
-- Sideboard: 8 cartas exactas, sólo en juego de torneo (opcional).
+- Sideboard: 10 cartas exactas, sólo en juego de torneo (opcional).
 - Máximo 3 copias de cualquier carta (incluida la copia inicial del Chosen Champion).
 """
 from __future__ import annotations
@@ -32,10 +32,10 @@ RULES_EXACT = {
 RULES_MIN: dict[str, int] = {}
 # Reglas opcionales (sólo torneo, se valida si hay cartas)
 RULES_OPTIONAL_EXACT = {
-    ZONE_SIDE: 8,
+    ZONE_SIDE: 10,
 }
 # Vista combinada para el frontend (compatibilidad con `rules`)
-RULES = {**RULES_EXACT, ZONE_SIDE: 8}
+RULES = {**RULES_EXACT, ZONE_SIDE: 10}
 MAX_COPIES_DEFAULT = 3
 
 
@@ -84,7 +84,7 @@ def validate_riftbound_deck(deck: "RiftboundDeck") -> dict:
     if len(bg_card_ids) != len(set(bg_card_ids)):
         errors.append("Los 3 battlefields deben ser cartas distintas (no se permiten duplicados).")
 
-    # Sideboard: opcional, pero si hay alguna debe ser exactamente 8 (formato torneo)
+    # Sideboard: opcional, pero si hay alguna debe ser exactamente 10 (formato torneo)
     side_count = counts.get(ZONE_SIDE, 0)
     if side_count > 0 and side_count != RULES_OPTIONAL_EXACT[ZONE_SIDE]:
         warnings.append(

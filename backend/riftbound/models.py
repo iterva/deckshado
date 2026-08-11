@@ -11,7 +11,7 @@ Reglas oficiales de construcción de mazo (Riftbound Standard, fuente: Riot Core
 - Chosen Champion: 1 unidad campeón designada (cuenta dentro del Main Deck;
   la copia que parte en juego cuenta hacia el límite de 3 copias).
 - Battlefields: 3 cartas distintas (no se permiten duplicados).
-- Sideboard: 8 cartas exactas (sólo en juego de torneo, opcional en casual).
+- Sideboard: 10 cartas exactas (sólo en juego de torneo, opcional en casual).
 - Máximo 3 copias de cualquier carta no-banlist.
 """
 from __future__ import annotations

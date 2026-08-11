@@ -307,7 +307,7 @@ export interface RiftboundCollectionStats {
  */
 export const RIFTBOUND_ZONE_RULES: Record<RiftboundZone, number> = {
   main: 40,
-  side: 8,
+  side: 10,
   rune: 12,
   champion: 1,
   bg: 3,

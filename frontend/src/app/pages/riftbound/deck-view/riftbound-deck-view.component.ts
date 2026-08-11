@@ -1329,6 +1329,10 @@ function typeRank(t?: string): number {
       --stack-s2-y: 6px;
       --stack-s3-x: 12px;
       --stack-s3-y: 12px;
+      --stack-reserve-top: 0px;
+      --stack-reserve-right: 12px;
+      --stack-reserve-bottom: 12px;
+      --stack-reserve-left: 0px;
 
       display: grid; gap: 1.5rem 1.1rem;
       grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -1340,6 +1344,10 @@ function typeRank(t?: string): number {
       --stack-s2-y: 6px;
       --stack-s3-x: 0px;
       --stack-s3-y: 0px;
+      --stack-reserve-top: 12px;
+      --stack-reserve-right: 0px;
+      --stack-reserve-bottom: 0px;
+      --stack-reserve-left: 0px;
     }
     .card-grid[data-stack-orientation='left'] {
       --stack-top-x: 12px;
@@ -1348,6 +1356,10 @@ function typeRank(t?: string): number {
       --stack-s2-y: 0px;
       --stack-s3-x: 0px;
       --stack-s3-y: 0px;
+      --stack-reserve-top: 0px;
+      --stack-reserve-right: 0px;
+      --stack-reserve-bottom: 0px;
+      --stack-reserve-left: 12px;
     }
     .card-grid[data-stack-orientation='right'] {
       --stack-top-x: 0px;
@@ -1356,6 +1368,10 @@ function typeRank(t?: string): number {
       --stack-s2-y: 0px;
       --stack-s3-x: 12px;
       --stack-s3-y: 0px;
+      --stack-reserve-top: 0px;
+      --stack-reserve-right: 12px;
+      --stack-reserve-bottom: 0px;
+      --stack-reserve-left: 0px;
     }
     .card-grid[data-stack-orientation='center'] {
       --stack-top-x: 0px;
@@ -1364,6 +1380,10 @@ function typeRank(t?: string): number {
       --stack-s2-y: 0px;
       --stack-s3-x: 0px;
       --stack-s3-y: 0px;
+      --stack-reserve-top: 0px;
+      --stack-reserve-right: 0px;
+      --stack-reserve-bottom: 0px;
+      --stack-reserve-left: 0px;
     }
     .card-grid[data-stack-orientation='center'] .card-stack .shadow { display: none; }
     .card-stack {
@@ -1377,7 +1397,14 @@ function typeRank(t?: string): number {
     .card-stack:hover { transform: translateY(-4px); }
     .card-stack:focus-visible { outline: 2px solid #e94560; outline-offset: 4px; border-radius: 6px; }
     .card-stack .top, .card-stack .shadow {
-      position: absolute; inset: 0; width: 100%; height: 100%;
+      position: absolute;
+      inset:
+        var(--stack-reserve-top)
+        var(--stack-reserve-right)
+        var(--stack-reserve-bottom)
+        var(--stack-reserve-left);
+      width: auto;
+      height: auto;
       object-fit: cover; border-radius: 6px;
       box-shadow: 0 4px 14px rgba(0,0,0,.4);
     }
@@ -1399,8 +1426,20 @@ function typeRank(t?: string): number {
     .deck-export-area.stack-effect-off .card-stack.qty-3 {
       margin: 0;
     }
-    .deck-export-area.stack-effect-off .card-stack .qty-badge {
+    .deck-export-area:not(.stack-effect-off) .card-stack .qty-badge {
       display: none;
+    }
+    .deck-export-area.stack-effect-off .card-grid {
+      --stack-top-x: 0px;
+      --stack-top-y: 0px;
+      --stack-s2-x: 0px;
+      --stack-s2-y: 0px;
+      --stack-s3-x: 0px;
+      --stack-s3-y: 0px;
+      --stack-reserve-top: 0px;
+      --stack-reserve-right: 0px;
+      --stack-reserve-bottom: 0px;
+      --stack-reserve-left: 0px;
     }
     .qty-badge {
       position: absolute; right: 6px; bottom: 6px; z-index: 3;
@@ -1422,7 +1461,7 @@ function typeRank(t?: string): number {
       text-align: center; font-size: .75rem; color: #c8c8da;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .card-stack.qty-2, .card-stack.qty-3 { margin: 9px; }
+    .card-stack.qty-2, .card-stack.qty-3 { margin: 0; }
 
     /* List view */
     .list-view .list-zone { margin-bottom: 1.5rem; }
@@ -1878,6 +1917,10 @@ function typeRank(t?: string): number {
       --stack-s2-y: 12px;
       --stack-s3-x: 24px;
       --stack-s3-y: 24px;
+      --stack-reserve-top: 0px;
+      --stack-reserve-right: 24px;
+      --stack-reserve-bottom: 24px;
+      --stack-reserve-left: 0px;
 
       gap: 1.35rem 1rem;
       align-items: start;
@@ -1889,6 +1932,10 @@ function typeRank(t?: string): number {
       --stack-s2-y: 12px;
       --stack-s3-x: 0px;
       --stack-s3-y: 0px;
+      --stack-reserve-top: 24px;
+      --stack-reserve-right: 0px;
+      --stack-reserve-bottom: 0px;
+      --stack-reserve-left: 0px;
     }
     .deck-export-area.export-capture .card-grid[data-stack-orientation='left'] {
       --stack-top-x: 24px;
@@ -1897,6 +1944,10 @@ function typeRank(t?: string): number {
       --stack-s2-y: 0px;
       --stack-s3-x: 0px;
       --stack-s3-y: 0px;
+      --stack-reserve-top: 0px;
+      --stack-reserve-right: 0px;
+      --stack-reserve-bottom: 0px;
+      --stack-reserve-left: 24px;
     }
     .deck-export-area.export-capture .card-grid[data-stack-orientation='right'] {
       --stack-top-x: 0px;
@@ -1905,6 +1956,10 @@ function typeRank(t?: string): number {
       --stack-s2-y: 0px;
       --stack-s3-x: 24px;
       --stack-s3-y: 0px;
+      --stack-reserve-top: 0px;
+      --stack-reserve-right: 24px;
+      --stack-reserve-bottom: 0px;
+      --stack-reserve-left: 0px;
     }
     .deck-export-area.export-capture .card-grid[data-stack-orientation='center'] {
       --stack-top-x: 0px;
@@ -1913,6 +1968,10 @@ function typeRank(t?: string): number {
       --stack-s2-y: 0px;
       --stack-s3-x: 0px;
       --stack-s3-y: 0px;
+      --stack-reserve-top: 0px;
+      --stack-reserve-right: 0px;
+      --stack-reserve-bottom: 0px;
+      --stack-reserve-left: 0px;
     }
     .deck-export-area.export-capture.capture-horizontal .card-grid {
       grid-template-columns: repeat(8, minmax(0, 1fr));

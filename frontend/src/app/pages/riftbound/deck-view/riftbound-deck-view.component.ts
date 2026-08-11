@@ -2178,8 +2178,20 @@ export class RiftboundDeckViewComponent implements OnInit {
     if (!value) return [];
     const lower = value.toLowerCase();
     if (lower.startsWith('data:') || lower.startsWith('blob:')) return [];
+    if (this.isImagekitUrl(value)) return [];
     if (lower.includes('res.cloudinary.com/')) return [];
     return [`https://res.cloudinary.com/daobfx9yb/image/fetch/f_auto,q_auto/${encodeURIComponent(value)}`];
+  }
+
+  private isImagekitUrl(url: string | null | undefined): boolean {
+    const value = this.normalizeImageUrl(url);
+    if (!value) return false;
+    try {
+      const parsed = new URL(value, window.location.origin);
+      return parsed.hostname.toLowerCase().endsWith('.imagekit.io');
+    } catch {
+      return false;
+    }
   }
 
   private isExportSafeImageUrl(url: string): boolean {
@@ -2202,7 +2214,14 @@ export class RiftboundDeckViewComponent implements OnInit {
 
   private prioritizedImageCandidates(candidates: string[]): string[] {
     if (!this.exportSafeImageMode()) return candidates;
-    const expanded = candidates.flatMap((url) => [url, ...this.cloudinaryFetchVariants(url)]);
+
+    // En exportación, priorizamos una URL renderizable por html2canvas
+    // (Cloudinary fetch) antes que la fuente original para reducir blanks por CORS.
+    const expanded = candidates.flatMap((url) => {
+      const cloudinaryVariants = this.cloudinaryFetchVariants(url);
+      return cloudinaryVariants.length ? [...cloudinaryVariants, url] : [url];
+    });
+
     const safe = expanded.filter((url) => this.isExportSafeImageUrl(url));
     return Array.from(new Set(safe));
   }
@@ -2781,7 +2800,7 @@ export class RiftboundDeckViewComponent implements OnInit {
       }
       this.cdr.detectChanges();
       await this.nextRenderTick();
-      await this.waitForImages(el);
+      await this.waitForImagesToSettle(el);
       await this.nextRenderTick();
 
       const targetWidth = this.orientation() === 'horizontal' ? 1680 : 1140;
@@ -2848,6 +2867,24 @@ export class RiftboundDeckViewComponent implements OnInit {
         img.addEventListener('error', () => resolve(), { once: true });
       });
     }));
+  }
+
+  private async waitForImagesToSettle(el: HTMLElement, maxPasses = 4): Promise<void> {
+    let prevSignature = '';
+
+    for (let pass = 0; pass < maxPasses; pass++) {
+      await this.waitForImages(el);
+      await this.nextRenderTick();
+
+      const imgs = Array.from(el.querySelectorAll('img')) as HTMLImageElement[];
+      const hasPending = imgs.some((img) => !img.complete);
+      const signature = imgs
+        .map((img) => `${this.normalizeImageUrl(img.currentSrc || img.src)}|${img.complete ? '1' : '0'}`)
+        .join('||');
+
+      if (!hasPending && signature === prevSignature) return;
+      prevSignature = signature;
+    }
   }
 
   // ── Presentación ──

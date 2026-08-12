@@ -1866,6 +1866,13 @@ function typeRank(t?: string): number {
     .deck-export-area.export-capture.capture-horizontal .zone-side-deck {
       grid-column: 1 / -1;
     }
+    .deck-export-area.export-capture.capture-horizontal .zone-units { order: 1; }
+    .deck-export-area.export-capture.capture-horizontal .zone-spells { order: 2; }
+    .deck-export-area.export-capture.capture-horizontal .zone-gear { order: 3; }
+    .deck-export-area.export-capture.capture-horizontal .zone-other { order: 4; }
+    .deck-export-area.export-capture.capture-horizontal .zone-side-deck { order: 5; }
+    .deck-export-area.export-capture.capture-horizontal .zone-runes { order: 6; }
+    .deck-export-area.export-capture.capture-horizontal .zone-battlefields { order: 7; }
     .deck-export-area.export-capture.capture-horizontal .zone-runes .card-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }

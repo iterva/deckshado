@@ -2961,7 +2961,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     const source = this.wishlistEntries();
     const hydrated = this.wishlistHydratedCards();
     const filtered = sel.size > 0 ? source.filter(w => sel.has(w.id)) : source;
-    return filtered.slice(0, 20).map(w => {
+    return filtered.map(w => {
       const card = hydrated.get(w.card_data.id) || w.card_data;
       const imageCandidates = this.shareCardImageCandidates(card);
       return {

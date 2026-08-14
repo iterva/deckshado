@@ -1034,7 +1034,7 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ── Share image (Wishlist + Mercado) ──
   get shareWishlistItems(): ShareImageItem[] {
-    return this.wishlistEntries.slice(0, 20).map(w => ({
+    return this.wishlistEntries.map(w => ({
       name: w.card_detail?.name || '',
       image: w.card_detail?.image_url || '',
       quantity: w.desired_quantity || 1,

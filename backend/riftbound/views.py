@@ -794,8 +794,6 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
         items = request.data if isinstance(request.data, list) else []
         if not items:
             return Response({"detail": "Se esperaba lista"}, status=400)
-        if len(items) > 200:
-            return Response({"detail": "Máximo 200"}, status=400)
         updated = 0
         for item in items:
             entry_id = self._coerce_int(item.get("id") or item.get("entry_id"))

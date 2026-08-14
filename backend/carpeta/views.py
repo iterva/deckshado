@@ -256,8 +256,6 @@ def collection_batch_upsert(request):
     items = request.data if isinstance(request.data, list) else []
     if not items:
         return Response({"detail": "Se esperaba una lista de cambios."}, status=status.HTTP_400_BAD_REQUEST)
-    if len(items) > 200:
-        return Response({"detail": "Máximo 200 cambios por lote."}, status=status.HTTP_400_BAD_REQUEST)
 
     updated = 0
     for item in items:

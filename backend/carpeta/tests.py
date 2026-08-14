@@ -91,6 +91,15 @@ class CollectionTests(CarpetaSetupMixin, APITestCase):
         results = resp.data.get("results", resp.data)
         self.assertEqual(len(results), 1)
 
+    def test_batch_upsert_accepts_more_than_200_changes(self):
+        _auth(self.client, self.user)
+        changes = [{"card": self.card.id, "quantity": 1} for _ in range(201)]
+
+        resp = self.client.post(reverse("collection-batch-upsert"), changes, format="json")
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["updated"], 201)
+
 
 class WishlistTests(CarpetaSetupMixin, APITestCase):
     def test_toggle_creates_then_removes(self):

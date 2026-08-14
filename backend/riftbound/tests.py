@@ -75,3 +75,11 @@ class RiftboundCollectionUpsertTests(APITestCase):
 			RiftboundCollectionEntry.objects.filter(user=self.user, card=self.card).count(),
 			1,
 		)
+
+	def test_batch_upsert_accepts_more_than_200_changes(self):
+		changes = [{"card": self.card.id, "quantity": 1} for _ in range(201)]
+
+		resp = self.client.post(self.batch_upsert_url, changes, format="json")
+
+		self.assertEqual(resp.status_code, status.HTTP_200_OK)
+		self.assertEqual(resp.data.get("updated"), 201)

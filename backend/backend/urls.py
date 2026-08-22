@@ -6,7 +6,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django.db.models import Q
-from external_api import external_token, external_token_google, external_set_password, external_my_decks, external_cards_by_format
+from external_api import external_token, external_token_google, external_set_password, external_my_decks,external_decks, external_cards_by_format
 from cards.views_admin import (
     cards_admin_dashboard,
     cards_admin_toggle_editions,
@@ -112,6 +112,7 @@ urlpatterns = [
     path("api/external/token/google/", external_token_google, name="external-token-google"),
     path("api/external/set-password/", external_set_password, name="external-set-password"),
     path("api/external/my-decks/", external_my_decks, name="external-my-decks"),
+    path("api/external/all-decks/", external_decks, name="external-decks"),
     path("api/external/cards/<str:format_code>/", external_cards_by_format, name="external-cards"),
 ]
 

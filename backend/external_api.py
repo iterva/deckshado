@@ -235,6 +235,70 @@ def external_my_decks(request):
         "decks": decks_data,
     })
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def external_decks(request):
+    """Devuelve todos los mazos del usuario autenticado con sus cartas."""
+    qs = Deck.objects.filter(is_public=True).prefetch_related(
+        "entries__card__edition",
+        "entries__card__rarity",
+        "entries__card__race",
+        "entries__card__card_type",
+    )
+
+    # Filtro opcional por formato
+    fmt = request.query_params.get("format")
+    if fmt:
+        qs = qs.filter(format=fmt)
+
+    decks_data = []
+    for deck in qs:
+        entries = []
+        sideboard = []
+        for entry in deck.entries.all():
+            card = entry.card
+            card_data = {
+                "card_id": card.id,
+                "myl_id": card.myl_id,
+                "name": card.name,
+                "quantity": entry.quantity,
+                "cost": card.cost,
+                "damage": card.damage,
+                "ability": card.ability,
+                "edition_slug": card.edition.slug,
+                "edition_title": card.edition.title,
+                "rarity": card.rarity.name if card.rarity else None,
+                "race": card.race.name if card.race else None,
+                "type": card.card_type.name if card.card_type else None,
+                "image_url": card.custom_image_url or f"{MYL_CARDS_CDN}{card.edition.myl_id}/{card.edid}.png",
+            }
+            if entry.is_sideboard:
+                sideboard.append(card_data)
+            else:
+                entries.append(card_data)
+
+        decks_data.append({
+            "id": deck.id,
+            "name": deck.name,
+            "description": deck.description,
+            "format": deck.format,
+            "sub_format": deck.sub_format,
+            "race": deck.race,
+            "is_public": deck.is_public,
+            "card_count": sum(e["quantity"] for e in entries),
+            "sideboard_count": sum(e["quantity"] for e in sideboard),
+            "created_at": deck.created_at,
+            "updated_at": deck.updated_at,
+            "entries": entries,
+            "sideboard": sideboard,
+        })
+
+    return Response({
+        "user": request.user.username,
+        "deck_count": len(decks_data),
+        "decks": decks_data,
+    })
+
 
 @api_view(["GET"])
 @permission_classes([AllowAny])

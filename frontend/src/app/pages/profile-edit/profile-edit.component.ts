@@ -109,10 +109,6 @@ export class ProfileEditComponent implements AfterViewInit {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      this.message.set('La imagen no puede superar 2 MB.');
-      return;
-    }
     this.avatarFile = file;
     const reader = new FileReader();
     reader.onload = () => this.avatarPreview.set(reader.result as string);

@@ -1,45 +1,65 @@
 <div class="carpeta-container">
-  <!-- Header con avatar de carpeta -->
-  <div class="carpeta-header">
-    <div class="binder-avatar-wrapper">
-      @if (binderProfile?.binder_avatar_url) {
-        <img [src]="binderProfile!.binder_avatar_url" alt="Avatar Carpeta" class="binder-avatar" />
-      } @else {
-        <div class="binder-avatar-placeholder">📁</div>
-      }
-      <label class="avatar-upload-btn" title="Cambiar foto de carpeta">
-        📷
-        <input type="file" accept="image/*" (change)="onAvatarFileChange($event)" hidden />
-      </label>
+  <!-- Header con avatar de carpeta & Collection Stats Banner -->
+  <div class="carpeta-header-layout">
+    <div class="carpeta-profile-card">
+      <div class="binder-avatar-wrapper">
+        @if (binderProfile?.binder_avatar_url) {
+          <img [src]="binderProfile!.binder_avatar_url" alt="Avatar Carpeta" class="binder-avatar" />
+        } @else {
+          <div class="binder-avatar-placeholder">
+            <app-icon name="folder" [size]="24"></app-icon>
+          </div>
+        }
+        <label class="avatar-upload-btn" title="Cambiar foto de carpeta">
+          <app-icon name="upload" [size]="13"></app-icon>
+          <input type="file" accept="image/*" (change)="onAvatarFileChange($event)" hidden />
+        </label>
+      </div>
+      <div class="binder-info">
+        <h1>Mi Carpeta</h1>
+        <p class="binder-user">{{ auth.user()?.username }}</p>
+      </div>
     </div>
-    <div class="binder-info">
-      <h1>Mi Carpeta</h1>
-      <p class="binder-user">{{ auth.user()?.username }}</p>
+
+    <!-- Collection Stats Summary Banner -->
+    <div class="collection-stats-banner">
+      <div class="stat-item owned">
+        <span class="stat-num">{{ collectionTotal }}</span>
+        <span class="stat-title"><app-icon name="check-circle" [size]="12"></app-icon> Poseídas</span>
+      </div>
+      <div class="stat-item wishlist">
+        <span class="stat-num">{{ wishlistEntries.length }}</span>
+        <span class="stat-title"><app-icon name="heart" [size]="12"></app-icon> Wishlist</span>
+      </div>
+      <div class="stat-item selling">
+        <span class="stat-num">{{ getSellingCount() }}</span>
+        <span class="stat-title"><app-icon name="store" [size]="12"></app-icon> En Venta</span>
+      </div>
     </div>
   </div>
 
   <!-- Tabs -->
   <div class="tabs">
     <button class="tab" [class.active]="activeTab === 'carpeta'" (click)="switchTab('carpeta')">
-      📁 CARPETA
+      <app-icon name="folder" [size]="15"></app-icon> <span>CARPETA</span>
     </button>
     <button class="tab" [class.active]="activeTab === 'codex'" (click)="switchTab('codex')">
-      📖 COLECCIÓN
+      <app-icon name="library" [size]="15"></app-icon> <span>COLECCIÓN</span>
     </button>
     <button class="tab" [class.active]="activeTab === 'wishlist'" (click)="switchTab('wishlist')">
-      ❤️ WISHLIST
+      <app-icon name="heart" [size]="15"></app-icon> <span>WISHLIST</span>
     </button>
     <button class="tab" [class.active]="activeTab === 'mercado'" (click)="switchTab('mercado')">
-      🏪 MERCADO
+      <app-icon name="store" [size]="15"></app-icon> <span>MERCADO</span>
     </button>
     <button class="tab" [class.active]="activeTab === 'pedidos'" (click)="switchTab('pedidos')">
-      🧾 PEDIDOS
+      <app-icon name="file-text" [size]="15"></app-icon> <span>PEDIDOS</span>
     </button>
     <button class="tab" [class.active]="activeTab === 'historial'" (click)="switchTab('historial')">
-      🕘 HISTORIAL
+      <app-icon name="clock" [size]="15"></app-icon> <span>HISTORIAL</span>
     </button>
     <button class="tab" [class.active]="activeTab === 'stats'" (click)="switchTab('stats')">
-      📊 STATS
+      <app-icon name="bar-chart-3" [size]="15"></app-icon> <span>STATS</span>
     </button>
   </div>
 
@@ -49,17 +69,20 @@
       <div class="tab-toolbar">
         <div class="search-bar">
           <input type="text" placeholder="Buscar en tu colección..." [(ngModel)]="collectionSearch" (keyup.enter)="onCollectionSearch()" />
-          <button class="btn btn-primary btn-sm" (click)="onCollectionSearch()">Buscar</button>
+          <button class="btn btn-primary btn-sm" (click)="onCollectionSearch()">
+            <app-icon name="search" [size]="14"></app-icon> <span>Buscar</span>
+          </button>
         </div>
         <button class="btn btn-sm btn-filter" [class.active]="showSellingOnly" (click)="toggleSellingFilter()">
-          🏷️ Solo en venta
+          <app-icon name="tag" [size]="14"></app-icon> <span>Solo en venta</span>
         </button>
         <button class="btn btn-sm btn-filter" [class.active]="importOpen" (click)="importOpen = !importOpen">
-          📥 Importar lista
+          <app-icon name="upload" [size]="14"></app-icon> <span>Importar lista</span>
         </button>
         @if (dirtyEntries.size > 0) {
           <button class="btn btn-sm btn-primary" (click)="saveAllChanges()" [disabled]="batchSaving">
-            {{ batchSaving ? '⏳ Guardando...' : '💾 Guardar Cambios (' + dirtyEntries.size + ')' }}
+            <app-icon name="save" [size]="14"></app-icon>
+            <span>{{ batchSaving ? 'Guardando...' : 'Guardar Cambios (' + dirtyEntries.size + ')' }}</span>
           </button>
         }
       </div>

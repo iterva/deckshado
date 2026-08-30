@@ -47,10 +47,12 @@ function normalizeName(name: string): string {
     .replace(/\s+/g, ' ');
 }
 
+import { IconComponent } from '../../components/icon/icon.component';
+
 @Component({
   selector: 'app-deck-builder',
   standalone: true,
-  imports: [FormsModule, RouterLink, ThumbnailPipe],
+  imports: [FormsModule, RouterLink, ThumbnailPipe, IconComponent],
   templateUrl: './deck-builder.component.html',
   styleUrl: './deck-builder.component.scss',
 })
@@ -83,6 +85,25 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
   recentlyAdded = new Set<number>();
   /** Marca el panel del mazo cuando se añade una carta (pulse animation). */
   deckPanelPulse = false;
+
+  // Responsive & Drawer flags
+  showDeckPanel = false;
+  filtersDrawerOpen = false;
+  activeMobileTab: 'browser' | 'deck' = 'browser';
+
+  toggleDeckPanel() {
+    this.showDeckPanel = !this.showDeckPanel;
+    this.activeMobileTab = this.showDeckPanel ? 'deck' : 'browser';
+  }
+
+  toggleFiltersDrawer() {
+    this.filtersDrawerOpen = !this.filtersDrawerOpen;
+  }
+
+  setMobileTab(tab: 'browser' | 'deck') {
+    this.activeMobileTab = tab;
+    this.showDeckPanel = (tab === 'deck');
+  }
 
   // Autosave (#9)
   /** Indica si hay cambios sin guardar respecto al último save oficial. */

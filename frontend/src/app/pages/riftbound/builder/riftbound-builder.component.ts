@@ -19,6 +19,7 @@ import {
   RiftboundZone, RIFTBOUND_ZONE_RULES, RIFTBOUND_ZONE_LABELS, RiftboundColor,
 } from '../../../models/riftbound';
 import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.component';
+import { IconComponent } from '../../../components/icon/icon.component';
 
 interface BuilderEntry {
   card: RiftboundCardLite;
@@ -36,12 +37,12 @@ type CardImageLike = {
 };
 
 const COLORS: { code: RiftboundColor; label: string; hex: string }[] = [
-  { code: 'fury',  label: 'Fury',  hex: '#e94560' },
-  { code: 'calm',  label: 'Calm',  hex: '#4caf50' },
-  { code: 'mind',  label: 'Mind',  hex: '#3aa6ff' },
-  { code: 'body',  label: 'Body',  hex: '#ff9a3c' },
-  { code: 'chaos', label: 'Chaos', hex: '#9c5dff' },
-  { code: 'order', label: 'Order', hex: '#ff6b7d' },
+  { code: 'fury',  label: 'Fury',  hex: '#f87171' },
+  { code: 'calm',  label: 'Calm',  hex: '#34d399' },
+  { code: 'mind',  label: 'Mind',  hex: '#38bdf8' },
+  { code: 'body',  label: 'Body',  hex: '#fb923c' },
+  { code: 'chaos', label: 'Chaos', hex: '#c084fc' },
+  { code: 'order', label: 'Order', hex: '#f472b6' },
 ];
 
 const TYPES = [
@@ -70,12 +71,41 @@ function typeRank(t?: string): number {
 @Component({
   selector: 'app-riftbound-builder',
   standalone: true,
-  imports: [CommonModule, FormsModule, TcgPriceComponent],
+  imports: [CommonModule, FormsModule, TcgPriceComponent, IconComponent],
   template: `
-    <div class="builder-layout">
-      <!-- ── Card Browser ── -->
-      <div class="card-browser">
-        <h2>Cartas Riftbound · {{ totalCount() }}</h2>
+    <!-- Mobile View Switcher (Fixed Bottom Tab Bar) -->
+    <div class="mobile-builder-switcher" role="tablist" aria-label="Vista del constructor">
+      <button
+        type="button"
+        class="mb-tab"
+        [class.active]="activeMobileTab() === 'browser'"
+        (click)="setMobileTab('browser')"
+      >
+        <app-icon name="library" [size]="16"></app-icon>
+        <span>Explorar Cartas</span>
+      </button>
+      <button
+        type="button"
+        class="mb-tab"
+        [class.active]="activeMobileTab() === 'deck'"
+        (click)="setMobileTab('deck')"
+      >
+        <app-icon name="layers" [size]="16"></app-icon>
+        <span>Mazo Activo ({{ totalEntries() }})</span>
+      </button>
+    </div>
+
+    <div class="builder-layout" [attr.data-mobile-tab]="activeMobileTab()">
+      <!-- ══════════════════════════════════════════════════════ -->
+      <!-- LEFT PANEL (35%): Card Browser                        -->
+      <!-- ══════════════════════════════════════════════════════ -->
+      <div class="card-browser" [class.mobile-hidden]="activeMobileTab() === 'deck'">
+        <div class="browser-head">
+          <div class="browser-title-wrap">
+            <h2>Cartas Riftbound</h2>
+            <span class="format-badge">{{ totalCount() }} disponibles</span>
+          </div>
+        </div>
 
         <div class="browser-filters">
           <div class="search-row">
@@ -94,12 +124,15 @@ function typeRank(t?: string): number {
                       title="Buscar en nombre y habilidad">Todo</button>
             </div>
             <div class="search-input-row">
+              <app-icon name="search" [size]="15" class="search-input-icon"></app-icon>
               <input
                 type="search"
                 [(ngModel)]="searchQuery"
                 (ngModelChange)="onSearchInput()"
                 [placeholder]="searchMode === 'ability' ? 'Buscar habilidad…' : (searchMode === 'all' ? 'Buscar nombre o habilidad…' : 'Buscar nombre o número…')" />
-              <button class="search-btn" (click)="reload()" title="Buscar">🔍</button>
+              <button class="search-btn" (click)="reload()" title="Buscar">
+                <app-icon name="search" [size]="14"></app-icon>
+              </button>
             </div>
           </div>
 
@@ -184,20 +217,30 @@ function typeRank(t?: string): number {
                 } @else {
                   <div class="img-placeholder">{{ card.card_number }}</div>
                 }
-                <span class="eye-icon">👁</span>
+                <button type="button" class="eye-btn" aria-label="Ver detalle">
+                  <app-icon name="eye" [size]="13"></app-icon>
+                </button>
                 @if (isBanned(card)) {
-                  <span class="ban-badge ban-badge-banned" title="Prohibida en Standard">🚫</span>
+                  <span class="ban-badge ban-badge-banned" title="Prohibida en Standard">
+                    <app-icon name="ban" [size]="11"></app-icon>
+                  </span>
                 } @else if (banStatus(card)) {
-                  <span class="ban-badge ban-badge-limited" title="Limitada en Standard">⚠</span>
+                  <span class="ban-badge ban-badge-limited" title="Limitada en Standard">
+                    <app-icon name="shield-alert" [size]="11"></app-icon>
+                  </span>
                 }
               </div>
               <div class="mini-info">
                 <span class="mini-name">{{ card.name }}</span>
-                <span class="mini-type">
-                  {{ typeLabel(card.card_type) }}
-                  @if (card.energy !== null && card.energy !== undefined) { · ⚡{{ card.energy }} }
-                  @if (card.might !== null && card.might !== undefined) { · ⚔️{{ card.might }} }
-                </span>
+                <div class="mini-type-row">
+                  <span class="mini-type">{{ typeLabel(card.card_type) }}</span>
+                  @if (card.energy !== null && card.energy !== undefined) {
+                    <span class="stat-pill cost" title="Energía">{{ card.energy }}</span>
+                  }
+                  @if (card.might !== null && card.might !== undefined) {
+                    <span class="stat-pill damage" title="Fuerza">{{ card.might }}</span>
+                  }
+                </div>
                 <span class="mini-num">{{ card.card_number }}</span>
               </div>
               <div class="actions-column">
@@ -260,16 +303,26 @@ function typeRank(t?: string): number {
         }
       </div>
 
-      <!-- ── Deck Panel ── -->
-      <div class="deck-panel" [class.mobile-visible]="showDeckPanel()">
+      <!-- ══════════════════════════════════════════════════════ -->
+      <!-- RIGHT PANEL (65%): Deck Panel                          -->
+      <!-- ══════════════════════════════════════════════════════ -->
+      <div class="deck-panel" [class.mobile-visible]="showDeckPanel()" [class.mobile-hidden]="activeMobileTab() === 'browser'">
         <div class="deck-header">
-          <h2>{{ deckId() ? 'Editar Mazo' : 'Nuevo Mazo' }}</h2>
-          @if (!deckId() && totalEntries() > 0) {
-            <button class="discard-draft-btn" (click)="discardDraft()" title="Descartar borrador local" aria-label="Descartar borrador">
-              <i class="bi bi-trash"></i>
+          <div class="deck-header-info">
+            <h2>{{ deckId() ? 'Editar Mazo' : 'Nuevo Mazo' }}</h2>
+            <span class="legal-badge ok">Riftbound Standard</span>
+          </div>
+
+          <div class="deck-header-actions">
+            @if (!deckId() && totalEntries() > 0) {
+              <button class="icon-btn" (click)="discardDraft()" title="Descartar borrador local" aria-label="Descartar borrador">
+                <app-icon name="trash-2" [size]="16"></app-icon>
+              </button>
+            }
+            <button class="icon-btn" (click)="openDeckPreview()" [disabled]="totalEntries() === 0" title="Previsualizar mazo">
+              <app-icon name="eye" [size]="16"></app-icon>
             </button>
-          }
-          <button class="mobile-close-btn" (click)="showDeckPanel.set(false)">✕</button>
+          </div>
         </div>
 
         <div class="deck-panel-scroll">
@@ -293,17 +346,19 @@ function typeRank(t?: string): number {
                       [class.locked]="lockColorsToLegend()"
                       (click)="toggleLockColors()"
                       [title]="lockColorsToLegend() ? 'Filtros bloqueados a colores del legend' : 'Filtros libres'">
-                {{ lockColorsToLegend() ? '🔒 Colores' : '🔓 Colores' }}
+                <app-icon [name]="lockColorsToLegend() ? 'shield' : 'shield-alert'" [size]="12"></app-icon>
+                {{ lockColorsToLegend() ? 'Colores' : 'Libres' }}
               </button>
             </div>
           } @else {
             <button class="choose-legend-btn" (click)="openLegendPicker()">
-              👑 Elige tu Champion Legend
+              <app-icon name="star-fill" [size]="16"></app-icon>
+              <span>Elige tu Champion Legend</span>
             </button>
           }
         </div>
 
-        <!-- Champion Unit designado (mismo tag que el legend) -->
+        <!-- Champion Unit designado -->
         @if (chosenLegend()) {
           <div class="legend-banner cu-banner" [class.empty]="!championUnitData()">
             @if (championUnitData(); as U) {
@@ -320,26 +375,29 @@ function typeRank(t?: string): number {
               </div>
             } @else {
               <button class="choose-legend-btn cu-choose" (click)="openChampionUnitPicker()">
-                ⚔️ Elige tu Champion Unit @if (championName(); as cn) { ({{ cn }}) }
+                <app-icon name="swords" [size]="16"></app-icon>
+                <span>Elige tu Champion Unit @if (championName(); as cn) { ({{ cn }}) }</span>
               </button>
             }
           </div>
         }
 
-        <div class="form-group">
-          <label>Nombre del mazo</label>
-          <input type="text" [(ngModel)]="deckName" placeholder="Mi mazo Riftbound" />
-        </div>
+        <div class="deck-form-grid">
+          <div class="form-group">
+            <label>Nombre del mazo</label>
+            <input type="text" [(ngModel)]="deckName" placeholder="Mi mazo Riftbound" />
+          </div>
 
-        <div class="form-group">
-          <label>Descripción (opcional)</label>
-          <input type="text" [(ngModel)]="description" placeholder="Descripción..." />
-        </div>
+          <div class="form-group">
+            <label>Descripción (opcional)</label>
+            <input type="text" [(ngModel)]="description" placeholder="Descripción..." />
+          </div>
 
-        <label class="checkbox-label">
-          <input type="checkbox" [(ngModel)]="isPublic" />
-          Mazo público
-        </label>
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="isPublic" />
+            <span>Mazo público</span>
+          </label>
+        </div>
 
         <!-- Resumen / progreso -->
         <div class="zones-summary">
@@ -352,8 +410,10 @@ function typeRank(t?: string): number {
         </div>
 
         <!-- Curva de coste (energía del main) -->
-        <div class="cost-curve">
-          <span class="cost-curve-title">Curva de Energía</span>
+        <div class="cost-curve-panel">
+          <span class="curve-title">
+            <app-icon name="bar-chart-3" [size]="14"></app-icon> Curva de Energía
+          </span>
           <div class="cost-curve-bars">
             @for (c of energyBins; track c) {
               <div class="cost-bar" [class.empty]="energyDist()[c] === 0">
@@ -386,32 +446,6 @@ function typeRank(t?: string): number {
           }
         }
 
-        <!-- Distribución por tipo (Unit / Spell / Gear) -->
-        @if (typeDist(); as td) {
-          @if (td.total > 0) {
-            <div class="color-dist type-dist">
-              <span class="cd-title">Tipos</span>
-              <div class="cd-bars">
-                @if (td.counts['unit']) {
-                  <span class="cd-pill" [style.--c]="'#f0a020'">
-                    Unidades: <strong>{{ td.counts['unit'] }}</strong>
-                  </span>
-                }
-                @if (td.counts['spell']) {
-                  <span class="cd-pill" [style.--c]="'#7d5cff'">
-                    Hechizos: <strong>{{ td.counts['spell'] }}</strong>
-                  </span>
-                }
-                @if (td.counts['gear']) {
-                  <span class="cd-pill" [style.--c]="'#9aa4ae'">
-                    Gears: <strong>{{ td.counts['gear'] }}</strong>
-                  </span>
-                }
-              </div>
-            </div>
-          }
-        }
-
         <!-- Zonas con sus cartas -->
         @for (z of zones; track z) {
           <div class="zone-section" [class.empty]="entries()[z].length === 0">
@@ -431,7 +465,7 @@ function typeRank(t?: string): number {
                         [class.active]="coverCardId() === e.card.id"
                         (click)="toggleCover(e.card.id)"
                         [title]="coverCardId() === e.card.id ? 'Portada actual (clic para quitar)' : 'Marcar como portada del mazo'">
-                  {{ coverCardId() === e.card.id ? '★' : '☆' }}
+                  <app-icon [name]="coverCardId() === e.card.id ? 'star-fill' : 'star'" [size]="14"></app-icon>
                 </button>
                 @if (cardImageUrl(e.card); as img) {
                   <img [src]="img" [alt]="e.card.name" (error)="onCardImageError(e.card, $event)" />
@@ -442,7 +476,7 @@ function typeRank(t?: string): number {
                   <span class="entry-name">{{ e.card.name }}</span>
                   <span class="entry-meta">
                     {{ e.card.card_number }}
-                    @if (e.card.energy !== null && e.card.energy !== undefined) { · ⚡{{ e.card.energy }} }
+                    @if (e.card.energy !== null && e.card.energy !== undefined) { · Energía: {{ e.card.energy }} }
                   </span>
                 </div>
                 <div class="entry-controls">
@@ -471,7 +505,8 @@ function typeRank(t?: string): number {
           <button type="button" class="preview-deck-btn"
                   (click)="openDeckPreview()"
                   [disabled]="totalEntries() === 0">
-            👁️ Previsualizar
+            <app-icon name="eye" [size]="16"></app-icon>
+            <span>Previsualizar</span>
           </button>
 
           <button class="save-btn" (click)="save()" [disabled]="saving()">
@@ -479,32 +514,20 @@ function typeRank(t?: string): number {
           </button>
         </div>
       </div>
-
-      <!-- FAB para previsualizar el mazo (móvil) -->
-      <button type="button" class="rb-fab rb-fab-preview"
-              (click)="openDeckPreview()"
-              [disabled]="totalEntries() === 0"
-              aria-label="Previsualizar mazo">
-        <span class="fab-icon">👁️</span>
-      </button>
-
-      <!-- FAB para abrir el panel del mazo en móvil -->
-      <button type="button" class="rb-fab" (click)="showDeckPanel.set(true)" aria-label="Abrir mazo">
-        <span class="fab-count">{{ totalEntries() }}</span>
-        <span class="fab-icon">📚</span>
-      </button>
     </div>
 
     <!-- Modal vista previa del mazo (estilo galería) -->
     @if (showDeckPreview()) {
-      <div class="deck-preview-overlay" (click)="closeDeckPreview()">
+      <div class="modal-overlay" (click)="closeDeckPreview()">
         <div class="deck-preview-box" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
           <div class="dp-head">
             <div>
               <h2>{{ deckName || 'Mazo Riftbound' }}</h2>
               <p class="muted">{{ totalEntries() }} cartas · {{ deckId() ? 'Editando' : 'Borrador' }}</p>
             </div>
-            <button class="dp-close" (click)="closeDeckPreview()" aria-label="Cerrar">✕</button>
+            <button class="dp-close" (click)="closeDeckPreview()" aria-label="Cerrar">
+              <app-icon name="x" [size]="18"></app-icon>
+            </button>
           </div>
           <div class="dp-body">
             @for (z of zones; track z) {
@@ -550,42 +573,43 @@ function typeRank(t?: string): number {
     <!-- Modal preview -->
     @if (previewCard(); as pc) {
       <div class="preview-overlay" (click)="closePreview()">
-        <div class="preview-box" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
-          <button class="preview-close" (click)="closePreview()" aria-label="Cerrar">✕</button>
+        <div class="preview-panel" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+          <button class="preview-close" (click)="closePreview()" aria-label="Cerrar">
+            <app-icon name="x" [size]="18"></app-icon>
+          </button>
           @if (previewLoading()) {
             <p class="muted" style="padding:3rem;text-align:center">Cargando…</p>
           } @else if (previewDetail(); as c) {
             <div class="preview-layout">
-              @if (cardImageUrl(c); as img) {
-                <img class="preview-img" [src]="img" [alt]="c.name" (error)="onCardImageError(c, $event)" />
-              }
-              <div class="preview-info">
-                <h2>{{ c.name }}</h2>
+              <div class="preview-art-col">
+                @if (cardImageUrl(c); as img) {
+                  <img class="preview-card-img" [src]="img" [alt]="c.name" (error)="onCardImageError(c, $event)" />
+                }
+              </div>
+              <div class="preview-info-col">
+                <h3 class="preview-title">{{ c.name }}</h3>
                 <p class="muted">{{ c.card_number }} · {{ c.set?.name || c.set?.code || '—' }}</p>
-                <div class="preview-badges">
-                  @if (c.card_type) { <span class="pv-badge">{{ c.card_type }}</span> }
-                  @if (c.rarity) { <span class="pv-badge">{{ c.rarity }}</span> }
-                  @if (c.variant) { <span class="pv-badge">{{ c.variant }}</span> }
-                  @for (col of c.colors; track col) { <span class="pv-badge color">{{ col }}</span> }
-                  @for (st of c.subtypes; track st) { <span class="pv-badge">{{ st }}</span> }
+                <div class="preview-meta-badges">
+                  @if (c.card_type) { <span class="stat-badge">{{ c.card_type }}</span> }
+                  @if (c.rarity) { <span class="stat-badge rarity">{{ c.rarity }}</span> }
+                  @if (c.variant) { <span class="stat-badge">{{ c.variant }}</span> }
+                  @for (col of c.colors; track col) { <span class="stat-badge" [style.color]="col">{{ col }}</span> }
+                  @for (st of c.subtypes; track st) { <span class="stat-badge">{{ st }}</span> }
                 </div>
-                <div class="preview-stats">
-                  @if (c.energy != null) { <div><span>Energy</span><strong>{{ c.energy }}</strong></div> }
-                  @if (c.power != null) { <div><span>Power</span><strong>{{ c.power }}</strong></div> }
-                  @if (c.might != null) { <div><span>Might</span><strong>{{ c.might }}</strong></div> }
+                <div class="preview-stats-row">
+                  @if (c.energy != null) { <div class="stat-item"><span class="stat-label">Energy</span><span class="stat-val">{{ c.energy }}</span></div> }
+                  @if (c.power != null) { <div class="stat-item"><span class="stat-label">Power</span><span class="stat-val">{{ c.power }}</span></div> }
+                  @if (c.might != null) { <div class="stat-item"><span class="stat-label">Might</span><span class="stat-val">{{ c.might }}</span></div> }
                 </div>
                 @if (c.description) {
-                  <h3>Descripción</h3>
-                  <pre class="preview-desc">{{ c.description }}</pre>
+                  <div class="preview-ability-box">
+                    <span class="ability-title">Descripción</span>
+                    <p class="ability-text">{{ c.description }}</p>
+                  </div>
                 }
                 <app-tcg-price [cardName]="c.name" [compact]="false" [showLink]="true"></app-tcg-price>
               </div>
             </div>
-          } @else {
-            @if (cardImageUrl(pc); as img) {
-              <img class="preview-img" [src]="img" [alt]="pc.name" (error)="onCardImageError(pc, $event)" />
-            }
-            <h3>{{ pc.name }} <small>{{ pc.card_number }}</small></h3>
           }
         </div>
       </div>
@@ -593,35 +617,27 @@ function typeRank(t?: string): number {
 
     <!-- Modal Legend Picker -->
     @if (showLegendPicker()) {
-      <div class="legend-picker-overlay" (click)="closeLegendPicker()">
-        <div class="legend-picker-box" (click)="$event.stopPropagation()">
-          <div class="lp-head">
-            <h3>👑 Elige tu Champion Legend</h3>
-            <p class="muted">Las cartas se filtrarán automáticamente por los colores del legend.</p>
-            <input type="search" [ngModel]="legendPickerSearch()" (ngModelChange)="legendPickerSearch.set($event)"
-                   placeholder="Buscar por nombre…" class="lp-search" />
-            @if (chosenLegend()) {
-              <button class="lp-skip" (click)="closeLegendPicker()">Mantener actual</button>
-            }
+      <div class="modal-overlay" (click)="closeLegendPicker()">
+        <div class="modal legend-picker-box" (click)="$event.stopPropagation()">
+          <div class="modal-head">
+            <h3><app-icon name="star-fill" [size]="18"></app-icon> Elige tu Champion Legend</h3>
+            <button type="button" class="modal-close" (click)="closeLegendPicker()" aria-label="Cerrar">
+              <app-icon name="x" [size]="18"></app-icon>
+            </button>
           </div>
-          <div class="lp-grid">
+          <p class="muted" style="margin-bottom: 0.75rem;">Las cartas se filtrarán automáticamente por los colores del legend.</p>
+          <input type="search" [ngModel]="legendPickerSearch()" (ngModelChange)="legendPickerSearch.set($event)"
+                 placeholder="Buscar por nombre…" class="lp-search" style="width: 100%; padding: 0.5rem; margin-bottom: 1rem; background: rgba(18,18,23,0.8); border: 1px solid var(--ui-border); border-radius: 6px; color: #fff;" />
+          <div class="lp-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.75rem; max-height: 60vh; overflow-y: auto;">
             @for (L of filteredLegends(); track L.id) {
-              <button type="button" class="lp-card" (click)="chooseLegend(L)">
+              <button type="button" class="lp-card" (click)="chooseLegend(L)" style="background: rgba(24,24,27,0.7); border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.5rem; cursor: pointer; color: #fff; text-align: center;">
                 @if (cardImageUrl(L); as img) {
-                  <img [src]="img" [alt]="L.name" (error)="onCardImageError(L, $event)" />
+                  <img [src]="img" [alt]="L.name" style="width: 100%; border-radius: 4px;" (error)="onCardImageError(L, $event)" />
                 } @else {
                   <div class="lp-img-fallback">{{ L.card_number }}</div>
                 }
-                <div class="lp-name">{{ L.name }}</div>
-                <div class="lp-colors">
-                  @for (c of (L.colors || []); track c) {
-                    <span class="color-dot" [style.background]="colorHex(c)"></span>
-                  }
-                </div>
+                <div class="lp-name" style="font-size: 0.78rem; font-weight: 600; margin-top: 0.25rem;">{{ L.name }}</div>
               </button>
-            }
-            @if (filteredLegends().length === 0) {
-              <p class="muted center">Sin resultados.</p>
             }
           </div>
         </div>
@@ -630,36 +646,26 @@ function typeRank(t?: string): number {
 
     <!-- Modal Champion Unit Picker -->
     @if (showChampionUnitPicker()) {
-      <div class="legend-picker-overlay" (click)="closeChampionUnitPicker()">
-        <div class="legend-picker-box" (click)="$event.stopPropagation()">
-          <div class="lp-head">
-            <h3>⚔️ Elige tu Champion Unit @if (championName()) { · {{ championName() }} }</h3>
-            <p class="muted">Unidades con tag Champion Unit que además comparten el tag principal del legend. Se añadirá una copia al main si no estaba.</p>
-            <input type="search" [ngModel]="championUnitPickerSearch()" (ngModelChange)="championUnitPickerSearch.set($event)"
-                   placeholder="Buscar por nombre…" class="lp-search" />
-            <button class="lp-skip" (click)="closeChampionUnitPicker()">Cerrar</button>
+      <div class="modal-overlay" (click)="closeChampionUnitPicker()">
+        <div class="modal legend-picker-box" (click)="$event.stopPropagation()">
+          <div class="modal-head">
+            <h3><app-icon name="swords" [size]="18"></app-icon> Elige tu Champion Unit</h3>
+            <button type="button" class="modal-close" (click)="closeChampionUnitPicker()" aria-label="Cerrar">
+              <app-icon name="x" [size]="18"></app-icon>
+            </button>
           </div>
-          @if (loadingChampionUnits()) {
-            <p class="muted center">Cargando unidades…</p>
-          }
-          <div class="lp-grid">
+          <input type="search" [ngModel]="championUnitPickerSearch()" (ngModelChange)="championUnitPickerSearch.set($event)"
+                 placeholder="Buscar por nombre…" class="lp-search" style="width: 100%; padding: 0.5rem; margin-bottom: 1rem; background: rgba(18,18,23,0.8); border: 1px solid var(--ui-border); border-radius: 6px; color: #fff;" />
+          <div class="lp-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.75rem; max-height: 60vh; overflow-y: auto;">
             @for (U of filteredChampionUnits(); track U.id) {
-              <button type="button" class="lp-card" (click)="chooseChampionUnit(U)">
+              <button type="button" class="lp-card" (click)="chooseChampionUnit(U)" style="background: rgba(24,24,27,0.7); border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.5rem; cursor: pointer; color: #fff; text-align: center;">
                 @if (cardImageUrl(U); as img) {
-                  <img [src]="img" [alt]="U.name" (error)="onCardImageError(U, $event)" />
+                  <img [src]="img" [alt]="U.name" style="width: 100%; border-radius: 4px;" (error)="onCardImageError(U, $event)" />
                 } @else {
                   <div class="lp-img-fallback">{{ U.card_number }}</div>
                 }
-                <div class="lp-name">{{ U.name }}</div>
-                <div class="lp-colors">
-                  @for (c of (U.colors || []); track c) {
-                    <span class="color-dot" [style.background]="colorHex(c)"></span>
-                  }
-                </div>
+                <div class="lp-name" style="font-size: 0.78rem; font-weight: 600; margin-top: 0.25rem;">{{ U.name }}</div>
               </button>
-            }
-            @if (!loadingChampionUnits() && filteredChampionUnits().length === 0) {
-              <p class="muted center">Sin unidades para este champion.</p>
             }
           </div>
         </div>
@@ -667,639 +673,264 @@ function typeRank(t?: string): number {
     }
   `,
   styles: [`
+    :host { display: block; min-height: calc(100vh - 60px); }
+
+    .mobile-builder-switcher {
+      display: none; position: sticky; top: 56px; z-index: 50;
+      background: rgba(9, 9, 11, 0.95); backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--ui-border); padding: 0.5rem 0.75rem; gap: 0.5rem;
+    }
+    .mb-tab {
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.45rem;
+      padding: 0.5rem 0.75rem; border-radius: 8px; background: rgba(24, 24, 27, 0.6);
+      border: 1px solid var(--ui-border); color: var(--ui-text-secondary); font-size: 0.8rem; font-weight: 500;
+      cursor: pointer; transition: all 0.15s ease;
+    }
+    .mb-tab.active {
+      background: rgba(6, 182, 212, 0.15); border-color: #06b6d4; color: #06b6d4; font-weight: 600;
+    }
+
     .builder-layout {
-      display: grid;
-      grid-template-columns: 1fr 380px;
-      min-height: calc(100vh - 64px);
-      max-width: 100%;
+      display: grid; grid-template-columns: 35% 65%; gap: 1.25rem;
+      height: calc(100vh - 60px); max-width: 1700px; margin: 0 auto;
+      padding: 1rem 1.5rem; overflow: hidden; box-sizing: border-box;
     }
-    @media (max-width: 900px) { .builder-layout { grid-template-columns: 1fr; } }
-
-    /* Browser */
-    .card-browser { padding: 1.25rem; border-right: 1px solid #1e3a4a; min-width: 0; }
-    @media (max-width: 600px) { .card-browser { padding: 0.75rem 0.6rem; } .card-browser h2 { font-size: 1.1rem !important; } .deck-panel { padding: 0.75rem 0.6rem !important; } }
-    .card-browser h2 {
-      font-size: 1.5rem; font-weight: 700; color: #fff; margin: 0 0 1rem;
-      letter-spacing: -.01em;
+    @media (max-width: 960px) {
+      .builder-layout { display: block; height: auto; padding: 0.75rem; }
+      .mobile-builder-switcher { display: flex; }
+      .mobile-hidden { display: none !important; }
     }
-    .muted { opacity: .65; }
-    .center { text-align: center; }
 
-    .browser-filters { margin-bottom: 1rem; display: flex; flex-direction: column; gap: .55rem; }
-
-    .search-row { display: flex; flex-direction: column; gap: .5rem; align-items: stretch; }
-    .search-input-row { display: flex; gap: .5rem; width: 100%; }
-    .search-row input {
-      flex: 1; min-width: 0; padding: .65rem 1rem;
-      border: 1px solid #2a3a4a; border-radius: 6px;
-      background: #0f0f23; color: #e0e0e0; outline: none;
-      font-size: 1rem;
+    .card-browser, .deck-panel {
+      display: flex; flex-direction: column; height: 100%; min-height: 0;
+      background: rgba(24, 24, 27, 0.45); border: 1px solid var(--ui-border);
+      border-radius: 12px; padding: 1.2rem; overflow-y: auto; box-sizing: border-box;
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     }
-    .search-row input:focus { border-color: #e94560; }
+
+    .browser-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; }
+    .browser-title-wrap h2 { font-size: 1.05rem; font-weight: 700; color: #ffffff; margin: 0; }
+    .format-badge { font-size: 0.75rem; color: #06b6d4; font-weight: 500; }
+
+    .browser-filters { display: flex; flex-direction: column; gap: 0.55rem; margin-bottom: 1rem; }
+    .search-row { display: flex; flex-direction: column; gap: 0.5rem; }
     .search-modes {
-      display: flex; background: #16213e; border: 1px solid #2a2a4a;
-      border-radius: 6px; padding: 2px; gap: 2px; align-self: flex-start;
+      display: flex; background: rgba(18, 18, 23, 0.6); border: 1px solid var(--ui-border);
+      border-radius: 6px; padding: 2px; gap: 2px;
     }
     .search-modes button {
-      padding: .35rem .7rem; border: none; background: transparent;
-      color: #b0b0c8; border-radius: 4px; font-size: .85rem; cursor: pointer;
-      white-space: nowrap; transition: background .15s, color .15s;
+      flex: 1; padding: 0.3rem 0.4rem; border: none; background: transparent;
+      color: var(--ui-text-muted); border-radius: 4px; font-size: 0.78rem; cursor: pointer;
     }
-    .search-modes button:hover { color: #fff; }
-    .search-modes button.active { background: #e94560; color: #fff; font-weight: 600; }
+    .search-modes button.active { background: #06b6d4; color: #09090b; font-weight: 600; }
+
+    .search-input-row { position: relative; display: flex; align-items: center; gap: 0.4rem; }
+    .search-input-icon { position: absolute; left: 0.75rem; color: var(--ui-text-muted); }
+    .search-input-row input {
+      flex: 1; padding: 0.5rem 0.75rem 0.5rem 2.2rem; background: rgba(18, 18, 23, 0.8);
+      border: 1px solid var(--ui-border); border-radius: 8px; color: #ffffff; font-size: 0.85rem; outline: none;
+    }
+    .search-input-row input:focus { border-color: #06b6d4; box-shadow: 0 0 10px rgba(6, 182, 212, 0.2); }
     .search-btn {
-      padding: .55rem .9rem; border: 1px solid #e94560; border-radius: 6px;
-      background: #e94560; color: #fff; cursor: pointer; font-size: 1rem;
-      transition: background .15s;
+      padding: 0.5rem 0.75rem; background: #06b6d4; color: #09090b; border: none;
+      border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center;
     }
-    .search-btn:hover { background: #c73650; }
-    .search-btn:active { transform: scale(.95); }
 
-    .type-chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .type-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
     .type-chip-btn {
-      padding: .3rem .75rem; border: 1px solid #2a3a4a; border-radius: 999px;
-      background: #0f0f23; color: #c8c8da; font-size: .85rem; cursor: pointer;
-      transition: all .15s; white-space: nowrap;
+      padding: 0.28rem 0.6rem; background: rgba(39, 39, 42, 0.3); border: 1px solid var(--ui-border);
+      border-radius: 6px; color: var(--ui-text-secondary); font-size: 0.75rem; cursor: pointer;
     }
-    .type-chip-btn:hover { border-color: #e94560; color: #fff; }
-    .type-chip-btn.active { background: #ffbd39; border-color: #ffbd39; color: #1a1a2e; font-weight: 700; }
+    .type-chip-btn.active { background: rgba(6, 182, 212, 0.15); border-color: #06b6d4; color: #06b6d4; font-weight: 600; }
 
-    .filter-row {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem;
-    }
-    @media (max-width: 600px) { .filter-row { grid-template-columns: 1fr 1fr; } }
-    .filter-label { display: block; font-size: .7rem; color: #98a2a8; margin-bottom: .15rem; text-transform: uppercase; letter-spacing: .04em; }
+    .filter-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+    .filter-label { display: block; font-size: 0.68rem; color: var(--ui-text-muted); text-transform: uppercase; margin-bottom: 2px; }
     .filter-row select {
-      width: 100%; padding: .4rem .6rem;
-      border: 1px solid #2a3a4a; border-radius: 6px;
-      background: #0f0f23; color: #e0e0e0; outline: none;
+      width: 100%; padding: 0.35rem 0.5rem; background: rgba(18, 18, 23, 0.8);
+      border: 1px solid var(--ui-border); border-radius: 6px; color: #ffffff; font-size: 0.75rem; outline: none;
     }
-    .filter-row select:focus { border-color: #e94560; }
 
-    .color-row { display: flex; gap: .35rem; flex-wrap: wrap; align-items: center; }
+    .color-row { display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center; }
     .color-chip {
-      padding: .3rem .65rem; border: 1px solid var(--c); border-radius: 999px;
-      background: transparent; color: var(--c); cursor: pointer; font-size: .8rem;
-      font-weight: 600;
+      padding: 0.2rem 0.55rem; border: 1px solid var(--c); border-radius: 999px;
+      background: transparent; color: var(--c); font-size: 0.72rem; font-weight: 600; cursor: pointer;
     }
-    .color-chip.active { background: var(--c); color: #0f0f23; }
-    .clear-colors {
-      background: transparent; border: none; color: #e94560; cursor: pointer;
-      font-size: .8rem; text-decoration: underline;
-    }
+    .color-chip.active { background: var(--c); color: #09090b; }
+    .clear-colors { background: none; border: none; color: #06b6d4; font-size: 0.75rem; cursor: pointer; }
 
-    /* Cards grid */
-    .available-cards {
-      display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: .5rem; margin-top: 1rem;
-    }
-    @media (max-width: 1100px) { .available-cards { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 600px) {
-      .available-cards { grid-template-columns: repeat(2, 1fr); gap: 0.35rem; }
-      .mini-card { align-items: flex-start; }
-      .mini-name { font-size: 0.72rem !important; }
-      .mini-type { font-size: 0.6rem !important; }
-      .mini-num { display: none; }
-      .img-wrapper img, .img-placeholder { width: 42px !important; height: 58px !important; }
-      .mini-actions { min-width: 68px; }
-      .circle-btn {
-        inline-size: 26px;
-        block-size: 26px;
-        min-inline-size: 26px;
-        min-block-size: 26px;
-        max-inline-size: 26px;
-        max-block-size: 26px;
-        flex: 0 0 26px;
-        font-size: .95rem;
-      }
-    }
-    @media (max-width: 360px) { .available-cards { grid-template-columns: 1fr; } }
-
+    .available-cards { display: flex; flex-direction: column; gap: 0.45rem; flex: 1; overflow-y: auto; }
     .mini-card {
-      display: flex; align-items: center; gap: .5rem;
-      background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 6px;
-      padding: .35rem; transition: all .15s; position: relative;
-      min-width: 0; overflow: hidden;
+      display: flex; align-items: center; gap: 0.65rem; padding: 0.4rem 0.6rem;
+      background: rgba(18, 18, 23, 0.6); border: 1px solid var(--ui-border); border-radius: 8px;
+      position: relative;
     }
-    .mini-card:hover { border-color: #e94560; background: #1e1e3a; }
-    .mini-card.in-deck { border-color: #ffbd39; background: rgba(255,189,57,.05); }
-    .mini-card.maxed .actions-column .add { opacity: .35; cursor: not-allowed; }
-    .mini-card.banned { border-color: #e94560; background: rgba(233,69,96,.07); }
-    .mini-card.banned .actions-column .add { opacity: .25; cursor: not-allowed; }
-    .mini-card.banned .img-wrapper img { filter: grayscale(.6) brightness(.7); }
-    .mini-card.limited { border-color: #ff8c42; }
-    .ban-badge {
-      position: absolute; top: 2px; right: 2px;
-      width: 18px; height: 18px; border-radius: 50%;
-      display: grid; place-items: center;
-      font-size: .7rem; font-weight: 700;
-      pointer-events: none;
-    }
-    .ban-badge-banned { background: #e94560; color: #fff; }
-    .ban-badge-limited { background: #ff8c42; color: #fff; }
+    .mini-card:hover { border-color: rgba(255, 255, 255, 0.2); background: rgba(24, 24, 27, 0.85); }
+    .mini-card.in-deck { border-color: rgba(6, 182, 212, 0.4); background: rgba(6, 182, 212, 0.08); }
 
-    .img-wrapper { position: relative; flex-shrink: 0; cursor: zoom-in; }
-    .img-wrapper img {
-      width: 56px; height: 78px; object-fit: cover; border-radius: 4px;
-      background: #16213e;
+    .img-wrapper {
+      position: relative; width: 38px; height: 52px; border-radius: 4px; overflow: hidden;
+      flex-shrink: 0; background: #121217; border: 1px solid var(--ui-border); cursor: pointer;
     }
-    .img-placeholder {
-      width: 56px; height: 78px; display: grid; place-items: center;
-      background: #16213e; border-radius: 4px; font-size: .65rem; text-align: center;
+    .img-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+    .eye-btn {
+      position: absolute; inset: 0; background: rgba(0, 0, 0, 0.6); border: none;
+      color: #ffffff; display: flex; align-items: center; justify-content: center;
+      opacity: 0; cursor: pointer; transition: opacity 0.15s ease;
     }
-    .eye-icon {
-      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-      background: rgba(0,0,0,.55); border-radius: 4px; font-size: 1.3rem;
-      opacity: 0; transition: opacity .15s;
-    }
-    .img-wrapper:hover .eye-icon { opacity: 1; }
+    .img-wrapper:hover .eye-btn { opacity: 1; }
 
-    .mini-info { flex: 1; min-width: 0; display: flex; flex-direction: column; padding-right: .15rem; }
-    .mini-name { font-size: .85rem; color: #fff; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .mini-type { font-size: .7rem; color: #98a2a8; }
-    .mini-num { font-size: .65rem; color: #6a7a88; }
+    .mini-info { flex: 1; min-width: 0; }
+    .mini-name { font-size: 0.82rem; font-weight: 600; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mini-type-row { display: flex; align-items: center; gap: 0.35rem; margin-top: 2px; }
+    .mini-type { font-size: 0.72rem; color: var(--ui-text-muted); }
+    .mini-num { font-size: 0.65rem; color: var(--ui-text-muted); }
 
-    .actions-column { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; position: relative; z-index: 1; min-width: 84px; }
-    .mini-actions { display: flex; align-items: center; gap: .25rem; min-width: 72px; justify-content: flex-end; }
-    .mini-actions.hidden { display: none; }
-    .zone-label { font-size: .65rem; font-weight: 700; width: 12px; text-align: right; }
-    .main-label { color: #ffbd39; }
-    .side-label { color: #2ac5c5; }
-    .auto-label { color: #fff; }
-    .side-actions { border-top: 1px solid #333; padding-top: 2px; }
+    .stat-pill {
+      padding: 1px 5px; border-radius: 4px; font-size: 0.68rem; font-weight: 700; line-height: 1;
+    }
+    .stat-pill.cost { background: rgba(6, 182, 212, 0.15); color: #06b6d4; border: 1px solid rgba(6, 182, 212, 0.3); }
+    .stat-pill.damage { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    .actions-column { display: flex; flex-direction: column; gap: 0.25rem; flex-shrink: 0; }
+    .mini-actions { display: flex; align-items: center; gap: 0.25rem; }
+    .zone-label { font-size: 0.65rem; font-weight: 700; width: 10px; color: var(--ui-text-muted); }
+    .mini-qty { font-size: 0.75rem; font-weight: 700; color: #06b6d4; min-width: 12px; text-align: center; }
 
     .circle-btn {
-      inline-size: 28px;
-      block-size: 28px;
-      min-inline-size: 28px;
-      min-block-size: 28px;
-      max-inline-size: 28px;
-      max-block-size: 28px;
-      flex: 0 0 28px;
-      aspect-ratio: 1 / 1;
-      padding: 0 !important;
-      margin: 0;
-      border-radius: 999px !important;
-      border: 1px solid #444; background: #1a1a2e; color: #ccc;
-      font-size: 1rem; font-weight: 700; line-height: 1; display: inline-flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: all .15s;
+      width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--ui-border);
+      background: rgba(39, 39, 42, 0.6); color: #ffffff; font-size: 0.75rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
     }
-    .circle-btn.add:hover:not(:disabled) { border-color: #4caf50; color: #4caf50; background: rgba(76,175,80,.1); }
-    .circle-btn.remove:hover { border-color: #e94560; color: #e94560; background: rgba(233,69,96,.1); }
-    .circle-btn:disabled { opacity: .3; cursor: not-allowed; }
+    .circle-btn.add:hover:not(:disabled) { background: #06b6d4; border-color: #06b6d4; color: #09090b; }
+    .circle-btn.remove:hover { background: #ef4444; border-color: #ef4444; color: #ffffff; }
 
-    .mini-qty { font-weight: 700; font-size: .8rem; color: #ffbd39; width: 16px; text-align: center; }
+    /* Deck Panel & Cards */
+    .deck-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-bottom: 0.85rem; border-bottom: 1px solid var(--ui-border); margin-bottom: 1rem;
+    }
+    .deck-header-info { display: flex; align-items: center; gap: 0.75rem; }
+    .deck-header-info h2 { font-size: 1.15rem; font-weight: 700; color: #ffffff; margin: 0; }
+    .legal-badge {
+      font-size: 0.72rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: 999px;
+      background: rgba(6, 182, 212, 0.15); color: #06b6d4; border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+    .deck-header-actions { display: flex; gap: 0.35rem; }
+    .icon-btn {
+      width: 32px; height: 32px; border-radius: 6px; background: rgba(39, 39, 42, 0.4);
+      border: 1px solid var(--ui-border); color: var(--ui-text-secondary); display: flex;
+      align-items: center; justify-content: center; cursor: pointer;
+    }
+    .icon-btn:hover:not(:disabled) { border-color: #06b6d4; color: #06b6d4; background: rgba(6, 182, 212, 0.15); }
 
-    .infinite-sentinel { width: 100%; height: 1px; margin-top: .5rem; }
-    .pagination { display: flex; gap: 1rem; align-items: center; justify-content: center; margin: 1.25rem 0; color: #98a2a8; }
-    .page-btn { padding: .35rem .9rem; border: 1px solid #2a3a4a; background: transparent; color: #c8c8da; border-radius: 4px; cursor: pointer; }
-    .page-btn:disabled { opacity: .35; cursor: not-allowed; }
-
-    /* Deck panel */
-    .deck-panel {
-      padding: 1.25rem; background: #091428; border-left: 1px solid #1e3a4a;
-      overflow-y: auto;
-      position: sticky;
-      top: 64px;
-      align-self: start;
-      max-height: calc(100vh - 64px);
-      scrollbar-width: thin;
-      scrollbar-color: #e94560 #0f0f23;
-    }
-    .deck-panel::-webkit-scrollbar { width: 10px; }
-    .deck-panel::-webkit-scrollbar-track { background: #0f0f23; }
-    .deck-panel::-webkit-scrollbar-thumb {
-      background: #1e3a4a; border-radius: 6px; border: 2px solid #0f0f23;
-    }
-    .deck-panel::-webkit-scrollbar-thumb:hover { background: #e94560; }
-    @media (max-width: 900px) {
-      .deck-panel {
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        height: 100vh;
-        height: 100dvh;
-        z-index: 950;
-        transform: translateX(100%);
-        transition: transform .25s ease;
-        background: #091428;
-        max-height: none;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-      }
-      .deck-panel.mobile-visible { transform: translateX(0); }
-      .deck-panel-scroll {
-        flex: 1;
-        min-height: 0;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        overscroll-behavior-y: contain;
-        padding: 0 .6rem;
-      }
-      .action-row {
-        flex-shrink: 0;
-        padding: .75rem .6rem calc(.75rem + env(safe-area-inset-bottom, 0px));
-        background: #091428;
-        border-top: 1px solid #1e3a4a;
-      }
-    }
-    .deck-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    .deck-header h2 { margin: 0; font-size: 1.1rem; color: #fff; }
-    .deck-panel-scroll { }
-    .mobile-close-btn {
-      display: none; width: 36px; height: 36px; border-radius: 50%;
-      border: 1px solid #2a3a4a; background: #0f0f23; color: #c8c8da; cursor: pointer;
-    }
-    @media (max-width: 900px) { .mobile-close-btn { display: block; } }
-
-    .form-group { margin-bottom: .75rem; }
-    .form-group label { display: block; font-size: .75rem; color: #98a2a8; margin-bottom: .25rem; text-transform: uppercase; letter-spacing: .04em; }
-    .form-group input {
-      width: 100%; padding: .5rem .7rem; border: 1px solid #2a3a4a; border-radius: 6px;
-      background: #0f0f23; color: #e0e0e0; outline: none;
-    }
-    .form-group input:focus { border-color: #e94560; }
-
-    .checkbox-label { display: flex; align-items: center; gap: .5rem; color: #c8c8da; font-size: .9rem; margin-bottom: 1rem; cursor: pointer; }
-    .checkbox-label input { accent-color: #e94560; }
-
-    .zones-summary { display: flex; gap: .35rem; flex-wrap: wrap; margin-bottom: .75rem; }
-    .zone-pill {
-      display: inline-flex; align-items: center; gap: .35rem;
-      padding: .25rem .55rem; border-radius: 999px;
-      background: #0f0f23; border: 1px solid #2a3a4a;
-      font-size: .78rem; color: #c8c8da;
-    }
-    .zone-pill.ok { border-color: #4caf50; color: #4caf50; }
-    .zone-pill.bad { border-color: #e94560; color: #e94560; }
-    .zp-label { font-weight: 700; }
-
-    .cost-curve {
-      background: #0f0f23; border: 1px solid #1e3a4a; border-radius: 8px;
-      padding: .6rem .7rem .5rem; margin-bottom: .9rem;
-    }
-    .cost-curve-title { display: block; font-size: .7rem; color: #98a2a8; text-transform: uppercase; letter-spacing: .05em; margin-bottom: .4rem; }
-    .cost-curve-bars {
-      display: grid; grid-template-columns: repeat(9, 1fr); gap: .25rem;
-      align-items: end; height: 80px;
-    }
-    .cost-bar { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 2px; }
-    .cost-bar-count { font-size: .7rem; color: #e94560; font-weight: 600; min-height: .7rem; }
-    .cost-bar-fill-wrap { width: 100%; flex: 1; display: flex; align-items: flex-end; background: rgba(30,58,74,.4); border-radius: 3px; }
-    .cost-bar-fill { width: 100%; background: linear-gradient(180deg, #fff 0%, #e94560 100%); border-radius: 3px 3px 0 0; transition: height .3s; min-height: 2px; }
-    .cost-bar-label { font-size: .7rem; color: #6a7a88; }
-    .cost-bar.empty .cost-bar-fill { background: #1e3a4a; opacity: .5; }
-    .cost-bar.empty .cost-bar-count { color: transparent; }
-
-    .color-dist { margin-bottom: .9rem; }
-    .cd-title { display: block; font-size: .7rem; color: #98a2a8; text-transform: uppercase; letter-spacing: .05em; margin-bottom: .35rem; }
-    .cd-bars { display: flex; gap: .35rem; flex-wrap: wrap; }
-    .cd-pill { font-size: .75rem; padding: .15rem .5rem; border-radius: 999px; border: 1px solid var(--c); color: var(--c); }
-    .cd-pill strong { color: #fff; }
-
-    .zone-section { margin-bottom: .9rem; padding: .5rem; border: 1px solid #1e3a4a; border-radius: 6px; }
-    .zone-section.empty { opacity: .65; }
-    .zone-section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .35rem; }
-    .zs-title { font-weight: 700; color: #fff; font-size: .9rem; }
-    .zs-count { font-size: .8rem; color: #98a2a8; }
-    .zs-count.ok { color: #4caf50; }
-    .zone-empty { font-size: .75rem; color: #6a7a88; margin: 0; }
-
-    .deck-entry { display: flex; align-items: center; gap: .5rem; padding: .35rem 0; border-bottom: 1px solid #1a2a3a; }
-    .deck-entry.is-cover { background: linear-gradient(90deg, rgba(200,155,60,.12), transparent); border-radius: 6px; }
-    .cover-star {
-      flex-shrink: 0; width: 24px; height: 24px; padding: 0;
-      background: transparent; border: none; cursor: pointer;
-      color: #555; font-size: 1.05rem; line-height: 1;
-      display: grid; place-items: center; border-radius: 4px;
-      transition: color .15s, background .15s, transform .15s;
-    }
-    .cover-star:hover { color: #ff6b7d; background: rgba(255,210,60,.08); transform: scale(1.15); }
-    .cover-star.active { color: #ff6b7d; text-shadow: 0 0 8px rgba(255,210,60,.6); }
-    .deck-entry:last-child { border-bottom: none; }
-    .deck-entry img, .entry-img-fallback {
-      width: 38px; height: 53px; object-fit: cover; border-radius: 3px; background: #16213e;
-      display: grid; place-items: center; font-size: .55rem; text-align: center; color: #c8c8da;
-    }
-    .entry-info { flex: 1; min-width: 0; }
-    .entry-name { display: block; font-size: .8rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .entry-meta { font-size: .7rem; color: #6a7a88; }
-    .entry-controls { display: flex; align-items: center; gap: .25rem; }
-    .ctrl-btn {
-      width: 24px; height: 24px; border-radius: 50%;
-      border: 1px solid #2a3a4a; background: #0f0f23; color: #c8c8da;
-      font-size: .9rem; line-height: 1; display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
-    }
-    .ctrl-btn:hover:not(:disabled) { border-color: #e94560; color: #e94560; }
-    .ctrl-btn.remove:hover { border-color: #e94560; color: #e94560; }
-    .ctrl-btn:disabled { opacity: .3; cursor: not-allowed; }
-    .entry-qty { font-weight: 700; color: #e94560; min-width: 18px; text-align: center; }
-
-    .errors-box {
-      background: rgba(233,69,96,.1); border: 1px solid #e94560; color: #ff8b8b;
-      padding: .55rem .7rem; border-radius: 6px; font-size: .8rem; margin-bottom: .75rem;
-    }
-    .errors-box ul { margin: .35rem 0 0 1.1rem; padding: 0; }
-
-    .save-btn {
-      width: 100%; padding: .65rem 1rem; border: none; border-radius: 6px;
-      background: #e94560; color: #0f0f23; font-weight: 700; cursor: pointer;
-      font-size: 1rem;
-    }
-    .save-btn:hover:not(:disabled) { background: #d4a84b; }
-    .save-btn:disabled { opacity: .55; cursor: not-allowed; }
-
-    .action-row {
-      display: flex; gap: .5rem; align-items: stretch;
-    }
-    .action-row .preview-deck-btn,
-    .action-row .save-btn { flex: 1; margin-bottom: 0; white-space: nowrap; }
-
-    .preview-deck-btn {
-      width: 100%; padding: .55rem 1rem; border: 1px solid #2a3a4a; border-radius: 6px;
-      background: #16213e; color: #c8c8da; font-weight: 600; cursor: pointer;
-      font-size: .95rem; margin-bottom: .55rem;
-      transition: all .15s;
-    }
-    .preview-deck-btn:hover:not(:disabled) { background: #1e3a4a; border-color: #ffbd39; color: #ffbd39; }
-    .preview-deck-btn:disabled { opacity: .45; cursor: not-allowed; }
-
-    /* Deck preview modal (galería) */
-    .deck-preview-overlay {
-      position: fixed; inset: 0; z-index: 1200;
-      background: rgba(0,0,0,.88); display: grid; place-items: center;
-      padding: 1rem; backdrop-filter: blur(4px); overflow-y: auto;
-    }
-    .deck-preview-box {
-      width: min(1280px, 100%); max-height: 92vh; display: flex; flex-direction: column;
-      background: #0f0f23; border: 1px solid #1e3a4a; border-radius: 12px;
-      box-shadow: 0 20px 60px rgba(0,0,0,.55); overflow: hidden;
-    }
-    .dp-head {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      padding: 1rem 1.25rem; border-bottom: 1px solid #1e3a4a; gap: 1rem;
-    }
-    .dp-head h2 { margin: 0; color: #fff; font-size: 1.3rem; }
-    .dp-head .muted { margin: .15rem 0 0; color: #98a2a8; font-size: .85rem; }
-    .dp-close {
-      width: 36px; height: 36px; border-radius: 50%;
-      background: #16213e; border: 1px solid #2a3a4a; color: #c8c8da;
-      cursor: pointer; font-size: 1rem; display: grid; place-items: center;
-      flex-shrink: 0; transition: all .15s;
-    }
-    .dp-close:hover { background: #e94560; border-color: #e94560; color: #fff; }
-    .dp-body { padding: 1rem 1.25rem 1.5rem; overflow-y: auto; }
-    .dp-section { margin-bottom: 1.75rem; }
-    .dp-section:last-child { margin-bottom: 0; }
-    .dp-section-title {
-      margin: 0 0 .65rem; color: #ffbd39; font-size: 1rem;
-      font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
-      display: flex; align-items: baseline; gap: .55rem;
-      border-bottom: 1px solid #1e3a4a; padding-bottom: .35rem;
-    }
-    .dp-section-count { font-size: .8rem; color: #98a2a8; font-weight: 500; letter-spacing: 0; text-transform: none; }
-    .dp-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 1rem;
-    }
-    @media (max-width: 600px) {
-      .dp-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: .65rem; }
-      .dp-head { padding: .75rem 1rem; }
-      .dp-body { padding: .75rem 1rem 1.25rem; }
-    }
-    .dp-card { display: flex; flex-direction: column; gap: .4rem; }
-    .dp-img-wrap {
-      position: relative; width: 100%; aspect-ratio: 0.72;
-      border-radius: 8px; overflow: hidden; background: #16213e;
-      box-shadow: 0 4px 10px rgba(0,0,0,.4);
-    }
-    .dp-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .dp-img-fallback {
-      width: 100%; height: 100%; display: grid; place-items: center;
-      color: #98a2a8; font-size: .75rem; text-align: center; padding: .5rem;
-    }
-    .dp-qty {
-      position: absolute; top: 6px; left: 6px;
-      background: #e94560; color: #fff;
-      padding: .15rem .55rem; border-radius: 999px;
-      font-size: .85rem; font-weight: 700;
-      box-shadow: 0 2px 6px rgba(0,0,0,.45);
-      letter-spacing: .02em;
-    }
-    .dp-qty.is-single { background: #ffbd39; color: #1a1a2e; }
-    .dp-name {
-      font-size: .82rem; color: #e0e0e0; text-align: center;
-      line-height: 1.2; font-weight: 500;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-
-    /* Segundo FAB (preview) en móvil */
-    .rb-fab-preview {
-      bottom: 12.5rem !important;
-      background: #ffbd39 !important;
-      color: #1a1a2e !important;
-    }
-    .rb-fab-preview:disabled { opacity: .4; cursor: not-allowed; }
-
-    /* FAB móvil */
-    .rb-fab {
-      display: none;
-      position: fixed; right: 1rem; bottom: 5.5rem;
-      width: 56px; height: 56px; border-radius: 50%;
-      background: #e94560; color: #0f0f23; border: none;
-      box-shadow: 0 4px 14px rgba(0,0,0,.35); cursor: pointer; z-index: 920;
-      align-items: center; justify-content: center; flex-direction: column;
-    }
-    @media (max-width: 900px) { .rb-fab { display: flex; } }
-    .fab-icon { font-size: 1.4rem; }
-    .fab-count {
-      position: absolute; top: -4px; right: -4px;
-      background: #e94560; color: #fff; border-radius: 999px;
-      padding: 1px 6px; font-size: .7rem; font-weight: 700;
-    }
-
-    /* Preview modal */
-    .preview-overlay {
-      position: fixed; inset: 0; z-index: 1000;
-      background: rgba(0,0,0,.78); display: grid; place-items: center;
-      padding: 1rem; backdrop-filter: blur(3px);
-    }
-    .preview-box {
-      position: relative; max-width: 1000px; width: 100%; max-height: 92vh; overflow: auto;
-      background: #0f0f23; border: 1px solid #e94560; border-radius: 12px;
-      padding: 1.5rem; color: #e0e0e0; box-shadow: 0 20px 60px rgba(0,0,0,.5);
-    }
-    .preview-box img { max-width: 100%; border-radius: 6px; }
-    .preview-box h3 { color: #fff; margin: .5rem 0 0; font-size: 1rem; }
-    .preview-box small { color: #98a2a8; font-weight: 400; }
-    .preview-close {
-      position: absolute; top: .6rem; right: .6rem;
-      width: 36px; height: 36px; border-radius: 50%;
-      background: #16213e; border: 1px solid #2a3a4a; color: #c8c8da;
-      cursor: pointer; font-size: 1rem; display: grid; place-items: center;
-      transition: all .15s; z-index: 2;
-    }
-    .preview-close:hover { background: #e94560; border-color: #e94560; color: #fff; }
-    .preview-layout {
-      display: grid; gap: 1.5rem; grid-template-columns: minmax(220px, 360px) 1fr;
-    }
-    .preview-img { width: 100%; border-radius: .75rem; align-self: start; }
-    .preview-info h2 { margin: 0 0 .25rem; font-size: 1.6rem; color: #fff; }
-    .preview-info h3 { margin: 1rem 0 .25rem; color: #fff; font-size: 1.05rem; text-align: left; }
-    .preview-badges { display: flex; gap: .35rem; flex-wrap: wrap; margin: .75rem 0; }
-    .pv-badge { padding: .25rem .55rem; border-radius: .35rem; border: 1px solid #2a3a4a; font-size: .8rem; background: #16213e; }
-    .pv-badge.color { background: #e9456020; border-color: #e9456050; }
-    .preview-stats { display: flex; gap: .65rem; margin: 1rem 0; flex-wrap: wrap; }
-    .preview-stats > div { display: flex; flex-direction: column; align-items: center; padding: .5rem 1rem; border: 1px solid #2a3a4a; border-radius: .5rem; min-width: 70px; background: #16213e; }
-    .preview-stats span { opacity: .7; font-size: .8rem; }
-    .preview-stats strong { font-size: 1.4rem; color: #fff; }
-    .preview-desc { white-space: pre-wrap; font-family: inherit; line-height: 1.55; margin: 0; font-size: .92rem; text-align: left; }
-    .preview-info app-tcg-price {
-      display: block;
-      width: max-content;
-      margin-top: .9rem;
-      margin-left: auto;
-    }
-    @media (max-width: 720px) {
-      .preview-layout { grid-template-columns: 1fr; }
-      .preview-box { padding: 1rem; }
-      .preview-info app-tcg-price { margin-left: 0; }
-    }
-
-    /* Legend banner (en deck-panel) */
     .legend-banner {
-      display: flex; align-items: center; gap: .65rem;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-      border: 1px solid #e94560; border-radius: 8px;
-      padding: .5rem .65rem; margin: 0 0 1rem;
-    }
-    .legend-banner.empty {
-      background: rgba(200, 155, 60, .08);
-      border-style: dashed;
-      padding: 0;
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.85rem;
+      background: rgba(18, 18, 23, 0.7); border: 1px solid var(--ui-border); border-radius: 8px;
+      margin-bottom: 0.85rem;
     }
     .choose-legend-btn {
-      width: 100%; padding: .85rem 1rem;
-      background: linear-gradient(135deg, #e94560 0%, #ff6b7d 100%);
-      color: #0f0f23; border: none; border-radius: 8px;
-      font-weight: 700; font-size: 1rem; cursor: pointer;
-      letter-spacing: .02em;
-      transition: filter .15s, transform .15s;
+      width: 100%; padding: 0.6rem 1rem; background: rgba(6, 182, 212, 0.15); border: 1px dashed #06b6d4;
+      border-radius: 8px; color: #06b6d4; font-weight: 600; font-size: 0.85rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 0.45rem;
     }
-    .choose-legend-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
-    .legend-img {
-      width: 52px; height: 72px; object-fit: cover; border-radius: 4px;
-      flex-shrink: 0; background: #16213e;
-    }
-    .legend-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-    .legend-tag {
-      font-size: .6rem; letter-spacing: .08em;
-      color: #e94560; font-weight: 700;
-    }
-    .legend-info strong {
-      color: #fff; font-size: .9rem; line-height: 1.1;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .legend-colors { display: flex; gap: 4px; margin-top: 2px; }
-    .color-dot {
-      display: inline-block; width: 10px; height: 10px; border-radius: 50%;
-      border: 1px solid rgba(255,255,255,.3);
-    }
-    .legend-actions { display: flex; flex-direction: column; gap: 4px; }
+    .legend-img { width: 44px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid var(--ui-border); }
+    .legend-info { flex: 1; min-width: 0; }
+    .legend-tag { font-size: 0.62rem; font-weight: 700; color: #06b6d4; letter-spacing: 0.05em; }
+    .legend-info strong { display: block; font-size: 0.88rem; color: #ffffff; }
+    .legend-actions { display: flex; gap: 0.35rem; }
     .legend-btn {
-      background: #1e3a4a; color: #c8c8da;
-      border: 1px solid #2a4a5a; border-radius: 4px;
-      padding: .25rem .55rem; font-size: .7rem; cursor: pointer;
-      white-space: nowrap;
+      padding: 0.25rem 0.5rem; background: rgba(39, 39, 42, 0.5); border: 1px solid var(--ui-border);
+      border-radius: 4px; color: var(--ui-text-secondary); font-size: 0.72rem; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 0.3rem;
     }
-    .legend-btn:hover { background: #2a4a5a; }
-    .legend-btn.locked { background: #e94560; color: #0f0f23; border-color: #e94560; }
 
-    /* Champion Unit banner (variante del legend banner) */
-    .cu-banner { margin-top: .5rem; }
-    .cu-banner .legend-tag.cu-tag { background: transparent; color: #3aa6ff; }
-    .cu-banner .cu-num { font-size: .7rem; opacity: .65; color: #98a2a8; }
-    .cu-choose { background: linear-gradient(135deg, #3aa6ff, #1e6bbf) !important; }
-    .discard-draft-btn {
-      background: transparent; border: 1px solid #2a3a4a; color: #c8c8da;
-      width: 32px; height: 32px; border-radius: 6px; padding: 0;
-      display: inline-flex; align-items: center; justify-content: center;
-      cursor: pointer; font-size: 1rem; transition: all .15s;
+    .deck-form-grid {
+      display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.75rem; align-items: flex-end; margin-bottom: 1rem;
     }
-    .discard-draft-btn:hover { color: #e94560; border-color: #e94560; background: rgba(233,69,96,.08); }
+    .form-group label { display: block; font-size: 0.72rem; color: var(--ui-text-muted); margin-bottom: 2px; }
+    .form-group input {
+      width: 100%; padding: 0.45rem 0.75rem; background: rgba(18, 18, 23, 0.8);
+      border: 1px solid var(--ui-border); border-radius: 6px; color: #ffffff; font-size: 0.85rem; outline: none;
+    }
+    .checkbox-label { display: flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; color: var(--ui-text-secondary); }
 
-    /* Legend Picker modal */
-    .legend-picker-overlay {
-      position: fixed; inset: 0; z-index: 1100;
-      background: rgba(0,0,0,.85); display: grid; place-items: center;
-      padding: 1rem; overflow-y: auto;
+    .zones-summary { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .zone-pill {
+      padding: 0.25rem 0.6rem; border-radius: 999px; background: rgba(18, 18, 23, 0.6);
+      border: 1px solid var(--ui-border); font-size: 0.75rem; color: var(--ui-text-muted);
     }
-    .legend-picker-box {
-      width: min(900px, 100%); max-height: 90vh; overflow-y: auto;
-      background: #0f0f23; border: 1px solid #e94560;
-      border-radius: 10px; padding: 1.25rem;
-    }
-    .lp-head { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1rem; }
-    .lp-head h3 { color: #fff; margin: 0; font-size: 1.3rem; }
-    .lp-head .muted { color: #98a2a8; font-size: .85rem; margin: 0; }
-    .lp-search {
-      padding: .55rem .85rem; background: #16213e;
-      border: 1px solid #2a3a4a; border-radius: 6px; color: #e0e0e0;
-      font-size: .95rem; outline: none;
-    }
-    .lp-search:focus { border-color: #e94560; }
-    .lp-skip {
-      align-self: flex-start; background: transparent; color: #98a2a8;
-      border: 1px solid #2a3a4a; border-radius: 6px;
-      padding: .35rem .75rem; font-size: .8rem; cursor: pointer;
-    }
-    .lp-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: .65rem;
-    }
-    .lp-card {
-      display: flex; flex-direction: column; align-items: center;
-      gap: .35rem; padding: .5rem;
-      background: #16213e; border: 1px solid #2a3a4a; border-radius: 8px;
-      cursor: pointer; color: inherit; text-align: center;
-      transition: border-color .15s, transform .15s;
-    }
-    .lp-card:hover { border-color: #e94560; transform: translateY(-2px); }
-    .lp-card img {
-      width: 100%; aspect-ratio: 0.72; object-fit: cover; border-radius: 4px;
-    }
-    .lp-img-fallback {
-      width: 100%; aspect-ratio: 0.72; display: grid; place-items: center;
-      background: #1e3a4a; border-radius: 4px; color: #98a2a8; font-size: .8rem;
-    }
-    .lp-name {
-      font-size: .8rem; color: #fff; font-weight: 600; line-height: 1.15;
-    }
-    .lp-colors { display: flex; gap: 3px; }
+    .zone-pill.ok { border-color: rgba(16, 185, 129, 0.4); color: #10b981; }
 
-    /* Light theme */
-    :host-context(body.light-theme) .card-browser h2,
-    :host-context(body.light-theme) .deck-header h2,
-    :host-context(body.light-theme) .mini-name,
-    :host-context(body.light-theme) .zs-title,
-    :host-context(body.light-theme) .entry-name { color: #463714; }
-    :host-context(body.light-theme) .card-browser { border-right-color: #d4c489; }
-    :host-context(body.light-theme) .deck-panel { background: #fbf6e9; border-left-color: #d4c489; }
-    :host-context(body.light-theme) .mini-card,
-    :host-context(body.light-theme) .zone-section,
-    :host-context(body.light-theme) .cost-curve,
-    :host-context(body.light-theme) .form-group input,
-    :host-context(body.light-theme) .filter-row select,
-    :host-context(body.light-theme) .search-row input { background: #ffffff; border-color: #d4c489; color: #2a1f10; }
-    :host-context(body.light-theme) .mini-type,
-    :host-context(body.light-theme) .entry-meta,
-    :host-context(body.light-theme) .filter-label,
-    :host-context(body.light-theme) .cd-title,
-    :host-context(body.light-theme) .cost-curve-title,
-    :host-context(body.light-theme) .zs-count,
-    :host-context(body.light-theme) .zone-empty { color: #6a5a3a; }
+    .cost-curve-panel {
+      background: rgba(18, 18, 23, 0.5); border: 1px solid var(--ui-border); border-radius: 8px;
+      padding: 0.75rem 1rem; margin-bottom: 1.25rem;
+    }
+    .curve-title {
+      font-size: 0.78rem; font-weight: 700; color: #06b6d4; text-transform: uppercase;
+      display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 0.5rem;
+    }
+    .cost-curve-bars { display: flex; align-items: flex-end; gap: 0.5rem; height: 60px; }
+    .cost-bar { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; }
+    .cost-bar-count { font-size: 0.65rem; color: var(--ui-text-muted); margin-bottom: 2px; }
+    .cost-bar-fill-wrap {
+      flex: 1; width: 100%; max-width: 28px; display: flex; align-items: flex-end;
+      background: rgba(39, 39, 42, 0.2); border-radius: 3px; overflow: hidden;
+    }
+    .cost-bar-fill { width: 100%; background: #06b6d4; border-radius: 3px 3px 0 0; min-height: 2px; }
+    .cost-bar-label { font-size: 0.65rem; color: var(--ui-text-secondary); margin-top: 2px; }
+
+    .zone-section { margin-bottom: 1rem; }
+    .zone-section-head {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-bottom: 0.3rem; border-bottom: 1px solid var(--ui-border); margin-bottom: 0.4rem;
+    }
+    .zs-title { font-size: 0.78rem; font-weight: 700; color: #06b6d4; text-transform: uppercase; }
+    .zs-count { font-size: 0.74rem; color: var(--ui-text-muted); }
+    .zs-count.ok { color: #10b981; }
+
+    .deck-entry {
+      display: flex; align-items: center; gap: 0.65rem; padding: 0.35rem 0.6rem;
+      background: rgba(18, 18, 23, 0.6); border: 1px solid var(--ui-border); border-radius: 8px;
+      margin-bottom: 0.35rem;
+    }
+    .cover-star { background: none; border: none; color: var(--ui-text-muted); cursor: pointer; padding: 2px; }
+    .cover-star.active { color: #f59e0b; }
+    .deck-entry img { width: 32px; height: 44px; border-radius: 4px; object-fit: cover; border: 1px solid var(--ui-border); }
+    .entry-info { flex: 1; min-width: 0; }
+    .entry-name { font-size: 0.84rem; font-weight: 600; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .entry-meta { font-size: 0.72rem; color: var(--ui-text-muted); }
+    .entry-controls { display: flex; align-items: center; gap: 0.3rem; }
+    .entry-qty { font-size: 0.82rem; font-weight: 700; color: #06b6d4; min-width: 14px; text-align: center; }
+
+    .action-row {
+      display: flex; gap: 0.5rem; margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--ui-border);
+    }
+    .preview-deck-btn {
+      flex: 1; padding: 0.55rem 1rem; background: rgba(39, 39, 42, 0.4); border: 1px solid var(--ui-border);
+      border-radius: 8px; color: var(--ui-text-secondary); font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+    }
+    .save-btn {
+      flex: 2; padding: 0.55rem 1rem; background: #06b6d4; border: none; border-radius: 8px;
+      color: #09090b; font-weight: 700; font-size: 0.9rem; cursor: pointer;
+    }
+
+    /* Modal styles */
+    .modal-overlay, .preview-overlay {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(12px);
+      z-index: 500; display: flex; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .preview-panel, .deck-preview-box, .modal {
+      position: relative; width: min(92vw, 760px); max-height: 88vh; background: rgba(18, 18, 23, 0.98);
+      border: 1px solid var(--ui-border); border-radius: 16px; box-shadow: 0 24px 48px rgba(0, 0, 0, 0.8);
+      padding: 1.5rem; overflow-y: auto;
+    }
+    .dp-head, .modal-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--ui-border); padding-bottom: 0.85rem; margin-bottom: 1rem; }
+    .dp-head h2, .modal-head h3 { font-size: 1.15rem; font-weight: 700; color: #ffffff; margin: 0; display: flex; align-items: center; gap: 0.4rem; }
+    .dp-close, .modal-close, .preview-close {
+      background: rgba(39, 39, 42, 0.5); border: 1px solid var(--ui-border); border-radius: 6px;
+      color: var(--ui-text-muted); cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+    }
   `],
 })
 export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -1324,6 +955,15 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   errors = signal<string[]>([]);
   private brokenImageUrlsByKey = new Map<string, Set<string>>();
   private imageFallbackNonce = signal(0);
+
+  // Responsive & Mobile
+  activeMobileTab = signal<'browser' | 'deck'>('browser');
+  showDeckPanel = signal(false);
+
+  setMobileTab(tab: 'browser' | 'deck') {
+    this.activeMobileTab.set(tab);
+    this.showDeckPanel.set(tab === 'deck');
+  }
 
   // Browser state
   searchQuery = '';

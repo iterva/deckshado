@@ -1,79 +1,166 @@
 <a class="skip-link" href="#main-content">Saltar al contenido</a>
-<nav class="navbar" aria-label="Navegación principal">
+
+<header class="navbar" role="banner" aria-label="Navegación principal">
+  <!-- Brand Logo -->
   <div class="navbar-brand">
     @if (gameMode.isRiftbound()) {
-      <a routerLink="/riftbound" class="logo logo-riftbound">
-        <span class="logo-icon">✨</span>
+      <a routerLink="/riftbound" class="logo logo-riftbound" title="ShadowForge — Modo Riftbound">
+        <span class="logo-icon-wrap">
+          <app-icon name="sparkles" [size]="20" class="logo-svg text-cyan-400"></app-icon>
+        </span>
         <span class="logo-text">Riftbound</span>
       </a>
     } @else {
-      <a routerLink="/" class="logo">
-        <span class="logo-icon">⚔️</span>
+      <a routerLink="/" class="logo" title="ShadowForge — Deckbuilder TCG">
+        <span class="logo-icon-wrap">
+          <app-icon name="swords" [size]="20" class="logo-svg text-amber-500"></app-icon>
+        </span>
         <span class="logo-text">ShadowForge</span>
       </a>
     }
   </div>
-  <div class="navbar-links">
+
+  <!-- Navigation Links -->
+  <nav class="navbar-links" aria-label="Enlaces principales">
     @if (gameMode.isRiftbound()) {
-      <a routerLink="/riftbound/cards" routerLinkActive="active">Cartas</a>
-      <a routerLink="/riftbound/decks" routerLinkActive="active">Mazos</a>
-      <a routerLink="/riftbound/builder" routerLinkActive="active">Constructor</a>
-      <a routerLink="/riftbound/banlist" routerLinkActive="active">Banlist</a>
-      <a routerLink="/riftbound/tiendas" routerLinkActive="active">Mercado</a>
+      <a routerLink="/riftbound/cards" routerLinkActive="active">
+        <app-icon name="library" [size]="15"></app-icon>
+        <span>Cartas</span>
+      </a>
+      <a routerLink="/riftbound/decks" routerLinkActive="active">
+        <app-icon name="layers" [size]="15"></app-icon>
+        <span>Mazos</span>
+      </a>
+      <a routerLink="/riftbound/builder" routerLinkActive="active">
+        <app-icon name="hammer" [size]="15"></app-icon>
+        <span>Constructor</span>
+      </a>
+      <a routerLink="/riftbound/banlist" routerLinkActive="active">
+        <app-icon name="ban" [size]="15"></app-icon>
+        <span>Banlist</span>
+      </a>
+      <a routerLink="/riftbound/tiendas" routerLinkActive="active">
+        <app-icon name="store" [size]="15"></app-icon>
+        <span>Mercado</span>
+      </a>
       @if (auth.isAuthenticated()) {
-        <a routerLink="/riftbound/carpeta" routerLinkActive="active">Carpeta</a>
-        <a routerLink="/riftbound/colaborar" routerLinkActive="active">Carpetas</a>
+        <a routerLink="/riftbound/carpeta" routerLinkActive="active">
+          <app-icon name="folder" [size]="15"></app-icon>
+          <span>Carpeta</span>
+        </a>
       }
     } @else {
-      <a routerLink="/cards" routerLinkActive="active">Cartas</a>
-      <a routerLink="/decks" routerLinkActive="active">Mazos</a>
-      <a routerLink="/tiendas" routerLinkActive="active">Tiendas</a>
-      <a routerLink="/wordle" routerLinkActive="active">Wordle</a>
-      <a routerLink="/team" routerLinkActive="active">Equipo</a>
+      <a routerLink="/cards" routerLinkActive="active">
+        <app-icon name="library" [size]="15"></app-icon>
+        <span>Cartas</span>
+      </a>
+      <a routerLink="/decks" routerLinkActive="active">
+        <app-icon name="layers" [size]="15"></app-icon>
+        <span>Mazos</span>
+      </a>
+      <a routerLink="/tiendas" routerLinkActive="active">
+        <app-icon name="store" [size]="15"></app-icon>
+        <span>Tiendas</span>
+      </a>
+      <a routerLink="/banlist" routerLinkActive="active">
+        <app-icon name="ban" [size]="15"></app-icon>
+        <span>Banlist</span>
+      </a>
+      <a routerLink="/wordle" routerLinkActive="active">
+        <app-icon name="gamepad" [size]="15"></app-icon>
+        <span>Wordle</span>
+      </a>
+      <a routerLink="/team" routerLinkActive="active">
+        <app-icon name="users" [size]="15"></app-icon>
+        <span>Equipos</span>
+      </a>
       @if (auth.isAuthenticated()) {
-        <a routerLink="/carpeta" routerLinkActive="active">Carpeta</a>
-        <a routerLink="/builder" routerLinkActive="active">Constructor</a>
+        <a routerLink="/carpeta" routerLinkActive="active">
+          <app-icon name="folder" [size]="15"></app-icon>
+          <span>Carpeta</span>
+        </a>
+        <a routerLink="/builder" routerLinkActive="active">
+          <app-icon name="hammer" [size]="15"></app-icon>
+          <span>Constructor</span>
+        </a>
       }
     }
+  </nav>
+
+  <!-- Global Quick Search Bar (Cmd+K) -->
+  <div class="cmd-search-bar" (click)="openSearch()">
+    <app-icon name="search" [size]="15" class="search-lead-icon"></app-icon>
+    <span class="search-placeholder">Buscar cartas, mazos...</span>
+    <kbd class="search-kbd">⌘K</kbd>
   </div>
-  <div class="navbar-actions">
-    @if (canUseGlobalSearch()) {
-      <!-- Global search -->
-      <button class="search-toggle" (click)="toggleSearch()" title="Buscar" [attr.aria-label]="showSearch() ? 'Cerrar búsqueda' : 'Abrir búsqueda'" [attr.aria-expanded]="showSearch()">
-        <i class="bi bi-search" aria-hidden="true"></i>
-      </button>
-      @if (showSearch()) {
-        <div class="search-wrapper">
-          <input type="text" [(ngModel)]="searchQuery" (input)="onSearch()" placeholder="Buscar cartas, mazos, usuarios..." autofocus />
-          @if (searchResults) {
-            <div class="search-results">
-              @if (searchResults.cards.length) {
-                <div class="sr-group"><span class="sr-label">Cartas</span>
-                  @for (c of searchResults.cards; track c.id) {
-                    <button class="sr-item" (click)="goToResult('card', c.id)">{{ c.name }} <small>{{ c.edition__title }}</small></button>
-                  }
-                </div>
-              }
-              @if (searchResults.decks.length) {
-                <div class="sr-group"><span class="sr-label">Mazos</span>
-                  @for (d of searchResults.decks; track d.id) {
-                    <button class="sr-item" (click)="goToResult('deck', d.id)">{{ d.name }} <small>{{ d.owner__username }}</small></button>
-                  }
-                </div>
-              }
-              @if (!searchResults.cards.length && !searchResults.decks.length && !searchResults.users.length) {
-                <div class="sr-empty">Sin resultados</div>
+
+  <!-- Search Popover/Modal -->
+  @if (showSearch()) {
+    <div class="search-wrapper" role="search">
+      <div class="search-input-box">
+        <app-icon name="search" [size]="16" class="search-lead-icon"></app-icon>
+        <input
+          #globalSearchInput
+          type="text"
+          [(ngModel)]="searchQuery"
+          (input)="onSearch()"
+          placeholder="Buscar cartas, mazos, usuarios..."
+          autofocus
+        />
+        <button class="search-close-btn" (click)="closeSearch()" aria-label="Cerrar búsqueda">
+          <app-icon name="x" [size]="14"></app-icon>
+        </button>
+      </div>
+
+      @if (searchResults) {
+        <div class="search-results">
+          @if (searchResults.cards?.length) {
+            <div class="sr-group">
+              <span class="sr-label">
+                <app-icon name="library" [size]="12"></app-icon> Cartas
+              </span>
+              @for (c of searchResults.cards; track c.id) {
+                <button class="sr-item" (click)="goToResult('card', c.id)">
+                  <span class="sr-name">{{ c.name }}</span>
+                  <small class="sr-edition">{{ c.edition__title }}</small>
+                </button>
               }
             </div>
           }
+          @if (searchResults.decks?.length) {
+            <div class="sr-group">
+              <span class="sr-label">
+                <app-icon name="layers" [size]="12"></app-icon> Mazos
+              </span>
+              @for (d of searchResults.decks; track d.id) {
+                <button class="sr-item" (click)="goToResult('deck', d.id)">
+                  <span class="sr-name">{{ d.name }}</span>
+                  <small class="sr-owner">{{ d.owner__username }}</small>
+                </button>
+              }
+            </div>
+          }
+          @if (!searchResults.cards?.length && !searchResults.decks?.length && !searchResults.users?.length) {
+            <div class="sr-empty">Sin resultados</div>
+          }
         </div>
       }
-    }
+    </div>
+  }
+
+  <!-- Header Actions -->
+  <div class="navbar-actions">
     @if (auth.isAuthenticated()) {
       <!-- Notifications -->
       <div class="notif-wrapper">
-        <button class="notif-btn" (click)="toggleNotifs()" title="Notificaciones" [attr.aria-label]="'Notificaciones' + (notifs.unreadCount() > 0 ? ' (' + notifs.unreadCount() + ' sin leer)' : '')" [attr.aria-expanded]="showNotifs()">
-          <i class="bi bi-bell" aria-hidden="true"></i>
+        <button
+          class="notif-btn"
+          (click)="toggleNotifs()"
+          title="Notificaciones"
+          [attr.aria-label]="'Notificaciones' + (notifs.unreadCount() > 0 ? ' (' + notifs.unreadCount() + ' sin leer)' : '')"
+          [attr.aria-expanded]="showNotifs()"
+        >
+          <app-icon name="bell" [size]="18"></app-icon>
           @if (notifs.unreadCount() > 0) {
             <span class="notif-badge" aria-hidden="true">{{ notifs.unreadCount() }}</span>
           }
@@ -98,32 +185,35 @@
           </div>
         }
       </div>
+
+      <!-- Avatar & User Menu -->
       <div class="avatar-wrapper">
         <button class="avatar-btn" (click)="toggleDropdown()" aria-label="Menú de usuario" [attr.aria-expanded]="showDropdown()">
           @if (auth.user()?.avatar_url) {
-            <img [src]="auth.user()!.avatar_url! | thumb:64" alt="" class="avatar-img" width="34" height="34" loading="lazy" decoding="async" />
+            <img [src]="auth.user()!.avatar_url! | thumb:64" alt="" class="avatar-img" width="32" height="32" loading="lazy" decoding="async" />
           } @else {
-            <svg class="avatar-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <circle cx="12" cy="8" r="4"/>
-              <path d="M12 14c-6 0-8 3-8 4v1h16v-1c0-1-2-4-8-4z"/>
-            </svg>
+            <app-icon name="user" [size]="16" class="avatar-icon"></app-icon>
           }
         </button>
         @if (showDropdown()) {
           <div class="avatar-dropdown">
             <a routerLink="/profile" class="dropdown-item" (click)="showDropdown.set(false)">
-              <span>👤</span> Mi Perfil
+              <app-icon name="user" [size]="15"></app-icon>
+              <span>Mi Perfil</span>
             </a>
             <a routerLink="/profile/edit" class="dropdown-item" (click)="showDropdown.set(false)">
-              <span>✏️</span> Editar
+              <app-icon name="edit" [size]="15"></app-icon>
+              <span>Editar Perfil</span>
             </a>
             @if (auth.user()?.is_admin) {
               <a routerLink="/admin" class="dropdown-item" (click)="showDropdown.set(false)">
-                <span>🛡️</span> Admin
+                <app-icon name="shield-admin" [size]="15"></app-icon>
+                <span>Panel Admin</span>
               </a>
             }
             <button class="dropdown-item logout" (click)="auth.logout(); showDropdown.set(false)">
-              <span>🚪</span> Cerrar Sesión
+              <app-icon name="log-out" [size]="15"></app-icon>
+              <span>Cerrar Sesión</span>
             </button>
           </div>
         }
@@ -131,82 +221,125 @@
     } @else {
       <a routerLink="/login" routerLinkActive="active" class="btn-login">Ingresar</a>
     }
+
+    <!-- Cache Reset -->
     <button
       class="cache-reset-btn"
       type="button"
       (click)="hardRefresh()"
       [disabled]="hardReloading()"
       [title]="hardReloading() ? 'Actualizando...' : 'Recarga dura (Ctrl+F5)'"
-      [attr.aria-label]="hardReloading() ? 'Actualizando aplicación' : 'Recarga dura de caché'">
-      <span aria-hidden="true">⟳</span>
+      [attr.aria-label]="hardReloading() ? 'Actualizando aplicación' : 'Recarga dura de caché'"
+    >
+      <app-icon name="refresh-cw" [size]="15" [class]="hardReloading() ? 'spin' : ''"></app-icon>
     </button>
-    <button class="theme-toggle" (click)="theme.toggle()" [title]="theme.isDark() ? 'Modo claro' : 'Modo oscuro'" [attr.aria-label]="theme.isDark() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'">
-      <span aria-hidden="true">{{ theme.isDark() ? '☀️' : '🌙' }}</span>
+
+    <!-- Theme Toggle -->
+    <button
+      class="theme-toggle"
+      (click)="theme.toggle()"
+      [title]="theme.isDark() ? 'Modo claro' : 'Modo oscuro'"
+      [attr.aria-label]="theme.isDark() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+    >
+      <app-icon [name]="theme.isDark() ? 'sun' : 'moon'" [size]="16"></app-icon>
     </button>
-    <button class="game-toggle" (click)="gameMode.toggle()" [class.is-riftbound]="gameMode.isRiftbound()" [title]="gameMode.isRiftbound() ? 'Cambiar a Mitos y Leyendas' : 'Cambiar a Riftbound'" [attr.aria-label]="gameMode.isRiftbound() ? 'Cambiar a Mitos y Leyendas' : 'Cambiar a Riftbound'">
-      <span aria-hidden="true">{{ gameMode.isRiftbound() ? '⚔️' : '✨' }}</span>
+
+    <!-- Game Mode Switcher (MYL Gold ↔ Riftbound Cyan) -->
+    <button
+      class="game-toggle"
+      (click)="gameMode.toggle()"
+      [class.is-riftbound]="gameMode.isRiftbound()"
+      [title]="gameMode.isRiftbound() ? 'Cambiar a Mitos y Leyendas' : 'Cambiar a Riftbound'"
+      [attr.aria-label]="gameMode.isRiftbound() ? 'Cambiar a Mitos y Leyendas' : 'Cambiar a Riftbound'"
+    >
+      <app-icon [name]="gameMode.isRiftbound() ? 'swords' : 'sparkles'" [size]="16"></app-icon>
     </button>
   </div>
-</nav>
+</header>
+
 <main class="content" id="main-content" tabindex="-1">
-  <router-outlet />
+  <router-outlet></router-outlet>
 </main>
-<nav class="bottom-nav" aria-label="Navegación inferior">
+
+<!-- Fixed Mobile Bottom Navigation Bar -->
+<nav class="bottom-nav" aria-label="Navegación inferior móvil">
   @if (gameMode.isRiftbound()) {
     <a routerLink="/riftbound" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">
-      <span class="icon">✨</span>
+      <app-icon name="home" [size]="20"></app-icon>
       <span class="label">Inicio</span>
     </a>
     <a routerLink="/riftbound/cards" routerLinkActive="active">
-      <span class="icon">🃏</span>
+      <app-icon name="library" [size]="20"></app-icon>
       <span class="label">Cartas</span>
     </a>
     <a routerLink="/riftbound/decks" routerLinkActive="active">
-      <span class="icon">📚</span>
+      <app-icon name="layers" [size]="20"></app-icon>
       <span class="label">Mazos</span>
     </a>
     <a routerLink="/riftbound/builder" routerLinkActive="active">
-      <span class="icon">🔨</span>
+      <app-icon name="hammer" [size]="20"></app-icon>
       <span class="label">Build</span>
     </a>
+    @if (auth.isAuthenticated()) {
+      <a routerLink="/riftbound/carpeta" routerLinkActive="active">
+        <app-icon name="folder" [size]="20"></app-icon>
+        <span class="label">Carpeta</span>
+      </a>
+    }
   } @else {
     <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">
-      <span class="icon">🏠</span>
+      <app-icon name="home" [size]="20"></app-icon>
       <span class="label">Inicio</span>
     </a>
     <a routerLink="/cards" routerLinkActive="active">
-      <span class="icon">🃏</span>
+      <app-icon name="library" [size]="20"></app-icon>
       <span class="label">Cartas</span>
     </a>
     <a routerLink="/decks" routerLinkActive="active">
-      <span class="icon">📚</span>
+      <app-icon name="layers" [size]="20"></app-icon>
       <span class="label">Mazos</span>
     </a>
-    <a routerLink="/wordle" routerLinkActive="active">
-      <span class="icon">🔤</span>
-      <span class="label">Wordle</span>
-    </a>
+    @if (auth.isAuthenticated()) {
+      <a routerLink="/builder" routerLinkActive="active">
+        <app-icon name="hammer" [size]="20"></app-icon>
+        <span class="label">Build</span>
+      </a>
+      <a routerLink="/carpeta" routerLinkActive="active">
+        <app-icon name="folder" [size]="20"></app-icon>
+        <span class="label">Carpeta</span>
+      </a>
+    } @else {
+      <a routerLink="/tiendas" routerLinkActive="active">
+        <app-icon name="store" [size]="20"></app-icon>
+        <span class="label">Tiendas</span>
+      </a>
+    }
   }
   <button type="button" class="more-btn" (click)="toggleMobileMenu()" [class.active]="showMobileMenu()" aria-label="Más opciones">
-    <span class="icon">☰</span>
+    <app-icon name="menu" [size]="20"></app-icon>
     <span class="label">Más</span>
   </button>
 </nav>
 
+<!-- Mobile Menu Drawer -->
 @if (showMobileMenu()) {
   <div class="mobile-menu-backdrop" (click)="closeMobileMenu()"></div>
-  <aside class="mobile-menu" role="dialog" aria-label="Menú">
+  <aside class="mobile-menu" role="dialog" aria-label="Menú móvil">
     <header class="mm-header">
-      <strong>Menú</strong>
-      <button class="mm-close" (click)="closeMobileMenu()" aria-label="Cerrar">✕</button>
+      <strong>Navegación</strong>
+      <button class="mm-close" (click)="closeMobileMenu()" aria-label="Cerrar">
+        <app-icon name="x" [size]="18"></app-icon>
+      </button>
     </header>
 
     @if (auth.isAuthenticated()) {
       <a routerLink="/profile" class="mm-user" (click)="closeMobileMenu()">
         @if (auth.user()?.avatar_url) {
-          <img [src]="auth.user()!.avatar_url! | thumb:64" alt="" class="mm-avatar" width="44" height="44" />
+          <img [src]="auth.user()!.avatar_url! | thumb:64" alt="" class="mm-avatar" width="40" height="40" />
         } @else {
-          <span class="mm-avatar mm-avatar-placeholder">👤</span>
+          <span class="mm-avatar mm-avatar-placeholder">
+            <app-icon name="user" [size]="20"></app-icon>
+          </span>
         }
         <div>
           <div class="mm-name">{{ auth.user()?.username }}</div>
@@ -214,34 +347,67 @@
         </div>
       </a>
     } @else {
-      <a routerLink="/login" class="mm-login" (click)="closeMobileMenu()">Iniciar sesión</a>
-      <a routerLink="/register" class="mm-login secondary" (click)="closeMobileMenu()">Crear cuenta</a>
+      <div class="mm-auth-buttons">
+        <a routerLink="/login" class="mm-login" (click)="closeMobileMenu()">Iniciar sesión</a>
+        <a routerLink="/register" class="mm-login secondary" (click)="closeMobileMenu()">Crear cuenta</a>
+      </div>
     }
 
     <div class="mm-section">
-      <h3>Navegación</h3>
+      <h3>Secciones</h3>
       @if (gameMode.isRiftbound()) {
-        <a routerLink="/riftbound" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="closeMobileMenu()">✨ Inicio Riftbound</a>
-        <a routerLink="/riftbound/cards" routerLinkActive="active" (click)="closeMobileMenu()">🃏 Cartas</a>
-        <a routerLink="/riftbound/decks" routerLinkActive="active" (click)="closeMobileMenu()">📚 Mazos</a>
-        <a routerLink="/riftbound/builder" routerLinkActive="active" (click)="closeMobileMenu()">🔨 Constructor</a>
-        <a routerLink="/riftbound/banlist" routerLinkActive="active" (click)="closeMobileMenu()">🚫 Banlist</a>
-        <a routerLink="/riftbound/tiendas" routerLinkActive="active" (click)="closeMobileMenu()">🏪 Mercado</a>
+        <a routerLink="/riftbound" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="closeMobileMenu()">
+          <app-icon name="home" [size]="16"></app-icon> Inicio Riftbound
+        </a>
+        <a routerLink="/riftbound/cards" routerLinkActive="active" (click)="closeMobileMenu()">
+          <app-icon name="library" [size]="16"></app-icon> Cartas
+        </a>
+        <a routerLink="/riftbound/decks" routerLinkActive="active" (click)="closeMobileMenu()">
+          <app-icon name="layers" [size]="16"></app-icon> Mazos
+        </a>
+        <a routerLink="/riftbound/builder" routerLinkActive="active" (click)="closeMobileMenu()">
+          <app-icon name="hammer" [size]="16"></app-icon> Constructor
+        </a>
+        <a routerLink="/riftbound/banlist" routerLinkActive="active" (click)="closeMobileMenu()">
+          <app-icon name="ban" [size]="16"></app-icon> Banlist
+        </a>
+        <a routerLink="/riftbound/tiendas" routerLinkActive="active" (click)="closeMobileMenu()">
+          <app-icon name="store" [size]="16"></app-icon> Mercado
+        </a>
         @if (auth.isAuthenticated()) {
-          <a routerLink="/riftbound/carpeta" routerLinkActive="active" (click)="closeMobileMenu()">📁 Carpeta</a>
-          <a routerLink="/riftbound/colaborar" routerLinkActive="active" (click)="closeMobileMenu()">🧩 Carpetas compartidas</a>
+          <a routerLink="/riftbound/carpeta" routerLinkActive="active" (click)="closeMobileMenu()">
+            <app-icon name="folder" [size]="16"></app-icon> Carpeta
+          </a>
         }
       } @else {
-        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="closeMobileMenu()">🏠 Inicio</a>
-        <a routerLink="/cards" routerLinkActive="active" (click)="closeMobileMenu()">🃏 Cartas</a>
-        <a routerLink="/decks" routerLinkActive="active" (click)="closeMobileMenu()">📚 Mazos</a>
-        <a routerLink="/wordle" routerLinkActive="active" (click)="closeMobileMenu()">🔤 Wordle del día</a>
-        <a routerLink="/banlist" routerLinkActive="active" (click)="closeMobileMenu()">🚫 Banlist</a>
-        <a routerLink="/tiendas" routerLinkActive="active" (click)="closeMobileMenu()">🏪 Tiendas</a>
-        <a routerLink="/team" routerLinkActive="active" (click)="closeMobileMenu()">👥 Equipos</a>
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="closeMobileMenu()">
+          <app-icon name="home" [size]="16"></app-icon> Inicio
+        </a>
+        <a routerLink="/cards" routerLinkActive="active" (click)="closeMobileMenu()">
+          <app-icon name="library" [size]="16"></app-icon> Cartas
+        </a>
+        <a routerLink="/decks" routerLinkActive="active" (click)="closeMobileMenu()">
+          <app-icon name="layers" [size]="16"></app-icon> Mazos
+        </a>
+        <a routerLink="/wordle" routerLinkActive="active" (click)="closeMobileMenu()">
+          <app-icon name="gamepad" [size]="16"></app-icon> Wordle del día
+        </a>
+        <a routerLink="/banlist" routerLinkActive="active" (click)="closeMobileMenu()">
+          <app-icon name="ban" [size]="16"></app-icon> Banlist
+        </a>
+        <a routerLink="/tiendas" routerLinkActive="active" (click)="closeMobileMenu()">
+          <app-icon name="store" [size]="16"></app-icon> Tiendas
+        </a>
+        <a routerLink="/team" routerLinkActive="active" (click)="closeMobileMenu()">
+          <app-icon name="users" [size]="16"></app-icon> Equipos
+        </a>
         @if (auth.isAuthenticated()) {
-          <a routerLink="/carpeta" routerLinkActive="active" (click)="closeMobileMenu()">📁 Mi carpeta</a>
-          <a routerLink="/builder" routerLinkActive="active" (click)="closeMobileMenu()">🔨 Constructor</a>
+          <a routerLink="/carpeta" routerLinkActive="active" (click)="closeMobileMenu()">
+            <app-icon name="folder" [size]="16"></app-icon> Mi carpeta
+          </a>
+          <a routerLink="/builder" routerLinkActive="active" (click)="closeMobileMenu()">
+            <app-icon name="hammer" [size]="16"></app-icon> Constructor
+          </a>
         }
       }
     </div>
@@ -249,28 +415,38 @@
     @if (auth.isAuthenticated()) {
       <div class="mm-section">
         <h3>Cuenta</h3>
-        <a routerLink="/profile/edit" (click)="closeMobileMenu()">✏️ Editar perfil</a>
+        <a routerLink="/profile/edit" (click)="closeMobileMenu()">
+          <app-icon name="edit" [size]="16"></app-icon> Editar perfil
+        </a>
         @if (auth.user()?.is_admin) {
-          <a routerLink="/admin" (click)="closeMobileMenu()">🛡️ Admin</a>
+          <a routerLink="/admin" (click)="closeMobileMenu()">
+            <app-icon name="shield-admin" [size]="16"></app-icon> Admin
+          </a>
         }
-        <button type="button" class="mm-logout" (click)="auth.logout(); closeMobileMenu()">🚪 Cerrar sesión</button>
+        <button type="button" class="mm-logout" (click)="auth.logout(); closeMobileMenu()">
+          <app-icon name="log-out" [size]="16"></app-icon> Cerrar sesión
+        </button>
       </div>
     }
 
     <div class="mm-section">
       <h3>Preferencias</h3>
       <button type="button" class="mm-pref" (click)="hardRefresh(true)" [disabled]="hardReloading()">
-        {{ hardReloading() ? '⏳ Actualizando...' : '🔄 Recargar sin caché (Ctrl+F5)' }}
+        <app-icon name="refresh-cw" [size]="16"></app-icon>
+        {{ hardReloading() ? 'Actualizando...' : 'Recargar sin caché' }}
       </button>
       <button type="button" class="mm-pref" (click)="theme.toggle()">
-        {{ theme.isDark() ? '☀️ Modo claro' : '🌙 Modo oscuro' }}
+        <app-icon [name]="theme.isDark() ? 'sun' : 'moon'" [size]="16"></app-icon>
+        {{ theme.isDark() ? 'Modo claro' : 'Modo oscuro' }}
       </button>
       <button type="button" class="mm-pref" (click)="gameMode.toggle(); closeMobileMenu()">
-        {{ gameMode.isRiftbound() ? '⚔️ Mitos y Leyendas' : '✨ Riftbound' }}
+        <app-icon [name]="gameMode.isRiftbound() ? 'swords' : 'sparkles'" [size]="16"></app-icon>
+        {{ gameMode.isRiftbound() ? 'Mitos y Leyendas' : 'Riftbound' }}
       </button>
     </div>
   </aside>
 }
+
 <footer class="footer">
   @if (gameMode.isRiftbound()) {
     <p>ShadowForge &mdash; Modo Riftbound. Riftbound es un juego de Riot Games. Hecho por fans para fans.</p>
@@ -281,5 +457,6 @@
   }
   <p class="app-version">Version {{ appVersion }}</p>
 </footer>
+
 <app-ios-install-hint></app-ios-install-hint>
 <app-pwa-install-hint></app-pwa-install-hint>

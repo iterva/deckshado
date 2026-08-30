@@ -1,4 +1,4 @@
-import { Component, HostListener, signal, OnInit } from '@angular/core';
+import { Component, HostListener, signal, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
@@ -9,17 +9,30 @@ import { GameModeService } from './services/game-mode.service';
 import { NotificationService } from './services/notification.service';
 import { IosInstallHintComponent } from './components/ios-install-hint/ios-install-hint.component';
 import { PwaInstallHintComponent } from './components/pwa-install-hint/pwa-install-hint.component';
+import { IconComponent } from './components/icon/icon.component';
 import { ThumbnailPipe } from './pipes/thumbnail.pipe';
 import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, FormsModule, DatePipe, IosInstallHintComponent, PwaInstallHintComponent, ThumbnailPipe],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    FormsModule,
+    DatePipe,
+    IosInstallHintComponent,
+    PwaInstallHintComponent,
+    ThumbnailPipe,
+    IconComponent,
+  ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
 export class App implements OnInit {
+  @ViewChild('globalSearchInput') globalSearchInput?: ElementRef<HTMLInputElement>;
+
   showDropdown = signal(false);
   showNotifs = signal(false);
   showSearch = signal(false);
@@ -89,6 +102,22 @@ export class App implements OnInit {
     this.showSearch.update(v => !v);
     this.searchResults = null;
     this.searchQuery = '';
+    if (this.showSearch()) {
+      setTimeout(() => this.globalSearchInput?.nativeElement?.focus(), 50);
+    }
+  }
+
+  openSearch() {
+    this.showSearch.set(true);
+    this.searchResults = null;
+    this.searchQuery = '';
+    setTimeout(() => this.globalSearchInput?.nativeElement?.focus(), 50);
+  }
+
+  closeSearch() {
+    this.showSearch.set(false);
+    this.searchResults = null;
+    this.searchQuery = '';
   }
 
   toggleMobileMenu() {
@@ -147,11 +176,24 @@ export class App implements OnInit {
     window.location.replace(url.toString());
   }
 
+  @HostListener('window:keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent) {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      this.toggleSearch();
+    } else if (event.key === 'Escape') {
+      if (this.showSearch()) this.closeSearch();
+      if (this.showDropdown()) this.showDropdown.set(false);
+      if (this.showNotifs()) this.showNotifs.set(false);
+      if (this.showMobileMenu()) this.closeMobileMenu();
+    }
+  }
+
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent) {
     const target = event.target as HTMLElement;
     if (!target.closest('.avatar-wrapper')) this.showDropdown.set(false);
     if (!target.closest('.notif-wrapper')) this.showNotifs.set(false);
-    if (!target.closest('.search-wrapper') && !target.closest('.search-toggle')) this.showSearch.set(false);
+    if (!target.closest('.search-wrapper') && !target.closest('.search-toggle') && !target.closest('.cmd-search-bar')) this.showSearch.set(false);
   }
 }

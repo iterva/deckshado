@@ -3,11 +3,12 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { CarpetaService } from '../../services/carpeta.service';
 import { PublicBinderProfile } from '../../models';
+import { IconComponent } from '../../components/icon/icon.component';
 
 @Component({
   selector: 'app-stores-index',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, IconComponent],
   templateUrl: './stores-index.component.html',
   styleUrl: './stores-index.component.scss',
 })

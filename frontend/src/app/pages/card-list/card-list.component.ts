@@ -14,11 +14,12 @@ import { ActivatedRoute } from '@angular/router';
 import { CardService } from '../../services/card.service';
 import { Card, Edition, CardType, Race, Rarity } from '../../models';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
+import { IconComponent } from '../../components/icon/icon.component';
 
 @Component({
   selector: 'app-card-list',
   standalone: true,
-  imports: [FormsModule, ThumbnailPipe],
+  imports: [FormsModule, ThumbnailPipe, IconComponent],
   templateUrl: './card-list.component.html',
   styleUrl: './card-list.component.scss',
 })

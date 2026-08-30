@@ -14,12 +14,14 @@ import {
   StoreOrder, StoreOrderStatus,
 } from '../../models';
 
+import { IconComponent } from '../../components/icon/icon.component';
+
 type Tab = 'carpeta' | 'codex' | 'wishlist' | 'mercado' | 'pedidos' | 'historial' | 'stats';
 
 @Component({
   selector: 'app-carpeta',
   standalone: true,
-  imports: [FormsModule, ThumbnailPipe, DecimalPipe, DatePipe, RouterLink, ShareImageComponent],
+  imports: [FormsModule, ThumbnailPipe, DecimalPipe, DatePipe, RouterLink, ShareImageComponent, IconComponent],
   templateUrl: './carpeta.component.html',
   styleUrl: './carpeta.component.scss',
 })
@@ -135,6 +137,10 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   importMode: 'add' | 'set' = 'add';
   importing = false;
   importResult: any = null;
+
+  getSellingCount(): number {
+    return this.collectionEntries.filter(e => (e.selling_quantity || 0) > 0).length;
+  }
 
   constructor(
     public auth: AuthService,

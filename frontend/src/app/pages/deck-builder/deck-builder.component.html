@@ -1,61 +1,139 @@
-<div class="builder-layout">
-  <!-- Left panel: Card Browser -->
-  <div class="card-browser" #cardBrowser>
-    <h2>Cartas Disponibles · {{ formatName }}@if (pbEditionName) { · {{ pbEditionName }} }@if (selectedSubFormat === 'vcr') { · VCR }@if (raceName) { · {{ raceName }} }</h2>
-    <div class="browser-filters">
+<!-- Mobile View Switcher (Fixed Bottom Tab Bar) -->
+<div class="mobile-builder-switcher" role="tablist" aria-label="Vista del constructor">
+  <button
+    type="button"
+    class="mb-tab"
+    [class.active]="activeMobileTab === 'browser'"
+    (click)="setMobileTab('browser')"
+  >
+    <app-icon name="library" [size]="16"></app-icon>
+    <span>Explorar Cartas</span>
+  </button>
+  <button
+    type="button"
+    class="mb-tab"
+    [class.active]="activeMobileTab === 'deck'"
+    (click)="setMobileTab('deck')"
+  >
+    <app-icon name="layers" [size]="16"></app-icon>
+    <span>Mazo Activo ({{ totalDeckCards }}/50)</span>
+  </button>
+</div>
+
+<div class="builder-layout" [attr.data-mobile-tab]="activeMobileTab">
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- LEFT PANEL (35%): Card Browser & Filter Drawer        -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="card-browser" #cardBrowser [class.mobile-hidden]="activeMobileTab === 'deck'">
+    <div class="browser-head">
+      <div class="browser-title-wrap">
+        <h2>Cartas Disponibles</h2>
+        <span class="format-badge">{{ formatName }}@if (pbEditionName) { · {{ pbEditionName }} }@if (selectedSubFormat === 'vcr') { · VCR }</span>
+      </div>
+      <button
+        type="button"
+        class="filter-drawer-btn"
+        [class.active]="filtersDrawerOpen"
+        (click)="toggleFiltersDrawer()"
+        title="Filtros avanzados"
+        aria-label="Filtros avanzados"
+      >
+        <app-icon name="sliders-horizontal" [size]="16"></app-icon>
+        <span class="btn-text">Filtros</span>
+      </button>
+    </div>
+
+    <!-- Collapsible Filter Drawer -->
+    <div class="browser-filters" [class.drawer-open]="filtersDrawerOpen">
       @if (selectedFormat === 'imp') {
-        <select class="season-filter" [(ngModel)]="selectedSeason" (ngModelChange)="onSeasonChange()">
-          @for (s of seasons; track s.id) {
-            <option [value]="s.id">{{ s.label }}</option>
-          }
-        </select>
+        <div class="season-select-wrap">
+          <select class="season-filter" [(ngModel)]="selectedSeason" (ngModelChange)="onSeasonChange()">
+            @for (s of seasons; track s.id) {
+              <option [value]="s.id">{{ s.label }}</option>
+            }
+          </select>
+        </div>
       }
+
       <div class="search-row">
         <div class="search-modes" role="tablist" aria-label="Modo de búsqueda">
-          <button type="button"
-                  role="tab"
-                  [class.active]="searchMode === 'name'"
-                  [attr.aria-selected]="searchMode === 'name'"
-                  (click)="setSearchMode('name')"
-                  title="Buscar por nombre">Nombre</button>
-          <button type="button"
-                  role="tab"
-                  [class.active]="searchMode === 'ability'"
-                  [attr.aria-selected]="searchMode === 'ability'"
-                  (click)="setSearchMode('ability')"
-                  title="Buscar dentro del texto de la habilidad">Habilidad</button>
-          <button type="button"
-                  role="tab"
-                  [class.active]="searchMode === 'all'"
-                  [attr.aria-selected]="searchMode === 'all'"
-                  (click)="setSearchMode('all')"
-                  title="Buscar en nombre y habilidad">Todo</button>
+          <button
+            type="button"
+            role="tab"
+            [class.active]="searchMode === 'name'"
+            [attr.aria-selected]="searchMode === 'name'"
+            (click)="setSearchMode('name')"
+            title="Buscar por nombre"
+          >
+            Nombre
+          </button>
+          <button
+            type="button"
+            role="tab"
+            [class.active]="searchMode === 'ability'"
+            [attr.aria-selected]="searchMode === 'ability'"
+            (click)="setSearchMode('ability')"
+            title="Buscar dentro del texto de la habilidad"
+          >
+            Habilidad
+          </button>
+          <button
+            type="button"
+            role="tab"
+            [class.active]="searchMode === 'all'"
+            [attr.aria-selected]="searchMode === 'all'"
+            (click)="setSearchMode('all')"
+            title="Buscar en nombre y habilidad"
+          >
+            Todo
+          </button>
         </div>
-        <input type="text"
-               #searchInput
-               [placeholder]="searchMode === 'ability' ? 'Buscar habilidad...' : (searchMode === 'all' ? 'Buscar nombre o habilidad...' : 'Buscar carta...')"
-               [(ngModel)]="searchQuery"
-               (ngModelChange)="onSearchInput()"
-               (keyup.enter)="onSearch()">
-        <button class="search-btn" (click)="onSearch()" title="Buscar">🔍</button>
+
+        <div class="search-box">
+          <app-icon name="search" [size]="15" class="search-input-icon"></app-icon>
+          <input
+            type="text"
+            #searchInput
+            [placeholder]="searchMode === 'ability' ? 'Buscar habilidad...' : (searchMode === 'all' ? 'Buscar nombre o habilidad...' : 'Buscar carta...')"
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onSearchInput()"
+            (keyup.enter)="onSearch()"
+          />
+          @if (searchQuery) {
+            <button class="clear-search-btn" (click)="searchQuery = ''; onSearchInput()" aria-label="Limpiar búsqueda">
+              <app-icon name="x" [size]="14"></app-icon>
+            </button>
+          }
+        </div>
       </div>
+
       <div class="type-chips" role="group" aria-label="Filtrar por tipo">
-        <button type="button"
-                class="type-chip-btn"
-                [class.active]="selectedTypes.size === 0"
-                (click)="toggleType('')">Todos</button>
+        <button
+          type="button"
+          class="type-chip-btn"
+          [class.active]="selectedTypes.size === 0"
+          (click)="toggleType('')"
+        >
+          Todos
+        </button>
         @for (t of types; track t.id) {
-          <button type="button"
-                  class="type-chip-btn"
-                  [class.active]="selectedTypes.has(t.slug)"
-                  (click)="toggleType(t.slug)">{{ t.name }}</button>
+          <button
+            type="button"
+            class="type-chip-btn"
+            [class.active]="selectedTypes.has(t.slug)"
+            (click)="toggleType(t.slug)"
+          >
+            {{ t.name }}
+          </button>
         }
       </div>
+
       <div class="filter-row">
+        <!-- Ediciones Multi-select -->
         <div class="multi-filter" [class.open]="openFilter === 'edition'">
           <button type="button" class="multi-trigger" [class.has-value]="selectedEditions.size > 0" (click)="toggleFilterPopover('edition', $event)">
             <span>{{ filterLabel('edition') }}</span>
-            <i class="bi bi-chevron-down"></i>
+            <app-icon name="chevron-down" [size]="14"></app-icon>
           </button>
           @if (openFilter === 'edition') {
             <div class="multi-popover" (click)="$event.stopPropagation()">
@@ -76,10 +154,12 @@
             </div>
           }
         </div>
+
+        <!-- Rarezas Multi-select -->
         <div class="multi-filter" [class.open]="openFilter === 'rarity'">
           <button type="button" class="multi-trigger" [class.has-value]="selectedRarities.size > 0" (click)="toggleFilterPopover('rarity', $event)">
             <span>{{ filterLabel('rarity') }}</span>
-            <i class="bi bi-chevron-down"></i>
+            <app-icon name="chevron-down" [size]="14"></app-icon>
           </button>
           @if (openFilter === 'rarity') {
             <div class="multi-popover" (click)="$event.stopPropagation()">
@@ -100,10 +180,12 @@
             </div>
           }
         </div>
+
+        <!-- Costes Multi-select -->
         <div class="multi-filter" [class.open]="openFilter === 'cost'">
           <button type="button" class="multi-trigger" [class.has-value]="selectedCosts.size > 0" (click)="toggleFilterPopover('cost', $event)">
             <span>{{ filterLabel('cost') }}</span>
-            <i class="bi bi-chevron-down"></i>
+            <app-icon name="chevron-down" [size]="14"></app-icon>
           </button>
           @if (openFilter === 'cost') {
             <div class="multi-popover" (click)="$event.stopPropagation()">
@@ -127,6 +209,7 @@
       </div>
     </div>
 
+    <!-- Skeleton Loading -->
     @if (loading) {
       <div class="available-cards skeleton-grid" aria-label="Cargando cartas">
         @for (_ of [1,2,3,4,5,6,7,8]; track $index) {
@@ -141,63 +224,91 @@
       </div>
     }
 
+    <!-- Cards Grid -->
     <div class="available-cards" [class.is-loading]="loading">
       @for (card of availableCards; track card.id) {
-        <div class="mini-card"
-             (mousedown)="holdStart(card, $event)"
-             (mouseup)="holdEnd()"
-             (mouseleave)="holdCancel()"
-             [class.in-deck]="getQuantityInDeck(card.id) > 0"
-             [class.off-format]="!isCardAllowedByFormat(card)"
-             [class.banned]="getBanStatus(card)?.status === 'banned'"
-             [class.name-taken]="hasDifferentVersion(card)"
-             [class.name-maxed]="getNameCount(card.name) >= getEffectiveMaxCopies(card)"
-             [class.flash-added]="recentlyAdded.has(card.id)">
+        <div
+          class="mini-card"
+          (mousedown)="holdStart(card, $event)"
+          (mouseup)="holdEnd()"
+          (mouseleave)="holdCancel()"
+          [class.in-deck]="getQuantityInDeck(card.id) > 0"
+          [class.off-format]="!isCardAllowedByFormat(card)"
+          [class.banned]="getBanStatus(card)?.status === 'banned'"
+          [class.name-taken]="hasDifferentVersion(card)"
+          [class.name-maxed]="getNameCount(card.name) >= getEffectiveMaxCopies(card)"
+          [class.flash-added]="recentlyAdded.has(card.id)"
+        >
           <div class="img-wrapper">
-            <img [src]="card.image_url | thumb:150" [alt]="card.name" loading="lazy" decoding="async">
-            <span class="eye-icon" (click)="showPreview(card, $event)" title="Ver detalle">👁</span>
+            <img [src]="card.image_url | thumb:150" [alt]="card.name" loading="lazy" decoding="async" />
+            <button type="button" class="eye-btn" (click)="showPreview(card, $event)" title="Ver detalle">
+              <app-icon name="eye" [size]="13"></app-icon>
+            </button>
           </div>
           <div class="mini-info">
             <span class="mini-name">{{ card.name }}</span>
-            <span class="mini-type">{{ card.type_name }}
-              @if (card.cost !== null) { · 💰{{ card.cost }} }
-              @if (card.damage !== null) { · ⚔️{{ card.damage }} }
-            </span>
+            <div class="mini-type-row">
+              <span class="mini-type">{{ card.type_name }}</span>
+              @if (card.cost !== null) {
+                <span class="stat-pill cost" title="Coste">{{ card.cost }}</span>
+              }
+              @if (card.damage !== null) {
+                <span class="stat-pill damage" title="Fuerza">{{ card.damage }}</span>
+              }
+            </div>
             @if (abilitySearch && card.ability) {
-              <span class="mini-ability">{{ card.ability.length > 80 ? card.ability.substring(0, 80) + '...' : card.ability }}</span>
+              <span class="mini-ability">{{ card.ability.length > 70 ? card.ability.substring(0, 70) + '...' : card.ability }}</span>
             }
           </div>
+
           <div class="actions-column">
             <div class="mini-actions main-actions">
               <span class="main-label">M</span>
               @if (getQuantityInDeck(card.id) > 0) {
-                <button class="circle-btn remove" (click)="removeCard(card.id); $event.stopPropagation()">−</button>
+                <button class="circle-btn remove" (click)="removeCard(card.id); $event.stopPropagation()" aria-label="Quitar de mazo principal">−</button>
                 <span class="mini-qty">{{ getQuantityInDeck(card.id) }}</span>
               }
-              <button class="circle-btn add" (click)="addCard(card); $event.stopPropagation()"
-                      [disabled]="getBanStatus(card)?.status === 'banned' || getNameCount(card.name) >= getEffectiveMaxCopies(card) || totalDeckCards >= 50 || !isCardAllowedByRace(card) || !isCardAllowedByFormat(card)">+</button>
+              <button
+                class="circle-btn add"
+                (click)="addCard(card); $event.stopPropagation()"
+                [disabled]="getBanStatus(card)?.status === 'banned' || getNameCount(card.name) >= getEffectiveMaxCopies(card) || totalDeckCards >= 50 || !isCardAllowedByRace(card) || !isCardAllowedByFormat(card)"
+                aria-label="Agregar a mazo principal"
+              >+</button>
             </div>
             <div class="mini-actions side-actions">
               <span class="side-label">S</span>
               @if (getQuantityInSide(card.id) > 0) {
-                <button class="circle-btn remove" (click)="removeFromSide(card.id); $event.stopPropagation()">−</button>
+                <button class="circle-btn remove" (click)="removeFromSide(card.id); $event.stopPropagation()" aria-label="Quitar de side">−</button>
                 <span class="mini-qty">{{ getQuantityInSide(card.id) }}</span>
               }
-              <button class="circle-btn add side" (click)="addToSide(card); $event.stopPropagation()"
-                      [disabled]="getBanStatus(card)?.status === 'banned' || getNameCount(card.name) >= getEffectiveMaxCopies(card) || totalSideCards >= 15 || !isCardAllowedByRace(card) || !isCardAllowedByFormat(card)">+</button>
+              <button
+                class="circle-btn add side"
+                (click)="addToSide(card); $event.stopPropagation()"
+                [disabled]="getBanStatus(card)?.status === 'banned' || getNameCount(card.name) >= getEffectiveMaxCopies(card) || totalSideCards >= 15 || !isCardAllowedByRace(card) || !isCardAllowedByFormat(card)"
+                aria-label="Agregar a side"
+              >+</button>
             </div>
           </div>
+
           @if (getBanStatus(card); as ban) {
             @if (ban.status === 'banned') {
-              <span class="ban-badge banned">⛔ Prohibida</span>
+              <span class="ban-badge banned">
+                <app-icon name="ban" [size]="11"></app-icon> Prohibida
+              </span>
             } @else if (ban.status === 'limited_1') {
-              <span class="ban-badge limited">☢️ Límite 1</span>
+              <span class="ban-badge limited">
+                <app-icon name="shield-alert" [size]="11"></app-icon> Límite 1
+              </span>
             } @else if (ban.status === 'limited_2') {
-              <span class="ban-badge limited">☢️ Límite 2</span>
+              <span class="ban-badge limited">
+                <app-icon name="shield-alert" [size]="11"></app-icon> Límite 2
+              </span>
             }
           }
           @if (!isCardAllowedByFormat(card)) {
-            <span class="ban-badge limited">🚫 Fuera de formato</span>
+            <span class="ban-badge off-format">
+              <app-icon name="alert-circle" [size]="11"></app-icon> Fuera de formato
+            </span>
           }
         </div>
       }
@@ -209,165 +320,184 @@
         <p class="status-text">Cargando más cartas...</p>
       }
       @if (!hasMoreCards && availableCards.length > 0) {
-        <p class="status-text status-end">Fin de cartas</p>
+        <p class="status-text status-end">Fin del catálogo</p>
       }
     </div>
   </div>
 
-  <!-- Right panel: Deck -->
-  <div class="deck-panel" [class.mobile-visible]="showDeckPanel" [class.pulse]="deckPanelPulse">
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- RIGHT PANEL (65%): Active Deck & Resource Curve       -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div
+    class="deck-panel"
+    [class.mobile-visible]="showDeckPanel"
+    [class.mobile-hidden]="activeMobileTab === 'browser'"
+    [class.pulse]="deckPanelPulse"
+  >
+    <!-- Deck Action Bar & Toolbar -->
     <div class="deck-header">
-      <h2>{{ deckId ? 'Editar Mazo' : 'Nuevo Mazo' }}</h2>
+      <div class="deck-header-info">
+        <h2>{{ deckId ? 'Editar Mazo' : 'Nuevo Mazo' }}</h2>
+        <div class="deck-ban-status">
+          @if (banlistViolations.length === 0 && formatViolations.length === 0) {
+            <span class="legal-badge ok" title="Mazo válido para torneo">
+              <app-icon name="shield-check" [size]="13"></app-icon> Formato Válido
+            </span>
+          } @else {
+            <span class="legal-badge warn" title="El mazo contiene cartas restringidas o fuera de formato">
+              <app-icon name="shield-alert" [size]="13"></app-icon>
+              {{ banlistViolations.length + formatViolations.length }} Infracciones
+            </span>
+          }
+        </div>
+      </div>
+
       <div class="deck-header-actions">
-        <button class="icon-btn"
-                (click)="undo()"
-                [disabled]="!canUndo()"
-                title="Deshacer (Ctrl+Z)">
-          <i class="bi bi-arrow-counterclockwise"></i>
+        <button class="icon-btn" (click)="undo()" [disabled]="!canUndo()" title="Deshacer (Ctrl+Z)">
+          <app-icon name="undo" [size]="16"></app-icon>
         </button>
-        <button class="icon-btn"
-                (click)="redo()"
-                [disabled]="!canRedo()"
-                title="Rehacer (Ctrl+Y)">
-          <i class="bi bi-arrow-clockwise"></i>
+        <button class="icon-btn" (click)="redo()" [disabled]="!canRedo()" title="Rehacer (Ctrl+Y)">
+          <app-icon name="redo" [size]="16"></app-icon>
         </button>
-        <button class="icon-btn"
-                (click)="openImportModal()"
-                title="Importar mazo desde texto o código">
-          <i class="bi bi-box-arrow-in-down"></i>
+        <button class="icon-btn" (click)="openImportModal()" title="Importar mazo desde texto o código">
+          <app-icon name="upload" [size]="16"></app-icon>
         </button>
         <input #importJsonInput type="file" accept="application/json,.json" (change)="onImportJsonFile($event)" hidden />
-        <button class="icon-btn"
-                (click)="triggerImportJson(importJsonInput)"
-                [disabled]="importingJson"
-                [title]="importingJson ? 'Importando…' : 'Importar mazo desde archivo .deck.json'">
-          <i class="bi bi-filetype-json"></i>
+        <button
+          class="icon-btn"
+          (click)="triggerImportJson(importJsonInput)"
+          [disabled]="importingJson"
+          [title]="importingJson ? 'Importando…' : 'Importar mazo desde archivo .deck.json'"
+        >
+          <app-icon name="file-text" [size]="16"></app-icon>
         </button>
-        <button class="icon-btn"
-                (click)="openExportModal()"
-                [disabled]="totalDeckCards === 0"
-                title="Exportar mazo">
-          <i class="bi bi-box-arrow-up"></i>
+        <button class="icon-btn" (click)="openExportModal()" [disabled]="totalDeckCards === 0" title="Exportar mazo">
+          <app-icon name="download" [size]="16"></app-icon>
         </button>
-        <button class="icon-btn"
-                (click)="copyDeck()"
-                [disabled]="totalDeckCards === 0"
-                title="Copiar mazo a un nuevo borrador">
-          <i class="bi bi-files"></i>
+        <button class="icon-btn" (click)="copyDeck()" [disabled]="totalDeckCards === 0" title="Copiar mazo a un nuevo borrador">
+          <app-icon name="copy" [size]="16"></app-icon>
         </button>
-        <button class="icon-btn"
-                [class.active]="compactView"
-                (click)="toggleCompactView()"
-                [title]="compactView ? 'Vista expandida' : 'Vista compacta'">
-          <i [class]="compactView ? 'bi bi-grid-3x3-gap-fill' : 'bi bi-list-ul'"></i>
+        <button
+          class="icon-btn"
+          [class.active]="compactView"
+          (click)="toggleCompactView()"
+          [title]="compactView ? 'Vista expandida' : 'Vista compacta'"
+        >
+          <app-icon [name]="compactView ? 'grid' : 'list'" [size]="16"></app-icon>
         </button>
+
         <span class="shortcut-help" (click)="toggleShortcutsHelp($event)">
           <button class="icon-btn" type="button" title="Atajos de teclado">
-            <i class="bi bi-question-circle"></i>
+            <app-icon name="help-circle" [size]="16"></app-icon>
           </button>
           <div class="shortcut-popover" [class.show]="showShortcutsHelp" (click)="$event.stopPropagation()">
             <div class="sp-head">Atajos de teclado</div>
             <div class="sp-row"><kbd>/</kbd><span>Enfocar el buscador</span></div>
-            <div class="sp-row"><kbd>Ctrl</kbd>+<kbd>Z</kbd><span>Deshacer</span></div>
-            <div class="sp-row"><kbd>Ctrl</kbd>+<kbd>Y</kbd><span>Rehacer</span></div>
-            <div class="sp-row"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd><span>Rehacer (alt)</span></div>
+            <div class="sp-row"><kbd>Ctrl+Z</kbd><span>Deshacer</span></div>
+            <div class="sp-row"><kbd>Ctrl+Y</kbd><span>Rehacer</span></div>
             <div class="sp-row"><kbd>Esc</kbd><span>Cerrar modal / preview</span></div>
-            <div class="sp-row"><kbd>Enter</kbd><span>Buscar (en buscador)</span></div>
             <div class="sp-foot">Mantén presionada una carta para previsualizarla.</div>
           </div>
         </span>
-        <button class="mobile-close-btn" (click)="toggleDeckPanel()" [class.mobile-visible]="showDeckPanel">✕</button>
       </div>
     </div>
 
-    <div class="form-group" [class.has-error]="fieldErrors.name">
-      <label>Nombre del mazo</label>
-      <input type="text" [(ngModel)]="deckName" placeholder="Mi mazo increíble" (input)="fieldErrors.name = false" (ngModelChange)="markDirty()">
-    </div>
-
-    <div class="form-group">
-      <label>Descripción (opcional)</label>
-      <input type="text" [(ngModel)]="deckDescription" placeholder="Descripción del mazo..." (ngModelChange)="markDirty()">
-    </div>
-
-    <label class="checkbox-label">
-      <input type="checkbox" [(ngModel)]="deckIsPublic" (ngModelChange)="markDirty()">
-      Mazo público
-    </label>
-
-    <label class="checkbox-label">
-      <input type="checkbox" [(ngModel)]="sharedWithTeam" (ngModelChange)="markDirty()">
-      Compartir con equipo
-    </label>
-
-    <div class="deck-summary progress-summary" [class.has-error]="fieldErrors.cards" [attr.data-state]="progressState">
-      <div class="progress-ring" [attr.data-state]="progressState" [style.--p]="progressPct + '%'">
-        <span class="progress-num">{{ totalDeckCards }}<small>/50</small></span>
+    <!-- Deck Metadata Form -->
+    <div class="deck-form-grid">
+      <div class="form-group" [class.has-error]="fieldErrors.name">
+        <label>Nombre del mazo</label>
+        <input type="text" [(ngModel)]="deckName" placeholder="Mi mazo increíble" (input)="fieldErrors.name = false" (ngModelChange)="markDirty()" />
       </div>
-      <div class="progress-info">
-        <div class="info-line">
-          <span class="oro-pill" [class.warn]="oroCount < 10 || oroCount > 18" title="Cantidad de Oros">
-            <i class="bi bi-coin"></i> {{ oroCount }}
+
+      <div class="form-group">
+        <label>Descripción (opcional)</label>
+        <input type="text" [(ngModel)]="deckDescription" placeholder="Estrategia, notas..." (ngModelChange)="markDirty()" />
+      </div>
+
+      <div class="form-checkboxes">
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="deckIsPublic" (ngModelChange)="markDirty()" />
+          <span>Mazo público</span>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="sharedWithTeam" (ngModelChange)="markDirty()" />
+          <span>Compartir con equipo</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Deck Stats & Status Banner -->
+    <div class="deck-stats-banner">
+      <div class="stat-box count-box" [attr.data-state]="progressState">
+        <span class="stat-value">{{ totalDeckCards }}<small>/50</small></span>
+        <span class="stat-label">Cartas</span>
+      </div>
+
+      <div class="stat-box">
+        <span class="stat-value oro-val">
+          <app-icon name="coins" [size]="14"></app-icon> {{ oroCount }}
+        </span>
+        <span class="stat-label">Oros</span>
+      </div>
+
+      <div class="stat-box">
+        <span class="stat-value">{{ avgCostMain > 0 ? avgCostMain : '—' }}</span>
+        <span class="stat-label">Coste Medio</span>
+      </div>
+
+      @if (startingGoldCard) {
+        <div class="stat-box gold-box" title="Oro inicial seleccionado">
+          <span class="stat-value gold-name">
+            <app-icon name="star-fill" [size]="13"></app-icon> {{ startingGoldCard.name }}
           </span>
-          @if (startingGoldCard) {
-            <span class="starting-gold-pill" title="Oro inicial: {{ startingGoldCard.name }}">
-              <i class="bi bi-star-fill"></i> {{ startingGoldCard.name }}
-            </span>
-          } @else if (oroCount > 0) {
-            <span class="starting-gold-pill empty" title="Selecciona un oro inicial desde la lista de oros">
-              <i class="bi bi-star"></i> Sin oro inicial
-            </span>
-          }
-          @if (avgCostMain > 0) {
-            <span class="avg-pill" title="Coste promedio (sin Oros)">μ {{ avgCostMain }}</span>
-          }
-          @if (selectedRace && selectedRace !== 'dream') {
-            @if (raceCounts.offRace > 0) {
-              <span class="race-pill bad" title="Cartas que no son de tu raza ni neutras">
-                <i class="bi bi-exclamation-triangle-fill"></i> {{ raceCounts.offRace }} fuera de raza
-              </span>
-            } @else {
-              <span class="race-pill ok" title="De raza + sin raza">
-                <i class="bi bi-check-circle-fill"></i> {{ raceCounts.ofRace }} + {{ raceCounts.raceless }}
-              </span>
-            }
-          }
+          <span class="stat-label">Oro Inicial</span>
         </div>
-      </div>
+      }
     </div>
 
-    @if (banlistViolations.length > 0) {
-      <div class="violations-panel">
-        <div class="vh"><i class="bi bi-shield-exclamation"></i> Problemas detectados</div>
-        @for (v of banlistViolations; track v.card.id) {
-          <div class="v-row"><strong>{{ v.card.name }}</strong> — {{ v.reason }}</div>
+    <!-- Violations Alert Panel -->
+    @if (banlistViolations.length > 0 || formatViolations.length > 0) {
+      <div class="violations-container">
+        @if (banlistViolations.length > 0) {
+          <div class="violations-panel">
+            <div class="vh">
+              <app-icon name="shield-alert" [size]="15"></app-icon> Problemas de Banlist
+            </div>
+            @for (v of banlistViolations; track v.card.id) {
+              <div class="v-row"><strong>{{ v.card.name }}</strong>: {{ v.reason }}</div>
+            }
+          </div>
+        }
+
+        @if (formatViolations.length > 0) {
+          <div class="violations-panel format-violations">
+            <div class="vh">
+              <app-icon name="alert-circle" [size]="15"></app-icon> Cartas fuera de formato
+            </div>
+            @for (v of formatViolations; track v.card.id + '-' + v.section) {
+              <div class="v-row"><strong>{{ v.card.name }}</strong> ({{ v.section === 'main' ? 'Mazo' : 'Side' }}): {{ v.reason }}</div>
+            }
+            <button type="button" class="btn btn-secondary btn-xs" (click)="removeOffFormatCards()">
+              Limpiar fuera de formato
+            </button>
+          </div>
         }
       </div>
     }
 
-    @if (formatViolations.length > 0) {
-      <div class="violations-panel format-violations">
-        <div class="vh"><i class="bi bi-diagram-3"></i> Cartas fuera de formato</div>
-        @for (v of formatViolations; track v.card.id + '-' + v.section) {
-          <div class="v-row"><strong>{{ v.card.name }}</strong> ({{ v.section === 'main' ? 'Mazo' : 'Side' }}) — {{ v.reason }}</div>
-        }
-        <button type="button" class="btn btn-secondary btn-sm" (click)="removeOffFormatCards()">
-          Limpiar fuera de formato
-        </button>
-      </div>
-    }
-
-    @if (typeCounts.length) {
-      <div class="type-breakdown">
-        @for (tc of typeCounts; track tc.label) {
-          <span class="type-chip">{{ tc.label }} <strong>{{ tc.count }}</strong></span>
-        }
-      </div>
-    }
-
+    <!-- Resource & Mana Curve Histogram -->
     @if (hasAnyCost) {
-      <div class="cost-curve" aria-label="Curva de coste">
-        <span class="cost-curve-title">Curva de coste</span>
+      <div class="cost-curve-panel">
+        <div class="curve-header">
+          <span class="curve-title">
+            <app-icon name="bar-chart-3" [size]="14"></app-icon> Curva de Recursos
+          </span>
+          <div class="type-breakdown-inline">
+            @for (tc of typeCounts; track tc.label) {
+              <span class="type-pill">{{ tc.label }} <strong>{{ tc.count }}</strong></span>
+            }
+          </div>
+        </div>
         <div class="cost-curve-bars">
           @for (b of costCurve; track b.label) {
             <div class="cost-bar" [class.empty]="b.count === 0" [title]="b.count + ' cartas con coste ' + b.label">
@@ -382,106 +512,142 @@
       </div>
     }
 
+    <!-- Active Deck Interactive List Grouped by Type -->
     <div class="deck-entries" [class.compact]="compactView">
       @if (deckCards.length === 0) {
-        <p class="info-text">Haz click en las cartas para agregarlas al mazo</p>
+        <div class="deck-empty-prompt">
+          <app-icon name="hammer" [size]="28" class="empty-icon"></app-icon>
+          <p>Haz clic en <strong>+</strong> en cualquier carta del catálogo para armar tu mazo.</p>
+        </div>
       }
+
       @for (g of groupedDeckCards; track g.type) {
         <div class="deck-group">
           <div class="deck-group-header">
-            <span>{{ g.type }}</span>
+            <span class="group-title">{{ g.type }}</span>
             <span class="deck-group-count">{{ g.total }}</span>
           </div>
-          @for (dc of g.cards; track dc.card.id) {
-            <div class="deck-entry"
-                 [class.flash-added]="recentlyAdded.has(dc.card.id)"
-                 [class.has-violation]="hasViolation(dc.card)"
-                 [title]="violationText(dc.card)"
-                 [style.transform]="swipeOffset[dc.card.id] !== undefined ? 'translateX(' + swipeOffset[dc.card.id] + 'px)' : ''"
-                 (touchstart)="onSwipeStart($event, dc.card.id)"
-                 (touchmove)="onSwipeMove($event, dc.card.id)"
-                 (touchend)="onSwipeEnd(dc.card.id, 'main')">
-              <img [src]="dc.card.image_url | thumb:100" [alt]="dc.card.name" loading="lazy" decoding="async">
-              <div class="entry-info">
-                <span class="entry-name">{{ dc.card.name }}@if (dc.card.is_unique) { <span class="unique-badge">Única</span> }@if (getBanStatus(dc.card); as ban) { @if (ban.status === 'limited_1') { <span class="ban-badge-sm limited">☢️1</span> } @else if (ban.status === 'limited_2') { <span class="ban-badge-sm limited">☢️2</span> } }</span>
-                <span class="entry-type">{{ dc.card.type_name }}@if (dc.card.cost) { · 💰{{ dc.card.cost }} }</span>
+
+          <div class="deck-group-cards">
+            @for (dc of g.cards; track dc.card.id) {
+              <div
+                class="deck-entry"
+                [class.flash-added]="recentlyAdded.has(dc.card.id)"
+                [class.has-violation]="hasViolation(dc.card)"
+                [title]="violationText(dc.card)"
+              >
+                <img [src]="dc.card.image_url | thumb:100" [alt]="dc.card.name" loading="lazy" decoding="async" />
+                <div class="entry-info">
+                  <div class="entry-name-row">
+                    <span class="entry-name">{{ dc.card.name }}</span>
+                    @if (dc.card.is_unique) {
+                      <span class="unique-badge">Única</span>
+                    }
+                    @if (getBanStatus(dc.card); as ban) {
+                      @if (ban.status === 'limited_1') {
+                        <span class="ban-badge-sm limited">Límite 1</span>
+                      } @else if (ban.status === 'limited_2') {
+                        <span class="ban-badge-sm limited">Límite 2</span>
+                      }
+                    }
+                  </div>
+                  <span class="entry-type">{{ dc.card.type_name }}@if (dc.card.cost !== null) { · Coste: {{ dc.card.cost }} }</span>
+                </div>
+
+                @if (isEligibleStartingGold(dc.card)) {
+                  <button
+                    class="starting-gold-btn"
+                    [class.active]="startingGoldId === dc.card.id"
+                    (click)="startingGoldId === dc.card.id ? clearStartingGold() : setStartingGold(dc.card.id)"
+                    [title]="startingGoldId === dc.card.id ? 'Quitar como oro inicial' : 'Seleccionar como oro inicial'"
+                  >
+                    <app-icon [name]="startingGoldId === dc.card.id ? 'star-fill' : 'star'" [size]="14"></app-icon>
+                  </button>
+                }
+
+                <div class="entry-controls">
+                  <button class="ctrl-btn remove" (click)="removeCard(dc.card.id)" title="Quitar una copia">−</button>
+                  <span class="entry-qty">{{ dc.quantity }}</span>
+                  <button
+                    class="ctrl-btn add"
+                    (click)="addCard(dc.card)"
+                    [disabled]="getNameCount(dc.card.name) >= getEffectiveMaxCopies(dc.card) || totalDeckCards >= 50 || !isCardAllowedByFormat(dc.card)"
+                    title="Añadir una copia"
+                  >+</button>
+                  <button class="ctrl-btn move-btn" (click)="moveToSide(dc.card.id)" [disabled]="totalSideCards >= 15" title="Mover al sidedeck">
+                    <app-icon name="arrow-down-short" [size]="15"></app-icon>
+                  </button>
+                </div>
               </div>
-              @if (isEligibleStartingGold(dc.card)) {
-                <button class="starting-gold-btn" [class.active]="startingGoldId === dc.card.id" (click)="startingGoldId === dc.card.id ? clearStartingGold() : setStartingGold(dc.card.id)" [title]="startingGoldId === dc.card.id ? 'Quitar como oro inicial' : 'Seleccionar como oro inicial'">
-                  <i class="bi" [class.bi-star-fill]="startingGoldId === dc.card.id" [class.bi-star]="startingGoldId !== dc.card.id"></i>
-                </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Sidedeck Section -->
+    <div class="sidedeck-section">
+      <div class="sidedeck-header">
+        <div class="side-title-wrap">
+          <span class="side-title">Sidedeck</span>
+          <span class="side-count">{{ totalSideCards }} / 15</span>
+        </div>
+      </div>
+
+      <div class="deck-entries side-entries" [class.compact]="compactView">
+        @if (sideCards.length === 0) {
+          <p class="side-empty-text">Sin cartas en el sidedeck</p>
+        }
+
+        @for (g of groupedSideCards; track g.type) {
+          <div class="deck-group side-group">
+            <div class="deck-group-header">
+              <span>{{ g.type }}</span>
+              <span class="deck-group-count">{{ g.total }}</span>
+            </div>
+
+            <div class="deck-group-cards">
+              @for (dc of g.cards; track dc.card.id) {
+                <div class="deck-entry side-entry" [class.has-violation]="hasViolation(dc.card)">
+                  <img [src]="dc.card.image_url | thumb:100" [alt]="dc.card.name" loading="lazy" decoding="async" />
+                  <div class="entry-info">
+                    <span class="entry-name">{{ dc.card.name }}</span>
+                    <span class="entry-type">{{ dc.card.type_name }}</span>
+                  </div>
+                  <div class="entry-controls">
+                    <button class="ctrl-btn remove" (click)="removeFromSide(dc.card.id)">−</button>
+                    <span class="entry-qty">{{ dc.quantity }}</span>
+                    <button
+                      class="ctrl-btn add"
+                      (click)="addToSide(dc.card)"
+                      [disabled]="getNameCount(dc.card.name) >= getEffectiveMaxCopies(dc.card) || totalSideCards >= 15 || !isCardAllowedByFormat(dc.card)"
+                    >+</button>
+                    <button class="ctrl-btn move-btn" (click)="moveToMain(dc.card.id)" [disabled]="totalDeckCards >= 50" title="Mover al mazo principal">
+                      <app-icon name="arrow-up-short" [size]="15"></app-icon>
+                    </button>
+                  </div>
+                </div>
               }
-              <div class="entry-controls">
-                <button class="ctrl-btn" (click)="removeCard(dc.card.id)">−</button>
-                <span class="entry-qty">{{ dc.quantity }}</span>
-                <button class="ctrl-btn" (click)="addCard(dc.card)" [disabled]="getNameCount(dc.card.name) >= getEffectiveMaxCopies(dc.card) || totalDeckCards >= 50 || !isCardAllowedByFormat(dc.card)">+</button>
-                <button class="ctrl-btn move-btn" (click)="moveToSide(dc.card.id)" [disabled]="totalSideCards >= 15" title="Mover al sidedeck">
-                  <i class="bi bi-arrow-down-short"></i>
-                </button>
-              </div>
             </div>
-          }
-        </div>
-      }
-    </div>
-
-    <!-- Sidedeck -->
-    <div class="deck-summary side-summary">
-      <span class="total-cards">Sidedeck: {{ totalSideCards }} / 15 cartas</span>
-    </div>
-
-    <div class="deck-entries side-entries" [class.compact]="compactView">
-      @if (sideCards.length === 0) {
-        <p class="info-text side-empty">Sin cartas en el sidedeck</p>
-      }
-      @for (g of groupedSideCards; track g.type) {
-        <div class="deck-group">
-          <div class="deck-group-header">
-            <span>{{ g.type }}</span>
-            <span class="deck-group-count">{{ g.total }}</span>
           </div>
-          @for (dc of g.cards; track dc.card.id) {
-            <div class="deck-entry side"
-                 [class.flash-added]="recentlyAdded.has(dc.card.id)"
-                 [class.has-violation]="hasViolation(dc.card)"
-                 [title]="violationText(dc.card)"
-                 [style.transform]="swipeOffset[dc.card.id] !== undefined ? 'translateX(' + swipeOffset[dc.card.id] + 'px)' : ''"
-                 (touchstart)="onSwipeStart($event, dc.card.id)"
-                 (touchmove)="onSwipeMove($event, dc.card.id)"
-                 (touchend)="onSwipeEnd(dc.card.id, 'side')">
-              <img [src]="dc.card.image_url | thumb:100" [alt]="dc.card.name" loading="lazy" decoding="async">
-              <div class="entry-info">
-                <span class="entry-name">{{ dc.card.name }}@if (dc.card.is_unique) { <span class="unique-badge">Única</span> }</span>
-                <span class="entry-type">{{ dc.card.type_name }}</span>
-              </div>
-              <div class="entry-controls">
-                <button class="ctrl-btn" (click)="removeFromSide(dc.card.id)">−</button>
-                <span class="entry-qty">{{ dc.quantity }}</span>
-                <button class="ctrl-btn" (click)="addToSide(dc.card)" [disabled]="getNameCount(dc.card.name) >= getEffectiveMaxCopies(dc.card) || totalSideCards >= 15 || !isCardAllowedByFormat(dc.card)">+</button>
-                <button class="ctrl-btn move-btn" (click)="moveToMain(dc.card.id)" [disabled]="totalDeckCards >= 50" title="Mover al mazo principal">
-                  <i class="bi bi-arrow-up-short"></i>
-                </button>
-              </div>
-            </div>
-          }
-        </div>
-      }
+        }
+      </div>
     </div>
 
-    <!-- Sugerencias -->
+    <!-- AI / Community Suggestions -->
     @if (deckId && suggestions.length > 0) {
       <div class="suggestions-section">
         <button class="section-toggle" (click)="showSuggestions = !showSuggestions">
-          <i class="bi" [class.bi-chevron-down]="showSuggestions" [class.bi-chevron-right]="!showSuggestions"></i>
-          💡 Sugerencias ({{ suggestions.length }})
+          <app-icon [name]="showSuggestions ? 'chevron-down' : 'chevron-right'" [size]="15"></app-icon>
+          <span>Sugerencias para tu mazo ({{ suggestions.length }})</span>
         </button>
         @if (showSuggestions) {
           <div class="suggestions-list">
             @for (s of suggestions; track s.id) {
               <div class="suggestion-item">
                 <span class="suggestion-name">{{ s.name }}</span>
-                <span class="suggestion-count" title="Usado en mazos similares">×{{ s.times_used }}</span>
-                <button class="ctrl-btn" (click)="addCard(s)" [disabled]="totalDeckCards >= 50" title="Añadir al mazo">+</button>
+                <span class="suggestion-count" title="Popularidad en mazos competitivos">×{{ s.times_used }}</span>
+                <button class="ctrl-btn add" (click)="addCard(s)" [disabled]="totalDeckCards >= 50" title="Añadir al mazo">+</button>
               </div>
             }
           </div>
@@ -489,41 +655,49 @@
       </div>
     }
 
-    <div class="deck-actions">
-      @if (autosaveLabel) {
-        <span class="autosave-label" title="El borrador se guarda automáticamente en este navegador">
-          <i class="bi bi-cloud-check"></i> {{ autosaveLabel }}
-        </span>
-        <button type="button" class="btn-link-discard" (click)="discardDraft()" title="Descartar borrador local">
-          <i class="bi bi-trash"></i>
+    <!-- Bottom Actions Bar -->
+    <div class="deck-actions-footer">
+      <div class="footer-left">
+        @if (autosaveLabel) {
+          <span class="autosave-indicator" title="El borrador se guarda automáticamente en este navegador">
+            <app-icon name="check-circle" [size]="13"></app-icon> {{ autosaveLabel }}
+          </span>
+          <button type="button" class="btn-discard" (click)="discardDraft()" title="Descartar borrador local">
+            <app-icon name="trash-2" [size]="14"></app-icon>
+          </button>
+        }
+      </div>
+
+      <div class="footer-right">
+        <button type="button" class="btn btn-secondary btn-icon" (click)="openDeckPreview()" [disabled]="totalDeckCards === 0" title="Previsualizar mazo">
+          <app-icon name="eye" [size]="15"></app-icon>
+          <span>Preview</span>
         </button>
-      }
-      <button type="button" class="btn btn-preview-deck" (click)="openDeckPreview()" [disabled]="totalDeckCards === 0" title="Previsualizar mazo">
-        <i class="bi bi-eye"></i>
-      </button>
-      <button class="btn btn-gold" (click)="saveDeck()" [disabled]="saving">
-        {{ saving ? 'Guardando...' : (deckId ? 'Actualizar Mazo' : 'Guardar Mazo') }}
-      </button>
-      <a routerLink="/decks" class="btn btn-secondary">Cancelar</a>
+        <button class="btn btn-primary" (click)="saveDeck()" [disabled]="saving">
+          {{ saving ? 'Guardando...' : (deckId ? 'Actualizar Mazo' : 'Guardar Mazo') }}
+        </button>
+        <a routerLink="/decks" class="btn btn-secondary">Cancelar</a>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Mobile Deck Toggle Button (#19) -->
-<button class="mobile-deck-toggle" (click)="toggleDeckPanel()" [class.active]="showDeckPanel">
-  📋 <span class="fab-count">{{ totalDeckCards }}/50</span>
-</button>
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- MODALS: Deck Preview, Card Modal, Import & Export      -->
+<!-- ══════════════════════════════════════════════════════ -->
 
 <!-- Deck Preview Modal -->
 @if (showDeckPreview()) {
-  <div class="deck-preview-overlay" (click)="closeDeckPreview()">
+  <div class="modal-overlay" (click)="closeDeckPreview()">
     <div class="deck-preview-box" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
       <div class="dp-head">
         <div>
           <h2>{{ deckName || 'Mazo sin nombre' }}</h2>
-          <p class="muted">{{ totalDeckCards }}/50 cartas · {{ deckId ? 'Editando' : 'Borrador' }}</p>
+          <p class="muted">{{ totalDeckCards }}/50 cartas · {{ deckId ? 'Edición guardada' : 'Borrador' }}</p>
         </div>
-        <button class="dp-close" (click)="closeDeckPreview()" aria-label="Cerrar">✕</button>
+        <button class="dp-close" (click)="closeDeckPreview()" aria-label="Cerrar">
+          <app-icon name="x" [size]="18"></app-icon>
+        </button>
       </div>
       <div class="dp-body">
         @for (g of groupedDeckCards; track g.type) {
@@ -568,172 +742,183 @@
             </div>
           </section>
         }
-        @if (totalDeckCards === 0) {
-          <p class="muted center" style="padding:2rem">El mazo está vacío.</p>
-        }
       </div>
     </div>
   </div>
 }
 
-<!-- Card Preview Overlay -->
+<!-- Card Preview Modal (Glassmorphic Detail) -->
 @if (previewCard(); as pc) {
   <div class="preview-overlay" (click)="hidePreview()">
     <div class="preview-panel" (click)="$event.stopPropagation()">
-      <button class="preview-close" (click)="hidePreview()">✕</button>
-      <h3 class="preview-title">{{ pc.name }}</h3>
-      <hr>
-      <div class="preview-body">
-        <img [src]="pc.image_url" [alt]="pc.name">
-        <div class="preview-stats">
-          <div class="stat-row">
-            <span class="stat-label">Tipo</span>
+      <button class="preview-close" (click)="hidePreview()" aria-label="Cerrar modal">
+        <app-icon name="x" [size]="18"></app-icon>
+      </button>
+
+      <div class="preview-layout">
+        <div class="preview-art-col">
+          <img [src]="pc.image_url" [alt]="pc.name" class="preview-card-img" />
+        </div>
+
+        <div class="preview-info-col">
+          <h3 class="preview-title">{{ pc.name }}</h3>
+
+          <div class="preview-meta-badges">
             <span class="stat-badge">{{ pc.type_name }}</span>
-          </div>
-          @if (pc.cost !== null) {
-            <div class="stat-row">
-              <span class="stat-label">Coste</span>
-              <span class="stat-value">{{ pc.cost }}</span>
-            </div>
-          }
-          @if (pc.damage !== null) {
-            <div class="stat-row">
-              <span class="stat-label">Daño</span>
-              <span class="stat-value">{{ pc.damage }}</span>
-            </div>
-          }
-          <div class="stat-row">
-            <span class="stat-label">Expansión</span>
-            <span class="stat-value">{{ pc.edition_title }}</span>
-          </div>
-          @if (pc.rarity_name) {
-            <div class="stat-row">
-              <span class="stat-label">Rareza</span>
+            @if (pc.race_name) {
+              <span class="stat-badge">{{ pc.race_name }}</span>
+            }
+            @if (pc.rarity_name) {
               <span class="stat-badge rarity">{{ pc.rarity_name }}</span>
+            }
+          </div>
+
+          <div class="preview-stats-row">
+            @if (pc.cost !== null) {
+              <div class="stat-item">
+                <span class="stat-label">Coste</span>
+                <span class="stat-val">{{ pc.cost }}</span>
+              </div>
+            }
+            @if (pc.damage !== null) {
+              <div class="stat-item">
+                <span class="stat-label">Fuerza</span>
+                <span class="stat-val">{{ pc.damage }}</span>
+              </div>
+            }
+            <div class="stat-item">
+              <span class="stat-label">Edición</span>
+              <span class="stat-val ed">{{ pc.edition_title }}</span>
             </div>
-          }
-          @if (pc.race_name) {
-            <div class="stat-row">
-              <span class="stat-label">Raza</span>
-              <span class="stat-value">{{ pc.race_name }}</span>
-            </div>
-          }
-          @if (previewAbility(); as ab) {
-            <div class="stat-section">
-              <span class="stat-label">Habilidad</span>
-              <p class="stat-ability">{{ ab }}</p>
-            </div>
-          } @else if (previewAbilityLoading()) {
-            <div class="stat-section">
-              <span class="stat-label">Habilidad</span>
-              <p class="stat-ability loading">Cargando...</p>
-            </div>
-          }
-          <hr>
-          <button class="btn btn-gold btn-block" (click)="addCard(pc); hidePreview()"
-                  [disabled]="getBanStatus(pc)?.status === 'banned' || getNameCount(pc.name) >= getEffectiveMaxCopies(pc)">
-            + Agregar al mazo
-          </button>
+          </div>
+
+          <div class="preview-ability-box">
+            <span class="ability-title">Habilidad</span>
+            @if (previewAbility(); as ab) {
+              <p class="ability-text">{{ ab }}</p>
+            } @else if (previewAbilityLoading()) {
+              <p class="ability-text loading">Cargando habilidad...</p>
+            } @else {
+              <p class="ability-text muted">Sin habilidad especial.</p>
+            }
+          </div>
+
+          <div class="preview-modal-actions">
+            <button
+              class="btn btn-primary btn-block"
+              (click)="addCard(pc); hidePreview()"
+              [disabled]="getBanStatus(pc)?.status === 'banned' || getNameCount(pc.name) >= getEffectiveMaxCopies(pc)"
+            >
+              <app-icon name="plus" [size]="16"></app-icon> Añadir al Mazo
+            </button>
+          </div>
         </div>
       </div>
     </div>
   </div>
 }
 
-<!-- Toast notification -->
+<!-- Toast Notification -->
 @if (toastVisible) {
   <div class="toast-container" [class.error]="toastType === 'error'" [class.success]="toastType === 'success'">
     <span class="toast-msg">{{ toastMessage }}</span>
-    <button class="toast-close" (click)="toastVisible = false">✕</button>
+    <button class="toast-close" (click)="toastVisible = false">
+      <app-icon name="x" [size]="14"></app-icon>
+    </button>
   </div>
 }
 
-<!-- #14 Modal Exportar -->
+<!-- Export Modal -->
 @if (showExportModal) {
   <div class="modal-overlay" (click)="closeExportModal()">
     <div class="modal export-modal" (click)="$event.stopPropagation()" #exportCard>
       <div class="modal-head">
-        <h3><i class="bi bi-box-arrow-up"></i> Exportar mazo</h3>
-        <button type="button" class="modal-close" (click)="closeExportModal()" aria-label="Cerrar">✕</button>
+        <h3><app-icon name="download" [size]="18"></app-icon> Exportar Mazo</h3>
+        <button type="button" class="modal-close" (click)="closeExportModal()" aria-label="Cerrar">
+          <app-icon name="x" [size]="18"></app-icon>
+        </button>
       </div>
       <div class="modal-body">
         <div class="export-tabs">
-          <button type="button" class="tab-btn" [class.active]="exportFormat === 'text'" (click)="setExportFormat('text')">Texto</button>
-          <button type="button" class="tab-btn" [class.active]="exportFormat === 'code'" (click)="setExportFormat('code')">Código compartible</button>
+          <button type="button" class="tab-btn" [class.active]="exportFormat === 'text'" (click)="setExportFormat('text')">Texto Plano</button>
+          <button type="button" class="tab-btn" [class.active]="exportFormat === 'code'" (click)="setExportFormat('code')">Código Compartible</button>
         </div>
-        @if (exportFormat === 'text') {
-          <p class="modal-hint">Lista lista para copiar/pegar. Cada línea = <code>cantidad nombre</code>.</p>
-        } @else {
-          <p class="modal-hint">Código corto (base64) para reconstruir el mazo. Pégalo en otro navegador en "Importar".</p>
-        }
-        <textarea class="export-textarea"
-                  [readonly]="true"
-                  [value]="exportText"
-                  rows="14"></textarea>
+
+        <textarea class="export-textarea" [readonly]="true" [value]="exportText" rows="12"></textarea>
+
         <div class="modal-actions">
-          <button type="button" class="btn btn-gold" (click)="copyExportToClipboard()">
-            <i class="bi" [class.bi-check-lg]="exportCopied" [class.bi-clipboard]="!exportCopied"></i>
-            {{ exportCopied ? 'Copiado' : 'Copiar' }}
+          <button type="button" class="btn btn-primary" (click)="copyExportToClipboard()">
+            <app-icon [name]="exportCopied ? 'check' : 'copy'" [size]="16"></app-icon>
+            {{ exportCopied ? 'Copiado' : 'Copiar Texto' }}
           </button>
           <button type="button" class="btn btn-secondary" (click)="downloadExport()">
-            <i class="bi bi-download"></i> Descargar .txt
+            <app-icon name="download" [size]="16"></app-icon> Descargar .txt
           </button>
           <button type="button" class="btn btn-secondary" (click)="downloadExportImage()" [disabled]="exportImageBusy">
-            <i class="bi bi-image"></i> {{ exportImageBusy ? 'Generando...' : 'Imagen PNG' }}
+            <app-icon name="file-text" [size]="16"></app-icon> {{ exportImageBusy ? 'Generando...' : 'Imagen PNG' }}
           </button>
-          <button type="button" class="btn btn-link" (click)="closeExportModal()">Cerrar</button>
         </div>
       </div>
     </div>
   </div>
 }
 
-<!-- #14 Modal Importar -->
+<!-- Import Modal -->
 @if (showImportModal) {
   <div class="modal-overlay" (click)="closeImportModal()">
     <div class="modal import-modal" (click)="$event.stopPropagation()">
       <div class="modal-head">
-        <h3><i class="bi bi-box-arrow-in-down"></i> Importar mazo</h3>
-        <button type="button" class="modal-close" (click)="closeImportModal()" [disabled]="importBusy" aria-label="Cerrar">✕</button>
+        <h3><app-icon name="upload" [size]="18"></app-icon> Importar Mazo</h3>
+        <button type="button" class="modal-close" (click)="closeImportModal()" [disabled]="importBusy" aria-label="Cerrar">
+          <app-icon name="x" [size]="18"></app-icon>
+        </button>
       </div>
       <div class="modal-body">
         @if (!importReport) {
           <p class="modal-hint">
-            Pega líneas con formato <code>3 nombre carta</code>. Usa <code>## Sideboard</code> para separar el sideboard. También acepta el código compartible.
+            Pega una lista de cartas (formato <code>3 Nombre</code>). Usa <code>## Sideboard</code> para separar el banquillo.
           </p>
           <div class="import-target">
             <span>Añadir a:</span>
-            <label><input type="radio" name="imptarget" value="main" [(ngModel)]="importTarget"> Mazo principal</label>
-            <label><input type="radio" name="imptarget" value="side" [(ngModel)]="importTarget"> Sideboard</label>
+            <label><input type="radio" name="imptarget" value="main" [(ngModel)]="importTarget" /> Mazo Principal</label>
+            <label><input type="radio" name="imptarget" value="side" [(ngModel)]="importTarget" /> Sidedeck</label>
           </div>
-          <textarea class="import-textarea"
-                    [(ngModel)]="importText"
-                    rows="14"
-                    placeholder="3 Drácula&#10;2 Don de Amma&#10;## Sideboard&#10;2 Tamales"></textarea>
+          <textarea
+            class="import-textarea"
+            [(ngModel)]="importText"
+            rows="12"
+            placeholder="3 Drácula&#10;2 Don de Amma&#10;## Sideboard&#10;2 Tamales"
+          ></textarea>
           <div class="modal-actions">
-            <button type="button" class="btn btn-gold" (click)="runImport()" [disabled]="importBusy || !importText.trim()">
+            <button type="button" class="btn btn-primary" (click)="runImport()" [disabled]="importBusy || !importText.trim()">
               {{ importBusy ? 'Importando...' : 'Importar' }}
             </button>
             <button type="button" class="btn btn-secondary" (click)="closeImportModal()" [disabled]="importBusy">Cancelar</button>
           </div>
         } @else {
           <div class="import-report">
-            <p class="report-line ok"><i class="bi bi-check-circle-fill"></i> Añadidas: <strong>{{ importReport.added }}</strong> copias.</p>
+            <p class="report-line ok">
+              <app-icon name="check-circle" [size]="16"></app-icon> Añadidas: <strong>{{ importReport.added }}</strong> cartas.
+            </p>
             @if (importReport.partial.length > 0) {
-              <p class="report-line warn"><i class="bi bi-exclamation-triangle-fill"></i> Parciales (límite alcanzado):</p>
+              <p class="report-line warn">
+                <app-icon name="alert-circle" [size]="16"></app-icon> Límite alcanzado:
+              </p>
               <ul>
                 @for (n of importReport.partial; track n) { <li>{{ n }}</li> }
               </ul>
             }
             @if (importReport.notFound.length > 0) {
-              <p class="report-line err"><i class="bi bi-x-circle-fill"></i> No encontradas:</p>
+              <p class="report-line err">
+                <app-icon name="x" [size]="16"></app-icon> No encontradas:
+              </p>
               <ul>
                 @for (n of importReport.notFound; track n) { <li>{{ n }}</li> }
               </ul>
             }
           </div>
           <div class="modal-actions">
-            <button type="button" class="btn btn-gold" (click)="closeImportModal()">Cerrar</button>
+            <button type="button" class="btn btn-primary" (click)="closeImportModal()">Cerrar</button>
           </div>
         }
       </div>

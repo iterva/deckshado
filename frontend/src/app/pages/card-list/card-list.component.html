@@ -1,144 +1,187 @@
-<div class="container">
-  <h1 class="page-title">Colección de Cartas</h1>
+<div class="catalog-container">
 
-  <div class="filters">
-    <div class="search-bar">
-      <input #searchInput type="text" placeholder="Buscar por nombre... (presiona / para enfocar)" [(ngModel)]="search" (ngModelChange)="onSearchInput()" (keyup.enter)="onSearch()">
-      <button class="btn btn-primary btn-sm" (click)="onSearch()">Buscar</button>
+  <!-- Page Title -->
+  <div class="catalog-header">
+    <div class="catalog-header-left">
+      <h1><app-icon name="library" [size]="20"></app-icon> Catálogo MYL</h1>
+      <span class="results-count">{{ cards.length }} / {{ totalCards }} cartas</span>
     </div>
-    <div class="filter-row">
-      <select [(ngModel)]="selectedEdition" (change)="onFilterChange()">
-        <option value="">Todas las ediciones</option>
-        @for (ed of editions; track ed.id) {
-          <option [value]="ed.slug">{{ ed.title }}</option>
-        }
-      </select>
-      <select [(ngModel)]="selectedType" (change)="onFilterChange()">
-        <option value="">Todos los tipos</option>
-        @for (t of types; track t.id) {
-          <option [value]="t.slug">{{ t.name }}</option>
-        }
-      </select>
-      <select [(ngModel)]="selectedRace" (change)="onFilterChange()">
-        <option value="">Todas las razas</option>
-        @for (r of races; track r.id) {
-          <option [value]="r.slug">{{ r.name }}</option>
-        }
-      </select>
-      <select [(ngModel)]="selectedRarity" (change)="onFilterChange()">
-        <option value="">Todas las frecuencias</option>
-        @for (r of rarities; track r.id) {
-          <option [value]="r.slug">{{ r.name }}</option>
-        }
-      </select>
-    </div>
-  </div>
-
-  <div class="results-bar">
-    <p class="results-count">Mostrando {{ cards.length }} de {{ totalCards }} cartas</p>
     <div class="view-toggle">
       <button class="toggle-btn" [class.active]="viewMode === 'grid'" (click)="viewMode = 'grid'" title="Vista cuadrícula">
-        <i class="bi bi-grid-3x3-gap-fill"></i>
+        <app-icon name="grid-2x2" [size]="16"></app-icon>
       </button>
       <button class="toggle-btn" [class.active]="viewMode === 'table'" (click)="viewMode = 'table'" title="Vista tabla">
-        <i class="bi bi-list-ul"></i>
+        <app-icon name="list" [size]="16"></app-icon>
       </button>
     </div>
   </div>
 
-  @if (loading) {
-    <div class="loading">Cargando...</div>
-  }
-
-  @if (viewMode === 'grid') {
-  <div class="card-grid">
-    @for (card of cards; track card.id) {
-      <div class="card-item" [class.selected]="selectedCard?.id === card.id" (click)="selectCard(card)">
-        <div class="card-image">
-          <img [src]="card.image_url | thumb:350" [alt]="card.name" loading="lazy" decoding="async">
-        </div>
-        <div class="card-info">
-          <h4>{{ card.name }}</h4>
-          <span class="card-type">{{ card.type_name }}</span>
-          @if (card.cost !== null) {
-            <span class="card-cost">💰 {{ card.cost }}</span>
-          }
-          @if (card.damage !== null) {
-            <span class="card-damage">⚔️ {{ card.damage }}</span>
-          }
-        </div>
-      </div>
-    }
+  <!-- Filters -->
+  <div class="filters-bar">
+    <div class="search-wrap">
+      <app-icon name="search" [size]="15"></app-icon>
+      <input #searchInput type="text" placeholder="Buscar por nombre... ( / para enfocar)"
+        [(ngModel)]="search" (ngModelChange)="onSearchInput()" (keyup.enter)="onSearch()" />
+    </div>
+    <select [(ngModel)]="selectedEdition" (change)="onFilterChange()">
+      <option value="">Todas las ediciones</option>
+      @for (ed of editions; track ed.id) {
+        <option [value]="ed.slug">{{ ed.title }}</option>
+      }
+    </select>
+    <select [(ngModel)]="selectedType" (change)="onFilterChange()">
+      <option value="">Todos los tipos</option>
+      @for (t of types; track t.id) {
+        <option [value]="t.slug">{{ t.name }}</option>
+      }
+    </select>
+    <select [(ngModel)]="selectedRace" (change)="onFilterChange()">
+      <option value="">Todas las razas</option>
+      @for (r of races; track r.id) {
+        <option [value]="r.slug">{{ r.name }}</option>
+      }
+    </select>
+    <select [(ngModel)]="selectedRarity" (change)="onFilterChange()">
+      <option value="">Todas las frecuencias</option>
+      @for (r of rarities; track r.id) {
+        <option [value]="r.slug">{{ r.name }}</option>
+      }
+    </select>
   </div>
-  } @else {
-  <div class="card-table-wrap">
-    <table class="card-table">
-      <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>Tipo</th>
-          <th>Raza</th>
-          <th>Coste</th>
-          <th>Fuerza</th>
-          <th>Frecuencia</th>
-          <th>Edición</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (card of cards; track card.id) {
-          <tr [class.selected]="selectedCard?.id === card.id" (click)="selectCard(card)">
-            <td class="name-cell">{{ card.name }}</td>
-            <td>{{ card.type_name ?? '-' }}</td>
-            <td>{{ card.race_name ?? '-' }}</td>
-            <td>{{ card.cost ?? '-' }}</td>
-            <td>{{ card.damage ?? '-' }}</td>
-            <td>{{ card.rarity_name ?? '-' }}</td>
-            <td>{{ card.edition_title }}</td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  </div>
-  }
 
-  @if (selectedCard) {
-    <div class="card-detail-overlay" (click)="selectedCard = null">
-      <div class="card-detail" (click)="$event.stopPropagation()">
-        <button class="close-btn" (click)="selectedCard = null">✕</button>
-        <img [src]="selectedCard.image_url" [alt]="selectedCard.name" class="detail-image">
-        <div class="detail-info">
-          <h2>{{ selectedCard.name }}</h2>
-          <div class="detail-meta">
-            @if (selectedCard.type_name) { <span class="badge">{{ selectedCard.type_name }}</span> }
-            @if (selectedCard.race_name) { <span class="badge">{{ selectedCard.race_name }}</span> }
-            @if (selectedCard.rarity_name) { <span class="badge rarity">{{ selectedCard.rarity_name }}</span> }
-          </div>
-          <div class="detail-stats">
-            @if (selectedCard.cost !== null) { <span>💰 Coste: {{ selectedCard.cost }}</span> }
-            @if (selectedCard.damage !== null) { <span>⚔️ Fuerza: {{ selectedCard.damage }}</span> }
-          </div>
-          @if (selectedCard.ability) {
-            <div class="detail-ability">
-              <h4>Habilidad</h4>
-              <p>{{ selectedCard.ability }}</p>
-            </div>
-          }
-          @if (selectedCard.flavour) {
-            <p class="flavour"><em>{{ selectedCard.flavour }}</em></p>
-          }
-          <p class="detail-edition">{{ selectedCard.edition_title }}</p>
-        </div>
-      </div>
+  @if (loading && cards.length === 0) {
+    <div class="loading-state">
+      <app-icon name="refresh-cw" [size]="18"></app-icon>
+      <span>Cargando...</span>
     </div>
   }
 
+  <!-- Grid View -->
+  @if (viewMode === 'grid') {
+    <div class="card-grid">
+      @for (card of cards; track card.id) {
+        <div class="card-item" [class.selected]="selectedCard?.id === card.id" (click)="selectCard(card)">
+          <div class="card-image">
+            <img [src]="card.image_url | thumb:350" [alt]="card.name" loading="lazy" decoding="async" />
+            <div class="card-hover-overlay">
+              <app-icon name="eye" [size]="18"></app-icon>
+            </div>
+          </div>
+          <div class="card-info">
+            <h4>{{ card.name }}</h4>
+            <div class="card-meta-row">
+              <span class="card-type">{{ card.type_name }}</span>
+              @if (card.cost !== null) {
+                <span class="card-stat cost">{{ card.cost }}</span>
+              }
+              @if (card.damage !== null) {
+                <span class="card-stat dmg">{{ card.damage }}</span>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Table View -->
+  @if (viewMode === 'table') {
+    <div class="card-table-wrap">
+      <table class="card-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Tipo</th>
+            <th>Raza</th>
+            <th>Coste</th>
+            <th>Fuerza</th>
+            <th>Frecuencia</th>
+            <th>Edición</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (card of cards; track card.id) {
+            <tr [class.selected]="selectedCard?.id === card.id" (click)="selectCard(card)">
+              <td class="name-cell">{{ card.name }}</td>
+              <td>{{ card.type_name ?? '-' }}</td>
+              <td>{{ card.race_name ?? '-' }}</td>
+              <td>{{ card.cost ?? '-' }}</td>
+              <td>{{ card.damage ?? '-' }}</td>
+              <td>{{ card.rarity_name ?? '-' }}</td>
+              <td>{{ card.edition_title }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- Infinite scroll sentinel -->
   <div class="infinite-status">
     <div #cardsSentinel class="cards-sentinel" aria-hidden="true"></div>
     @if (loading && hasMore) {
-      <p class="status-text">Cargando más cartas...</p>
+      <p class="status-text"><app-icon name="refresh-cw" [size]="14"></app-icon> Cargando más...</p>
     }
     @if (!hasMore && cards.length > 0) {
-      <p class="status-text status-end">Fin de cartas</p>
+      <p class="status-text status-end">— Fin del catálogo —</p>
     }
   </div>
+
+  <!-- Card Detail Modal -->
+  @if (selectedCard) {
+    <div class="card-modal-overlay" (click)="selectedCard = null">
+      <div class="card-modal" (click)="$event.stopPropagation()">
+        <!-- Left: card art -->
+        <div class="modal-art">
+          <img [src]="selectedCard.image_url" [alt]="selectedCard.name" />
+        </div>
+        <!-- Right: card stats -->
+        <div class="modal-detail">
+          <button class="modal-close" (click)="selectedCard = null" title="Cerrar">
+            <app-icon name="x" [size]="16"></app-icon>
+          </button>
+
+          <h2>{{ selectedCard.name }}</h2>
+
+          <div class="modal-tags">
+            @if (selectedCard.type_name) { <span class="tag">{{ selectedCard.type_name }}</span> }
+            @if (selectedCard.race_name) { <span class="tag">{{ selectedCard.race_name }}</span> }
+            @if (selectedCard.rarity_name) { <span class="tag tag-rarity">{{ selectedCard.rarity_name }}</span> }
+          </div>
+
+          <div class="modal-stats">
+            @if (selectedCard.cost !== null) {
+              <div class="stat-pill">
+                <span class="stat-label">Coste</span>
+                <span class="stat-val">{{ selectedCard.cost }}</span>
+              </div>
+            }
+            @if (selectedCard.damage !== null) {
+              <div class="stat-pill">
+                <span class="stat-label">Fuerza</span>
+                <span class="stat-val">{{ selectedCard.damage }}</span>
+              </div>
+            }
+          </div>
+
+          @if (selectedCard.ability) {
+            <div class="modal-ability">
+              <h4><app-icon name="sparkles" [size]="14"></app-icon> Habilidad</h4>
+              <p>{{ selectedCard.ability }}</p>
+            </div>
+          }
+
+          @if (selectedCard.flavour) {
+            <p class="modal-flavour"><em>{{ selectedCard.flavour }}</em></p>
+          }
+
+          <p class="modal-edition">
+            <app-icon name="layers" [size]="12"></app-icon>
+            {{ selectedCard.edition_title }}
+          </p>
+        </div>
+      </div>
+    </div>
+  }
+
 </div>

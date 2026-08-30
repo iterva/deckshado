@@ -1,11 +1,19 @@
 <div class="stores-page">
+
+  <!-- Page Header -->
   <div class="page-header">
-    <h1>🏪 Tiendas de la comunidad</h1>
-    <p>Descubre vendedores y encuentra las cartas que te faltan.</p>
+    <div class="header-text">
+      <h1><app-icon name="store" [size]="22"></app-icon> Tiendas</h1>
+      <p>Descubre vendedores y encuentra las cartas que te faltan.</p>
+    </div>
   </div>
 
+  <!-- Filters Bar -->
   <div class="filters-bar">
-    <input type="text" placeholder="🔍 Buscar por nombre o ciudad..." [(ngModel)]="search" (keyup.enter)="apply()" class="search-input" />
+    <div class="search-wrap">
+      <app-icon name="search" [size]="15"></app-icon>
+      <input type="text" placeholder="Buscar por nombre o ciudad..." [(ngModel)]="search" (keyup.enter)="apply()" class="search-input" />
+    </div>
     <select [(ngModel)]="country" (change)="apply()">
       @for (c of countries; track c.code) { <option [value]="c.code">{{ c.name }}</option> }
     </select>
@@ -16,37 +24,78 @@
     </select>
   </div>
 
-  @if (loading) { <div class="loading">Cargando...</div> }
-  @if (!loading && stores.length === 0) {
-    <div class="empty">
-      <p>No hay tiendas que coincidan. ¡Sé el primero! Activa tu tienda en la pestaña <strong>Tienda</strong> de tu carpeta.</p>
+  @if (loading) {
+    <div class="loading-state">
+      <app-icon name="refresh-cw" [size]="18"></app-icon>
+      <span>Cargando tiendas...</span>
     </div>
   }
 
+  @if (!loading && stores.length === 0) {
+    <div class="empty-state">
+      <app-icon name="store" [size]="32"></app-icon>
+      <p>No hay tiendas que coincidan.<br /><strong>¡Sé el primero!</strong> Activa tu tienda en la pestaña Mercado de tu carpeta.</p>
+    </div>
+  }
+
+  <!-- Bento Grid -->
   <div class="stores-grid">
     @for (s of stores; track s.username) {
       <a class="store-card" [routerLink]="['/t', s.store_slug]">
-        <div class="avatar">
-          @if (s.binder_avatar_url) {
-            <img [src]="s.binder_avatar_url" [alt]="s.username" />
-          } @else if (s.user_avatar_url) {
-            <img [src]="s.user_avatar_url" [alt]="s.username" />
-          } @else {
-            <div class="placeholder">🏪</div>
-          }
-        </div>
-        <div class="info">
-          <h3>{{ s.display_name || s.username }}</h3>
-          <p class="handle">{{ '@' + s.username }}</p>
-          @if (s.city || s.country_display) {
-            <p class="loc">📍 {{ s.city }}{{ s.city && s.country_display ? ', ' : '' }}{{ s.country_display }}</p>
-          }
-          <div class="badges">
-            <span class="badge primary">{{ s.selling_count }} en venta</span>
-            @if (s.accepts_trades) { <span class="badge green">🔄 cambios</span> }
-            @if (s.whatsapp) { <span class="badge wa">📱 WA</span> }
+        <!-- Card top: avatar + name -->
+        <div class="store-card-header">
+          <div class="store-avatar">
+            @if (s.binder_avatar_url) {
+              <img [src]="s.binder_avatar_url" [alt]="s.username" />
+            } @else if (s.user_avatar_url) {
+              <img [src]="s.user_avatar_url" [alt]="s.username" />
+            } @else {
+              <div class="avatar-placeholder">
+                <app-icon name="store" [size]="20"></app-icon>
+              </div>
+            }
+            <div class="online-dot"></div>
           </div>
-          @if (s.bio) { <p class="bio">{{ s.bio }}</p> }
+          <div class="store-identity">
+            <h3>{{ s.display_name || s.username }}</h3>
+            <span class="handle">&#64;{{ s.username }}</span>
+          </div>
+          <div class="external-link-btn" title="Ver tienda">
+            <app-icon name="external-link" [size]="14"></app-icon>
+          </div>
+        </div>
+
+        <!-- Location -->
+        @if (s.city || s.country_display) {
+          <div class="store-location">
+            <app-icon name="map-pin" [size]="12"></app-icon>
+            <span>{{ s.city }}{{ s.city && s.country_display ? ', ' : '' }}{{ s.country_display }}</span>
+          </div>
+        }
+
+        <!-- Bio -->
+        @if (s.bio) {
+          <p class="store-bio">{{ s.bio }}</p>
+        }
+
+        <!-- Badges row -->
+        <div class="store-badges">
+          <span class="badge badge-cards">
+            <app-icon name="layers" [size]="11"></app-icon>
+            {{ s.selling_count }} en venta
+          </span>
+          @if (s.accepts_trades) {
+            <span class="badge badge-trades">
+              <app-icon name="refresh-cw" [size]="11"></app-icon>
+              Cambios
+            </span>
+          }
+          @if (s.whatsapp) {
+            <span class="badge badge-wa">
+              <app-icon name="message-circle" [size]="11"></app-icon>
+              WhatsApp
+            </span>
+          }
         </div>
       </a>
     }
@@ -54,9 +103,14 @@
 
   @if (totalPages > 1) {
     <div class="pagination">
-      <button class="btn btn-sm" (click)="prev()" [disabled]="page === 1">← Anterior</button>
+      <button class="btn btn-sm" (click)="prev()" [disabled]="page === 1">
+        <app-icon name="chevron-left" [size]="15"></app-icon> Anterior
+      </button>
       <span>{{ page }} / {{ totalPages }}</span>
-      <button class="btn btn-sm" (click)="next()" [disabled]="page >= totalPages">Siguiente →</button>
+      <button class="btn btn-sm" (click)="next()" [disabled]="page >= totalPages">
+        Siguiente <app-icon name="chevron-right" [size]="15"></app-icon>
+      </button>
     </div>
   }
+
 </div>

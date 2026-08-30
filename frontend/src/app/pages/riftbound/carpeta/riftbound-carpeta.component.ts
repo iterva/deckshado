@@ -11,6 +11,7 @@ import { RiftboundService } from '../../../services/riftbound.service';
 import { AuthService } from '../../../services/auth.service';
 import { ShareImageComponent, ShareImageItem } from '../../../components/share-image/share-image.component';
 import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.component';
+import { IconComponent } from '../../../components/icon/icon.component';
 import {
   RiftboundCard, RiftboundCardLite, RiftboundCollectionEntry, RiftboundWishlistEntry,
   RiftboundSet, RiftboundCollectionStats, RiftboundBinderProfile, RiftboundBulkImportResult,
@@ -46,39 +47,60 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
 @Component({
   selector: 'app-riftbound-carpeta',
   standalone: true,
-  imports: [CommonModule, FormsModule, DecimalPipe, ShareImageComponent, TcgPriceComponent],
+  imports: [CommonModule, FormsModule, DecimalPipe, ShareImageComponent, TcgPriceComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
   <div class="carpeta-container">
-    <!-- Header -->
-    <div class="carpeta-header">
-      <div class="binder-avatar-wrap">
-        @if (binderProfile()?.binder_avatar_url || binderProfile()?.user_avatar_url) {
-          <img class="binder-avatar" [src]="binderProfile()!.binder_avatar_url || binderProfile()!.user_avatar_url" alt="avatar" />
-        } @else {
-          <div class="binder-avatar-placeholder">📁</div>
-        }
-        <button class="avatar-edit-btn" (click)="avatarInput.click()" [disabled]="avatarUploading()"
-                [title]="avatarUploading() ? 'Subiendo...' : 'Cambiar avatar'">
-          @if (avatarUploading()) { <i class="bi bi-arrow-repeat spin"></i> }
-          @else { <i class="bi bi-pencil-fill"></i> }
-        </button>
-        <input #avatarInput type="file" accept="image/*" hidden (change)="onAvatarFileChange($event)" />
-      </div>
-      <div class="binder-info">
-        <h1>{{ workspaceMode() ? 'Carpetas Compartidas · Riftbound' : 'Mi Carpeta · Riftbound' }}</h1>
-        <p class="binder-user">
-          @if (workspaceMode()) {
-            @if (selectedWorkspace(); as ws) {
-              Trabajando en tienda de <strong>{{ ws.owner_username }}</strong>
-            } @else {
-              Selecciona una tienda para comenzar
-            }
+    <!-- Header + Stats Banner -->
+    <div class="carpeta-header-layout">
+      <div class="carpeta-profile-card">
+        <div class="binder-avatar-wrap">
+          @if (binderProfile()?.binder_avatar_url || binderProfile()?.user_avatar_url) {
+            <img class="binder-avatar" [src]="binderProfile()!.binder_avatar_url || binderProfile()!.user_avatar_url" alt="avatar" />
           } @else {
-            {{ auth.user()?.username || 'Invitado' }}
+            <div class="binder-avatar-placeholder">
+              <app-icon name="folder" [size]="22"></app-icon>
+            </div>
           }
-        </p>
+          <button class="avatar-edit-btn" (click)="avatarInput.click()" [disabled]="avatarUploading()"
+                  [title]="avatarUploading() ? 'Subiendo...' : 'Cambiar avatar'">
+            <app-icon [name]="avatarUploading() ? 'refresh-cw' : 'upload'" [size]="12"></app-icon>
+          </button>
+          <input #avatarInput type="file" accept="image/*" hidden (change)="onAvatarFileChange($event)" />
+        </div>
+        <div class="binder-info">
+          <h1>{{ workspaceMode() ? 'Carpetas · Riftbound' : 'Mi Carpeta · Riftbound' }}</h1>
+          <p class="binder-user">
+            @if (workspaceMode()) {
+              @if (selectedWorkspace(); as ws) {
+                Tienda de <strong>{{ ws.owner_username }}</strong>
+              } @else {
+                Selecciona una tienda
+              }
+            } @else {
+              {{ auth.user()?.username || 'Invitado' }}
+            }
+          </p>
+        </div>
       </div>
+
+      <!-- Collection Stats Banner -->
+      @if (!workspaceMode()) {
+        <div class="collection-stats-banner">
+          <div class="stat-item owned">
+            <span class="stat-num">{{ collectionTotal() }}</span>
+            <span class="stat-title"><app-icon name="check-circle" [size]="12"></app-icon> Poseídas</span>
+          </div>
+          <div class="stat-item wishlist">
+            <span class="stat-num">{{ wishlistTotal() }}</span>
+            <span class="stat-title"><app-icon name="heart" [size]="12"></app-icon> Wishlist</span>
+          </div>
+          <div class="stat-item selling">
+            <span class="stat-num">{{ stats()?.selling_unique_cards ?? 0 }}</span>
+            <span class="stat-title"><app-icon name="store" [size]="12"></app-icon> En Venta</span>
+          </div>
+        </div>
+      }
     </div>
 
     @if (workspaceMode()) {
@@ -114,40 +136,40 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
     <div class="tabs">
       @if (!workspaceMode() || hasPermission('view_collection')) {
         <button class="tab" [class.active]="activeTab() === 'carpeta'" (click)="switchTab('carpeta')">
-          <i class="bi bi-folder-fill"></i> CARPETA
+          <app-icon name="folder" [size]="15"></app-icon> <span>CARPETA</span>
         </button>
         <button class="tab" [class.active]="activeTab() === 'codex'" (click)="switchTab('codex')">
-          <i class="bi bi-collection"></i> COLECCIÓN
+          <app-icon name="library" [size]="15"></app-icon> <span>COLECCIÓN</span>
         </button>
       }
       @if (!workspaceMode()) {
         <button class="tab" [class.active]="activeTab() === 'wishlist'" (click)="switchTab('wishlist')">
-          <i class="bi bi-heart-fill"></i> WISHLIST
+          <app-icon name="heart" [size]="15"></app-icon> <span>WISHLIST</span>
         </button>
       }
       @if (!workspaceMode() || hasPermission('view_collection')) {
         <button class="tab" [class.active]="activeTab() === 'mercado'" (click)="switchTab('mercado')">
-          <i class="bi bi-shop"></i> MERCADO
+          <app-icon name="store" [size]="15"></app-icon> <span>MERCADO</span>
         </button>
       }
       @if (!workspaceMode() || hasPermission('view_orders')) {
         <button class="tab" [class.active]="activeTab() === 'pedidos'" (click)="switchTab('pedidos')">
-          <i class="bi bi-receipt"></i> PEDIDOS
+          <app-icon name="file-text" [size]="15"></app-icon> <span>PEDIDOS</span>
         </button>
       }
       @if (!workspaceMode() || hasPermission('view_history')) {
         <button class="tab" [class.active]="activeTab() === 'historial'" (click)="switchTab('historial')">
-          <i class="bi bi-clock-history"></i> HISTORIAL
+          <app-icon name="clock" [size]="15"></app-icon> <span>HISTORIAL</span>
         </button>
       }
       @if (!workspaceMode()) {
         <button class="tab" [class.active]="activeTab() === 'stats'" (click)="switchTab('stats')">
-          <i class="bi bi-bar-chart-fill"></i> STATS
+          <app-icon name="bar-chart-3" [size]="15"></app-icon> <span>STATS</span>
         </button>
       }
       @if (canManagePermissions()) {
         <button class="tab" [class.active]="activeTab() === 'permisos'" (click)="switchTab('permisos')">
-          <i class="bi bi-shield-lock-fill"></i> PERMISOS
+          <app-icon name="shield" [size]="15"></app-icon> <span>PERMISOS</span>
         </button>
       }
     </div>
@@ -165,17 +187,20 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
           <div class="search-bar">
             <input type="text" placeholder="Buscar en tu colección..."
                    [(ngModel)]="collectionSearch" (keyup.enter)="onCollectionSearch()" />
-            <button class="btn btn-primary btn-sm" (click)="onCollectionSearch()">Buscar</button>
+            <button class="btn btn-primary btn-sm" (click)="onCollectionSearch()">
+              <app-icon name="search" [size]="14"></app-icon> <span>Buscar</span>
+            </button>
           </div>
           <button class="btn btn-sm" [class.btn-primary]="onlySelling()" (click)="toggleOnlySelling()">
-            🏷️ Solo en venta
+            <app-icon name="tag" [size]="14"></app-icon> Solo en venta
           </button>
           <button class="btn btn-sm" (click)="showBulkImport.update(v => !v)" [disabled]="!hasPermission('edit_collection')">
-            <i class="bi bi-file-earmark-arrow-up"></i> Importar masivo
+            <app-icon name="upload" [size]="14"></app-icon> Importar masivo
           </button>
           @if (dirtyEntries.size > 0 && (hasPermission('edit_collection') || hasPermission('edit_market') || hasPermission('remove_from_market'))) {
             <button class="btn btn-sm btn-primary" (click)="saveAllChanges()" [disabled]="batchSaving()">
-              {{ batchSaving() ? '⏳ Guardando...' : '💾 Guardar Cambios (' + dirtyEntries.size + ')' }}
+              <app-icon name="save" [size]="14"></app-icon>
+              {{ batchSaving() ? 'Guardando...' : 'Guardar Cambios (' + dirtyEntries.size + ')' }}
             </button>
           }
         </div>

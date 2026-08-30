@@ -1,7 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-// Override font-display para Bootstrap Icons (jsdelivr no expone &display=swap).
-// Esto evita FOIT y mejora FCP. La regla coincide por src de la fuente.
+// Override font-display para Bootstrap Icons
 @font-face {
   font-family: 'bootstrap-icons';
   src: url('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/fonts/bootstrap-icons.woff2?dd67030b2606a519bdcb35b32eedc8aa') format('woff2');
@@ -18,18 +17,17 @@
 
 html, body {
   height: 100%;
-  font-family: 'Inter', sans-serif;
-  background: #0f0f23;
-  color: #e0e0e0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #09090b;
+  color: #f4f4f5;
   -webkit-font-smoothing: antialiased;
-  // Evita zoom-out por overflow horizontal accidental en móviles
+  -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
-  // Asegura ancho mínimo de 100% sin scroll lateral
   max-width: 100vw;
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-// En cualquier <input>/<select>/<textarea>: iOS hace zoom si el font-size < 16px.
-// Forzamos 16px en móviles para evitar el zoom automático al enfocar campos.
+// En cualquier <input>/<select>/<textarea>: evitar zoom en iOS
 @media (max-width: 768px) {
   input, select, textarea {
     font-size: 16px !important;
@@ -37,23 +35,22 @@ html, body {
 }
 
 // ── Accesibilidad ──
-// Skip link: oculto hasta recibir foco con Tab.
 .skip-link {
   position: absolute;
   top: -40px;
   left: 8px;
   z-index: 10000;
-  background: #e94560;
-  color: #fff;
-  padding: 10px 16px;
+  background: var(--ui-accent, #f59e0b);
+  color: #09090b;
+  padding: 8px 16px;
   border-radius: 0 0 8px 8px;
   font-weight: 600;
   text-decoration: none;
-  transition: top .15s ease;
+  transition: top 0.15s ease;
 
   &:focus {
     top: 0;
-    outline: 3px solid #ffbd39;
+    outline: 2px solid #ffffff;
     outline-offset: 2px;
   }
 }
@@ -588,36 +585,63 @@ body.mode-riftbound {
 }
 
 /* Design refresh layer: clean, simple, functional */
+/* ── Ultraminimalist Deep Dark Design System (#09090b / zinc-950) ── */
 :root {
-  --ui-font: 'Manrope', 'Inter', 'Segoe UI', sans-serif;
-  --ui-bg: #0f1115;
-  --ui-bg-soft: #151922;
-  --ui-surface: #1a1f29;
-  --ui-surface-elevated: #202633;
-  --ui-border: #2d3647;
-  --ui-text: #edf1f7;
-  --ui-text-muted: #a8b3c5;
-  --ui-accent: #8ab4ff;
-  --ui-accent-strong: #6b9cff;
-  --ui-success: #24a26a;
-  --ui-danger: #cc5f6a;
-  --ui-radius-sm: 10px;
-  --ui-radius-md: 14px;
-  --ui-shadow-sm: 0 10px 30px rgba(0, 0, 0, 0.22);
+  --ui-font: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --ui-bg: #09090b;
+  --ui-bg-soft: #121215;
+  --ui-surface: rgba(24, 24, 27, 0.45);
+  --ui-surface-elevated: rgba(24, 24, 27, 0.85);
+  --ui-card: rgba(18, 18, 23, 0.55);
+  --ui-border: rgba(39, 39, 42, 0.6);
+  --ui-border-hover: rgba(63, 63, 70, 0.8);
+  --ui-text: #fafafa;
+  --ui-text-secondary: #a1a1aa;
+  --ui-text-muted: #71717a;
+  
+  // Default MYL Accent (Amber / Gold)
+  --ui-accent: #f59e0b;
+  --ui-accent-strong: #d97706;
+  --ui-accent-glow: rgba(245, 158, 11, 0.15);
+  --ui-accent-glow-strong: rgba(245, 158, 11, 0.35);
+  
+  --ui-success: #10b981;
+  --ui-danger: #ef4444;
+  --ui-warning: #f59e0b;
+  
+  --ui-radius-sm: 8px;
+  --ui-radius-md: 12px;
+  --ui-radius-lg: 16px;
+  --ui-shadow-sm: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --ui-shadow-glow: 0 0 25px var(--ui-accent-glow);
+}
+
+// Riftbound Accent Override (Hextech Cyan / Blue)
+body.mode-riftbound,
+.mode-riftbound,
+[data-game-mode="riftbound"] {
+  --ui-accent: #06b6d4;
+  --ui-accent-strong: #0891b2;
+  --ui-accent-glow: rgba(6, 182, 212, 0.15);
+  --ui-accent-glow-strong: rgba(6, 182, 212, 0.35);
 }
 
 body.light-theme {
-  --ui-bg: #f5f5f7;
-  --ui-bg-soft: #eef1f6;
-  --ui-surface: #ffffff;
+  --ui-bg: #f8fafc;
+  --ui-bg-soft: #f1f5f9;
+  --ui-surface: rgba(255, 255, 255, 0.8);
   --ui-surface-elevated: #ffffff;
-  --ui-border: #d9deea;
-  --ui-text: #171b24;
-  --ui-text-muted: #647086;
-  --ui-accent: #3f6ed9;
-  --ui-accent-strong: #2f56b7;
-  --ui-success: #1b8b5a;
-  --ui-danger: #b8505b;
+  --ui-card: #ffffff;
+  --ui-border: #e2e8f0;
+  --ui-border-hover: #cbd5e1;
+  --ui-text: #0f172a;
+  --ui-text-secondary: #475569;
+  --ui-text-muted: #94a3b8;
+  --ui-accent: #d97706;
+  --ui-accent-strong: #b45309;
+  --ui-accent-glow: rgba(217, 119, 6, 0.12);
+  --ui-success: #059669;
+  --ui-danger: #dc2626;
 }
 
 html,
@@ -625,45 +649,57 @@ body {
   font-family: var(--ui-font) !important;
   color: var(--ui-text) !important;
   background:
-    radial-gradient(1300px 650px at -5% -15%, rgba(138, 180, 255, 0.12), transparent 60%),
-    radial-gradient(1000px 700px at 110% 0%, rgba(138, 180, 255, 0.08), transparent 62%),
+    radial-gradient(1200px 600px at 0% -10%, var(--ui-accent-glow), transparent 70%),
+    radial-gradient(1000px 700px at 100% 10%, var(--ui-accent-glow), transparent 70%),
     var(--ui-bg) !important;
+  min-height: 100vh;
 }
 
 input,
 select,
 textarea {
   border-radius: var(--ui-radius-sm) !important;
-  border-color: var(--ui-border) !important;
+  border: 1px solid var(--ui-border) !important;
+  background: rgba(18, 18, 23, 0.6) !important;
+  color: var(--ui-text) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--ui-accent) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-accent) 24%, transparent);
+  box-shadow: 0 0 0 2px var(--ui-accent-glow-strong) !important;
+  outline: none !important;
 }
 
 .btn,
 .btn-primary,
 .btn-secondary {
-  border-radius: 999px !important;
-  font-weight: 600 !important;
+  border-radius: var(--ui-radius-sm) !important;
+  font-weight: 500 !important;
+  font-family: var(--ui-font) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-primary {
   background: var(--ui-accent) !important;
-  color: #fff !important;
+  color: #09090b !important;
+  font-weight: 600 !important;
+  box-shadow: 0 0 15px var(--ui-accent-glow);
 }
 
 .btn-primary:hover:not(:disabled) {
   background: var(--ui-accent-strong) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px var(--ui-accent-glow-strong);
 }
 
 .btn-secondary {
-  background: color-mix(in srgb, var(--ui-surface) 92%, #ffffff 8%) !important;
+  background: rgba(24, 24, 27, 0.6) !important;
   border: 1px solid var(--ui-border) !important;
   color: var(--ui-text) !important;
+  backdrop-filter: blur(12px);
 }
 
 .btn-secondary:hover:not(:disabled) {
@@ -683,15 +719,21 @@ textarea:focus {
 .table-wrapper,
 .modal,
 .modal-content {
-  background: color-mix(in srgb, var(--ui-surface) 94%, #ffffff 6%) !important;
+  background: var(--ui-surface) !important;
   border: 1px solid var(--ui-border) !important;
   box-shadow: var(--ui-shadow-sm);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: var(--ui-radius-md) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .page-title {
   display: inline-block;
   max-width: 100%;
   color: var(--ui-text) !important;
+  font-weight: 700;
+  letter-spacing: -0.025em;
 }
 
 @supports ((-webkit-background-clip: text) or (background-clip: text)) {
@@ -845,8 +887,10 @@ textarea:focus {
 .table-section .table-wrap,
 .card-table-wrap,
 .output-box {
-  background: color-mix(in srgb, var(--ui-surface) 94%, #ffffff 6%) !important;
-  border-color: var(--ui-border) !important;
+  background: var(--ui-surface) !important;
+  border: 1px solid var(--ui-border) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .mobile-menu,
@@ -858,8 +902,11 @@ textarea:focus {
 .cart-modal,
 .contact-modal,
 .preview-modal {
-  border-color: var(--ui-border) !important;
-  background: color-mix(in srgb, var(--ui-surface-elevated) 94%, #ffffff 6%) !important;
+  border: 1px solid var(--ui-border) !important;
+  background: rgba(18, 18, 23, 0.92) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
 }
 
 /* Micro-detail pass: accessibility and mobile comfort */

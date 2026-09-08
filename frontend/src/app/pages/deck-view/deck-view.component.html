@@ -14,25 +14,25 @@
         @if (deck.cover_card_detail?.image_url) {
           <img class="hero-cover" [src]="deck.cover_card_detail!.image_url | thumb:350" [alt]="deck.cover_card_detail!.name" />
         } @else {
-          <div class="hero-cover hero-cover-empty"><i class="bi bi-collection"></i></div>
+          <div class="hero-cover hero-cover-empty"><app-icon name="layers" [size]="32"></app-icon></div>
         }
         <div class="hero-info">
           <h1 class="deck-title">{{ deck.name }}</h1>
           <div class="deck-chips">
             <span class="chip chip-owner" title="Autor">
-              <i class="bi bi-person-circle"></i> {{ deck.owner_username }}
+              <app-icon name="user" [size]="13"></app-icon> {{ deck.owner_username }}
             </span>
             <span class="chip chip-fmt">{{ formatLabel }}</span>
             @if (raceLabel) {
               <span class="chip chip-race" [attr.data-race]="deck.race">{{ raceLabel }}</span>
             }
-            <span class="chip chip-cards"><i class="bi bi-stack"></i> {{ deck.card_count }}</span>
+            <span class="chip chip-cards"><app-icon name="layers" [size]="13"></app-icon> {{ deck.card_count }}</span>
             <span class="chip" [class.chip-public]="deck.is_public" [class.chip-private]="!deck.is_public">
-              <i class="bi" [class.bi-globe]="deck.is_public" [class.bi-lock-fill]="!deck.is_public"></i>
+              <app-icon [name]="deck.is_public ? 'globe' : 'lock'" [size]="13"></app-icon>
               {{ deck.is_public ? 'Público' : 'Privado' }}
             </span>
             <span class="chip chip-time" [title]="'Editado: ' + deck.updated_at">
-              <i class="bi bi-clock-history"></i> {{ deck.updated_at | relativeTime }}
+              <app-icon name="clock" [size]="13"></app-icon> {{ deck.updated_at | relativeTime }}
             </span>
           </div>
           @if (deck.description) {
@@ -45,18 +45,18 @@
     <!-- ── Barra social (likes, comentarios, compartir) ── -->
     <div class="social-bar" [class.hidden-pres]="presentationMode">
       <button class="social-btn" [class.liked]="liked" (click)="toggleLike()" [disabled]="!auth.isAuthenticated()" [title]="auth.isAuthenticated() ? 'Me gusta' : 'Inicia sesión para dar like'">
-        <i class="bi" [class.bi-heart-fill]="liked" [class.bi-heart]="!liked"></i>
+        <app-icon [name]="liked ? 'heart-fill' : 'heart'" [size]="16"></app-icon>
         <span>{{ likeCount }}</span>
       </button>
       <button class="social-btn" [class.active]="socialTab === 'comments'" (click)="setSocialTab('comments')" title="Comentarios">
-        <i class="bi bi-chat-dots"></i>
+        <app-icon name="message-square" [size]="16"></app-icon>
         <span>{{ comments.length }}</span>
       </button>
       <button class="social-btn" (click)="shareDeck()" title="Copiar enlace">
-        <i class="bi bi-share"></i>
+        <app-icon name="share-2" [size]="16"></app-icon>
       </button>
       <button class="social-btn" (click)="copyDeck()" [title]="auth.isAuthenticated() ? 'Copiar mazo a un nuevo borrador' : 'Inicia sesión para clonar este mazo'">
-        <i class="bi bi-clipboard-plus"></i>
+        <app-icon name="copy" [size]="16"></app-icon>
         @if (!auth.isAuthenticated()) { <span class="clone-cta">Clonar</span> }
       </button>
     </div>
@@ -65,41 +65,36 @@
     <div class="action-bar" [class.hidden-pres]="presentationMode">
       <div class="seg-control" role="tablist" aria-label="Modo de vista">
         <button role="tab" [attr.aria-selected]="viewMode === 'grid'" [class.active]="viewMode === 'grid'" (click)="setViewMode('grid')" title="Vista cartas">
-          <i class="bi bi-grid-3x3-gap-fill"></i><span>Cartas</span>
+          <app-icon name="grid" [size]="15"></app-icon><span>Cartas</span>
         </button>
         <button role="tab" [attr.aria-selected]="viewMode === 'list'" [class.active]="viewMode === 'list'" (click)="setViewMode('list')" title="Vista listado">
-          <i class="bi bi-list-ul"></i><span>Lista</span>
+          <app-icon name="list" [size]="15"></app-icon><span>Lista</span>
         </button>
         <button role="tab" [attr.aria-selected]="viewMode === 'stats'" [class.active]="viewMode === 'stats'" (click)="setViewMode('stats')" title="Estadísticas">
-          <i class="bi bi-bar-chart-fill"></i><span>Stats</span>
+          <app-icon name="bar-chart-3" [size]="15"></app-icon><span>Stats</span>
         </button>
       </div>
 
       <div class="orient-wrapper" (click)="$event.stopPropagation()">
         <button class="action-btn" (click)="toggleStackOrientationMenu($event)" [attr.aria-expanded]="showStackOrientationMenu" title="Orientación de apilado">
-          <i class="bi"
-             [class.bi-arrow-up-square-fill]="stackOrientation === 'up'"
-             [class.bi-arrow-down-square-fill]="stackOrientation === 'down'"
-             [class.bi-arrow-left-square-fill]="stackOrientation === 'left'"
-             [class.bi-arrow-right-square-fill]="stackOrientation === 'right'"
-             [class.bi-square-fill]="stackOrientation === 'center'"></i><span>Orientación</span>
+          <app-icon [name]="stackOrientation === 'up' ? 'arrow-up-square' : stackOrientation === 'down' ? 'arrow-down-square' : stackOrientation === 'left' ? 'arrow-left-square' : stackOrientation === 'right' ? 'arrow-right-square' : 'square'" [size]="15"></app-icon><span>Orientación</span>
         </button>
         @if (showStackOrientationMenu) {
           <div class="orient-menu" role="menu" aria-label="Orientación de cartas">
             <button role="menuitemradio" [attr.aria-checked]="stackOrientation === 'center'" [class.active]="stackOrientation === 'center'" (click)="setStackOrientation('center')">
-              <i class="bi bi-square"></i> Centro
+              <app-icon name="square" [size]="14"></app-icon> Centro
             </button>
             <button role="menuitemradio" [attr.aria-checked]="stackOrientation === 'up'" [class.active]="stackOrientation === 'up'" (click)="setStackOrientation('up')">
-              <i class="bi bi-arrow-up-square"></i> Hacia arriba
+              <app-icon name="arrow-up-square" [size]="14"></app-icon> Hacia arriba
             </button>
             <button role="menuitemradio" [attr.aria-checked]="stackOrientation === 'down'" [class.active]="stackOrientation === 'down'" (click)="setStackOrientation('down')">
-              <i class="bi bi-arrow-down-square"></i> Hacia abajo
+              <app-icon name="arrow-down-square" [size]="14"></app-icon> Hacia abajo
             </button>
             <button role="menuitemradio" [attr.aria-checked]="stackOrientation === 'left'" [class.active]="stackOrientation === 'left'" (click)="setStackOrientation('left')">
-              <i class="bi bi-arrow-left-square"></i> Hacia la izquierda
+              <app-icon name="arrow-left-square" [size]="14"></app-icon> Hacia la izquierda
             </button>
             <button role="menuitemradio" [attr.aria-checked]="stackOrientation === 'right'" [class.active]="stackOrientation === 'right'" (click)="setStackOrientation('right')">
-              <i class="bi bi-arrow-right-square"></i> Hacia la derecha
+              <app-icon name="arrow-right-square" [size]="14"></app-icon> Hacia la derecha
             </button>
           </div>
         }
@@ -107,48 +102,48 @@
 
       <div class="export-options-wrapper" (click)="$event.stopPropagation()">
         <button class="action-btn" (click)="openExportOptionsModal($event)" [attr.aria-expanded]="showExportOptionsModal" title="Opciones de imagen">
-          <i class="bi bi-sliders2"></i><span>Imagen</span>
+          <app-icon name="sliders" [size]="15"></app-icon><span>Imagen</span>
         </button>
       </div>
 
       <div class="action-spacer"></div>
 
       <button class="action-btn" (click)="showHandModal = true" title="Probar mano (8 cartas)">
-        <i class="bi bi-hand-index"></i><span>Probar mano</span>
+        <app-icon name="hand" [size]="15"></app-icon><span>Probar mano</span>
       </button>
 
       @if (isOwner) {
         <button class="action-btn" (click)="toggleVisibility()" [disabled]="togglingVisibility" [title]="deck.is_public ? 'Hacer privado' : 'Hacer público'">
-          <i class="bi" [class.bi-globe]="deck.is_public" [class.bi-lock-fill]="!deck.is_public"></i>
+          <app-icon [name]="deck.is_public ? 'globe' : 'lock'" [size]="15"></app-icon>
           <span>{{ deck.is_public ? 'Hacer privado' : 'Hacer público' }}</span>
         </button>
         <button class="action-btn accent" (click)="editDeck()" title="Editar mazo">
-          <i class="bi bi-pencil-square"></i><span>Editar</span>
+          <app-icon name="edit" [size]="15"></app-icon><span>Editar</span>
         </button>
       }
 
       <button class="action-btn" (click)="togglePresentation()" title="Modo presentación (F)">
-        <i class="bi" [class.bi-fullscreen]="!presentationMode" [class.bi-fullscreen-exit]="presentationMode"></i>
+        <app-icon [name]="presentationMode ? 'minimize' : 'maximize'" [size]="16"></app-icon>
       </button>
 
       <!-- Kebab menu -->
       <div class="more-wrapper" (click)="$event.stopPropagation()">
         <button class="action-btn" (click)="toggleMoreMenu($event)" [attr.aria-expanded]="showMoreMenu" title="Más opciones">
-          <i class="bi bi-three-dots-vertical"></i>
+          <app-icon name="more-vertical" [size]="16"></app-icon>
         </button>
         @if (showMoreMenu) {
           <div class="more-menu" role="menu">
             <button role="menuitem" (click)="exportText(); showMoreMenu = false">
-              <i class="bi bi-file-text"></i> Copiar como texto
+              <app-icon name="file-text" [size]="14"></app-icon> Copiar como texto
             </button>
             <button role="menuitem" (click)="exportImage(); showMoreMenu = false" [disabled]="exporting">
-              <i class="bi bi-camera"></i> Descargar imagen
+              <app-icon name="camera" [size]="14"></app-icon> Descargar imagen
             </button>
             <button role="menuitem" (click)="copyImageToClipboard(); showMoreMenu = false" [disabled]="exporting">
-              <i class="bi bi-clipboard-check"></i> Imagen al portapapeles
+              <app-icon name="copy" [size]="14"></app-icon> Imagen al portapapeles
             </button>
             <button role="menuitem" (click)="exportJson(); showMoreMenu = false">
-              <i class="bi bi-filetype-json"></i> Descargar JSON
+              <app-icon name="download" [size]="14"></app-icon> Descargar JSON
             </button>
             <div class="more-divider"></div>
             <label class="more-orient" (click)="$event.stopPropagation()">
@@ -161,17 +156,17 @@
             @if (isOwner) {
               <div class="more-divider"></div>
               <button role="menuitem" (click)="setSocialTab('changelog'); showMoreMenu = false" [disabled]="!changelog.length">
-                <i class="bi bi-clock-history"></i> Historial ({{ changelog.length }})
+                <app-icon name="clock" [size]="14"></app-icon> Historial ({{ changelog.length }})
               </button>
               <button role="menuitem" (click)="setSocialTab('snapshots'); showMoreMenu = false">
-                <i class="bi bi-bookmark-star"></i> Versiones ({{ snapshots.length }})
+                <app-icon name="bookmark" [size]="14"></app-icon> Versiones ({{ snapshots.length }})
               </button>
               <button role="menuitem" (click)="setSocialTab('suggestions'); showMoreMenu = false">
-                <i class="bi bi-lightbulb"></i> Sugerencias
+                <app-icon name="lightbulb" [size]="14"></app-icon> Sugerencias
               </button>
               <div class="more-divider"></div>
               <button role="menuitem" class="danger" (click)="deleteDeck(); showMoreMenu = false">
-                <i class="bi bi-trash3"></i> Eliminar mazo
+                <app-icon name="trash-2" [size]="14"></app-icon> Eliminar mazo
               </button>
             }
           </div>
@@ -185,7 +180,7 @@
           <div class="export-modal-head">
             <h3>Exportar imagen</h3>
             <button type="button" class="export-modal-close" (click)="closeExportOptionsModal()" aria-label="Cerrar">
-              <i class="bi bi-x-lg"></i>
+              <app-icon name="x" [size]="16"></app-icon>
             </button>
           </div>
 
@@ -194,10 +189,10 @@
               <span class="export-opt-title">Formato</span>
               <div class="export-opt-row two">
                 <button type="button" class="opt-chip" [class.active]="exportOrientation === 'horizontal'" (click)="exportOrientation = 'horizontal'">
-                  <i class="bi bi-arrows-angle-expand"></i> Horizontal
+                  <app-icon name="expand" [size]="14"></app-icon> Horizontal
                 </button>
                 <button type="button" class="opt-chip" [class.active]="exportOrientation === 'vertical'" (click)="exportOrientation = 'vertical'">
-                  <i class="bi bi-arrows-angle-contract"></i> Vertical
+                  <app-icon name="shrink" [size]="14"></app-icon> Vertical
                 </button>
               </div>
             </div>
@@ -250,7 +245,7 @@
                   <option value="quantity">Cantidad</option>
                 </select>
                 <button type="button" class="dir-btn" (click)="toggleExportSortDir()" [title]="exportSortDir === 'asc' ? 'Ascendente' : 'Descendente'">
-                  <i class="bi" [class.bi-sort-down]="exportSortDir === 'asc'" [class.bi-sort-up]="exportSortDir === 'desc'"></i>
+                  <app-icon [name]="exportSortDir === 'asc' ? 'sort-asc' : 'sort-desc'" [size]="14"></app-icon>
                 </button>
               </div>
               @if (exportSortBy === 'type') {
@@ -340,11 +335,11 @@
               Cerrar
             </button>
             <button type="button" class="export-foot-btn secondary" [disabled]="exporting" (click)="exportImage()">
-              <i class="bi bi-download"></i>
+              <app-icon name="download" [size]="15"></app-icon>
               Exportar directo
             </button>
             <button type="button" class="export-foot-btn primary" [disabled]="exporting" (click)="generateExportPreview()">
-              <i class="bi bi-image"></i>
+              <app-icon name="image" [size]="15"></app-icon>
               {{ exporting ? 'Generando...' : 'Generar preview' }}
             </button>
           </div>
@@ -358,7 +353,7 @@
           <div class="export-preview-head">
             <h3>Preview de exportación</h3>
             <button type="button" class="export-preview-close" (click)="closeExportPreview()" aria-label="Cerrar preview">
-              <i class="bi bi-x-lg"></i>
+              <app-icon name="x" [size]="16"></app-icon>
             </button>
           </div>
           <p class="export-preview-subtitle">Revisa la imagen antes de descargarla.</p>
@@ -372,10 +367,10 @@
             </div>
             <div class="export-preview-actions">
               <button type="button" class="preview-action-btn primary" (click)="downloadExportPreview()">
-                <i class="bi bi-download"></i> Descargar imagen
+                <app-icon name="download" [size]="15"></app-icon> Descargar imagen
               </button>
               <button type="button" class="preview-action-btn" (click)="copyExportPreviewToClipboard()">
-                <i class="bi bi-clipboard"></i> Copiar al portapapeles
+                <app-icon name="copy" [size]="15"></app-icon> Copiar al portapapeles
               </button>
             </div>
           }
@@ -423,10 +418,10 @@
               }
               @if (getBanStatus(entry.card_detail); as ban) {
                 <span class="export-ban-overlay" [class.banned]="ban.status === 'banned'" [class.limited]="ban.status !== 'banned'" [title]="ban.status === 'banned' ? 'Baneada' : 'Limitada'">
-                  @if (ban.status === 'banned') { <i class="bi bi-slash-circle-fill"></i> }
+                  @if (ban.status === 'banned') { <app-icon name="ban" [size]="14"></app-icon> }
                   @else if (ban.status === 'limited_1') { <span>L1</span> }
                   @else if (ban.status === 'limited_2') { <span>L2</span> }
-                  @else { <i class="bi bi-exclamation-triangle-fill"></i> }
+                  @else { <app-icon name="alert-circle" [size]="14"></app-icon> }
                 </span>
               }
             </div>
@@ -456,10 +451,10 @@
                 }
                 @if (getBanStatus(entry.card_detail); as ban) {
                   <span class="export-ban-overlay" [class.banned]="ban.status === 'banned'" [class.limited]="ban.status !== 'banned'" [title]="ban.status === 'banned' ? 'Baneada' : 'Limitada'">
-                    @if (ban.status === 'banned') { <i class="bi bi-slash-circle-fill"></i> }
+                    @if (ban.status === 'banned') { <app-icon name="ban" [size]="14"></app-icon> }
                     @else if (ban.status === 'limited_1') { <span>L1</span> }
                     @else if (ban.status === 'limited_2') { <span>L2</span> }
-                    @else { <i class="bi bi-exclamation-triangle-fill"></i> }
+                    @else { <app-icon name="alert-circle" [size]="14"></app-icon> }
                   </span>
                 }
               </div>
@@ -500,14 +495,14 @@
             <div class="img-wrapper" [class.is-banned]="getBanStatus(entry.card_detail)?.status === 'banned'" [class.is-limited]="getBanStatus(entry.card_detail) && getBanStatus(entry.card_detail)?.status !== 'banned'">
               <img class="stack-top" [src]="entry.card_detail.image_url | thumb:250" [alt]="entry.card_detail.name" loading="lazy" decoding="async" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
               <button type="button" class="icon-overlay eye-icon" (click)="showPreview(entry.card_detail, $event)" aria-label="Ver detalle">
-                <i class="bi bi-eye-fill"></i>
+                <app-icon name="eye" [size]="16"></app-icon>
               </button>
               @if (getBanStatus(entry.card_detail); as ban) {
                 <span class="ban-overlay" [class.banned]="ban.status === 'banned'" [class.limited]="ban.status !== 'banned'" [title]="ban.status === 'banned' ? 'Baneada' : 'Limitada'">
-                  @if (ban.status === 'banned') { <i class="bi bi-slash-circle-fill"></i> }
+                  @if (ban.status === 'banned') { <app-icon name="ban" [size]="14"></app-icon> }
                   @else if (ban.status === 'limited_1') { <span>L1</span> }
                   @else if (ban.status === 'limited_2') { <span>L2</span> }
-                  @else { <i class="bi bi-exclamation-triangle-fill"></i> }
+                  @else { <app-icon name="alert-circle" [size]="14"></app-icon> }
                 </span>
               }
               @if (isOwner) {
@@ -517,15 +512,15 @@
                         (click)="toggleCover(entry.card_detail, $event)"
                         [attr.aria-label]="deck.cover_card === entry.card_detail.id ? 'Quitar portada' : 'Fijar como portada'"
                         [title]="deck.cover_card === entry.card_detail.id ? 'Portada actual (clic para quitar)' : 'Fijar como portada del mazo'">
-                  <i class="bi" [class.bi-star-fill]="deck.cover_card === entry.card_detail.id" [class.bi-star]="deck.cover_card !== entry.card_detail.id"></i>
+                  <app-icon [name]="deck.cover_card === entry.card_detail.id ? 'star-fill' : 'star'" [size]="15"></app-icon>
                 </button>
               }
             </div>
             @if (entry.quantity > 1) {
-              <span class="qty-badge"><i class="bi bi-x"></i>{{ entry.quantity }}</span>
+              <span class="qty-badge">×{{ entry.quantity }}</span>
             }
             @if (deck.cover_card === entry.card_detail.id) {
-              <span class="cover-badge" title="Portada del mazo"><i class="bi bi-star-fill"></i></span>
+              <span class="cover-badge" title="Portada del mazo"><app-icon name="star-fill" [size]="12"></app-icon></span>
             }
           </div>
         } @empty {
@@ -557,7 +552,7 @@
                         <span class="list-name">{{ entry.card_detail.name }}</span>
                       </span>
                       @if (getBanStatus(entry.card_detail); as ban) {
-                        @if (ban.status === 'banned') { <span class="ban-badge-view banned" title="Baneada"><i class="bi bi-slash-circle-fill"></i></span> }
+                        @if (ban.status === 'banned') { <span class="ban-badge-view banned" title="Baneada"><app-icon name="ban" [size]="12"></app-icon></span> }
                         @else if (ban.status === 'limited_1') { <span class="ban-badge-view limited" title="Limitada a 1">L1</span> }
                         @else if (ban.status === 'limited_2') { <span class="ban-badge-view limited" title="Limitada a 2">L2</span> }
                       }
@@ -594,7 +589,7 @@
           }
           @if (startingGoldCard) {
             <div class="stat-card starting-gold" title="Oro inicial: siempre en tu mano de apertura">
-              <span class="stat-number"><i class="bi bi-star-fill"></i></span>
+              <span class="stat-number"><app-icon name="star-fill" [size]="20"></app-icon></span>
               <span class="stat-caption">{{ startingGoldCard.name }}</span>
             </div>
           }
@@ -667,7 +662,7 @@
 
     @if (deck.sideboard_entries && deck.sideboard_entries.length > 0 && viewMode !== 'stats') {
       <button class="side-toggle" (click)="sideOpen = !sideOpen" [attr.aria-expanded]="sideOpen">
-        <i class="bi" [class.bi-chevron-down]="sideOpen" [class.bi-chevron-right]="!sideOpen"></i>
+        <app-icon [name]="sideOpen ? 'chevron-down' : 'chevron-right'" [size]="15"></app-icon>
         Sidedeck ({{ deck.sideboard_entries.length }})
       </button>
       @if (sideOpen) {
@@ -684,18 +679,18 @@
               <div class="img-wrapper" [class.is-banned]="getBanStatus(entry.card_detail)?.status === 'banned'" [class.is-limited]="getBanStatus(entry.card_detail) && getBanStatus(entry.card_detail)?.status !== 'banned'">
                 <img class="stack-top" [src]="entry.card_detail.image_url | thumb:250" [alt]="entry.card_detail.name" loading="lazy" decoding="async" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
                 <button type="button" class="icon-overlay eye-icon" (click)="showPreview(entry.card_detail, $event)" aria-label="Ver detalle">
-                  <i class="bi bi-eye-fill"></i>
+                  <app-icon name="eye" [size]="16"></app-icon>
                 </button>
                 @if (getBanStatus(entry.card_detail); as ban) {
                   <span class="ban-overlay" [class.banned]="ban.status === 'banned'" [class.limited]="ban.status !== 'banned'" [title]="ban.status === 'banned' ? 'Baneada' : 'Limitada'">
-                    @if (ban.status === 'banned') { <i class="bi bi-slash-circle-fill"></i> }
+                    @if (ban.status === 'banned') { <app-icon name="ban" [size]="14"></app-icon> }
                     @else if (ban.status === 'limited_1') { <span>L1</span> }
                     @else if (ban.status === 'limited_2') { <span>L2</span> }
                   </span>
                 }
               </div>
               @if (entry.quantity > 1) {
-                <span class="qty-badge"><i class="bi bi-x"></i>{{ entry.quantity }}</span>
+                <span class="qty-badge">×{{ entry.quantity }}</span>
               }
             </div>
           }
@@ -745,24 +740,24 @@
         <div class="social-panel-header">
           <div class="social-panel-tabs">
             <button [class.active]="socialTab === 'comments'" (click)="setSocialTab('comments')">
-              <i class="bi bi-chat-dots"></i> Comentarios ({{ comments.length }})
+              <app-icon name="message-square" [size]="14"></app-icon> Comentarios ({{ comments.length }})
             </button>
             @if (isOwner && changelog.length > 0) {
               <button [class.active]="socialTab === 'changelog'" (click)="setSocialTab('changelog')">
-                <i class="bi bi-clock-history"></i> Historial ({{ changelog.length }})
+                <app-icon name="clock" [size]="14"></app-icon> Historial ({{ changelog.length }})
               </button>
             }
             @if (isOwner) {
               <button [class.active]="socialTab === 'snapshots'" (click)="setSocialTab('snapshots')">
-                <i class="bi bi-bookmark-star"></i> Versiones ({{ snapshots.length }})
+                <app-icon name="bookmark" [size]="14"></app-icon> Versiones ({{ snapshots.length }})
               </button>
               <button [class.active]="socialTab === 'suggestions'" (click)="setSocialTab('suggestions')">
-                <i class="bi bi-lightbulb"></i> Sugerencias
+                <app-icon name="lightbulb" [size]="14"></app-icon> Sugerencias
               </button>
             }
           </div>
           <button class="social-panel-close" (click)="socialTab = 'none'" aria-label="Cerrar panel">
-            <i class="bi bi-x-lg"></i>
+            <app-icon name="x" [size]="16"></app-icon>
           </button>
         </div>
 
@@ -783,7 +778,7 @@
                   <time>{{ c.created_at | date:'dd/MM/yy HH:mm' }}</time>
                   @if (c.username === auth.user()?.username || isOwner) {
                     <button class="comment-delete" (click)="deleteComment(c.id)" title="Eliminar">
-                      <i class="bi bi-trash3"></i>
+                      <app-icon name="trash-2" [size]="13"></app-icon>
                     </button>
                   }
                 </div>
@@ -807,7 +802,7 @@
           } @else if (socialTab === 'snapshots') {
             <div class="snapshot-create">
               <input type="text" [(ngModel)]="snapshotLabel" placeholder="Nombre versión (opcional)" />
-              <button class="btn btn-sm btn-primary" (click)="createSnapshot()"><i class="bi bi-camera2"></i> Guardar versión</button>
+              <button class="btn btn-sm btn-primary" (click)="createSnapshot()"><app-icon name="camera" [size]="14"></app-icon> Guardar versión</button>
             </div>
             @for (s of snapshots; track s.id) {
               <div class="snapshot-item">
@@ -858,7 +853,7 @@
 @if (previewCard) {
   <div class="preview-overlay" (click)="hidePreview()">
     <div class="preview-panel" (click)="$event.stopPropagation()">
-      <button class="preview-close" (click)="hidePreview()" aria-label="Cerrar">✕</button>
+      <button class="preview-close" (click)="hidePreview()" aria-label="Cerrar"><app-icon name="x" [size]="18"></app-icon></button>
       <h3 class="preview-title">{{ previewCard.name }}</h3>
       <hr>
       <div class="preview-body">
@@ -911,7 +906,7 @@
           }
           <div class="stat-section">
             <a class="btn btn-sm btn-secondary" routerLink="/cards" [queryParams]="{ search: previewCard.name }" (click)="hidePreview()">
-              <i class="bi bi-search"></i> Ver en buscador
+              <app-icon name="search" [size]="14"></app-icon> Ver en buscador
             </a>
           </div>
         </div>
@@ -925,8 +920,8 @@
   <div class="hand-modal-overlay" (click)="showHandModal = false">
     <div class="hand-modal" (click)="$event.stopPropagation()">
       <div class="hand-modal-header">
-        <h3><i class="bi bi-hand-index"></i> Mano de prueba</h3>
-        <button class="hand-modal-close" (click)="showHandModal = false" aria-label="Cerrar">✕</button>
+        <h3><app-icon name="hand" [size]="18"></app-icon> Mano de prueba</h3>
+        <button class="hand-modal-close" (click)="showHandModal = false" aria-label="Cerrar"><app-icon name="x" [size]="18"></app-icon></button>
       </div>
       <div class="hand-modal-body">
         <div class="hand-simulator hand-simulator--modal">
@@ -947,7 +942,7 @@
               <span class="field-label">En campo (oro inicial):</span>
               <div class="hand-card is-starting-gold" (click)="showPreview(startingGoldCard, $event)">
                 <img [src]="startingGoldCard.image_url | thumb:250" [alt]="startingGoldCard.name" loading="lazy">
-                <span class="hand-gold-badge" title="Oro inicial"><i class="bi bi-star-fill"></i></span>
+                <span class="hand-gold-badge" title="Oro inicial"><app-icon name="star-fill" [size]="12"></app-icon></span>
                 <span class="hand-card-name">{{ startingGoldCard.name }}</span>
               </div>
             </div>
@@ -976,6 +971,6 @@
 
 @if (presentationMode) {
   <button class="exit-presentation-fab" (click)="togglePresentation()" title="Salir de pantalla completa (Esc)" aria-label="Salir de pantalla completa">
-    <i class="bi bi-fullscreen-exit"></i>
+    <app-icon name="minimize" [size]="20"></app-icon>
   </button>
 }

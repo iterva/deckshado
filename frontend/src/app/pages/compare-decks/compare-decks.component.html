@@ -1,7 +1,7 @@
 <div class="container compare-page">
   <div class="page-head">
     <button type="button" class="btn-back" (click)="goBack()">
-      <i class="bi bi-arrow-left"></i> Volver
+      <app-icon name="arrow-left" [size]="15"></app-icon> Volver
     </button>
     <h1>Comparar mazos</h1>
   </div>
@@ -13,7 +13,7 @@
   } @else {
     @if (hasFormatMismatch) {
       <div class="warning">
-        <i class="bi bi-exclamation-triangle"></i>
+        <app-icon name="alert-circle" [size]="15"></app-icon>
         Los mazos tienen formatos distintos. La comparación aún se muestra, pero algunas cartas pueden no ser intercambiables.
       </div>
     }

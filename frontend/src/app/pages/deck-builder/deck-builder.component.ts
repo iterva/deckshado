@@ -208,8 +208,6 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
   previewAbilityLoading = signal<boolean>(false);
   private abilityCache = new Map<number, string>();
 
-  // Mobile deck panel toggle
-  showDeckPanel = false;
 
   // Deck preview modal
   showDeckPreview = signal(false);
@@ -1517,9 +1515,6 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
     }, 5000);
   }
 
-  toggleDeckPanel() {
-    this.showDeckPanel = !this.showDeckPanel;
-  }
 
   focusSearch() {
     this.showDeckPanel = false;

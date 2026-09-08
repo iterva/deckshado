@@ -26,11 +26,11 @@
       <input #avatarInput type="file" accept="image/*" hidden (change)="onAvatarSelected($event)" />
       <div class="avatar-actions">
         <button type="button" class="avatar-action-btn" (click)="avatarCameraInput.click()">
-          <i class="bi bi-camera-fill"></i>
+          <app-icon name="image" [size]="14"></app-icon>
           Tomar foto
         </button>
         <button type="button" class="avatar-action-btn secondary" (click)="avatarInput.click()">
-          <i class="bi bi-image"></i>
+          <app-icon name="image" [size]="14"></app-icon>
           Elegir archivo
         </button>
       </div>
@@ -65,7 +65,7 @@
       <h2>Cuentas vinculadas</h2>
       <div class="linked-row">
         <div class="linked-info">
-          <i class="bi bi-google"></i>
+          <app-icon name="globe" [size]="14"></app-icon>
           <div>
             <strong>Google</strong>
             @if (googleLinked()) {

@@ -1,17 +1,19 @@
 <div class="container">
-  <h1 class="myl-page-title">Mazos</h1>
+  <div class="page-header-row">
+    <h1 class="myl-page-title"><app-icon name="swords" [size]="22"></app-icon> Mazos</h1>
+  </div>
 
   @if (auth.isAuthenticated()) {
     <div class="toolbar-row" role="tablist">
       <div class="tabs">
         <button role="tab" [attr.aria-selected]="activeTab === 'public'" [class.active]="activeTab === 'public'" (click)="setTab('public')">
-          <i class="bi bi-globe2"></i><span>Públicos</span>
+          <app-icon name="library" [size]="14"></app-icon><span>Públicos</span>
         </button>
         <button role="tab" [attr.aria-selected]="activeTab === 'mine'" [class.active]="activeTab === 'mine'" (click)="setTab('mine')">
-          <i class="bi bi-person-fill"></i><span>Míos</span>
+          <app-icon name="user" [size]="14"></app-icon><span>Míos</span>
         </button>
         <button role="tab" [attr.aria-selected]="activeTab === 'team'" [class.active]="activeTab === 'team'" (click)="setTab('team')">
-          <i class="bi bi-people-fill"></i><span>Equipo</span>
+          <app-icon name="users" [size]="14"></app-icon><span>Equipo</span>
         </button>
       </div>
       <div class="compare-bar">
@@ -20,7 +22,7 @@
                 [class.active]="compareMode"
                 [attr.aria-pressed]="compareMode"
                 (click)="toggleCompareMode()">
-          <i class="bi" [class.bi-bar-chart-line]="!compareMode" [class.bi-x-lg]="compareMode"></i>
+          <app-icon [name]="compareMode ? 'x' : 'bar-chart-3'" [size]="14"></app-icon>
           <span>{{ compareMode ? 'Cancelar' : 'Comparar' }}</span>
         </button>
         @if (compareMode) {
@@ -35,10 +37,12 @@
   <!-- Filtros + búsqueda + orden (común a todas las pestañas) -->
   <div class="filter-toolbar">
     <div class="search-bar">
-      <i class="bi bi-search search-icon"></i>
+      <app-icon name="search" [size]="14" class="search-icon"></app-icon>
       <input type="text" placeholder="Buscar mazos..." [(ngModel)]="search" (keyup.enter)="onSearch()" aria-label="Buscar mazos">
       @if (search) {
-        <button class="search-clear" (click)="search=''; onSearch()" aria-label="Limpiar búsqueda"><i class="bi bi-x"></i></button>
+        <button class="search-clear" (click)="search=''; onSearch()" aria-label="Limpiar búsqueda">
+          <app-icon name="x" [size]="14"></app-icon>
+        </button>
       }
       <button class="btn btn-primary btn-sm search-go" (click)="onSearch()">Buscar</button>
     </div>
@@ -72,7 +76,7 @@
       </select>
       @if (activeFilterCount > 0) {
         <button class="btn-clear-filters" (click)="clearFilters()" type="button">
-          <i class="bi bi-x-circle"></i>
+          <app-icon name="x" [size]="13"></app-icon>
           Limpiar ({{ activeFilterCount }})
         </button>
       }
@@ -108,7 +112,7 @@
 
             @if (compareMode) {
               <span class="compare-check" [class.checked]="isSelectedForCompare(deck.id)">
-                <i class="bi" [class.bi-check-square-fill]="isSelectedForCompare(deck.id)" [class.bi-square]="!isSelectedForCompare(deck.id)"></i>
+                <app-icon [name]="isSelectedForCompare(deck.id) ? 'check' : 'plus'" [size]="14"></app-icon>
               </span>
             }
 
@@ -118,17 +122,17 @@
                 <span class="format-tag">{{ getFormatLabel(deck.format) }}</span>
                 @if (deck.sub_format && deck.sub_format !== 'racial') { <span class="format-tag vcr">{{ getSubFormatLabel(deck.sub_format) }}</span> }
                 <span class="race-tag" [style.color]="getRaceAccent(deck.race)" [style.border-color]="getRaceAccent(deck.race) + '55'">{{ getRaceLabel(deck.race) }}</span>
-                <span class="card-count"><i class="bi bi-stack"></i> {{ deck.card_count }}</span>
+                <span class="card-count"><app-icon name="layers" [size]="11"></app-icon> {{ deck.card_count }}</span>
               </div>
               @if (deck.description) {
                 <p class="deck-desc">{{ deck.description }}</p>
               }
               <div class="deck-footer">
-                <span class="deck-author"><i class="bi bi-person"></i> {{ deck.owner_username }}</span>
+                <span class="deck-author"><app-icon name="user" [size]="12"></app-icon> {{ deck.owner_username }}</span>
                 <span class="deck-meta-right">
                   <span class="deck-date" [title]="deck.updated_at">{{ deck.updated_at | relativeTime }}</span>
                   @if (deck.like_count) {
-                    <span class="deck-likes"><i class="bi bi-heart-fill"></i> {{ deck.like_count }}</span>
+                    <span class="deck-likes"><app-icon name="heart" [size]="11"></app-icon> {{ deck.like_count }}</span>
                   }
                 </span>
               </div>
@@ -141,9 +145,13 @@
 
       @if (publicTotalPages > 1) {
         <div class="pagination">
-          <button class="btn btn-secondary btn-sm" (click)="publicPrevPage()" [disabled]="publicPage === 1">← Anterior</button>
+          <button class="btn btn-secondary btn-sm" (click)="publicPrevPage()" [disabled]="publicPage === 1">
+            <app-icon name="chevron-left" [size]="14"></app-icon> Anterior
+          </button>
           <span>Página {{ publicPage }} de {{ publicTotalPages }}</span>
-          <button class="btn btn-secondary btn-sm" (click)="publicNextPage()" [disabled]="publicPage >= publicTotalPages">Siguiente →</button>
+          <button class="btn btn-secondary btn-sm" (click)="publicNextPage()" [disabled]="publicPage >= publicTotalPages">
+            Siguiente <app-icon name="chevron-right" [size]="14"></app-icon>
+          </button>
         </div>
       }
     }
@@ -157,10 +165,12 @@
       </span>
       <input #importInput type="file" accept="application/json,.json" (change)="onImportFile($event)" hidden />
       <button type="button" class="btn btn-secondary" (click)="triggerImport(importInput)" [disabled]="importing" title="Importar mazo desde un archivo .deck.json">
-        <i class="bi bi-upload" aria-hidden="true"></i>
+        <app-icon name="upload" [size]="14"></app-icon>
         {{ importing ? 'Importando…' : 'Importar JSON' }}
       </button>
-      <a routerLink="/builder" class="btn btn-gold">+ Crear Mazo</a>
+      <a routerLink="/builder" class="btn btn-gold">
+        <app-icon name="plus" [size]="14"></app-icon> Crear Mazo
+      </a>
     </div>
     @if (importMsg) {
       <p class="import-msg" role="status">{{ importMsg }}</p>
@@ -193,7 +203,7 @@
 
             @if (compareMode) {
               <span class="compare-check" [class.checked]="isSelectedForCompare(deck.id)">
-                <i class="bi" [class.bi-check-square-fill]="isSelectedForCompare(deck.id)" [class.bi-square]="!isSelectedForCompare(deck.id)"></i>
+                <app-icon [name]="isSelectedForCompare(deck.id) ? 'check' : 'plus'" [size]="14"></app-icon>
               </span>
             }
 
@@ -203,29 +213,29 @@
                 <span class="format-tag">{{ getFormatLabel(deck.format) }}</span>
                 @if (deck.sub_format && deck.sub_format !== 'racial') { <span class="format-tag vcr">{{ getSubFormatLabel(deck.sub_format) }}</span> }
                 <span class="race-tag" [style.color]="getRaceAccent(deck.race)" [style.border-color]="getRaceAccent(deck.race) + '55'">{{ getRaceLabel(deck.race) }}</span>
-                <span class="card-count"><i class="bi bi-stack"></i> {{ deck.card_count }}</span>
+                <span class="card-count"><app-icon name="layers" [size]="11"></app-icon> {{ deck.card_count }}</span>
               </div>
               @if (deck.description) {
                 <p class="deck-desc">{{ deck.description }}</p>
               }
               <div class="deck-footer">
                 <span class="deck-visibility" [class.public]="deck.is_public" [title]="deck.is_public ? 'Visible para todos' : 'Solo tú lo ves'">
-                  <i class="bi" [class.bi-globe2]="deck.is_public" [class.bi-lock-fill]="!deck.is_public"></i>
+                  <app-icon [name]="deck.is_public ? 'library' : 'shield'" [size]="12"></app-icon>
                   {{ deck.is_public ? 'Público' : 'Privado' }}
                 </span>
                 <span class="deck-meta-right">
                   <span class="deck-date" [title]="'Editado: ' + deck.updated_at">{{ deck.updated_at | relativeTime }}</span>
                   @if (deck.like_count) {
-                    <span class="deck-likes"><i class="bi bi-heart-fill"></i> {{ deck.like_count }}</span>
+                    <span class="deck-likes"><app-icon name="heart" [size]="11"></app-icon> {{ deck.like_count }}</span>
                   }
                 </span>
               </div>
               <div class="deck-actions">
                 <a [routerLink]="['/builder', deck.id]" class="action-btn action-edit" aria-label="Editar mazo" title="Editar">
-                  <i class="bi bi-pencil-square"></i><span>Editar</span>
+                  <app-icon name="edit" [size]="13"></app-icon><span>Editar</span>
                 </a>
                 <button class="action-btn action-delete" (click)="deleteDeck(deck.id)" aria-label="Eliminar mazo" title="Eliminar">
-                  <i class="bi bi-trash3"></i>
+                  <app-icon name="trash-2" [size]="13"></app-icon>
                 </button>
               </div>
             </div>
@@ -237,9 +247,13 @@
 
       @if (mineTotalPages > 1) {
         <div class="pagination">
-          <button class="btn btn-secondary btn-sm" (click)="minePrevPage()" [disabled]="minePage === 1">← Anterior</button>
+          <button class="btn btn-secondary btn-sm" (click)="minePrevPage()" [disabled]="minePage === 1">
+            <app-icon name="chevron-left" [size]="14"></app-icon> Anterior
+          </button>
           <span>Página {{ minePage }} de {{ mineTotalPages }}</span>
-          <button class="btn btn-secondary btn-sm" (click)="mineNextPage()" [disabled]="minePage >= mineTotalPages">Siguiente →</button>
+          <button class="btn btn-secondary btn-sm" (click)="mineNextPage()" [disabled]="minePage >= mineTotalPages">
+            Siguiente <app-icon name="chevron-right" [size]="14"></app-icon>
+          </button>
         </div>
       }
     }
@@ -273,7 +287,7 @@
 
             @if (compareMode) {
               <span class="compare-check" [class.checked]="isSelectedForCompare(deck.id)">
-                <i class="bi" [class.bi-check-square-fill]="isSelectedForCompare(deck.id)" [class.bi-square]="!isSelectedForCompare(deck.id)"></i>
+                <app-icon [name]="isSelectedForCompare(deck.id) ? 'check' : 'plus'" [size]="14"></app-icon>
               </span>
             }
 
@@ -283,17 +297,17 @@
                 <span class="format-tag">{{ getFormatLabel(deck.format) }}</span>
                 @if (deck.sub_format && deck.sub_format !== 'racial') { <span class="format-tag vcr">{{ getSubFormatLabel(deck.sub_format) }}</span> }
                 <span class="race-tag" [style.color]="getRaceAccent(deck.race)" [style.border-color]="getRaceAccent(deck.race) + '55'">{{ getRaceLabel(deck.race) }}</span>
-                <span class="card-count"><i class="bi bi-stack"></i> {{ deck.card_count }}</span>
+                <span class="card-count"><app-icon name="layers" [size]="11"></app-icon> {{ deck.card_count }}</span>
               </div>
               @if (deck.description) {
                 <p class="deck-desc">{{ deck.description }}</p>
               }
               <div class="deck-footer">
-                <span class="deck-author"><i class="bi bi-person"></i> {{ deck.owner_username }}</span>
+                <span class="deck-author"><app-icon name="user" [size]="12"></app-icon> {{ deck.owner_username }}</span>
                 <span class="deck-meta-right">
                   <span class="deck-date" [title]="deck.updated_at">{{ deck.updated_at | relativeTime }}</span>
                   @if (deck.like_count) {
-                    <span class="deck-likes"><i class="bi bi-heart-fill"></i> {{ deck.like_count }}</span>
+                    <span class="deck-likes"><app-icon name="heart" [size]="11"></app-icon> {{ deck.like_count }}</span>
                   }
                 </span>
               </div>
@@ -306,9 +320,13 @@
 
       @if (teamTotalPages > 1) {
         <div class="pagination">
-          <button class="btn btn-secondary btn-sm" (click)="teamPrevPage()" [disabled]="teamPage === 1">← Anterior</button>
+          <button class="btn btn-secondary btn-sm" (click)="teamPrevPage()" [disabled]="teamPage === 1">
+            <app-icon name="chevron-left" [size]="14"></app-icon> Anterior
+          </button>
           <span>Página {{ teamPage }} de {{ teamTotalPages }}</span>
-          <button class="btn btn-secondary btn-sm" (click)="teamNextPage()" [disabled]="teamPage >= teamTotalPages">Siguiente →</button>
+          <button class="btn btn-secondary btn-sm" (click)="teamNextPage()" [disabled]="teamPage >= teamTotalPages">
+            Siguiente <app-icon name="chevron-right" [size]="14"></app-icon>
+          </button>
         </div>
       }
     }
@@ -317,7 +335,7 @@
   @if (compareMode && selectedForCompare.size >= 2) {
     <div class="compare-fab">
       <button type="button" class="btn btn-gold" (click)="startCompare()">
-        <i class="bi bi-bar-chart-line"></i>
+        <app-icon name="bar-chart-3" [size]="15"></app-icon>
         Comparar {{ selectedForCompare.size }} mazos
       </button>
     </div>
@@ -340,7 +358,7 @@
     </div>
   } @else {
     <div class="deck-cover empty-cover">
-      <i class="bi bi-collection-fill"></i>
+      <app-icon name="layers" [size]="28"></app-icon>
     </div>
   }
 </ng-template>

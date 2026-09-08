@@ -15,6 +15,7 @@ import { FormsModule } from '@angular/forms';
 import { RiftboundService } from '../../../services/riftbound.service';
 import { RiftboundCard, RiftboundCardLite, RiftboundColor } from '../../../models/riftbound';
 import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.component';
+import { IconComponent } from '../../../components/icon/icon.component';
 
 const COLORS: { code: RiftboundColor; label: string; hex: string }[] = [
   { code: 'fury',  label: 'Fury',  hex: '#e94560' },
@@ -48,44 +49,55 @@ const RARITIES = [
 @Component({
   selector: 'app-riftbound-cards',
   standalone: true,
-  imports: [CommonModule, FormsModule, TcgPriceComponent],
+  imports: [CommonModule, FormsModule, TcgPriceComponent, IconComponent],
   template: `
     <div class="rb-cards-page">
+      <!-- Header -->
       <header class="page-head">
-        <h1>Cartas de Riftbound</h1>
-        <p class="muted">{{ totalCount() }} cartas en catalogo Riftcodex</p>
+        <div class="head-left">
+          <h1><app-icon name="library" [size]="22"></app-icon> Catálogo Riftbound</h1>
+          <span class="count-pill">{{ totalCount() }} cartas</span>
+        </div>
       </header>
 
-      <div class="filters">
+      <!-- Filters container -->
+      <div class="filters-card">
+        <!-- Search row -->
         <div class="search-row">
-          <div class="search-modes" role="tablist" aria-label="Modo de búsqueda">
-            <button type="button" role="tab"
-                    [class.active]="searchMode === 'name'"
-                    (click)="setMode('name')"
-                    title="Buscar por nombre o número">Nombre</button>
-            <button type="button" role="tab"
-                    [class.active]="searchMode === 'ability'"
-                    (click)="setMode('ability')"
-                    title="Buscar dentro del texto de habilidad">Habilidad</button>
-            <button type="button" role="tab"
-                    [class.active]="searchMode === 'all'"
-                    (click)="setMode('all')"
-                    title="Buscar en nombre y habilidad">Todo</button>
-          </div>
-          <div class="search-input-row">
+          <div class="search-input-wrap">
+            <app-icon name="search" [size]="15"></app-icon>
             <input type="search"
                    [(ngModel)]="searchQuery"
                    (ngModelChange)="onSearchInput()"
-                   [placeholder]="searchMode === 'ability' ? 'Buscar habilidad…' : (searchMode === 'all' ? 'Buscar nombre o habilidad…' : 'Buscar nombre o número…')" />
-            <button class="search-btn" (click)="reload()" title="Buscar">🔍</button>
-            @if (hasActiveFilter()) {
-              <button class="clear-all" (click)="clearAll()" title="Limpiar filtros">Limpiar</button>
+                   [placeholder]="searchMode === 'ability' ? 'Buscar en texto de habilidad…' : (searchMode === 'all' ? 'Buscar nombre o habilidad…' : 'Buscar por nombre o número…')" />
+            @if (searchQuery) {
+              <button class="clear-btn" (click)="searchQuery=''; reset()" title="Limpiar"><app-icon name="x" [size]="14"></app-icon></button>
             }
           </div>
+
+          <div class="search-modes" role="tablist" aria-label="Modo de búsqueda">
+            <button type="button" role="tab"
+                    [class.active]="searchMode === 'name'"
+                    (click)="setMode('name')">Nombre</button>
+            <button type="button" role="tab"
+                    [class.active]="searchMode === 'ability'"
+                    (click)="setMode('ability')">Habilidad</button>
+            <button type="button" role="tab"
+                    [class.active]="searchMode === 'all'"
+                    (click)="setMode('all')">Todo</button>
+          </div>
+
+          @if (hasActiveFilter()) {
+            <button class="clear-all-btn" (click)="clearAll()" title="Limpiar filtros">
+              <app-icon name="refresh-cw" [size]="13"></app-icon>
+              <span>Limpiar</span>
+            </button>
+          }
         </div>
 
+        <!-- Type chips -->
         <div class="type-chips">
-          <button class="chip" [class.active]="!typeFilter" (click)="setType('')">Todos</button>
+          <button class="chip" [class.active]="!typeFilter" (click)="setType('')">Todos los tipos</button>
           @for (t of types; track t.code) {
             <button class="chip"
                     [class.active]="typeFilter === t.code"
@@ -93,9 +105,9 @@ const RARITIES = [
           }
         </div>
 
+        <!-- Selects row -->
         <div class="filter-row">
           <div class="filter-group">
-            <label>Set</label>
             <select [(ngModel)]="setFilter" (ngModelChange)="reset()">
               <option value="">Todos los sets</option>
               @for (s of sets(); track s.code) {
@@ -105,19 +117,17 @@ const RARITIES = [
           </div>
 
           <div class="filter-group">
-            <label>Energía</label>
             <select [(ngModel)]="energyFilter" (ngModelChange)="reset()">
-              <option [ngValue]="null">Cualquiera</option>
+              <option [ngValue]="null">Cualquier energía</option>
               @for (n of [0,1,2,3,4,5,6,7,8]; track n) {
-                <option [ngValue]="n">{{ n }}</option>
+                <option [ngValue]="n">Energía: {{ n }}</option>
               }
             </select>
           </div>
 
           <div class="filter-group">
-            <label>Rareza</label>
             <select [(ngModel)]="rarityFilter" (ngModelChange)="reset()">
-              <option value="">Todas</option>
+              <option value="">Todas las rarezas</option>
               @for (r of rarities; track r.code) {
                 <option [value]="r.code">{{ r.label }}</option>
               }
@@ -125,33 +135,52 @@ const RARITIES = [
           </div>
         </div>
 
+        <!-- Domains row -->
         <div class="color-row">
           <span class="color-row-label">Dominios:</span>
           @for (c of colors; track c.code) {
             <button class="color-chip"
                     [class.active]="selectedColors().has(c.code)"
                     [style.--c]="c.hex"
-                    (click)="toggleColor(c.code)">{{ c.label }}</button>
+                    (click)="toggleColor(c.code)">
+              <span class="color-dot"></span>
+              {{ c.label }}
+            </button>
           }
         </div>
       </div>
 
-      @if (loading()) {
-        <p class="muted center">Cargando…</p>
+      <!-- Loading state -->
+      @if (loading() && cards().length === 0) {
+        <div class="loading-state">
+          <app-icon name="refresh-cw" [size]="18"></app-icon>
+          <span>Cargando cartas...</span>
+        </div>
       }
 
+      <!-- Grid -->
       <div class="card-grid">
         @for (card of cards(); track card.id) {
           <button type="button" class="rb-card" (click)="openCard(card.card_number)">
-            @if (cardImageUrl(card); as imgUrl) {
-              <img [src]="imgUrl" [alt]="card.name" loading="lazy" decoding="async"
-                   (error)="onCardImageError(card, $event)" />
-            } @else {
-              <div class="rb-card-placeholder">{{ card.name }}</div>
-            }
+            <div class="rb-card-img-wrap">
+              @if (cardImageUrl(card); as imgUrl) {
+                <img [src]="imgUrl" [alt]="card.name" loading="lazy" decoding="async"
+                     (error)="onCardImageError(card, $event)" />
+              } @else {
+                <div class="rb-card-placeholder">{{ card.name }}</div>
+              }
+              <div class="hover-overlay">
+                <app-icon name="eye" [size]="20"></app-icon>
+              </div>
+            </div>
             <div class="rb-card-meta">
               <strong>{{ card.name }}</strong>
-              <small>{{ card.card_number }}</small>
+              <div class="card-submeta">
+                <span class="card-num">{{ card.card_number }}</span>
+                @if (card.card_type) {
+                  <span class="card-type-chip">{{ card.card_type }}</span>
+                }
+              </div>
               @if (card.description) {
                 <p class="rb-card-ability">{{ card.description }}</p>
               }
@@ -161,37 +190,69 @@ const RARITIES = [
         }
       </div>
 
+      <!-- Detail Modal -->
       @if (modalOpen()) {
         <div class="rb-modal-overlay" (click)="closeCard()">
           <div class="rb-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
-            <button class="rb-modal-close" (click)="closeCard()" aria-label="Cerrar">✕</button>
+            <button class="rb-modal-close" (click)="closeCard()" aria-label="Cerrar">
+              <app-icon name="x" [size]="16"></app-icon>
+            </button>
             @if (modalLoading()) {
-              <p class="muted center" style="padding:3rem">Cargando…</p>
+              <div class="loading-state" style="padding: 4rem;">
+                <app-icon name="refresh-cw" [size]="20"></app-icon>
+                <span>Cargando detalles…</span>
+              </div>
             } @else if (selectedCard(); as c) {
               <div class="rb-modal-layout">
-                @if (cardImageUrl(c); as imgUrl) {
-                  <img class="rb-modal-img" [src]="imgUrl" [alt]="c.name"
-                       (error)="onCardImageError(c, $event)" />
-                }
+                <div class="rb-modal-art">
+                  @if (cardImageUrl(c); as imgUrl) {
+                    <img class="rb-modal-img" [src]="imgUrl" [alt]="c.name"
+                         (error)="onCardImageError(c, $event)" />
+                  }
+                </div>
                 <div class="rb-modal-info">
                   <h2>{{ c.name }}</h2>
-                  <p class="muted">{{ c.card_number }} · {{ c.set?.name || c.set?.code || '—' }}</p>
+                  <p class="card-edition-text">
+                    <app-icon name="layers" [size]="12"></app-icon>
+                    {{ c.card_number }} · {{ c.set?.name || c.set?.code || '—' }}
+                  </p>
+
                   <div class="badges">
                     @if (c.card_type) { <span class="badge">{{ c.card_type }}</span> }
-                    @if (c.rarity) { <span class="badge">{{ c.rarity }}</span> }
+                    @if (c.rarity) { <span class="badge badge-rarity">{{ c.rarity }}</span> }
                     @if (c.variant) { <span class="badge">{{ c.variant }}</span> }
                     @for (col of c.colors; track col) { <span class="badge color">{{ col }}</span> }
                     @for (st of c.subtypes; track st) { <span class="badge">{{ st }}</span> }
                   </div>
-                  <div class="stats">
-                    @if (c.energy != null) { <div><span>Energy</span><strong>{{ c.energy }}</strong></div> }
-                    @if (c.power != null) { <div><span>Power</span><strong>{{ c.power }}</strong></div> }
-                    @if (c.might != null) { <div><span>Might</span><strong>{{ c.might }}</strong></div> }
+
+                  <div class="stats-row">
+                    @if (c.energy != null) {
+                      <div class="stat-pill">
+                        <span class="stat-label">Energía</span>
+                        <span class="stat-val">{{ c.energy }}</span>
+                      </div>
+                    }
+                    @if (c.power != null) {
+                      <div class="stat-pill">
+                        <span class="stat-label">Power</span>
+                        <span class="stat-val">{{ c.power }}</span>
+                      </div>
+                    }
+                    @if (c.might != null) {
+                      <div class="stat-pill">
+                        <span class="stat-label">Might</span>
+                        <span class="stat-val">{{ c.might }}</span>
+                      </div>
+                    }
                   </div>
+
                   @if (c.description) {
-                    <h3>Descripción</h3>
-                    <pre class="desc">{{ c.description }}</pre>
+                    <div class="ability-block">
+                      <h4><app-icon name="sparkles" [size]="13"></app-icon> Habilidad</h4>
+                      <pre class="desc">{{ c.description }}</pre>
+                    </div>
                   }
+
                   <app-tcg-price [cardName]="c.name" [compact]="false" [showLink]="true"></app-tcg-price>
                 </div>
               </div>
@@ -203,193 +264,613 @@ const RARITIES = [
       }
 
       @if (!loading() && cards().length === 0) {
-        <p class="muted center empty">Sin resultados con los filtros actuales.</p>
+        <div class="empty-state">
+          <app-icon name="library" [size]="32"></app-icon>
+          <p>Sin resultados con los filtros actuales.</p>
+        </div>
       }
 
       @if (hasMore()) {
         <div #cardsSentinel class="infinite-sentinel" aria-hidden="true"></div>
       }
       @if (loading() && cards().length > 0) {
-        <p class="muted center">Cargando más...</p>
+        <p class="status-more"><app-icon name="refresh-cw" [size]="14"></app-icon> Cargando más cartas...</p>
       }
       @if (!hasMore() && !loading() && cards().length > 0) {
-        <p class="muted center" style="margin-top: 1rem;">— Fin de cartas —</p>
+        <p class="status-end">— Fin del catálogo Riftbound —</p>
       }
     </div>
   `,
   styles: [`
-    .rb-cards-page { max-width: 1400px; margin: 0 auto; padding: 1.5rem 1rem; }
-    @media (max-width: 600px) { .rb-cards-page { padding: 1rem 0.65rem 2rem; } .page-head h1 { font-size: 1.3rem !important; } }
-    .page-head h1 {
-      margin: 0; font-size: 1.6rem; font-weight: 700;
-      background: linear-gradient(90deg, #e94560, #fff);
-      -webkit-background-clip: text; background-clip: text; color: transparent;
+    .rb-cards-page {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 1.25rem 1.5rem;
     }
-    .muted { opacity: .65; }
-    .center { text-align: center; }
-    .empty { padding: 2rem 1rem; }
 
-    .filters { display: flex; flex-direction: column; gap: .65rem; margin: 1rem 0 1.5rem; }
-    .search-row { display: flex; flex-direction: column; gap: .5rem; align-items: stretch; }
-    .search-input-row { display: flex; gap: .5rem; width: 100%; }
-    .search-row input {
-      flex: 1; min-width: 0; padding: .65rem 1rem;
-      border: 1px solid #2a3a4a; border-radius: 6px;
-      background: #0f0f23; color: #e0e0e0; outline: none;
-      font-size: 1rem;
-    }
-    .search-row input:focus { border-color: #e94560; }
-    .search-btn {
-      padding: .55rem .9rem; border: 1px solid #e94560; background: #e94560;
-      color: #fff; border-radius: 6px; cursor: pointer; font-size: 1rem;
-      transition: background .15s;
-    }
-    .search-btn:hover { background: #c73650; }
-    .search-btn:active { transform: scale(.95); }
-    .clear-all {
-      padding: .55rem .9rem; border: 1px solid #2a3a4a; background: transparent;
-      color: #c8c8da; border-radius: 6px; cursor: pointer;
-    }
-    .clear-all:hover { border-color: #e94560; color: #e94560; }
+    .page-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
 
-    .type-chips { display: flex; flex-wrap: wrap; gap: .4rem; }
-    .chip {
-      padding: .3rem .8rem; border: 1px solid #2a3a4a; border-radius: 999px;
-      background: #0f0f23; color: #c8c8da; font-size: .85rem; cursor: pointer;
-      transition: all .15s; white-space: nowrap;
-    }
-    .chip:hover { border-color: #e94560; color: #fff; }
-    .chip.active { background: #ffbd39; border-color: #ffbd39; color: #1a1a2e; font-weight: 700; }
+      .head-left {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
 
-    .filter-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
-    @media (max-width: 600px) { .filter-row { grid-template-columns: 1fr 1fr; } }
-    .filter-group label { display: block; font-size: .7rem; color: #98a2a8; margin-bottom: .15rem; text-transform: uppercase; letter-spacing: .05em; }
-    .filter-group select {
-      width: 100%; padding: .45rem .65rem;
-      border: 1px solid #2a3a4a; border-radius: 6px;
-      background: #0f0f23; color: #e0e0e0; outline: none;
-    }
-    .filter-group select:focus { border-color: #e94560; }
+        h1 {
+          margin: 0;
+          font-size: 1.3rem;
+          font-weight: 700;
+          color: #ffffff;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          letter-spacing: -0.02em;
 
-    .color-row { display: flex; gap: .35rem; flex-wrap: wrap; align-items: center; }
-    .color-row-label { color: #98a2a8; font-size: .85rem; margin-right: .35rem; }
-    .color-chip {
-      padding: .3rem .65rem; border: 1px solid var(--c); border-radius: 999px;
-      background: transparent; color: var(--c); cursor: pointer; font-size: .8rem;
-      font-weight: 600;
+          app-icon { color: var(--ui-accent, #06b6d4); }
+        }
+
+        .count-pill {
+          font-size: 0.8rem;
+          color: var(--ui-text-muted);
+          background: rgba(255, 255, 255, 0.04);
+          padding: 0.2rem 0.6rem;
+          border-radius: 999px;
+          border: 1px solid var(--ui-border);
+        }
+      }
     }
-    .color-chip.active { background: var(--c); color: #0f0f23; }
+
+    .filters-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      align-items: center;
+
+      .search-input-wrap {
+        flex: 1 1 240px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0 0.75rem;
+        background: var(--ui-surface);
+        border: 1px solid var(--ui-border);
+        border-radius: 8px;
+        transition: border-color 0.15s ease;
+
+        &:focus-within {
+          border-color: var(--ui-accent, #06b6d4);
+        }
+
+        app-icon { color: var(--ui-text-muted); flex-shrink: 0; }
+
+        input {
+          flex: 1;
+          border: none;
+          background: transparent;
+          color: #ffffff;
+          font-size: 0.875rem;
+          padding: 0.6rem 0;
+          outline: none;
+
+          &::placeholder { color: var(--ui-text-muted); }
+        }
+
+        .clear-btn {
+          background: none;
+          border: none;
+          color: var(--ui-text-muted);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          padding: 2px;
+          &:hover { color: #fff; }
+        }
+      }
+
+      .search-modes {
+        display: flex;
+        background: var(--ui-surface);
+        border: 1px solid var(--ui-border);
+        border-radius: 8px;
+        overflow: hidden;
+
+        button {
+          padding: 0.55rem 0.85rem;
+          background: transparent;
+          border: none;
+          color: var(--ui-text-muted);
+          font-size: 0.8rem;
+          cursor: pointer;
+          transition: all 0.15s ease;
+
+          &.active {
+            background: rgba(6, 182, 212, 0.15);
+            color: var(--ui-accent, #06b6d4);
+            font-weight: 600;
+          }
+
+          &:hover:not(.active) {
+            color: #ffffff;
+          }
+        }
+      }
+
+      .clear-all-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.55rem 0.85rem;
+        background: var(--ui-surface);
+        border: 1px solid var(--ui-border);
+        border-radius: 8px;
+        color: var(--ui-text-muted);
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.15s ease;
+
+        &:hover {
+          border-color: #ef4444;
+          color: #ef4444;
+        }
+      }
+    }
+
+    .type-chips {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+
+      .chip {
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        border: 1px solid var(--ui-border);
+        background: var(--ui-surface);
+        color: var(--ui-text-muted);
+        font-size: 0.78rem;
+        cursor: pointer;
+        transition: all 0.15s ease;
+
+        &:hover {
+          border-color: rgba(255, 255, 255, 0.2);
+          color: #ffffff;
+        }
+
+        &.active {
+          background: rgba(6, 182, 212, 0.12);
+          border-color: var(--ui-accent, #06b6d4);
+          color: var(--ui-accent, #06b6d4);
+          font-weight: 600;
+        }
+      }
+    }
+
+    .filter-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 0.6rem;
+
+      select {
+        width: 100%;
+        padding: 0.55rem 0.75rem;
+        border-radius: 8px;
+        border: 1px solid var(--ui-border);
+        background: var(--ui-surface);
+        color: var(--ui-text-muted);
+        font-size: 0.82rem;
+        cursor: pointer;
+        outline: none;
+        transition: border-color 0.15s ease;
+
+        &:focus { border-color: var(--ui-accent, #06b6d4); }
+        option { background: #18181b; }
+      }
+    }
+
+    .color-row {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+
+      .color-row-label {
+        font-size: 0.78rem;
+        color: var(--ui-text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-right: 0.2rem;
+      }
+
+      .color-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.3rem 0.65rem;
+        border-radius: 999px;
+        border: 1px solid var(--ui-border);
+        background: var(--ui-surface);
+        color: var(--ui-text-muted);
+        font-size: 0.78rem;
+        cursor: pointer;
+        transition: all 0.15s ease;
+
+        .color-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: var(--c);
+        }
+
+        &.active {
+          border-color: var(--c);
+          background: color-mix(in srgb, var(--c) 15%, var(--ui-surface));
+          color: #ffffff;
+          font-weight: 600;
+        }
+
+        &:hover:not(.active) {
+          border-color: rgba(255, 255, 255, 0.2);
+          color: #ffffff;
+        }
+      }
+    }
+
+    .loading-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 3rem 1rem;
+      color: var(--ui-text-muted);
+      font-size: 0.9rem;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3.5rem 1rem;
+      color: var(--ui-text-muted);
+
+      app-icon {
+        color: rgba(255, 255, 255, 0.1);
+        display: block;
+        margin: 0 auto 0.75rem;
+      }
+    }
 
     .card-grid {
-      display: grid; gap: 1rem;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+      gap: 0.85rem;
+      margin-bottom: 2rem;
+
+      @media (max-width: 480px) {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 0.55rem;
+      }
     }
-    @media (max-width: 600px) {
-      .card-grid { grid-template-columns: repeat(auto-fit, minmax(78px, 1fr)); gap: 0.45rem; }
-      .rb-card { gap: 0; }
-      .rb-card img, .rb-card-placeholder { border-radius: .35rem; }
-      .rb-card-meta { display: none; }
-    }
-    @media (max-width: 360px) { .card-grid { grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 0.35rem; } }
+
     .rb-card {
-      text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: .35rem;
-      transition: transform .15s;
-      background: transparent; border: none; padding: 0; cursor: pointer;
-      font: inherit; text-align: left;
-    }
-    .rb-card:hover { transform: translateY(-3px); }
-    .rb-card img { width: 100%; aspect-ratio: 63/88; object-fit: cover; border-radius: .5rem; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
-    .rb-card-placeholder { aspect-ratio: 63/88; display: grid; place-items: center; padding: 1rem; text-align: center; background: #16213e; border-radius: .5rem; color: #c8c8da; }
-    .rb-card-meta { display: flex; flex-direction: column; }
-    .rb-card-meta strong { color: #fff; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .rb-card-meta small { opacity: .6; font-size: .75rem; }
-    .rb-card-ability {
-      margin: .25rem 0 0; font-size: .72rem; color: #aaa; line-height: 1.35;
-      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+      display: flex;
+      flex-direction: column;
+      background: var(--ui-surface);
+      border: 1px solid var(--ui-border);
+      border-radius: 12px;
       overflow: hidden;
-    }
+      cursor: pointer;
+      text-align: left;
+      color: inherit;
+      padding: 0;
+      transition: all 0.15s ease;
 
-    .search-modes {
-      display: flex; background: #16213e; border: 1px solid #2a2a4a;
-      border-radius: 6px; padding: 2px; gap: 2px; align-self: flex-start;
-    }
-    .search-modes button {
-      padding: .35rem .7rem; border: none; background: transparent;
-      color: #b0b0c8; border-radius: 4px; font-size: .85rem; cursor: pointer;
-      white-space: nowrap; transition: background .15s, color .15s;
-    }
-    .search-modes button:hover { color: #fff; }
-    .search-modes button.active { background: #e94560; color: #fff; font-weight: 600; }
+      &:hover {
+        border-color: var(--ui-accent, #06b6d4);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
 
-    .infinite-sentinel { width: 100%; height: 1px; margin-top: .6rem; }
+        .hover-overlay { opacity: 1; }
+        .rb-card-img-wrap img { transform: scale(1.04); }
+      }
+
+      .rb-card-img-wrap {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 3 / 4;
+        overflow: hidden;
+        background: #09090b;
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+          transition: transform 0.2s ease;
+        }
+
+        .rb-card-placeholder {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.5rem;
+          text-align: center;
+          font-size: 0.8rem;
+          color: var(--ui-text-muted);
+        }
+
+        .hover-overlay {
+          position: absolute;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #ffffff;
+          opacity: 0;
+          transition: opacity 0.15s ease;
+        }
+      }
+
+      .rb-card-meta {
+        padding: 0.6rem 0.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+
+        strong {
+          font-size: 0.82rem;
+          font-weight: 600;
+          color: #ffffff;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .card-submeta {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          font-size: 0.7rem;
+          color: var(--ui-text-muted);
+
+          .card-type-chip {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+          }
+        }
+
+        .rb-card-ability {
+          font-size: 0.72rem;
+          color: var(--ui-text-muted);
+          line-height: 1.4;
+          margin: 0.2rem 0 0;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+      }
+    }
 
     /* Modal */
     .rb-modal-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,.78);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 1000; padding: 1rem; backdrop-filter: blur(3px);
-      animation: fadeIn .15s ease-out;
-    }
-    @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
-    .rb-modal {
-      position: relative; max-width: 1000px; width: 100%; max-height: 92vh; overflow: auto;
-      background: #0f0f23; border: 1px solid #2a3a4a; border-radius: 12px;
-      padding: 1.5rem; color: #e0e0e0; box-shadow: 0 20px 60px rgba(0,0,0,.5);
-    }
-    .rb-modal-close {
-      position: absolute; top: .6rem; right: .6rem;
-      width: 36px; height: 36px; border-radius: 50%;
-      background: #16213e; border: 1px solid #2a3a4a; color: #c8c8da;
-      cursor: pointer; font-size: 1rem; display: grid; place-items: center;
-      transition: all .15s; z-index: 2;
-    }
-    .rb-modal-close:hover { background: #e94560; border-color: #e94560; color: #fff; }
-    .rb-modal-layout {
-      display: grid; gap: 1.5rem; grid-template-columns: minmax(220px, 360px) 1fr;
-    }
-    .rb-modal-img { width: 100%; border-radius: .75rem; align-self: start; object-fit: contain; background: #0b0b1a; }
-    .rb-modal-info h2 { margin: 0 0 .25rem; font-size: 1.6rem; color: #fff; }
-    .rb-modal-info h3 { margin: 1rem 0 .25rem; color: #fff; font-size: 1.05rem; }
-    .badges { display: flex; gap: .35rem; flex-wrap: wrap; margin: .75rem 0; }
-    .badge { padding: .25rem .55rem; border-radius: .35rem; border: 1px solid #2a3a4a; font-size: .8rem; background: #16213e; }
-    .badge.color { background: #e9456020; border-color: #e9456050; }
-    .stats { display: flex; gap: .65rem; margin: 1rem 0; flex-wrap: wrap; }
-    .stats > div { display: flex; flex-direction: column; align-items: center; padding: .5rem 1rem; border: 1px solid #2a3a4a; border-radius: .5rem; min-width: 70px; background: #16213e; }
-    .stats span { opacity: .7; font-size: .8rem; }
-    .stats strong { font-size: 1.4rem; color: #fff; }
-    .desc { white-space: pre-wrap; font-family: inherit; line-height: 1.55; margin: 0; font-size: .92rem; }
-    .rb-modal-info app-tcg-price {
-      display: block;
-      width: max-content;
-      margin-top: .9rem;
-      margin-left: auto;
-    }
-    @media (max-width: 720px) {
-      .rb-modal-layout { grid-template-columns: 1fr; }
-      .rb-modal { padding: 1rem; }
-      .rb-card img {
-        object-fit: contain;
-        background: #0b0b1a;
-      }
-      .rb-modal-img {
-        max-height: 58vh;
-        width: auto;
-        max-width: 100%;
-        margin: 0 auto;
-        display: block;
-      }
-      .rb-modal-info h2 { font-size: 1.25rem !important; }
-      .stats > div { padding: 0.35rem 0.7rem; min-width: 60px; }
-      .stats strong { font-size: 1.1rem; }
-      .rb-modal-info app-tcg-price { margin-left: 0; }
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      animation: fadeIn 0.15s ease;
     }
 
-    /* Light theme */
-    :host-context(body.light-theme) .search-row input,
-    :host-context(body.light-theme) .filter-group select,
-    :host-context(body.light-theme) .chip { background: #ffffff; border-color: #d4c489; color: #2a1f10; }
-    :host-context(body.light-theme) .chip.active { background: #785a28; border-color: #785a28; color: #fff; }
-    :host-context(body.light-theme) .rb-card-meta strong { color: #463714; }
+    .rb-modal {
+      position: relative;
+      background: rgba(18, 18, 23, 0.96);
+      border: 1px solid var(--ui-border);
+      border-radius: 20px;
+      max-width: 750px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+      animation: slideUp 0.2s ease;
+
+      .rb-modal-close {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid var(--ui-border);
+        color: var(--ui-text-muted);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
+        transition: all 0.15s ease;
+
+        &:hover {
+          background: rgba(239, 68, 68, 0.15);
+          border-color: #ef4444;
+          color: #ef4444;
+        }
+      }
+
+      .rb-modal-layout {
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        gap: 1.5rem;
+        padding: 1.5rem;
+
+        @media (max-width: 650px) {
+          grid-template-columns: 1fr;
+          padding: 1.25rem;
+        }
+
+        .rb-modal-art {
+          img {
+            width: 100%;
+            border-radius: 12px;
+            object-fit: contain;
+            background: #09090b;
+            border: 1px solid var(--ui-border);
+          }
+        }
+
+        .rb-modal-info {
+          display: flex;
+          flex-direction: column;
+          gap: 0.6rem;
+
+          h2 {
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: -0.01em;
+            padding-right: 2rem;
+          }
+
+          .card-edition-text {
+            margin: 0;
+            font-size: 0.75rem;
+            color: var(--ui-text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+          }
+
+          .badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+
+            .badge {
+              font-size: 0.72rem;
+              padding: 0.2rem 0.55rem;
+              border-radius: 999px;
+              background: rgba(255, 255, 255, 0.06);
+              border: 1px solid var(--ui-border);
+              color: var(--ui-text-muted);
+
+              &.badge-rarity {
+                background: rgba(6, 182, 212, 0.12);
+                border-color: rgba(6, 182, 212, 0.3);
+                color: var(--ui-accent, #06b6d4);
+                font-weight: 600;
+              }
+
+              &.color {
+                background: rgba(233, 69, 96, 0.1);
+                border-color: rgba(233, 69, 96, 0.3);
+              }
+            }
+          }
+
+          .stats-row {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+
+            .stat-pill {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              padding: 0.35rem 0.75rem;
+              background: rgba(255, 255, 255, 0.04);
+              border: 1px solid var(--ui-border);
+              border-radius: 8px;
+              min-width: 60px;
+
+              .stat-label {
+                font-size: 0.65rem;
+                color: var(--ui-text-muted);
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                font-weight: 600;
+              }
+
+              .stat-val {
+                font-size: 1.1rem;
+                font-weight: 700;
+                color: var(--ui-accent, #06b6d4);
+              }
+            }
+          }
+
+          .ability-block {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--ui-border);
+            border-radius: 10px;
+            padding: 0.75rem 0.9rem;
+
+            h4 {
+              margin: 0 0 0.35rem;
+              font-size: 0.78rem;
+              color: var(--ui-accent, #06b6d4);
+              display: flex;
+              align-items: center;
+              gap: 0.35rem;
+              text-transform: uppercase;
+              letter-spacing: 0.04em;
+            }
+
+            .desc {
+              margin: 0;
+              white-space: pre-wrap;
+              font-family: inherit;
+              font-size: 0.85rem;
+              color: var(--ui-text-muted);
+              line-height: 1.55;
+            }
+          }
+        }
+      }
+    }
+
+    .infinite-sentinel { height: 1px; }
+
+    .status-more, .status-end {
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.8rem;
+      color: var(--ui-text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+    }
+
+    .status-end { opacity: 0.5; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(12px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
   `],
 })
 export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy {

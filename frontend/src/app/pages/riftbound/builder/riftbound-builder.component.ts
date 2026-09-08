@@ -97,7 +97,7 @@ function typeRank(t?: string): number {
 
     <div class="builder-layout" [attr.data-mobile-tab]="activeMobileTab()">
       <!-- ══════════════════════════════════════════════════════ -->
-      <!-- LEFT PANEL (35%): Card Browser                        -->
+      <!-- LEFT PANEL (65%): Card Browser                        -->
       <!-- ══════════════════════════════════════════════════════ -->
       <div class="card-browser" [class.mobile-hidden]="activeMobileTab() === 'deck'">
         <div class="browser-head">
@@ -203,7 +203,7 @@ function typeRank(t?: string): number {
           <p class="muted">Cargando…</p>
         }
 
-        <div class="available-cards">
+        <div class="available-cards" #availableCardsEl>
           @for (card of displayedResults(); track card.id) {
             <div class="mini-card"
                  [class.in-deck]="getQuantityInDeck(card.id) > 0"
@@ -304,7 +304,7 @@ function typeRank(t?: string): number {
       </div>
 
       <!-- ══════════════════════════════════════════════════════ -->
-      <!-- RIGHT PANEL (65%): Deck Panel                          -->
+      <!-- RIGHT PANEL (35%): Deck Panel                          -->
       <!-- ══════════════════════════════════════════════════════ -->
       <div class="deck-panel" [class.mobile-visible]="showDeckPanel()" [class.mobile-hidden]="activeMobileTab() === 'browser'">
         <div class="deck-header">
@@ -691,7 +691,7 @@ function typeRank(t?: string): number {
     }
 
     .builder-layout {
-      display: grid; grid-template-columns: 35% 65%; gap: 1.25rem;
+      display: grid; grid-template-columns: 65% 35%; gap: 1.25rem;
       height: calc(100vh - 60px); max-width: 1700px; margin: 0 auto;
       padding: 1rem 1.5rem; overflow: hidden; box-sizing: border-box;
     }
@@ -994,6 +994,7 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   private cardsSentinelRef?: ElementRef<HTMLElement>;
   private cardsObserver?: IntersectionObserver;
   private contentScrollEl: HTMLElement | null = null;
+  @ViewChild('availableCardsEl') availableCardsRef?: ElementRef<HTMLElement>;
 
   @ViewChild('cardsSentinel')
   set cardsSentinelSetter(el: ElementRef<HTMLElement> | undefined) {
@@ -1027,7 +1028,6 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   });
 
   // UI state
-  showDeckPanel = signal(false);
   showDeckPreview = signal(false);
   previewCard = signal<RiftboundCardLite | null>(null);
   previewDetail = signal<RiftboundCard | null>(null);
@@ -1212,6 +1212,7 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
     this.cardsObserver?.disconnect();
     const sentinel = this.cardsSentinelRef?.nativeElement;
     if (!sentinel) return;
+    const root = this.availableCardsRef?.nativeElement ?? null;
     this.cardsObserver = new IntersectionObserver(entries => {
       for (const entry of entries) {
         if (entry.isIntersecting) {
@@ -1219,13 +1220,14 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
           break;
         }
       }
-    }, { rootMargin: '320px 0px' });
+    }, { root, rootMargin: '200px 0px' });
     this.cardsObserver.observe(sentinel);
   }
 
   private attachContentScrollListener() {
     this.detachContentScrollListener();
-    const el = document.querySelector('main.content') as HTMLElement | null;
+    const el = this.availableCardsRef?.nativeElement
+      ?? document.querySelector('.available-cards') as HTMLElement | null;
     if (!el) return;
     this.contentScrollEl = el;
     this.contentScrollEl.addEventListener('scroll', this.onContentScroll, { passive: true });
@@ -1242,21 +1244,14 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   };
 
   private tryInfiniteScrollFallback() {
-    if (!this.isNearPageBottom()) return;
+    if (!this.isNearBottom()) return;
     this.loadMoreResults();
   }
 
-  private isNearPageBottom(offset = 900): boolean {
-    const container = this.contentScrollEl;
-    if (container && container.scrollHeight > container.clientHeight) {
-      return container.scrollTop + container.clientHeight >= container.scrollHeight - 420;
-    }
-    const doc = document.documentElement;
-    const body = document.body;
-    const scrollTop = window.scrollY || doc.scrollTop || 0;
-    const viewport = window.innerHeight || doc.clientHeight || 0;
-    const fullHeight = Math.max(doc.scrollHeight, body?.scrollHeight || 0);
-    return scrollTop + viewport >= fullHeight - offset;
+  private isNearBottom(offset = 300): boolean {
+    const container = this.contentScrollEl ?? this.availableCardsRef?.nativeElement;
+    if (!container) return false;
+    return container.scrollTop + container.clientHeight >= container.scrollHeight - offset;
   }
 
   // ── Helpers de zona ──

@@ -96,7 +96,7 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
             <span class="stat-title"><app-icon name="heart" [size]="12"></app-icon> Wishlist</span>
           </div>
           <div class="stat-item selling">
-            <span class="stat-num">{{ stats()?.selling_unique_cards ?? 0 }}</span>
+            <span class="stat-num">{{ collectionSellingCount() }}</span>
             <span class="stat-title"><app-icon name="store" [size]="12"></app-icon> En Venta</span>
           </div>
         </div>
@@ -259,7 +259,7 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
                 } @else {
                   <div class="img-fallback">{{ entry.card_data.card_number }}</div>
                 }
-                <div class="eye-overlay"><i class="bi bi-eye-fill"></i></div>
+                <div class="eye-overlay"><app-icon name="eye" [size]="18"></app-icon></div>
                 @if (entry.is_foil) { <div class="foil-badge">✨ FOIL</div> }
               </div>
               <div class="card-body">
@@ -315,7 +315,7 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
                     <button class="btn btn-xs btn-primary" (click)="saveEntry(entry)">💾 Guardar</button>
                   }
                   <button class="btn btn-xs btn-danger" (click)="removeFromCollection(entry)" [disabled]="!hasPermission('delete_collection')">
-                    <i class="bi bi-trash"></i>
+                    <app-icon name="trash-2" [size]="14"></app-icon>
                   </button>
                 </div>
               </div>
@@ -406,7 +406,7 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
               <div class="card-overlay-actions">
                 <button class="btn-icon btn-add" (click)="quickAddToCollection(card, $event)" title="Añadir a colección"
                         [disabled]="!hasPermission('edit_collection')">
-                  <i class="bi bi-plus-lg"></i>
+                  <app-icon name="plus" [size]="14"></app-icon>
                 </button>
                 <button class="btn-icon btn-heart" [class.active]="isInWishlist(card.id)"
                   [disabled]="workspaceMode()"
@@ -459,10 +459,10 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
               </app-share-image>
               @if (binderProfile()?.is_store_public && binderProfile()?.share_token) {
                 <button class="btn btn-sm" (click)="copyWishlistLink()">
-                  <i class="bi bi-link-45deg"></i> Copiar link wishlist
+                  <app-icon name="external-link" [size]="14"></app-icon> Copiar link wishlist
                 </button>
                 <button class="btn btn-sm" (click)="shareWishlistWhatsApp()">
-                  <i class="bi bi-whatsapp"></i> Compartir
+                  <app-icon name="message-circle" [size]="14"></app-icon> Compartir
                 </button>
               }
             </div>
@@ -475,7 +475,7 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
 
         @if (!wishlistLoading() && wishlistEntries().length === 0) {
           <div class="empty-state">
-            <p>Tu wishlist está vacía. Usa el <i class="bi bi-heart"></i> en la <strong>Colección</strong> para añadir cartas.</p>
+            <p>Tu wishlist está vacía. Usa el <app-icon name="heart" [size]="13"></app-icon> en la <strong>Colección</strong> para añadir cartas.</p>
           </div>
         }
 
@@ -486,7 +486,7 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
                 <input type="checkbox"
                        [checked]="isWishlistShareSelected(entry.id)"
                        (change)="toggleWishlistShare(entry.id, $any($event.target).checked)" />
-                <i class="bi bi-camera-fill"></i>
+                <app-icon name="image" [size]="14"></app-icon>
               </label>
               <div class="card-image" (click)="previewCard.set(entry.card_data)">
                 @if (cardImageUrl(entry.card_data) && !isCardImageBroken(entry.card_data)) {
@@ -495,7 +495,7 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
                 } @else {
                   <div class="img-fallback">{{ entry.card_data.card_number }}</div>
                 }
-                <div class="eye-overlay"><i class="bi bi-eye-fill"></i></div>
+                <div class="eye-overlay"><app-icon name="eye" [size]="18"></app-icon></div>
               </div>
               <div class="card-info">
                 <h4>{{ entry.card_data.name }}</h4>
@@ -509,7 +509,7 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
               </div>
               <div class="card-actions">
                 <button class="btn btn-xs btn-danger" (click)="removeFromWishlist(entry)" title="Quitar de wishlist">
-                  <i class="bi bi-heartbreak"></i>
+                  <app-icon name="x" [size]="14"></app-icon>
                 </button>
               </div>
             </div>
@@ -534,14 +534,14 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
         <div class="mercado-toolbar">
           @if (!workspaceMode()) {
             <button class="btn btn-sm" (click)="showStoreConfig.update(v => !v)">
-              <i class="bi bi-gear-fill"></i> {{ showStoreConfig() ? 'Cerrar' : 'Configurar' }} tienda
+              <app-icon name="settings" [size]="14"></app-icon> {{ showStoreConfig() ? 'Cerrar' : 'Configurar' }} tienda
             </button>
             @if (binderProfile()?.is_store_public && binderProfile()?.share_token) {
               <button class="btn btn-sm" (click)="copyShareLink()">
-                <i class="bi bi-link-45deg"></i> Copiar enlace público
+                <app-icon name="external-link" [size]="14"></app-icon> Copiar enlace público
               </button>
               <button class="btn btn-sm" (click)="downloadStoreQr()" [disabled]="qrDownloading()">
-                <i class="bi bi-qr-code"></i> {{ qrDownloading() ? 'Generando QR...' : 'Generar QR' }}
+                <app-icon name="grid" [size]="14"></app-icon> {{ qrDownloading() ? 'Generando QR...' : 'Generar QR' }}
               </button>
             }
           }
@@ -1035,7 +1035,7 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
             <div class="detail-actions">
               <button class="btn btn-primary" (click)="quickAddToCollection(pc, $event); previewCard.set(null)"
                 [disabled]="!hasPermission('edit_collection')">
-                <i class="bi bi-plus-lg"></i> Añadir a Carpeta
+                <app-icon name="plus" [size]="14"></app-icon> Añadir a Carpeta
               </button>
               <button class="btn btn-heart-lg" [class.active]="isInWishlist(pc.id)"
                       (click)="toggleWishlist(pc.id, $event)">
@@ -1742,6 +1742,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   batchSaving = signal(false);
   collectionTotalPages = computed(() => Math.max(1, Math.ceil(this.collectionTotal() / this.COLLECTION_PAGE_SIZE)));
   collectionCopies = computed(() => this.collectionEntries().reduce((s, e) => s + (e.quantity || 0), 0));
+  collectionSellingCount = computed(() => this.collectionEntries().filter(e => (e.selling_quantity || 0) > 0).length);
 
   // Codex
   codexCards = signal<RiftboundCardLite[]>([]);

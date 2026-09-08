@@ -3,11 +3,12 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { GoogleAuthService } from '../../services/google-auth.service';
+import { IconComponent } from '../../components/icon/icon.component';
 
 @Component({
   selector: 'app-profile-edit',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, IconComponent],
   templateUrl: './profile-edit.component.html',
   styleUrl: './profile-edit.component.scss',
 })

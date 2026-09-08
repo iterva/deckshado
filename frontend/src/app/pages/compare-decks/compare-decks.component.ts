@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { DeckService } from '../../services/deck.service';
+import { IconComponent } from '../../components/icon/icon.component';
 import { Deck, DeckEntry } from '../../models';
 
 interface CostBucket { label: string; count: number; pct: number; }
@@ -21,7 +22,7 @@ interface CompareCardRow {
 @Component({
   selector: 'app-compare-decks',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, IconComponent],
   templateUrl: './compare-decks.component.html',
   styleUrl: './compare-decks.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

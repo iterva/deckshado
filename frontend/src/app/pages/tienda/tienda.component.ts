@@ -19,6 +19,7 @@ import {
 } from '../../models';
 import { ShareImageComponent, ShareImageItem } from '../../components/share-image/share-image.component';
 import { CardPhotoCarouselComponent } from '../../components/card-photo-carousel/card-photo-carousel.component';
+import { IconComponent } from '../../components/icon/icon.component';
 
 interface CartItem {
   entryId: number;
@@ -33,7 +34,7 @@ interface CartItem {
 @Component({
   selector: 'app-tienda',
   standalone: true,
-  imports: [FormsModule, ThumbnailPipe, DecimalPipe, RouterLink, ShareImageComponent, CardPhotoCarouselComponent],
+  imports: [FormsModule, ThumbnailPipe, DecimalPipe, RouterLink, ShareImageComponent, CardPhotoCarouselComponent, IconComponent],
   templateUrl: './tienda.component.html',
   styleUrl: './tienda.component.scss',
 })

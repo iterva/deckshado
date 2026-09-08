@@ -1,4 +1,4 @@
-﻿import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { NgTemplateOutlet } from '@angular/common';
@@ -8,6 +8,7 @@ import { AuthService } from '../../services/auth.service';
 import { Deck, Card } from '../../models';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
 import { RelativeTimePipe } from '../../pipes/relative-time.pipe';
+import { IconComponent } from '../../components/icon/icon.component';
 
 type Tab = 'public' | 'mine' | 'team';
 type SortKey = 'recent' | 'created' | 'popular' | 'cards' | 'name' | 'name_desc';
@@ -15,7 +16,7 @@ type SortKey = 'recent' | 'created' | 'popular' | 'cards' | 'name' | 'name_desc'
 @Component({
   selector: 'app-deck-list',
   standalone: true,
-  imports: [RouterLink, FormsModule, NgTemplateOutlet, ThumbnailPipe, RelativeTimePipe],
+  imports: [RouterLink, FormsModule, NgTemplateOutlet, ThumbnailPipe, RelativeTimePipe, IconComponent],
   templateUrl: './deck-list.component.html',
   styleUrl: './deck-list.component.scss',
 })

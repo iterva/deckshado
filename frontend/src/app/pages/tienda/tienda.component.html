@@ -88,7 +88,7 @@
       <div class="tienda-multi-filter" [class.open]="openFilter === 'fmt'" (click)="$event.stopPropagation()">
         <button type="button" class="tienda-multi-trigger" [class.has-value]="filters.fmt" (click)="toggleFilterPopover('fmt', $event)">
           <span>{{ filterLabel('fmt') }}</span>
-          <i class="bi bi-chevron-down"></i>
+          <app-icon name="chevron-down" [size]="14"></app-icon>
         </button>
         @if (openFilter === 'fmt') {
           <div class="tienda-multi-popover">
@@ -113,7 +113,7 @@
       <div class="tienda-multi-filter" [class.open]="openFilter === 'edition'" (click)="$event.stopPropagation()">
         <button type="button" class="tienda-multi-trigger" [class.has-value]="filters.edition" (click)="toggleFilterPopover('edition', $event)">
           <span>{{ filterLabel('edition') }}</span>
-          <i class="bi bi-chevron-down"></i>
+          <app-icon name="chevron-down" [size]="14"></app-icon>
         </button>
         @if (openFilter === 'edition') {
           <div class="tienda-multi-popover">
@@ -138,7 +138,7 @@
       <div class="tienda-multi-filter" [class.open]="openFilter === 'race'" (click)="$event.stopPropagation()">
         <button type="button" class="tienda-multi-trigger" [class.has-value]="filters.race" (click)="toggleFilterPopover('race', $event)">
           <span>{{ filterLabel('race') }}</span>
-          <i class="bi bi-chevron-down"></i>
+          <app-icon name="chevron-down" [size]="14"></app-icon>
         </button>
         @if (openFilter === 'race') {
           <div class="tienda-multi-popover">
@@ -163,7 +163,7 @@
       <div class="tienda-multi-filter" [class.open]="openFilter === 'rarity'" (click)="$event.stopPropagation()">
         <button type="button" class="tienda-multi-trigger" [class.has-value]="filters.rarity" (click)="toggleFilterPopover('rarity', $event)">
           <span>{{ filterLabel('rarity') }}</span>
-          <i class="bi bi-chevron-down"></i>
+          <app-icon name="chevron-down" [size]="14"></app-icon>
         </button>
         @if (openFilter === 'rarity') {
           <div class="tienda-multi-popover">
@@ -188,7 +188,7 @@
       <div class="tienda-multi-filter" [class.open]="openFilter === 'type'" (click)="$event.stopPropagation()">
         <button type="button" class="tienda-multi-trigger" [class.has-value]="filters.type" (click)="toggleFilterPopover('type', $event)">
           <span>{{ filterLabel('type') }}</span>
-          <i class="bi bi-chevron-down"></i>
+          <app-icon name="chevron-down" [size]="14"></app-icon>
         </button>
         @if (openFilter === 'type') {
           <div class="tienda-multi-popover">

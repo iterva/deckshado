@@ -25,33 +25,34 @@
   display: inline-flex;
   gap: 0.25rem;
   padding: 0.25rem;
-  background: #15152a;
-  border: 1px solid #2a2a4a;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
   border-radius: 10px;
 
   button {
-    padding: 0.45rem 0.95rem;
+    padding: 0.45rem 0.85rem;
     border: 0;
     background: transparent;
-    color: #aaa;
+    color: var(--ui-text-muted);
     border-radius: 7px;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     font-family: inherit;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all 0.15s ease;
     white-space: nowrap;
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
 
-    i { font-size: 0.95rem; }
+    app-icon { color: inherit; }
 
     &.active {
-      background: #e94560;
-      color: #fff;
+      background: var(--ui-accent-glow, rgba(245, 158, 11, 0.15));
+      color: var(--ui-accent, #f59e0b);
+      font-weight: 600;
     }
     &:hover:not(.active) {
-      background: #1f1f3a;
+      background: rgba(255, 255, 255, 0.05);
       color: #fff;
     }
   }
@@ -76,21 +77,21 @@
     left: 0.85rem;
     top: 50%;
     transform: translateY(-50%);
-    color: #666;
-    font-size: 0.95rem;
+    color: var(--ui-text-muted);
     pointer-events: none;
   }
 
   input {
     flex: 1;
     padding: 0.6rem 2.4rem 0.6rem 2.2rem;
-    border: 1px solid #333;
+    border: 1px solid var(--ui-border);
     border-radius: 8px;
-    background: #1a1a2e;
-    color: #e0e0e0;
+    background: var(--ui-surface);
+    color: #ffffff;
     outline: none;
     font: inherit;
-    &:focus { border-color: #e94560; }
+    font-size: 0.875rem;
+    &:focus { border-color: var(--ui-accent, #f59e0b); }
   }
 
   .search-clear {
@@ -171,10 +172,10 @@
 
 // Tarjeta de mazo
 .deck-card {
-  --race-accent: #e94560;
+  --race-accent: #f59e0b;
   position: relative;
-  background: #1a1a2e;
-  border: 1px solid #2a2a4a;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
   border-radius: 12px;
   overflow: hidden;
   transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;

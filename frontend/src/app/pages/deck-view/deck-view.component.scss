@@ -1,9 +1,13 @@
 .back-link {
-  display: inline-block;
-  color: #888;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ui-text-muted, #a1a1aa);
   margin-bottom: 1rem;
   font-size: 0.9rem;
-  &:hover { color: #e94560; }
+  text-decoration: none;
+  transition: color 0.15s ease;
+  &:hover { color: var(--ui-accent, #f59e0b); }
 }
 
 // ─────────────────────────────────────────
@@ -93,7 +97,7 @@
     overflow: hidden;
     position: relative;
     padding-left: 0.7rem;
-    border-left: 3px solid #e94560;
+    border-left: 3px solid var(--ui-accent, #f59e0b);
   }
 }
 

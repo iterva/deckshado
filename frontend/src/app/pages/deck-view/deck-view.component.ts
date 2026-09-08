@@ -9,6 +9,7 @@ import { AuthService } from '../../services/auth.service';
 import { Deck, Card, BanlistEntry } from '../../models';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
 import { RelativeTimePipe } from '../../pipes/relative-time.pipe';
+import { IconComponent } from '../../components/icon/icon.component';
 
 type ViewMode = 'grid' | 'list' | 'stats';
 type SocialTab = 'none' | 'comments' | 'snapshots' | 'changelog' | 'suggestions';
@@ -26,7 +27,7 @@ interface ExportDeckEntry {
 @Component({
   selector: 'app-deck-view',
   standalone: true,
-  imports: [RouterLink, FormsModule, ThumbnailPipe, DatePipe, RelativeTimePipe],
+  imports: [RouterLink, FormsModule, ThumbnailPipe, DatePipe, RelativeTimePipe, IconComponent],
   templateUrl: './deck-view.component.html',
   styleUrl: './deck-view.component.scss',
 })

@@ -13,6 +13,7 @@ import {
   RIFTBOUND_ZONE_LABELS, RiftboundZone, RiftboundColor, RiftboundCard,
 } from '../../../models/riftbound';
 import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.component';
+import { IconComponent } from '../../../components/icon/icon.component';
 
 type ViewMode = 'grid' | 'list' | 'stats';
 type Orientation = 'vertical' | 'horizontal';
@@ -56,7 +57,7 @@ function typeRank(t?: string): number {
 @Component({
   selector: 'app-riftbound-deck-view',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TcgPriceComponent],
+  imports: [CommonModule, FormsModule, RouterLink, TcgPriceComponent, IconComponent],
   template: `
     @if (loading()) {
       <p class="loading">Cargando mazo…</p>
@@ -75,23 +76,24 @@ function typeRank(t?: string): number {
               <img class="hero-cover" [src]="img" [alt]="d.cover_card_data?.name || ''"
                    (error)="onCardImageError(d.cover_card_data, $event)" />
             } @else {
-              <div class="hero-cover hero-cover-empty">⚔️</div>
+              <div class="hero-cover hero-cover-empty"><app-icon name="swords" [size]="28"></app-icon></div>
             }
             <div class="hero-info">
               <h1 class="deck-title">{{ d.name }}</h1>
               <div class="deck-chips">
-                <span class="chip chip-owner">👤 {{ d.owner_username }}</span>
+                <span class="chip chip-owner"><app-icon name="user" [size]="13"></app-icon> {{ d.owner_username }}</span>
                 @for (col of d.primary_colors; track col) {
                   <span class="chip chip-color" [style.--c]="hex(col)">
                     <span class="dot"></span>{{ label(col) }}
                   </span>
                 }
-                <span class="chip chip-cards">📚 {{ totalCards() }}</span>
+                <span class="chip chip-cards"><app-icon name="layers" [size]="13"></app-icon> {{ totalCards() }}</span>
                 <span class="chip" [class.chip-public]="d.is_public" [class.chip-private]="!d.is_public">
-                  {{ d.is_public ? '🌐 Público' : '🔒 Privado' }}
+                  <app-icon [name]="d.is_public ? 'globe' : 'lock'" [size]="13"></app-icon>
+                  {{ d.is_public ? 'Público' : 'Privado' }}
                 </span>
                 <span class="chip chip-time" [title]="d.updated_at">
-                  🕒 {{ formatDate(d.updated_at) }}
+                  <app-icon name="clock" [size]="13"></app-icon> {{ formatDate(d.updated_at) }}
                 </span>
               </div>
               @if (d.description) {
@@ -104,16 +106,16 @@ function typeRank(t?: string): number {
         <!-- Barra social (likes/comentarios/compartir/clonar) -->
         <div class="social-bar">
           <button class="social-btn" disabled title="Próximamente: me gusta">
-            <i class="bi bi-heart"></i><span>0</span>
+            <app-icon name="heart" [size]="16"></app-icon><span>0</span>
           </button>
           <button class="social-btn" disabled title="Próximamente: comentarios">
-            <i class="bi bi-chat-dots"></i><span>0</span>
+            <app-icon name="message-square" [size]="16"></app-icon><span>0</span>
           </button>
           <button class="social-btn" (click)="shareDeck()" title="Copiar enlace">
-            <i class="bi bi-share"></i>
+            <app-icon name="share-2" [size]="16"></app-icon>
           </button>
           <button class="social-btn" (click)="copyDeckJson()" title="Copiar mazo (JSON)">
-            <i class="bi bi-clipboard-plus"></i>
+            <app-icon name="copy" [size]="16"></app-icon>
           </button>
         </div>
 
@@ -122,15 +124,15 @@ function typeRank(t?: string): number {
           <div class="seg-control" role="tablist" aria-label="Modo de visualización">
             <button type="button" class="seg-btn" [class.active]="viewMode() === 'grid'"
                     (click)="setViewMode('grid')" role="tab" title="Vista cartas">
-              <i class="bi bi-grid-3x3-gap-fill"></i><span>Cartas</span>
+              <app-icon name="grid" [size]="15"></app-icon><span>Cartas</span>
             </button>
             <button type="button" class="seg-btn" [class.active]="viewMode() === 'list'"
                     (click)="setViewMode('list')" role="tab" title="Vista listado">
-              <i class="bi bi-list-ul"></i><span>Lista</span>
+              <app-icon name="list" [size]="15"></app-icon><span>Lista</span>
             </button>
             <button type="button" class="seg-btn" [class.active]="viewMode() === 'stats'"
                     (click)="setViewMode('stats')" role="tab" title="Estadísticas">
-              <i class="bi bi-bar-chart-fill"></i><span>Stats</span>
+              <app-icon name="bar-chart-3" [size]="15"></app-icon><span>Stats</span>
             </button>
           </div>
 
@@ -140,40 +142,35 @@ function typeRank(t?: string): number {
             <button class="action-btn" (click)="toggleStackOrientationMenu($event)"
                     aria-haspopup="menu" [attr.aria-expanded]="showStackOrientationMenu()"
                     title="Orientación de apilado">
-              <i class="bi"
-                 [class.bi-arrow-up-square-fill]="stackOrientation() === 'up'"
-                 [class.bi-arrow-down-square-fill]="stackOrientation() === 'down'"
-                 [class.bi-arrow-left-square-fill]="stackOrientation() === 'left'"
-                 [class.bi-arrow-right-square-fill]="stackOrientation() === 'right'"
-                 [class.bi-square-fill]="stackOrientation() === 'center'"></i>
+              <app-icon [name]="stackOrientation() === 'up' ? 'arrow-up-square' : stackOrientation() === 'down' ? 'arrow-down-square' : stackOrientation() === 'left' ? 'arrow-left-square' : stackOrientation() === 'right' ? 'arrow-right-square' : 'square'" [size]="15"></app-icon>
               <span>Orientación</span>
             </button>
             @if (showStackOrientationMenu()) {
               <div class="orient-menu" role="menu" aria-label="Orientación de cartas">
                 <button role="menuitemradio" [attr.aria-checked]="stackOrientation() === 'center'"
                         [class.active]="stackOrientation() === 'center'" (click)="setStackOrientation('center')">
-                  <i class="bi bi-square-fill"></i> Centro
+                  <app-icon name="square" [size]="14"></app-icon> Centro
                 </button>
                 <button role="menuitemradio" [attr.aria-checked]="stackOrientation() === 'up'"
                         [class.active]="stackOrientation() === 'up'" (click)="setStackOrientation('up')">
-                  <i class="bi bi-arrow-up-square-fill"></i> Hacia arriba
+                  <app-icon name="arrow-up-square" [size]="14"></app-icon> Hacia arriba
                 </button>
                 <button role="menuitemradio" [attr.aria-checked]="stackOrientation() === 'down'"
                         [class.active]="stackOrientation() === 'down'" (click)="setStackOrientation('down')">
-                  <i class="bi bi-arrow-down-square-fill"></i> Hacia abajo
+                  <app-icon name="arrow-down-square" [size]="14"></app-icon> Hacia abajo
                 </button>
                 <button role="menuitemradio" [attr.aria-checked]="stackOrientation() === 'left'"
                         [class.active]="stackOrientation() === 'left'" (click)="setStackOrientation('left')">
-                  <i class="bi bi-arrow-left-square-fill"></i> Hacia la izquierda
+                  <app-icon name="arrow-left-square" [size]="14"></app-icon> Hacia la izquierda
                 </button>
                 <button role="menuitemradio" [attr.aria-checked]="stackOrientation() === 'right'"
                         [class.active]="stackOrientation() === 'right'" (click)="setStackOrientation('right')">
-                  <i class="bi bi-arrow-right-square-fill"></i> Hacia la derecha
+                  <app-icon name="arrow-right-square" [size]="14"></app-icon> Hacia la derecha
                 </button>
                 <div class="orient-divider" aria-hidden="true"></div>
                 <button role="menuitemcheckbox" [attr.aria-checked]="stackEffect()"
                         [class.active]="stackEffect()" (click)="setStackEffect(!stackEffect())">
-                  <i class="bi" [class.bi-layers-fill]="stackEffect()" [class.bi-square]="!stackEffect()"></i>
+                  <app-icon [name]="stackEffect() ? 'layers' : 'square'" [size]="14"></app-icon>
                   Efecto apilado: {{ stackEffect() ? 'Sí' : 'No' }}
                 </button>
               </div>
@@ -182,48 +179,48 @@ function typeRank(t?: string): number {
 
           <button class="action-btn" (click)="openExportOptionsModal($event)" [attr.aria-expanded]="showExportOptionsModal()"
                   title="Opciones de imagen">
-            <i class="bi bi-sliders2"></i><span>Imagen</span>
+            <app-icon name="sliders" [size]="15"></app-icon><span>Imagen</span>
           </button>
 
           <button class="action-btn" (click)="openHandTest()" title="Probar mano de apertura">
-            <i class="bi bi-hand-index"></i><span>Probar mano</span>
+            <app-icon name="hand" [size]="15"></app-icon><span>Probar mano</span>
           </button>
 
           @if (isOwner()) {
             <button class="action-btn" (click)="toggleVisibility()" [disabled]="togglingVisibility()"
                     [title]="d.is_public ? 'Hacer privado' : 'Hacer público'">
-              <i class="bi" [class.bi-globe]="d.is_public" [class.bi-lock-fill]="!d.is_public"></i>
+              <app-icon [name]="d.is_public ? 'globe' : 'lock'" [size]="15"></app-icon>
               <span>{{ d.is_public ? 'Hacer privado' : 'Hacer público' }}</span>
             </button>
             <button class="action-btn accent" (click)="editDeck()" title="Editar mazo">
-              <i class="bi bi-pencil-square"></i><span>Editar</span>
+              <app-icon name="edit" [size]="15"></app-icon><span>Editar</span>
             </button>
           }
 
           <button class="action-btn" (click)="togglePresentation()" title="Modo presentación (F)">
-            <i class="bi" [class.bi-fullscreen]="!presentationMode()" [class.bi-fullscreen-exit]="presentationMode()"></i>
+            <app-icon [name]="presentationMode() ? 'minimize' : 'maximize'" [size]="16"></app-icon>
           </button>
 
           <div class="more-menu-wrap" (click)="$event.stopPropagation()">
             <button class="action-btn" (click)="toggleMoreMenu($event)" aria-haspopup="menu"
                     [attr.aria-expanded]="showMoreMenu()" title="Más opciones">
-              <i class="bi bi-three-dots-vertical"></i>
+              <app-icon name="more-vertical" [size]="16"></app-icon>
             </button>
             @if (showMoreMenu()) {
               <div class="more-menu" role="menu" (click)="$event.stopPropagation()">
                 <button role="menuitem" (click)="exportText(); showMoreMenu.set(false)">
-                  <i class="bi bi-file-text"></i> Copiar como texto
+                  <app-icon name="file-text" [size]="14"></app-icon> Copiar como texto
                 </button>
                 <button role="menuitem" (click)="openExportOptionsModal($event); showMoreMenu.set(false)">
-                  <i class="bi bi-camera"></i> Exportar imagen...
+                  <app-icon name="camera" [size]="14"></app-icon> Exportar imagen...
                 </button>
                 <button role="menuitem" (click)="exportJson(); showMoreMenu.set(false)">
-                  <i class="bi bi-filetype-json"></i> Descargar JSON
+                  <app-icon name="download" [size]="14"></app-icon> Descargar JSON
                 </button>
                 @if (isOwner()) {
                   <div class="more-divider"></div>
                   <button role="menuitem" class="danger" (click)="deleteDeck(); showMoreMenu.set(false)">
-                    <i class="bi bi-trash3"></i> Eliminar mazo
+                    <app-icon name="trash-2" [size]="14"></app-icon> Eliminar mazo
                   </button>
                 }
               </div>
@@ -237,7 +234,7 @@ function typeRank(t?: string): number {
               <div class="export-modal-head">
                 <h3>Exportar imagen</h3>
                 <button type="button" class="export-modal-close" (click)="closeExportOptionsModal()" aria-label="Cerrar">
-                  <i class="bi bi-x-lg"></i>
+                  <app-icon name="x" [size]="16"></app-icon>
                 </button>
               </div>
 
@@ -246,10 +243,10 @@ function typeRank(t?: string): number {
                   <span class="export-opt-title">Formato</span>
                   <div class="export-opt-row two">
                     <button type="button" class="opt-chip" [class.active]="orientation() === 'horizontal'" (click)="setOrientation('horizontal')">
-                      <i class="bi bi-arrows-angle-expand"></i> Horizontal
+                      <app-icon name="expand" [size]="14"></app-icon> Horizontal
                     </button>
                     <button type="button" class="opt-chip" [class.active]="orientation() === 'vertical'" (click)="setOrientation('vertical')">
-                      <i class="bi bi-arrows-angle-contract"></i> Vertical
+                      <app-icon name="shrink" [size]="14"></app-icon> Vertical
                     </button>
                   </div>
                 </div>
@@ -258,39 +255,39 @@ function typeRank(t?: string): number {
                   <span class="export-opt-title">Apilado de cartas</span>
                   <div class="export-opt-row two">
                     <button type="button" class="opt-chip" [class.active]="stackOrientation() === 'up'" (click)="setStackOrientation('up')">
-                      <i class="bi bi-arrow-up-square-fill"></i> Arriba
+                      <app-icon name="arrow-up-square" [size]="14"></app-icon> Arriba
                     </button>
                     <button type="button" class="opt-chip" [class.active]="stackOrientation() === 'down'" (click)="setStackOrientation('down')">
-                      <i class="bi bi-arrow-down-square-fill"></i> Abajo
+                      <app-icon name="arrow-down-square" [size]="14"></app-icon> Abajo
                     </button>
                     <button type="button" class="opt-chip" [class.active]="stackOrientation() === 'left'" (click)="setStackOrientation('left')">
-                      <i class="bi bi-arrow-left-square-fill"></i> Izquierda
+                      <app-icon name="arrow-left-square" [size]="14"></app-icon> Izquierda
                     </button>
                     <button type="button" class="opt-chip" [class.active]="stackOrientation() === 'right'" (click)="setStackOrientation('right')">
-                      <i class="bi bi-arrow-right-square-fill"></i> Derecha
+                      <app-icon name="arrow-right-square" [size]="14"></app-icon> Derecha
                     </button>
                     <button type="button" class="opt-chip" [class.active]="stackOrientation() === 'center'" (click)="setStackOrientation('center')">
-                      <i class="bi bi-square-fill"></i> Centro
+                      <app-icon name="square" [size]="14"></app-icon> Centro
                     </button>
                   </div>
                   <div class="export-opt-row two" style="margin-top:.5rem">
                     <button type="button" class="opt-chip" [class.active]="stackEffect()" (click)="setStackEffect(true)">
-                      <i class="bi bi-layers-fill"></i> Efecto apilado: Sí
+                      <app-icon name="layers" [size]="14"></app-icon> Efecto apilado: Sí
                     </button>
                     <button type="button" class="opt-chip" [class.active]="!stackEffect()" (click)="setStackEffect(false)">
-                      <i class="bi bi-square"></i> Efecto apilado: No
+                      <app-icon name="square" [size]="14"></app-icon> Efecto apilado: No
                     </button>
                   </div>
                   <span class="export-opt-title" style="margin-top:.7rem">Intensidad del apilado</span>
                   <div class="export-opt-row two">
                     <button type="button" class="opt-chip" [class.active]="stackIntensity() === 'soft'" (click)="setStackIntensity('soft')">
-                      <i class="bi bi-sliders"></i> Suave
+                      <app-icon name="sliders" [size]="14"></app-icon> Suave
                     </button>
                     <button type="button" class="opt-chip" [class.active]="stackIntensity() === 'normal'" (click)="setStackIntensity('normal')">
-                      <i class="bi bi-sliders2"></i> Normal
+                      <app-icon name="sliders" [size]="14"></app-icon> Normal
                     </button>
                     <button type="button" class="opt-chip" [class.active]="stackIntensity() === 'strong'" (click)="setStackIntensity('strong')">
-                      <i class="bi bi-sliders2-vertical"></i> Fuerte
+                      <app-icon name="sliders" [size]="14"></app-icon> Fuerte
                     </button>
                   </div>
                 </div>
@@ -299,7 +296,7 @@ function typeRank(t?: string): number {
               <div class="export-modal-foot">
                 <button type="button" class="export-foot-btn" (click)="closeExportOptionsModal()">Cancelar</button>
                 <button type="button" class="export-foot-btn primary" [disabled]="exporting()" (click)="generateExportPreview()">
-                  <i class="bi bi-camera"></i>
+                  <app-icon name="camera" [size]="14"></app-icon>
                   {{ exporting() ? 'Generando...' : 'Generar preview' }}
                 </button>
               </div>
@@ -313,7 +310,7 @@ function typeRank(t?: string): number {
               <div class="export-preview-head">
                 <h3>Preview</h3>
                 <button type="button" class="export-preview-close" (click)="closeExportPreview()" aria-label="Cerrar preview">
-                  <i class="bi bi-x-lg"></i>
+                  <app-icon name="x" [size]="16"></app-icon>
                 </button>
               </div>
               <p class="export-preview-subtitle">Revisa la imagen antes de descargarla.</p>
@@ -327,10 +324,10 @@ function typeRank(t?: string): number {
                 </div>
                 <div class="export-preview-actions">
                   <button type="button" class="preview-action-btn" (click)="copyExportPreviewToClipboard()">
-                    <i class="bi bi-clipboard-check"></i> Copiar
+                    <app-icon name="copy" [size]="14"></app-icon> Copiar
                   </button>
                   <button type="button" class="preview-action-btn primary" (click)="downloadExportPreview()">
-                    <i class="bi bi-download"></i> Descargar
+                    <app-icon name="download" [size]="14"></app-icon> Descargar
                   </button>
                 </div>
               }
@@ -341,7 +338,7 @@ function typeRank(t?: string): number {
         <!-- Errores de validación arriba -->
         @if (validationErrors().length) {
           <div class="errors-box">
-            <strong>⚠ Mazo inválido:</strong>
+            <strong><app-icon name="alert-circle" [size]="14"></app-icon> Mazo inválido:</strong>
             <ul>
               @for (err of validationErrors(); track err) { <li>{{ err }}</li> }
             </ul>
@@ -369,7 +366,7 @@ function typeRank(t?: string): number {
 
                 <!-- Curva de energía -->
                 <div class="stats-card">
-                  <h3>⚡ Curva de Energía</h3>
+                  <h3><app-icon name="zap" [size]="16"></app-icon> Curva de Energía</h3>
                   @if (hasAnyCost()) {
                     <div class="cost-curve">
                       @for (b of costCurve(); track b.label) {
@@ -390,7 +387,7 @@ function typeRank(t?: string): number {
 
                 <!-- Distribución de tipos -->
                 <div class="stats-card">
-                  <h3>🧩 Distribución por tipo</h3>
+                  <h3><app-icon name="layers" [size]="16"></app-icon> Distribución por tipo</h3>
                   @if (typeDistribution().length) {
                     <div class="dist-list">
                       @for (t of typeDistribution(); track t.type) {
@@ -408,7 +405,7 @@ function typeRank(t?: string): number {
 
                 <!-- Distribución de colores -->
                 <div class="stats-card">
-                  <h3>🎨 Distribución por color (Main + Side)</h3>
+                  <h3><app-icon name="sparkles" [size]="16"></app-icon> Distribución por color (Main + Side)</h3>
                   @if (colorDistribution().length) {
                     <div class="dist-list">
                       @for (c of colorDistribution(); track c.code) {
@@ -428,7 +425,7 @@ function typeRank(t?: string): number {
 
                 <!-- Probabilidades de robo -->
                 <div class="stats-card">
-                  <h3>🎲 Probabilidad en mano inicial (4 cartas, mazo principal)</h3>
+                  <h3><app-icon name="gamepad" [size]="16"></app-icon> Probabilidad en mano inicial (4 cartas, mazo principal)</h3>
                   @if (drawProbabilities().length) {
                     <table class="prob-table">
                       <thead>
@@ -465,13 +462,13 @@ function typeRank(t?: string): number {
                         <span class="zone-name">{{ labels[z] }}</span>
                         <span class="zone-count">{{ countZone(z) }}</span>
                         @if (isSide) {
-                          <span class="side-caret">{{ sideOpen() ? '▾' : '▸' }}</span>
+                          <span class="side-caret"><app-icon [name]="sideOpen() ? 'chevron-down' : 'chevron-right'" [size]="14"></app-icon></span>
                         }
                       </h2>
                       @if (!isSide || sideOpen()) {
                         <table class="entries-table">
                           <thead>
-                            <tr><th class="w-qty">#</th><th>Carta</th><th>Tipo</th><th class="num">⚡</th><th class="num">⚔️</th><th></th></tr>
+                            <tr><th class="w-qty">#</th><th>Carta</th><th>Tipo</th><th class="num"><app-icon name="zap" [size]="13"></app-icon></th><th class="num"><app-icon name="swords" [size]="13"></app-icon></th><th></th></tr>
                           </thead>
                           <tbody>
                             @for (e of entries; track e.id || e.card) {
@@ -754,7 +751,7 @@ function typeRank(t?: string): number {
                         <span class="zone-name">{{ labels[z] }}</span>
                         <span class="zone-count">{{ countZone(z) }}</span>
                         @if (isSide) {
-                          <span class="side-caret">{{ sideOpen() ? '▾' : '▸' }}</span>
+                          <span class="side-caret"><app-icon [name]="sideOpen() ? 'chevron-down' : 'chevron-right'" [size]="14"></app-icon></span>
                         }
                       </h2>
                       @if (!isSide || sideOpen()) {
@@ -799,7 +796,7 @@ function typeRank(t?: string): number {
                                         [class.is-cover]="d.cover_card === e.card_data?.id"
                                         (click)="toggleCover($event, e)"
                                         [title]="d.cover_card === e.card_data?.id ? 'Portada actual (clic para quitar)' : 'Fijar como portada del mazo'">
-                                  {{ d.cover_card === e.card_data?.id ? '★' : '☆' }}
+                                  <app-icon [name]="d.cover_card === e.card_data?.id ? 'star-fill' : 'star'" [size]="14"></app-icon>
                                 </button>
                               }
                               <span class="card-name">{{ e.card_data?.name }}</span>
@@ -820,14 +817,14 @@ function typeRank(t?: string): number {
 
       <!-- FAB salir presentación -->
       @if (presentationMode()) {
-        <button class="exit-presentation-fab" (click)="togglePresentation()" title="Salir (Esc)">✕</button>
+        <button class="exit-presentation-fab" (click)="togglePresentation()" title="Salir (Esc)"><app-icon name="minimize" [size]="18"></app-icon></button>
       }
 
       <!-- Modal preview -->
       @if (previewEntry(); as pe) {
         <div class="preview-overlay" (click)="closePreview()">
           <div class="preview-box" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
-            <button class="preview-close" (click)="closePreview()" aria-label="Cerrar">✕</button>
+            <button class="preview-close" (click)="closePreview()" aria-label="Cerrar"><app-icon name="x" [size]="18"></app-icon></button>
             @if (previewLoading()) {
               <p class="muted" style="padding:3rem;text-align:center">Cargando…</p>
             } @else if (previewDetail(); as c) {
@@ -845,8 +842,8 @@ function typeRank(t?: string): number {
                   @if (pbs) {
                     <div class="preview-ban" [class.ban-banned]="pbs.status === 'banned'"
                                               [class.ban-limited]="pbs.status !== 'banned'">
-                      @if (pbs.status === 'banned') { ⛔ Baneada en Standard }
-                      @else { ⚠️ Limitada a {{ pbs.max_copies }} copia(s) }
+                      @if (pbs.status === 'banned') { <app-icon name="ban" [size]="14"></app-icon> Baneada en Standard }
+                      @else { <app-icon name="alert-circle" [size]="14"></app-icon> Limitada a {{ pbs.max_copies }} copia(s) }
                     </div>
                   }
                   <div class="preview-badges">
@@ -871,13 +868,13 @@ function typeRank(t?: string): number {
                     <p class="muted" style="margin-top:1rem">Esta carta no tiene texto.</p>
                   }
                   <div class="preview-actions">
-                    <a class="action-btn" [routerLink]="['/riftbound/cards', c.card_number]" (click)="closePreview()">🔎 Ver en explorador</a>
-                    <button class="action-btn" (click)="copyText(deepLinkUrl(c.id), 'Enlace de la carta copiado')">🔗 Copiar enlace</button>
+                    <a class="action-btn" [routerLink]="['/riftbound/cards', c.card_number]" (click)="closePreview()"><app-icon name="search" [size]="14"></app-icon> Ver en explorador</a>
+                    <button class="action-btn" (click)="copyText(deepLinkUrl(c.id), 'Enlace de la carta copiado')"><app-icon name="share-2" [size]="14"></app-icon> Copiar enlace</button>
                     @if (isOwner()) {
                       <button class="action-btn"
                               (click)="toggleCoverByCardId(c.id)"
                               [disabled]="settingCover()">
-                        {{ deck()?.cover_card === c.id ? '⭐ Quitar portada' : '⭐ Usar como portada' }}
+                        <app-icon [name]="deck()?.cover_card === c.id ? 'star-fill' : 'star'" [size]="14"></app-icon> {{ deck()?.cover_card === c.id ? 'Quitar portada' : 'Usar como portada' }}
                       </button>
                     }
                   </div>
@@ -897,15 +894,15 @@ function typeRank(t?: string): number {
 
       <!-- Toast de compartir / copiar -->
       @if (shareToast()) {
-        <div class="share-toast" role="status">✓ {{ toastMsg() }}</div>
+        <div class="share-toast" role="status"><app-icon name="check" [size]="14"></app-icon> {{ toastMsg() }}</div>
       }
 
       <!-- Modal Probar mano -->
       @if (showHandModal()) {
         <div class="preview-overlay" (click)="closeHandModal()">
           <div class="preview-box hand-box" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
-            <button class="preview-close" (click)="closeHandModal()" aria-label="Cerrar">✕</button>
-            <h2 style="margin:.25rem 0 1rem">🎴 Mano de apertura ({{ handSize }} cartas)</h2>
+            <button class="preview-close" (click)="closeHandModal()" aria-label="Cerrar"><app-icon name="x" [size]="18"></app-icon></button>
+            <h2 style="margin:.25rem 0 1rem"><app-icon name="hand" [size]="18"></app-icon> Mano de apertura ({{ handSize }} cartas)</h2>
             @if (!handCards().length) {
               <p class="muted">El mazo principal está vacío.</p>
             } @else {
@@ -922,10 +919,10 @@ function typeRank(t?: string): number {
             }
             <div class="hand-actions">
               <button class="action-btn" (click)="drawHand()" [disabled]="!handCards().length">
-                <i class="bi bi-arrow-clockwise"></i><span>Otra mano</span>
+                <app-icon name="refresh-cw" [size]="14"></app-icon><span>Otra mano</span>
               </button>
               <button class="action-btn accent" (click)="closeHandModal()">
-                <i class="bi bi-check2"></i><span>Cerrar</span>
+                <app-icon name="check" [size]="14"></app-icon><span>Cerrar</span>
               </button>
             </div>
           </div>

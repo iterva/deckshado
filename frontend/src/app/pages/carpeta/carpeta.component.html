@@ -245,7 +245,7 @@
           <div class="codex-multi-filter" [class.open]="codexOpenFilter === 'edition'">
             <button type="button" class="codex-multi-trigger" [class.has-value]="selectedEditions.length > 0" (click)="toggleCodexPopover('edition', $event)">
               <span>{{ codexFilterLabel('edition') }}</span>
-              <i class="bi bi-chevron-down"></i>
+              <app-icon name="chevron-down" [size]="14"></app-icon>
             </button>
             @if (codexOpenFilter === 'edition') {
               <div class="codex-multi-popover" (click)="$event.stopPropagation()">
@@ -271,7 +271,7 @@
           <div class="codex-multi-filter" [class.open]="codexOpenFilter === 'type'">
             <button type="button" class="codex-multi-trigger" [class.has-value]="selectedTypes.length > 0" (click)="toggleCodexPopover('type', $event)">
               <span>{{ codexFilterLabel('type') }}</span>
-              <i class="bi bi-chevron-down"></i>
+              <app-icon name="chevron-down" [size]="14"></app-icon>
             </button>
             @if (codexOpenFilter === 'type') {
               <div class="codex-multi-popover" (click)="$event.stopPropagation()">
@@ -297,7 +297,7 @@
           <div class="codex-multi-filter" [class.open]="codexOpenFilter === 'race'">
             <button type="button" class="codex-multi-trigger" [class.has-value]="selectedRaces.length > 0" (click)="toggleCodexPopover('race', $event)">
               <span>{{ codexFilterLabel('race') }}</span>
-              <i class="bi bi-chevron-down"></i>
+              <app-icon name="chevron-down" [size]="14"></app-icon>
             </button>
             @if (codexOpenFilter === 'race') {
               <div class="codex-multi-popover" (click)="$event.stopPropagation()">
@@ -323,7 +323,7 @@
           <div class="codex-multi-filter" [class.open]="codexOpenFilter === 'rarity'">
             <button type="button" class="codex-multi-trigger" [class.has-value]="selectedRarities.length > 0" (click)="toggleCodexPopover('rarity', $event)">
               <span>{{ codexFilterLabel('rarity') }}</span>
-              <i class="bi bi-chevron-down"></i>
+              <app-icon name="chevron-down" [size]="14"></app-icon>
             </button>
             @if (codexOpenFilter === 'rarity') {
               <div class="codex-multi-popover" (click)="$event.stopPropagation()">

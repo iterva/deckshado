@@ -908,12 +908,10 @@
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
 }
-  to { transform: translateX(0); }
-}
 
 @media (max-width: 480px) {
   .navbar .navbar-brand .logo .logo-text {
     font-size: 1rem;
   }
 }
-
+

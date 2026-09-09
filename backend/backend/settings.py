@@ -109,7 +109,7 @@ SECRET_KEY = os.environ.get(
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() in ("true", "1")
 
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,iterva.pythonanywhere.com,deckshado-62nfw0934-latshir110-3242s-projects.vercel.app").split(",")
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,iterva.pythonanywhere.com,dev-preprod-shadow-forge-deck.vercel.app").split(",")
 
 INSTALLED_APPS = [
     "django.contrib.admin",

@@ -145,6 +145,9 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
   selectedCost = '';
   /** Estado de popovers de filtros. */
   openFilter: 'edition' | 'rarity' | 'cost' | null = null;
+  /** Selector M/S expandido en el catálogo (solo uno a la vez en toda la pantalla). */
+  expandedCardId: number | null = null;
+  expandedMode: 'main' | 'side' | null = null;
   selectedFormat = 'imp';
   formatName = 'Imperio';
   private readonly maintenanceFormats = new Set(['imp_r', 'pb', 'pe']);
@@ -580,16 +583,38 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
     this.openFilter = null;
   }
 
+  /** Abre/cierra el selector M o S de una carta del catálogo. Solo uno puede estar expandido a la vez. */
+  toggleSelector(cardId: number, mode: 'main' | 'side', event?: Event) {
+    event?.stopPropagation();
+    if (this.expandedCardId === cardId && this.expandedMode === mode) {
+      this.collapseSelector();
+    } else {
+      this.expandedCardId = cardId;
+      this.expandedMode = mode;
+    }
+  }
+
+  isExpanded(cardId: number, mode: 'main' | 'side'): boolean {
+    return this.expandedCardId === cardId && this.expandedMode === mode;
+  }
+
+  collapseSelector() {
+    this.expandedCardId = null;
+    this.expandedMode = null;
+  }
+
   @HostListener('document:click')
   onDocumentClick() {
     if (this.openFilter) this.openFilter = null;
     if (this.showShortcutsHelp) this.showShortcutsHelp = false;
+    if (this.expandedCardId !== null) this.collapseSelector();
   }
 
   @HostListener('document:keydown.escape')
   onEscape() {
     if (this.showShortcutsHelp) { this.showShortcutsHelp = false; return; }
     if (this.openFilter) { this.openFilter = null; return; }
+    if (this.expandedCardId !== null) { this.collapseSelector(); return; }
     if (this.showExportModal) { this.closeExportModal(); return; }
     if (this.showImportModal) { this.closeImportModal(); return; }
     if (this.previewCard()) { this.hidePreview(); return; }
@@ -816,6 +841,7 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   getMaxCopies(card: Card): number {
     const ban = this.getBanStatus(card);
+    
     if (ban) return ban.max_copies;
     return card.is_unique ? 1 : 3;
   }
@@ -1081,6 +1107,7 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
         if (this.startingGoldId === cardId) {
           this.startingGoldId = null;
         }
+        if (this.expandedCardId === cardId && this.expandedMode === 'main') this.collapseSelector();
       }
       this.markDirty();
     }
@@ -1131,6 +1158,7 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
         this.sideCards[idx].quantity--;
       } else {
         this.sideCards.splice(idx, 1);
+        if (this.expandedCardId === cardId && this.expandedMode === 'side') this.collapseSelector();
       }
       this.markDirty();
     }

@@ -209,7 +209,8 @@ function typeRank(t?: string): number {
                  [class.in-deck]="getQuantityInDeck(card.id) > 0"
                  [class.maxed]="getQuantityInDeck(card.id) >= getMaxCopies(card)"
                  [class.banned]="isBanned(card)"
-                 [class.limited]="banStatus(card) === 'limited' || banStatus(card) === 'restricted'">
+                 [class.limited]="banStatus(card) === 'limited' || banStatus(card) === 'restricted'"
+                 [title]="card.name">
               <div class="img-wrapper" (click)="openPreview(card)">
                 @if (cardImageUrl(card); as img) {
                   <img [src]="img" [alt]="card.name" loading="lazy" decoding="async"
@@ -222,65 +223,100 @@ function typeRank(t?: string): number {
                 </button>
                 @if (isBanned(card)) {
                   <span class="ban-badge ban-badge-banned" title="Prohibida en Standard">
-                    <app-icon name="ban" [size]="11"></app-icon>
+                    <app-icon name="ban" [size]="10"></app-icon>
                   </span>
                 } @else if (banStatus(card)) {
                   <span class="ban-badge ban-badge-limited" title="Limitada en Standard">
-                    <app-icon name="shield-alert" [size]="11"></app-icon>
+                    <app-icon name="shield-alert" [size]="10"></app-icon>
                   </span>
                 }
-              </div>
-              <div class="mini-info">
-                <span class="mini-name">{{ card.name }}</span>
-                <div class="mini-type-row">
-                  <span class="mini-type">{{ typeLabel(card.card_type) }}</span>
-                  @if (card.energy !== null && card.energy !== undefined) {
-                    <span class="stat-pill cost" title="Energía">{{ card.energy }}</span>
-                  }
-                  @if (card.might !== null && card.might !== undefined) {
-                    <span class="stat-pill damage" title="Fuerza">{{ card.might }}</span>
-                  }
-                </div>
-                <span class="mini-num">{{ card.card_number }}</span>
-              </div>
-              <div class="actions-column">
-                <!-- M (main) -->
-                <div class="mini-actions main-actions"
-                     [class.hidden]="!canShowMainSide(card)">
-                  <span class="zone-label main-label">M</span>
-                  @if (getQuantityInZone(card.id, 'main') > 0) {
-                    <button class="circle-btn remove" (click)="decZone(card, 'main')">−</button>
-                    <span class="mini-qty">{{ getQuantityInZone(card.id, 'main') }}</span>
-                  }
-                  <button class="circle-btn add"
-                          (click)="addToZone(card, 'main')"
-                          [disabled]="zoneCount('main') >= rules.main || getNameCount(card.name) >= getMaxCopies(card)">+</button>
-                </div>
 
-                <!-- S (side) -->
-                <div class="mini-actions side-actions"
-                     [class.hidden]="!canShowMainSide(card)">
-                  <span class="zone-label side-label">S</span>
-                  @if (getQuantityInZone(card.id, 'side') > 0) {
-                    <button class="circle-btn remove" (click)="decZone(card, 'side')">−</button>
-                    <span class="mini-qty">{{ getQuantityInZone(card.id, 'side') }}</span>
-                  }
-                  <button class="circle-btn add"
-                          (click)="addToZone(card, 'side')"
-                          [disabled]="zoneCount('side') >= rules.side || getNameCount(card.name) >= getMaxCopies(card)">+</button>
-                </div>
-
-                <!-- Otras zonas (rune/champion/bg) -->
-                @for (z of extraZonesFor(card); track z) {
-                  <div class="mini-actions auto-actions">
-                    <span class="zone-label auto-label">{{ zoneLetter(z) }}</span>
-                    @if (getQuantityInZone(card.id, z) > 0) {
-                      <button class="circle-btn remove" (click)="decZone(card, z)">−</button>
-                      <span class="mini-qty">{{ getQuantityInZone(card.id, z) }}</span>
+                <div class="hover-info">
+                  <span class="hi-name">{{ card.name }}</span>
+                  <div class="hi-meta">
+                    <span class="hi-type">{{ typeLabel(card.card_type) }}</span>
+                    @if (card.energy !== null && card.energy !== undefined) {
+                      <span class="stat-pill cost" title="Energía">{{ card.energy }}</span>
                     }
-                    <button class="circle-btn add"
-                            (click)="addToZone(card, z)"
-                            [disabled]="!canAddToAuto(card, z)">+</button>
+                    @if (card.might !== null && card.might !== undefined) {
+                      <span class="stat-pill damage" title="Fuerza">{{ card.might }}</span>
+                    }
+                  </div>
+                  <span class="hi-num">{{ card.card_number }}</span>
+                </div>
+              </div>
+
+              <!-- Selectores fuera de .img-wrapper: así el óvalo expandido no se
+                   recorta contra el borde redondeado/overflow de la imagen. -->
+              <div class="zone-selectors">
+                <!-- S (side) — esquina inferior izquierda -->
+                @if (canShowMainSide(card)) {
+                  <div class="floating-selector zone-side"
+                       [class.expanded]="isExpanded(card.id, 'side')"
+                       [class.filled]="getQuantityInZone(card.id, 'side') > 0"
+                       (click)="$event.stopPropagation()">
+                    <button type="button" class="fs-trigger"
+                            (click)="toggleSelector(card.id, 'side', $event)"
+                            [attr.aria-expanded]="isExpanded(card.id, 'side')"
+                            [attr.aria-label]="'Sideboard: ' + getQuantityInZone(card.id, 'side') + ' copias'"
+                    >{{ getQuantityInZone(card.id, 'side') > 0 ? getQuantityInZone(card.id, 'side') : 'S' }}</button>
+                    <div class="fs-controls">
+                      <button type="button" class="fs-tag" (click)="toggleSelector(card.id, 'side', $event)"
+                              aria-label="Cerrar selector de side">S</button>
+                      <button type="button" class="fs-op minus" (click)="decZone(card, 'side')"
+                              [disabled]="getQuantityInZone(card.id, 'side') === 0" aria-label="Quitar del side">−</button>
+                      <span class="fs-count" aria-live="polite">{{ getQuantityInZone(card.id, 'side') }}</span>
+                      <button type="button" class="fs-op plus" (click)="addToZone(card, 'side')"
+                              [disabled]="zoneCount('side') >= rules.side || getNameCount(card.name) >= getMaxCopies(card)"
+                              aria-label="Agregar al side">+</button>
+                    </div>
+                  </div>
+                }
+
+                <!-- Zonas dedicadas (rune/champion/battlefield) para cartas sin main/side -->
+                @for (z of extraZonesFor(card); track z) {
+                  <div class="floating-selector" [class]="'zone-' + z"
+                       [class.expanded]="isExpanded(card.id, z)"
+                       [class.filled]="getQuantityInZone(card.id, z) > 0"
+                       (click)="$event.stopPropagation()">
+                    <button type="button" class="fs-trigger"
+                            (click)="toggleSelector(card.id, z, $event)"
+                            [attr.aria-expanded]="isExpanded(card.id, z)"
+                            [attr.aria-label]="labels[z] + ': ' + getQuantityInZone(card.id, z) + ' copias'"
+                    >{{ getQuantityInZone(card.id, z) > 0 ? getQuantityInZone(card.id, z) : zoneLetter(z) }}</button>
+                    <div class="fs-controls">
+                      <button type="button" class="fs-tag" (click)="toggleSelector(card.id, z, $event)"
+                              aria-label="Cerrar selector">{{ zoneLetter(z) }}</button>
+                      <button type="button" class="fs-op minus" (click)="decZone(card, z)"
+                              [disabled]="getQuantityInZone(card.id, z) === 0" aria-label="Quitar">−</button>
+                      <span class="fs-count" aria-live="polite">{{ getQuantityInZone(card.id, z) }}</span>
+                      <button type="button" class="fs-op plus" (click)="addToZone(card, z)"
+                              [disabled]="!canAddToAuto(card, z)" aria-label="Agregar">+</button>
+                    </div>
+                  </div>
+                }
+
+                <!-- M (main) — esquina inferior derecha -->
+                @if (canShowMainSide(card)) {
+                  <div class="floating-selector zone-main"
+                       [class.expanded]="isExpanded(card.id, 'main')"
+                       [class.filled]="getQuantityInZone(card.id, 'main') > 0"
+                       (click)="$event.stopPropagation()">
+                    <button type="button" class="fs-trigger"
+                            (click)="toggleSelector(card.id, 'main', $event)"
+                            [attr.aria-expanded]="isExpanded(card.id, 'main')"
+                            [attr.aria-label]="'Mazo principal: ' + getQuantityInZone(card.id, 'main') + ' copias'"
+                    >{{ getQuantityInZone(card.id, 'main') > 0 ? getQuantityInZone(card.id, 'main') : 'M' }}</button>
+                    <div class="fs-controls">
+                      <button type="button" class="fs-tag" (click)="toggleSelector(card.id, 'main', $event)"
+                              aria-label="Cerrar selector de mazo principal">M</button>
+                      <button type="button" class="fs-op minus" (click)="decZone(card, 'main')"
+                              [disabled]="getQuantityInZone(card.id, 'main') === 0" aria-label="Quitar del mazo principal">−</button>
+                      <span class="fs-count" aria-live="polite">{{ getQuantityInZone(card.id, 'main') }}</span>
+                      <button type="button" class="fs-op plus" (click)="addToZone(card, 'main')"
+                              [disabled]="zoneCount('main') >= rules.main || getNameCount(card.name) >= getMaxCopies(card)"
+                              aria-label="Agregar al mazo principal">+</button>
+                    </div>
                   </div>
                 }
               </div>
@@ -758,51 +794,145 @@ function typeRank(t?: string): number {
     .color-chip.active { background: var(--c); color: #09090b; }
     .clear-colors { background: none; border: none; color: #06b6d4; font-size: 0.75rem; cursor: pointer; }
 
-    .available-cards { display: flex; flex-direction: column; gap: 0.45rem; flex: 1; overflow-y: auto; }
-    .mini-card {
-      display: flex; align-items: center; gap: 0.65rem; padding: 0.4rem 0.6rem;
-      background: rgba(18, 18, 23, 0.6); border: 1px solid var(--ui-border); border-radius: 8px;
-      position: relative;
+    .available-cards {
+      display: grid; grid-template-columns: repeat(5, 1fr);
+      gap: 0.6rem; align-content: start; flex: 1; overflow-y: auto;
     }
-    .mini-card:hover { border-color: rgba(255, 255, 255, 0.2); background: rgba(24, 24, 27, 0.85); }
-    .mini-card.in-deck { border-color: rgba(6, 182, 212, 0.4); background: rgba(6, 182, 212, 0.08); }
+    /* Sin overflow:hidden aquí a propósito: en un grid-item, overflow != visible
+       fuerza su "automatic minimum size" a 0 en el eje de bloque, y la fila del
+       grid colapsa a ~0px aunque el contenido tenga aspect-ratio. El recorte
+       (overflow/border-radius) vive en .img-wrapper en su lugar. */
+    .mini-card {
+      position: relative; border-radius: 8px;
+      background: #121217; border: 1px solid var(--ui-border);
+      transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .mini-card:hover { border-color: rgba(255, 255, 255, 0.25); transform: translateY(-2px); box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35); }
+    .mini-card.in-deck { border-color: rgba(6, 182, 212, 0.55); box-shadow: 0 0 0 1px rgba(6, 182, 212, 0.45); }
+    .mini-card.banned { opacity: 0.45; filter: grayscale(0.6); }
 
     .img-wrapper {
-      position: relative; width: 38px; height: 52px; border-radius: 4px; overflow: hidden;
-      flex-shrink: 0; background: #121217; border: 1px solid var(--ui-border); cursor: pointer;
+      position: relative; width: 100%; aspect-ratio: 2.5 / 3.5;
+      border-radius: 7px; overflow: hidden; background: #121217; cursor: pointer;
     }
-    .img-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+    .img-wrapper img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .img-placeholder {
+      width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; color: var(--ui-text-muted); background: #1a1a1f; text-align: center; padding: 0.3rem;
+    }
+    .img-wrapper::after {
+      content: ''; position: absolute; inset: auto 0 0 0; height: 55%;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent); pointer-events: none;
+    }
     .eye-btn {
-      position: absolute; inset: 0; background: rgba(0, 0, 0, 0.6); border: none;
+      position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%;
+      background: rgba(0, 0, 0, 0.6); border: none;
       color: #ffffff; display: flex; align-items: center; justify-content: center;
-      opacity: 0; cursor: pointer; transition: opacity 0.15s ease;
+      opacity: 0; cursor: pointer; transition: opacity 0.15s ease; z-index: 3;
     }
     .img-wrapper:hover .eye-btn { opacity: 1; }
 
-    .mini-info { flex: 1; min-width: 0; }
-    .mini-name { font-size: 0.82rem; font-weight: 600; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .mini-type-row { display: flex; align-items: center; gap: 0.35rem; margin-top: 2px; }
-    .mini-type { font-size: 0.72rem; color: var(--ui-text-muted); }
-    .mini-num { font-size: 0.65rem; color: var(--ui-text-muted); }
+    .hover-info {
+      position: absolute; inset: 0 0 auto 0; padding: 0.35rem 0.4rem;
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.85), transparent);
+      opacity: 0; transition: opacity 0.15s ease; pointer-events: none; z-index: 2;
+    }
+    .img-wrapper:hover .hover-info { opacity: 1; }
+    .hi-name {
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+      font-size: 0.72rem; font-weight: 700; color: #ffffff; line-height: 1.2;
+    }
+    .hi-meta { display: flex; align-items: center; gap: 0.3rem; margin-top: 0.2rem; }
+    .hi-type { font-size: 0.62rem; color: #d4d4d8; }
+    .hi-num { display: block; font-size: 0.6rem; color: #d4d4d8; margin-top: 0.15rem; }
 
     .stat-pill {
-      padding: 1px 5px; border-radius: 4px; font-size: 0.68rem; font-weight: 700; line-height: 1;
+      padding: 0 4px; border-radius: 4px; font-size: 0.6rem; font-weight: 700; line-height: 1.3;
     }
-    .stat-pill.cost { background: rgba(6, 182, 212, 0.15); color: #06b6d4; border: 1px solid rgba(6, 182, 212, 0.3); }
-    .stat-pill.damage { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .stat-pill.cost { background: rgba(6, 182, 212, 0.2); color: #22d3ee; }
+    .stat-pill.damage { background: rgba(239, 68, 68, 0.2); color: #f87171; }
 
-    .actions-column { display: flex; flex-direction: column; gap: 0.25rem; flex-shrink: 0; }
-    .mini-actions { display: flex; align-items: center; gap: 0.25rem; }
-    .zone-label { font-size: 0.65rem; font-weight: 700; width: 10px; color: var(--ui-text-muted); }
-    .mini-qty { font-size: 0.75rem; font-weight: 700; color: #06b6d4; min-width: 12px; text-align: center; }
-
-    .circle-btn {
-      width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--ui-border);
-      background: rgba(39, 39, 42, 0.6); color: #ffffff; font-size: 0.75rem; font-weight: 700;
-      display: flex; align-items: center; justify-content: center; cursor: pointer;
+    .ban-badge {
+      position: absolute; top: 4px; left: 4px; font-size: 0.6rem; font-weight: 700; padding: 2px 4px;
+      border-radius: 4px; display: inline-flex; align-items: center; gap: 2px; z-index: 3;
     }
-    .circle-btn.add:hover:not(:disabled) { background: #06b6d4; border-color: #06b6d4; color: #09090b; }
-    .circle-btn.remove:hover { background: #ef4444; border-color: #ef4444; color: #ffffff; }
+    .ban-badge-banned { background: rgba(239, 68, 68, 0.25); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.5); }
+    .ban-badge-limited { background: rgba(245, 158, 11, 0.25); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.5); }
+
+    /* ── Selectores flotantes de zona (M / S / R / C / B) ──
+       Cada selector se posiciona de forma independiente (absolute, anclado a su
+       propia esquina) en vez de ser hijos de un flex row: así, al expandirse uno,
+       NO empuja/saca al otro fuera de la carta (bug de flexbox con overflow). */
+    .zone-selectors {
+      position: absolute; inset: 0;
+      pointer-events: none;
+    }
+    .zone-selectors .floating-selector { pointer-events: auto; }
+    .floating-selector {
+      position: absolute; bottom: 6px; height: 28px; min-width: 28px; border-radius: 999px;
+      background: rgba(15, 15, 18, 0.88); border: 1px solid var(--ui-border);
+      display: flex; align-items: center; overflow: hidden; width: 28px;
+      transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.15s ease, background 0.15s ease;
+      /* El colapsado va SIEMPRE por encima del expandido: la carta es angosta y el
+         óvalo abierto puede tapar el círculo opuesto; así queda visible y clicable
+         para poder cambiar de selector (p. ej. S <-> M) con un solo toque. */
+      z-index: 6;
+    }
+    .floating-selector.zone-side { left: 6px; --zc: #f59e0b; }
+    .floating-selector.zone-main { right: 6px; --zc: #06b6d4; }
+    /* Zonas dedicadas (rune/champion/battlefield): normalmente aparecen solas
+       (sin S/M), así que van centradas. En el raro caso de coexistir varias
+       (cartas sin clasificar) se reparten un poco para no quedar 100% superpuestas. */
+    .floating-selector.zone-rune { left: 50%; transform: translateX(-50%); --zc: #8b5cf6; }
+    .floating-selector.zone-champion { left: 35%; transform: translateX(-50%); --zc: #ec4899; }
+    .floating-selector.zone-bg { left: 65%; transform: translateX(-50%); --zc: #22c55e; }
+    .floating-selector.filled { border-color: var(--zc); background: color-mix(in srgb, var(--zc) 30%, rgba(15, 15, 18, 0.9)); }
+    .floating-selector.expanded { width: 98px; background: rgba(9, 9, 11, 0.96); border-color: var(--zc); z-index: 4; }
+    .floating-selector.zone-rune.expanded,
+    .floating-selector.zone-champion.expanded,
+    .floating-selector.zone-bg.expanded { left: 50%; transform: translateX(-50%); }
+
+    .fs-trigger {
+      position: absolute; inset: 0; width: 100%; height: 100%; min-width: 0; min-height: 0;
+      margin: 0; padding: 0; border: none; background: transparent;
+      color: #ffffff; font-size: 0.76rem; font-weight: 800; line-height: 1; font-family: inherit; cursor: pointer;
+      appearance: none; -webkit-appearance: none;
+      display: flex; align-items: center; justify-content: center; text-align: center;
+      opacity: 1; transition: opacity 0.15s ease;
+    }
+    .floating-selector.expanded .fs-trigger { opacity: 0; pointer-events: none; }
+
+    .fs-controls {
+      display: flex; align-items: center; gap: 4px; padding: 0 5px; width: 100%;
+      opacity: 0; pointer-events: none; transition: opacity 0.15s ease 0.05s; white-space: nowrap;
+    }
+    .floating-selector.expanded .fs-controls { opacity: 1; pointer-events: auto; }
+
+    .fs-tag {
+      font: inherit; padding: 0; border: none; background: transparent; cursor: pointer; line-height: 1;
+      font-size: 0.66rem; font-weight: 800; color: var(--zc); width: 14px; flex-shrink: 0;
+    }
+    .fs-op {
+      width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--ui-border);
+      background: rgba(255, 255, 255, 0.08); color: #ffffff; font-size: 0.78rem; font-weight: 700;
+      line-height: 1; display: flex; align-items: center; justify-content: center; cursor: pointer;
+      flex-shrink: 0; transition: all 0.15s ease;
+    }
+    .fs-op:hover:not(:disabled) { background: var(--zc); border-color: var(--zc); color: #09090b; }
+    .fs-op:disabled { opacity: 0.3; cursor: not-allowed; }
+    .fs-count { font-size: 0.78rem; font-weight: 800; color: #ffffff; min-width: 13px; text-align: center; flex-shrink: 0; }
+
+    /* Responsive: en móvil el panel de cartas ocupa todo el ancho (ver @media 960px
+       más abajo), así que agrandamos un poco más las cartas y los círculos táctiles. */
+    @media (max-width: 960px) {
+      .available-cards { grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 0.7rem; }
+      .floating-selector { height: 32px; min-width: 32px; width: 32px; }
+      .floating-selector.expanded { width: 110px; }
+      .fs-trigger { font-size: 0.82rem; }
+      .fs-op { width: 22px; height: 22px; font-size: 0.82rem; }
+      .fs-tag { font-size: 0.7rem; width: 12px; }
+      .fs-count { font-size: 0.82rem; }
+    }
 
     /* Deck Panel & Cards */
     .deck-header {
@@ -976,6 +1106,39 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
 
   results = signal<RiftboundCardLite[]>([]);
   hasMore = signal(false);
+
+  /** Selector de zona expandido en el catálogo (solo uno a la vez en toda la pantalla). */
+  expandedCardId = signal<number | null>(null);
+  expandedZone = signal<RiftboundZone | null>(null);
+
+  toggleSelector(cardId: number, zone: RiftboundZone, event?: Event) {
+    event?.stopPropagation();
+    if (this.expandedCardId() === cardId && this.expandedZone() === zone) {
+      this.collapseSelector();
+    } else {
+      this.expandedCardId.set(cardId);
+      this.expandedZone.set(zone);
+    }
+  }
+
+  isExpanded(cardId: number, zone: RiftboundZone): boolean {
+    return this.expandedCardId() === cardId && this.expandedZone() === zone;
+  }
+
+  collapseSelector() {
+    this.expandedCardId.set(null);
+    this.expandedZone.set(null);
+  }
+
+  @HostListener('document:click')
+  onDocumentClickCollapseSelector() {
+    if (this.expandedCardId() !== null) this.collapseSelector();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeCollapseSelector() {
+    if (this.expandedCardId() !== null) this.collapseSelector();
+  }
 
   /** Cartas mostradas en el listado: oculta los demás legends cuando ya hay
    *  uno seleccionado (un mazo solo puede tener 1 Champion Legend). */
@@ -1424,6 +1587,7 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
       if (ban.status === 'banned') return 0;
       if (ban.status === 'limited' || ban.status === 'restricted') return ban.max_copies ?? 1;
     }
+    if (c.name === 'Spiderling') return 50; // override hardcodeado para la carta Spiderling (que es una unidad que tiene la posibilidad de jugarse por la cantidad de copias que quieras, pero el límite de la zona main es 40, así que no hay problema).
     if (c.card_type === 'battlefield') return 1;
     if (c.card_type === 'legend') return 1;
     if (c.card_type === 'rune') return this.rules.rune;
@@ -1441,6 +1605,7 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   maxCopiesForEntry(e: BuilderEntry): number {
+    if (e.card.name === 'Spiderling') return 50; // ejemplo de override hardcodeado para la carta Spiderling (que es una unidad que tiene la posibilidad de jugarse por la cantidad de copias que quieras, pero el límite de la zona main es 40, así que no hay problema).
     if (e.zone === 'bg') return 1;
     if (e.zone === 'champion') return 1;
     if (e.zone === 'rune') return this.rules.rune;
@@ -1482,6 +1647,9 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
       .map(e => e.card.id === c.id ? { ...e, quantity: e.quantity - 1 } : e)
       .filter(e => e.quantity > 0);
     this.entries.set({ ...this.entries(), [z]: list });
+    if (this.getQuantityInZone(c.id, z) === 0 && this.expandedCardId() === c.id && this.expandedZone() === z) {
+      this.collapseSelector();
+    }
   }
 
   inc(e: BuilderEntry) {

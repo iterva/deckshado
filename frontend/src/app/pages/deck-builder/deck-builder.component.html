@@ -213,13 +213,7 @@
     @if (loading) {
       <div class="available-cards skeleton-grid" aria-label="Cargando cartas">
         @for (_ of [1,2,3,4,5,6,7,8]; track $index) {
-          <div class="mini-card skeleton">
-            <div class="img-wrapper sk"></div>
-            <div class="mini-info">
-              <span class="sk sk-line w70"></span>
-              <span class="sk sk-line w40"></span>
-            </div>
-          </div>
+          <div class="mini-card skeleton"></div>
         }
       </div>
     }
@@ -232,84 +226,138 @@
           (mousedown)="holdStart(card, $event)"
           (mouseup)="holdEnd()"
           (mouseleave)="holdCancel()"
-          [class.in-deck]="getQuantityInDeck(card.id) > 0"
+          [class.in-deck]="getQuantityInDeck(card.id) > 0 || getQuantityInSide(card.id) > 0"
           [class.off-format]="!isCardAllowedByFormat(card)"
           [class.banned]="getBanStatus(card)?.status === 'banned'"
           [class.name-taken]="hasDifferentVersion(card)"
           [class.name-maxed]="getNameCount(card.name) >= getEffectiveMaxCopies(card)"
           [class.flash-added]="recentlyAdded.has(card.id)"
+          [title]="card.name"
         >
           <div class="img-wrapper">
             <img [src]="card.image_url | thumb:150" [alt]="card.name" loading="lazy" decoding="async" />
             <button type="button" class="eye-btn" (click)="showPreview(card, $event)" title="Ver detalle">
               <app-icon name="eye" [size]="13"></app-icon>
             </button>
-          </div>
-          <div class="mini-info">
-            <span class="mini-name">{{ card.name }}</span>
-            <div class="mini-type-row">
-              <span class="mini-type">{{ card.type_name }}</span>
-              @if (card.cost !== null) {
-                <span class="stat-pill cost" title="Coste">{{ card.cost }}</span>
-              }
-              @if (card.damage !== null) {
-                <span class="stat-pill damage" title="Fuerza">{{ card.damage }}</span>
+
+            <div class="hover-info">
+              <span class="hi-name">{{ card.name }}</span>
+              <div class="hi-meta">
+                <span class="hi-type">{{ card.type_name }}</span>
+                @if (card.cost !== null) {
+                  <span class="stat-pill cost" title="Coste">{{ card.cost }}</span>
+                }
+                @if (card.damage !== null) {
+                  <span class="stat-pill damage" title="Fuerza">{{ card.damage }}</span>
+                }
+              </div>
+              @if (abilitySearch && card.ability) {
+                <span class="hi-ability">{{ card.ability.length > 70 ? card.ability.substring(0, 70) + '...' : card.ability }}</span>
               }
             </div>
-            @if (abilitySearch && card.ability) {
-              <span class="mini-ability">{{ card.ability.length > 70 ? card.ability.substring(0, 70) + '...' : card.ability }}</span>
+
+            @if (getBanStatus(card); as ban) {
+              @if (ban.status === 'banned') {
+                <span class="ban-badge banned" title="Prohibida">
+                  <app-icon name="ban" [size]="10"></app-icon>
+                </span>
+              } @else if (ban.status === 'limited_1') {
+                <span class="ban-badge limited" title="Límite 1">
+                  <app-icon name="shield-alert" [size]="10"></app-icon> 1
+                </span>
+              } @else if (ban.status === 'limited_2') {
+                <span class="ban-badge limited" title="Límite 2">
+                  <app-icon name="shield-alert" [size]="10"></app-icon> 2
+                </span>
+              }
+            }
+            @if (!isCardAllowedByFormat(card)) {
+              <span class="ban-badge off-format" title="Fuera de formato">
+                <app-icon name="alert-circle" [size]="10"></app-icon>
+              </span>
             }
           </div>
 
-          <div class="actions-column">
-            <div class="mini-actions main-actions">
-              <span class="main-label">M</span>
-              @if (getQuantityInDeck(card.id) > 0) {
-                <button class="circle-btn remove" (click)="removeCard(card.id); $event.stopPropagation()" aria-label="Quitar de mazo principal">−</button>
-                <span class="mini-qty">{{ getQuantityInDeck(card.id) }}</span>
-              }
+          <!-- Selectores fuera de .img-wrapper: así el óvalo expandido no se
+               recorta contra el borde redondeado/overflow de la imagen. -->
+
+          <!-- Selector Sideboard (S) — esquina inferior izquierda -->
+          <div
+            class="floating-selector side-selector"
+            [class.expanded]="isExpanded(card.id, 'side')"
+            [class.filled]="getQuantityInSide(card.id) > 0"
+            (mousedown)="$event.stopPropagation()"
+          >
+            <button
+              type="button"
+              class="fs-trigger"
+              (click)="toggleSelector(card.id, 'side', $event)"
+              [attr.aria-expanded]="isExpanded(card.id, 'side')"
+              [attr.aria-label]="'Sideboard: ' + getQuantityInSide(card.id) + ' copias'"
+            >{{ getQuantityInSide(card.id) > 0 ? getQuantityInSide(card.id) : 'S' }}</button>
+            <div class="fs-controls" (click)="$event.stopPropagation()">
               <button
-                class="circle-btn add"
-                (click)="addCard(card); $event.stopPropagation()"
-                [disabled]="getBanStatus(card)?.status === 'banned' || getNameCount(card.name) >= getEffectiveMaxCopies(card) || totalDeckCards >= 50 || !isCardAllowedByRace(card) || !isCardAllowedByFormat(card)"
-                aria-label="Agregar a mazo principal"
-              >+</button>
-            </div>
-            <div class="mini-actions side-actions">
-              <span class="side-label">S</span>
-              @if (getQuantityInSide(card.id) > 0) {
-                <button class="circle-btn remove" (click)="removeFromSide(card.id); $event.stopPropagation()" aria-label="Quitar de side">−</button>
-                <span class="mini-qty">{{ getQuantityInSide(card.id) }}</span>
-              }
+                type="button"
+                class="fs-tag"
+                (click)="toggleSelector(card.id, 'side', $event)"
+                aria-label="Cerrar selector de side"
+              >S</button>
               <button
-                class="circle-btn add side"
-                (click)="addToSide(card); $event.stopPropagation()"
+                type="button"
+                class="fs-op minus"
+                (click)="removeFromSide(card.id)"
+                [disabled]="getQuantityInSide(card.id) === 0"
+                aria-label="Quitar del side"
+              >−</button>
+              <span class="fs-count" aria-live="polite">{{ getQuantityInSide(card.id) }}</span>
+              <button
+                type="button"
+                class="fs-op plus"
+                (click)="addToSide(card)"
                 [disabled]="getBanStatus(card)?.status === 'banned' || getNameCount(card.name) >= getEffectiveMaxCopies(card) || totalSideCards >= 15 || !isCardAllowedByRace(card) || !isCardAllowedByFormat(card)"
-                aria-label="Agregar a side"
+                aria-label="Agregar al side"
               >+</button>
             </div>
           </div>
 
-          @if (getBanStatus(card); as ban) {
-            @if (ban.status === 'banned') {
-              <span class="ban-badge banned">
-                <app-icon name="ban" [size]="11"></app-icon> Prohibida
-              </span>
-            } @else if (ban.status === 'limited_1') {
-              <span class="ban-badge limited">
-                <app-icon name="shield-alert" [size]="11"></app-icon> Límite 1
-              </span>
-            } @else if (ban.status === 'limited_2') {
-              <span class="ban-badge limited">
-                <app-icon name="shield-alert" [size]="11"></app-icon> Límite 2
-              </span>
-            }
-          }
-          @if (!isCardAllowedByFormat(card)) {
-            <span class="ban-badge off-format">
-              <app-icon name="alert-circle" [size]="11"></app-icon> Fuera de formato
-            </span>
-          }
+          <!-- Selector Main Deck (M) — esquina inferior derecha -->
+          <div
+            class="floating-selector main-selector"
+            [class.expanded]="isExpanded(card.id, 'main')"
+            [class.filled]="getQuantityInDeck(card.id) > 0"
+            (mousedown)="$event.stopPropagation()"
+          >
+            <button
+              type="button"
+              class="fs-trigger"
+              (click)="toggleSelector(card.id, 'main', $event)"
+              [attr.aria-expanded]="isExpanded(card.id, 'main')"
+              [attr.aria-label]="'Mazo principal: ' + getQuantityInDeck(card.id) + ' copias'"
+            >{{ getQuantityInDeck(card.id) > 0 ? getQuantityInDeck(card.id) : 'M' }}</button>
+            <div class="fs-controls" (click)="$event.stopPropagation()">
+              <button
+                type="button"
+                class="fs-tag"
+                (click)="toggleSelector(card.id, 'main', $event)"
+                aria-label="Cerrar selector de mazo principal"
+              >M</button>
+              <button
+                type="button"
+                class="fs-op minus"
+                (click)="removeCard(card.id)"
+                [disabled]="getQuantityInDeck(card.id) === 0"
+                aria-label="Quitar del mazo principal"
+              >−</button>
+              <span class="fs-count" aria-live="polite">{{ getQuantityInDeck(card.id) }}</span>
+              <button
+                type="button"
+                class="fs-op plus"
+                (click)="addCard(card)"
+                [disabled]="getBanStatus(card)?.status === 'banned' || getNameCount(card.name) >= getEffectiveMaxCopies(card) || totalDeckCards >= 50 || !isCardAllowedByRace(card) || !isCardAllowedByFormat(card)"
+                aria-label="Agregar al mazo principal"
+              >+</button>
+            </div>
+          </div>
         </div>
       }
     </div>

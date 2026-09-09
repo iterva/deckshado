@@ -404,56 +404,83 @@
   .available-cards {
     flex: 1;
     overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 0.45rem;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.6rem;
+    align-content: start;
     padding-right: 0.2rem;
 
+    &.skeleton-grid .mini-card.skeleton {
+      aspect-ratio: 2.5 / 3.5;
+      background: rgba(39, 39, 42, 0.4);
+      animation: skeletonPulse 1.2s ease-in-out infinite;
+    }
+
+    // Sin overflow:hidden aquí a propósito: en un grid-item, overflow != visible
+    // fuerza su "automatic minimum size" a 0 en el eje de bloque y la fila del
+    // grid colapsa a ~0px aunque el contenido tenga aspect-ratio. El recorte
+    // (overflow/border-radius) vive en .img-wrapper en su lugar.
     .mini-card {
-      display: flex;
-      align-items: center;
-      gap: 0.65rem;
-      padding: 0.4rem 0.6rem;
-      background: rgba(18, 18, 23, 0.6);
-      border: 1px solid var(--ui-border);
-      border-radius: 8px;
-      transition: all 0.15s ease;
       position: relative;
+      border-radius: 8px;
+      background: #121217;
+      border: 1px solid var(--ui-border);
+      transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 
       &:hover {
-        border-color: rgba(255, 255, 255, 0.18);
-        background: rgba(24, 24, 27, 0.85);
+        border-color: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
       }
 
       &.in-deck {
-        border-color: color-mix(in srgb, var(--ui-accent) 40%, transparent);
-        background: var(--ui-accent-glow);
+        border-color: color-mix(in srgb, var(--ui-accent) 55%, transparent);
+        box-shadow: 0 0 0 1px color-mix(in srgb, var(--ui-accent) 45%, transparent);
       }
 
       &.banned {
-        opacity: 0.5;
-        border-color: rgba(239, 68, 68, 0.3);
+        opacity: 0.45;
+        filter: grayscale(0.6);
+      }
+
+      &.off-format {
+        opacity: 0.55;
+      }
+
+      &.flash-added {
+        animation: cardFlashAdded 0.6s ease;
       }
 
       .img-wrapper {
         position: relative;
-        width: 38px;
-        height: 52px;
-        border-radius: 4px;
+        width: 100%;
+        aspect-ratio: 2.5 / 3.5;
+        border-radius: 7px;
         overflow: hidden;
-        flex-shrink: 0;
-        background: #121217;
-        border: 1px solid var(--ui-border);
 
         img {
           width: 100%;
           height: 100%;
           object-fit: cover;
+          display: block;
+        }
+
+        &::after {
+          content: '';
+          position: absolute;
+          inset: auto 0 0 0;
+          height: 55%;
+          background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
+          pointer-events: none;
         }
 
         .eye-btn {
           position: absolute;
-          inset: 0;
+          top: 4px;
+          right: 4px;
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
           background: rgba(0, 0, 0, 0.6);
           border: none;
           color: #ffffff;
@@ -463,160 +490,299 @@
           opacity: 0;
           cursor: pointer;
           transition: opacity 0.15s ease;
+          z-index: 3;
         }
 
-        &:hover .eye-btn {
-          opacity: 1;
-        }
-      }
+        .hover-info {
+          position: absolute;
+          inset: 0 0 auto 0;
+          padding: 0.35rem 0.4rem;
+          background: linear-gradient(to bottom, rgba(0, 0, 0, 0.85), transparent);
+          opacity: 0;
+          transition: opacity 0.15s ease;
+          pointer-events: none;
+          z-index: 2;
 
-      .mini-info {
-        flex: 1;
-        min-width: 0;
-
-        .mini-name {
-          display: block;
-          font-size: 0.82rem;
-          font-weight: 600;
-          color: #ffffff;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .mini-type-row {
-          display: flex;
-          align-items: center;
-          gap: 0.35rem;
-          margin-top: 0.15rem;
-
-          .mini-type {
+          .hi-name {
+            display: block;
             font-size: 0.72rem;
-            color: var(--ui-text-muted);
-          }
-
-          .stat-pill {
-            padding: 1px 5px;
-            border-radius: 4px;
-            font-size: 0.68rem;
             font-weight: 700;
-            line-height: 1;
-
-            &.cost {
-              background: rgba(245, 158, 11, 0.15);
-              color: #f59e0b;
-              border: 1px solid rgba(245, 158, 11, 0.3);
-            }
-
-            &.damage {
-              background: rgba(239, 68, 68, 0.15);
-              color: #ef4444;
-              border: 1px solid rgba(239, 68, 68, 0.3);
-            }
-          }
-        }
-
-        .mini-ability {
-          display: block;
-          font-size: 0.68rem;
-          color: var(--ui-text-muted);
-          margin-top: 0.2rem;
-          line-height: 1.25;
-        }
-      }
-
-      .actions-column {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-        flex-shrink: 0;
-
-        .mini-actions {
-          display: flex;
-          align-items: center;
-          gap: 0.25rem;
-
-          .main-label, .side-label {
-            font-size: 0.65rem;
-            font-weight: 700;
-            color: var(--ui-text-muted);
-            width: 10px;
-          }
-
-          .mini-qty {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--ui-accent);
-            min-width: 12px;
-            text-align: center;
-          }
-
-          .circle-btn {
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            border: 1px solid var(--ui-border);
-            background: rgba(39, 39, 42, 0.6);
             color: #ffffff;
-            font-size: 0.75rem;
-            font-weight: 700;
+            line-height: 1.2;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+          }
+
+          .hi-meta {
             display: flex;
             align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.15s ease;
+            gap: 0.3rem;
+            margin-top: 0.2rem;
 
-            &:hover:not(:disabled) {
-              background: var(--ui-accent);
-              border-color: var(--ui-accent);
-              color: #09090b;
+            .hi-type {
+              font-size: 0.62rem;
+              color: var(--ui-text-secondary, #d4d4d8);
             }
 
-            &.remove:hover:not(:disabled) {
-              background: #ef4444;
-              border-color: #ef4444;
-              color: #ffffff;
-            }
+            .stat-pill {
+              padding: 0px 4px;
+              border-radius: 4px;
+              font-size: 0.6rem;
+              font-weight: 700;
+              line-height: 1.3;
 
-            &:disabled {
-              opacity: 0.3;
-              cursor: not-allowed;
+              &.cost {
+                background: rgba(245, 158, 11, 0.2);
+                color: #fbbf24;
+              }
+
+              &.damage {
+                background: rgba(239, 68, 68, 0.2);
+                color: #f87171;
+              }
             }
           }
+
+          .hi-ability {
+            display: block;
+            font-size: 0.6rem;
+            color: var(--ui-text-secondary, #d4d4d8);
+            margin-top: 0.2rem;
+            line-height: 1.2;
+          }
+        }
+
+        &:hover .eye-btn,
+        &:hover .hover-info {
+          opacity: 1;
         }
       }
 
       .ban-badge {
         position: absolute;
-        top: 2px;
-        right: 4px;
-        font-size: 0.62rem;
+        top: 4px;
+        left: 4px;
+        font-size: 0.6rem;
         font-weight: 700;
-        padding: 1px 4px;
+        padding: 2px 4px;
         border-radius: 4px;
         display: inline-flex;
         align-items: center;
         gap: 2px;
+        z-index: 3;
 
         &.banned {
-          background: rgba(239, 68, 68, 0.2);
-          color: #ef4444;
-          border: 1px solid rgba(239, 68, 68, 0.4);
+          background: rgba(239, 68, 68, 0.25);
+          color: #f87171;
+          border: 1px solid rgba(239, 68, 68, 0.5);
         }
 
         &.limited {
-          background: rgba(245, 158, 11, 0.2);
-          color: #f59e0b;
-          border: 1px solid rgba(245, 158, 11, 0.4);
+          background: rgba(245, 158, 11, 0.25);
+          color: #fbbf24;
+          border: 1px solid rgba(245, 158, 11, 0.5);
         }
 
         &.off-format {
-          background: rgba(161, 161, 170, 0.2);
-          color: #a1a1aa;
-          border: 1px solid rgba(161, 161, 170, 0.4);
+          background: rgba(161, 161, 170, 0.25);
+          color: #d4d4d8;
+          border: 1px solid rgba(161, 161, 170, 0.5);
+        }
+      }
+
+      // ── Selectores flotantes M / S ──
+      .floating-selector {
+        position: absolute;
+        bottom: 6px;
+        height: 28px;
+        min-width: 28px;
+        border-radius: 999px;
+        background: rgba(15, 15, 18, 0.88);
+        border: 1px solid var(--ui-border);
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        width: 28px;
+        transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.15s ease, background 0.15s ease;
+        // El colapsado va SIEMPRE por encima del expandido: la carta es angosta y el
+        // óvalo abierto puede tapar el círculo opuesto; así queda visible y clicable
+        // para poder cambiar de selector (S <-> M) con un solo toque.
+        z-index: 6;
+
+        &.side-selector {
+          left: 6px;
+          --sel-color: var(--ui-accent-side, #dc2626);
+        }
+
+        &.main-selector {
+          right: 6px;
+          --sel-color: var(--ui-accent);
+        }
+
+        &.filled {
+          border-color: var(--sel-color);
+          background: color-mix(in srgb, var(--sel-color) 30%, rgba(15, 15, 18, 0.9));
+        }
+
+        &.expanded {
+          width: 98px;
+          background: rgba(9, 9, 11, 0.96);
+          border-color: var(--sel-color);
+          z-index: 4;
+        }
+
+        .fs-trigger {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          min-width: 0;
+          min-height: 0;
+          margin: 0;
+          padding: 0;
+          border: none;
+          background: transparent;
+          color: #ffffff;
+          font-size: 0.76rem;
+          font-weight: 800;
+          line-height: 1;
+          font-family: inherit;
+          cursor: pointer;
+          appearance: none;
+          -webkit-appearance: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          opacity: 1;
+          transition: opacity 0.15s ease;
+        }
+
+        &.expanded .fs-trigger {
+          opacity: 0;
+          pointer-events: none;
+        }
+
+        .fs-controls {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding: 0 5px;
+          width: 100%;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.15s ease 0.05s;
+          white-space: nowrap;
+        }
+
+        &.expanded .fs-controls {
+          opacity: 1;
+          pointer-events: auto;
+        }
+
+        .fs-tag {
+          font: inherit;
+          padding: 0;
+          border: none;
+          background: transparent;
+          font-size: 0.66rem;
+          font-weight: 800;
+          color: var(--sel-color);
+          width: 14px;
+          flex-shrink: 0;
+          cursor: pointer;
+          line-height: 1;
+        }
+
+        .fs-op {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          border: 1px solid var(--ui-border);
+          background: rgba(255, 255, 255, 0.08);
+          color: #ffffff;
+          font-size: 0.78rem;
+          font-weight: 700;
+          line-height: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          flex-shrink: 0;
+          transition: all 0.15s ease;
+
+          &:hover:not(:disabled) {
+            background: var(--sel-color);
+            border-color: var(--sel-color);
+            color: #09090b;
+          }
+
+          &:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+          }
+        }
+
+        .fs-count {
+          font-size: 0.78rem;
+          font-weight: 800;
+          color: #ffffff;
+          min-width: 13px;
+          text-align: center;
+          flex-shrink: 0;
         }
       }
     }
+
+    // Responsive: en móvil el panel de cartas ocupa todo el ancho de la pantalla
+    // (ver .builder-layout @media 960px), así que agrandamos cartas y círculos táctiles.
+    @media (max-width: 960px) {
+      grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+      gap: 0.7rem;
+
+      .mini-card .floating-selector {
+        height: 32px;
+        min-width: 32px;
+        width: 32px;
+
+        &.expanded {
+          width: 110px;
+        }
+
+        .fs-trigger {
+          font-size: 0.82rem;
+        }
+
+        .fs-op {
+          width: 22px;
+          height: 22px;
+          font-size: 0.82rem;
+        }
+
+        .fs-tag {
+          font-size: 0.7rem;
+          width: 12px;
+        }
+
+        .fs-count {
+          font-size: 0.82rem;
+        }
+      }
+    }
+  }
+
+  @keyframes skeletonPulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 0.9; }
+  }
+
+  @keyframes cardFlashAdded {
+    0% { box-shadow: 0 0 0 0 var(--ui-accent-glow-strong, rgba(245, 158, 11, 0.5)); }
+    50% { box-shadow: 0 0 0 6px var(--ui-accent-glow-strong, rgba(245, 158, 11, 0.5)); }
+    100% { box-shadow: 0 0 0 0 transparent; }
   }
 
   .infinite-status {

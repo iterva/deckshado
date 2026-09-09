@@ -3,6 +3,7 @@ import os
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Q, Count, Sum
+from django.http import Http404
 from django.utils import timezone
 from rest_framework import viewsets, permissions, status, filters, generics
 from rest_framework.decorators import action, api_view, permission_classes, parser_classes
@@ -1595,6 +1596,36 @@ class RiftboundPublicStoreOrderCreateView(generics.GenericAPIView):
             RiftboundStoreOrderSerializer(order, context={"request": request}).data,
             status=status.HTTP_201_CREATED,
         )
+
+
+class RiftboundMyPurchaseOrderListView(generics.ListAPIView):
+    """Pedidos que el usuario autenticado hizo como COMPRADOR, en cualquier tienda."""
+    permission_classes = [IsAuthenticated]
+    serializer_class = RiftboundStoreOrderSerializer
+
+    def get_queryset(self):
+        qs = (
+            RiftboundStoreOrder.objects.filter(buyer_user=self.request.user)
+            .select_related("store_profile", "store_profile__user", "buyer_user")
+            .prefetch_related("items", "items__card")
+            .order_by("-created_at")
+        )
+        store_token = (self.request.query_params.get("store") or "").strip()
+        if store_token:
+            try:
+                profile = _rb_resolve_public_profile(store_token)
+            except Http404:
+                return qs.none()
+            qs = qs.filter(store_profile=profile)
+        status_filter = (self.request.query_params.get("status") or "").strip().lower()
+        allowed = {
+            RiftboundStoreOrder.STATUS_PENDING,
+            RiftboundStoreOrder.STATUS_ACCEPTED,
+            RiftboundStoreOrder.STATUS_CANCELLED,
+        }
+        if status_filter in allowed:
+            qs = qs.filter(status=status_filter)
+        return qs
 
 
 class RiftboundMyStoreOrderListView(generics.ListAPIView):

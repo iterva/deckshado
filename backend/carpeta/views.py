@@ -8,6 +8,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from django.db import transaction
 from django.db.models import Q, Count, Sum, F
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from backend.cdn_image_upload import upload_image_to_cdn, CdnImageUploadError
@@ -676,6 +677,36 @@ class MyStoreOrderListView(generics.ListAPIView):
         status_filter = (self.request.query_params.get("status") or "").strip().lower()
         if status_filter == "history":
             return qs.filter(status__in=[StoreOrder.STATUS_ACCEPTED, StoreOrder.STATUS_CANCELLED])
+        allowed = {
+            StoreOrder.STATUS_PENDING,
+            StoreOrder.STATUS_ACCEPTED,
+            StoreOrder.STATUS_CANCELLED,
+        }
+        if status_filter in allowed:
+            qs = qs.filter(status=status_filter)
+        return qs
+
+
+class MyPurchaseOrderListView(generics.ListAPIView):
+    """Pedidos que el usuario autenticado hizo como COMPRADOR, en cualquier tienda."""
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = StoreOrderSerializer
+
+    def get_queryset(self):
+        qs = (
+            StoreOrder.objects.filter(buyer_user=self.request.user)
+            .select_related("store_profile", "store_profile__user", "buyer_user")
+            .prefetch_related("items", "items__card")
+            .order_by("-created_at")
+        )
+        store_token = (self.request.query_params.get("store") or "").strip()
+        if store_token:
+            try:
+                profile = _resolve_public_profile(store_token)
+            except Http404:
+                return qs.none()
+            qs = qs.filter(store_profile=profile)
+        status_filter = (self.request.query_params.get("status") or "").strip().lower()
         allowed = {
             StoreOrder.STATUS_PENDING,
             StoreOrder.STATUS_ACCEPTED,

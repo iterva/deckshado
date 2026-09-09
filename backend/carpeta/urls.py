@@ -28,6 +28,7 @@ urlpatterns = [
     path("store/<str:token>/orders/", views.PublicStoreOrderCreateView.as_view(), name="public-store-orders"),
     path("wishlist-public/<str:token>/", views.PublicWishlistListView.as_view(), name="public-wishlist"),
     path("orders/mine/", views.MyStoreOrderListView.as_view(), name="my-store-orders"),
+    path("orders/mine/purchases/", views.MyPurchaseOrderListView.as_view(), name="my-purchase-orders"),
     path("orders/mine/assigned-summary/", views.my_order_assignments, name="my-store-order-assignments"),
     path("orders/<int:order_id>/accept/", views.accept_store_order, name="accept-store-order"),
     path("orders/<int:order_id>/cancel/", views.cancel_store_order, name="cancel-store-order"),

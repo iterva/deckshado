@@ -795,7 +795,7 @@ function typeRank(t?: string): number {
     .clear-colors { background: none; border: none; color: #06b6d4; font-size: 0.75rem; cursor: pointer; }
 
     .available-cards {
-      display: grid; grid-template-columns: repeat(5, 1fr);
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(133px, 1fr));
       gap: 0.6rem; align-content: start; flex: 1; overflow-y: auto;
     }
     /* Sin overflow:hidden aquí a propósito: en un grid-item, overflow != visible

@@ -41,6 +41,7 @@
       <div class="store-actions">
         @if (!isOwner) {
           <button class="btn btn-primary btn-sm" (click)="showContactModal = true">📩 Contactar</button>
+          <a class="btn btn-sm" routerLink="/mis-compras" [queryParams]="{ game: 'myl' }" target="_blank">📦 Mis pedidos</a>
         }
         <button class="btn btn-sm" (click)="copyLink()">🔗 Copiar Link</button>
         <button class="btn btn-sm" (click)="shareWhatsApp()">📱 Compartir</button>
@@ -77,6 +78,7 @@
     @if (createdOrderId) {
       <div class="order-created-banner">
         ✅ Pedido #{{ createdOrderId }} creado correctamente. El vendedor ya lo ve en su carpeta.
+        <a routerLink="/mis-compras" [queryParams]="{ game: 'myl' }" target="_blank">Ver mis pedidos ↗</a>
       </div>
     }
 
@@ -288,17 +290,6 @@
     @if (!storeHasMore && !loading && entries.length > 0) {
       <p class="loading" style="padding-top: 1rem;">— Fin de la tienda —</p>
     }
-  <app-share-image
-          mode="buying"
-          gameLabel="Mitos y Leyendas"
-          [sellerName]="sellerHandle"
-          [contactLine]="shareContactLine"
-          [items]="shareWishlistItems"
-          ctaLabel="Imagen busco"
-          filenamePrefix="shadowforge-myl"
-          footerTagline="ShadowForge · Marketplace TCG">
-        </app-share-image>
-      
     } @else if (activeTab === 'wishlist') {
       <!-- Wishlist tab -->
       <div class="filters-bar">

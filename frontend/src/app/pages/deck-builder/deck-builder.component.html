@@ -22,7 +22,7 @@
 
 <div class="builder-layout" [attr.data-mobile-tab]="activeMobileTab">
   <!-- ══════════════════════════════════════════════════════ -->
-  <!-- LEFT PANEL (35%): Card Browser & Filter Drawer        -->
+  <!-- LEFT PANEL (65%): Card Browser & Filter Drawer        -->
   <!-- ══════════════════════════════════════════════════════ -->
   <div class="card-browser" #cardBrowser [class.mobile-hidden]="activeMobileTab === 'deck'">
     <div class="browser-head">
@@ -374,7 +374,7 @@
   </div>
 
   <!-- ══════════════════════════════════════════════════════ -->
-  <!-- RIGHT PANEL (65%): Active Deck & Resource Curve       -->
+  <!-- RIGHT PANEL (35%): Active Deck & Resource Curve       -->
   <!-- ══════════════════════════════════════════════════════ -->
   <div
     class="deck-panel"

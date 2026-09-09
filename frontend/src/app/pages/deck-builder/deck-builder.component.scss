@@ -53,11 +53,11 @@
 }
 
 // ══════════════════════════════════════════════════════
-// 2-PANEL DESKTOP LAYOUT (35% Left / 65% Right)
+// 2-PANEL DESKTOP LAYOUT (65% Left / 35% Right) — mismo reparto que Riftbound
 // ══════════════════════════════════════════════════════
 .builder-layout {
   display: grid;
-  grid-template-columns: 35% 65%;
+  grid-template-columns: 65% 35%;
   gap: 1.25rem;
   height: calc(100vh - 60px);
   max-width: 1700px;
@@ -85,7 +85,7 @@
 }
 
 // ══════════════════════════════════════════════════════
-// LEFT PANEL (35%): Card Browser & Filter Drawer
+// LEFT PANEL (65%): Card Browser & Filter Drawer
 // ══════════════════════════════════════════════════════
 .card-browser {
   display: flex;
@@ -405,7 +405,10 @@
     flex: 1;
     overflow-y: auto;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    // Mismo tamaño de carta que en el constructor de Riftbound (no columnas fijas):
+    // el panel de MyL es más angosto (35% vs 65% en Riftbound), así que forzar la
+    // misma cantidad de columnas ahí daba cartas más grandes en vez de iguales.
+    grid-template-columns: repeat(auto-fill, minmax(133px, 1fr));
     gap: 0.6rem;
     align-content: start;
     padding-right: 0.2rem;
@@ -798,7 +801,7 @@
 }
 
 // ══════════════════════════════════════════════════════
-// RIGHT PANEL (65%): Active Deck & Resource Curve
+// RIGHT PANEL (35%): Active Deck & Resource Curve
 // ══════════════════════════════════════════════════════
 .deck-panel {
   display: flex;

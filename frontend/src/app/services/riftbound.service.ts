@@ -432,6 +432,16 @@ export class RiftboundService {
     return this.http.get<PaginatedResponse<RiftboundStoreOrder>>(`${this.base}/orders/mine/`, { params });
   }
 
+  /** Pedidos que hice YO como comprador. Si se pasa `store` (token/slug), filtra solo esa tienda. */
+  listMyPurchaseOrders(opts: { status?: 'pending' | 'accepted' | 'cancelled'; page?: number; store?: string } = {})
+    : Observable<PaginatedResponse<RiftboundStoreOrder>> {
+    let params = new HttpParams();
+    if (opts.status) params = params.set('status', opts.status);
+    if (opts.page) params = params.set('page', String(opts.page));
+    if (opts.store) params = params.set('store', opts.store);
+    return this.http.get<PaginatedResponse<RiftboundStoreOrder>>(`${this.base}/orders/mine/purchases/`, { params });
+  }
+
   acceptStoreOrder(orderId: number, seller_note?: string): Observable<RiftboundStoreOrder> {
     return this.http.post<RiftboundStoreOrder>(`${this.base}/orders/${orderId}/accept/`, {
       seller_note: seller_note || '',

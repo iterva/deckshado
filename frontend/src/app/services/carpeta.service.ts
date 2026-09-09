@@ -179,6 +179,16 @@ export class CarpetaService {
     return this.http.get<PaginatedResponse<StoreOrder>>(`${this.apiUrl}/orders/mine/`, { params });
   }
 
+  /** Pedidos que hice YO como comprador. Si se pasa `store` (token/slug), filtra solo esa tienda. */
+  listMyPurchaseOrders(opts: { status?: 'pending' | 'accepted' | 'cancelled'; page?: number; store?: string } = {})
+    : Observable<PaginatedResponse<StoreOrder>> {
+    let params = new HttpParams();
+    if (opts.status) params = params.set('status', opts.status);
+    if (opts.page) params = params.set('page', String(opts.page));
+    if (opts.store) params = params.set('store', opts.store);
+    return this.http.get<PaginatedResponse<StoreOrder>>(`${this.apiUrl}/orders/mine/purchases/`, { params });
+  }
+
   acceptStoreOrder(orderId: number, sellerNote?: string): Observable<StoreOrder> {
     return this.http.post<StoreOrder>(`${this.apiUrl}/orders/${orderId}/accept/`, {
       seller_note: sellerNote || '',

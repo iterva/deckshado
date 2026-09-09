@@ -63,6 +63,7 @@ interface RiftboundCartItem {
             @if (s.discord) { <span class="contact-chip dc">💬 {{ s.discord }}</span> }
             @if (s.email_public) { <a class="contact-chip em" [href]="'mailto:' + s.email_public">✉️ Email</a> }
             @if (s.accepts_trades) { <span class="contact-chip tr">🔄 Acepta cambios</span> }
+            <a class="contact-chip" routerLink="/mis-compras" [queryParams]="{ game: 'riftbound' }" target="_blank">📦 Mis pedidos</a>
           </div>
           @if (s.payment_methods) { <p class="store-line"><strong>💳 Pago:</strong> {{ s.payment_methods }}</p> }
           @if (s.shipping_info) { <p class="store-line"><strong>🚚 Envío:</strong> {{ s.shipping_info }}</p> }
@@ -75,17 +76,6 @@ interface RiftboundCartItem {
                 [contactLine]="shareSellingContactLine()"
                 [items]="shareStoreItems()"
                 ctaLabel="Imagen tienda"
-                filenamePrefix="shadowforge-riftbound"
-                footerTagline="ShadowForge · Marketplace TCG">
-              </app-share-image>
-            } @else {
-              <app-share-image
-                mode="buying"
-                gameLabel="Riftbound"
-                [sellerName]="sellerHandle()"
-                [contactLine]="shareContactLine()"
-                [items]="shareWishlistItems()"
-                ctaLabel="Imagen busco"
                 filenamePrefix="shadowforge-riftbound"
                 footerTagline="ShadowForge · Marketplace TCG">
               </app-share-image>
@@ -110,6 +100,7 @@ interface RiftboundCartItem {
       @if (createdOrderId) {
         <div class="order-success">
           ✅ Pedido #{{ createdOrderId }} creado correctamente. El vendedor ya lo ve en su carpeta.
+          <a routerLink="/mis-compras" [queryParams]="{ game: 'riftbound' }" target="_blank">Ver mis pedidos ↗</a>
         </div>
       }
 

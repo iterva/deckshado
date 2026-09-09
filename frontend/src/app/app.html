@@ -205,6 +205,10 @@
               <app-icon name="edit" [size]="15"></app-icon>
               <span>Editar Perfil</span>
             </a>
+            <a routerLink="/mis-compras" class="dropdown-item" (click)="showDropdown.set(false)">
+              <app-icon name="package" [size]="15"></app-icon>
+              <span>Mis Pedidos</span>
+            </a>
             @if (auth.user()?.is_admin) {
               <a routerLink="/admin" class="dropdown-item" (click)="showDropdown.set(false)">
                 <app-icon name="shield-admin" [size]="15"></app-icon>

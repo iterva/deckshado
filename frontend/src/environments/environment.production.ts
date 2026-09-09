@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  appVersion: '1.1.95',
+  appVersion: '1.1.96',
   apiUrl: 'https://iterva.pythonanywhere.com/api',
   cloudinaryCloudName: 'drw7y27sm',
   cloudinaryUploadPreset: 'deckshado_avatars',

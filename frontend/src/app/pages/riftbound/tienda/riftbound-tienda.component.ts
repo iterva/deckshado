@@ -483,39 +483,67 @@ interface RiftboundCartItem {
       display: flex; align-items: center; justify-content: center;
     }
 
-    /* ── Drawer / dropdown de filtros ── */
+    /* ── Drawer / dropdown de filtros: glassmorphism (fondo translúcido + blur real) ── */
     .filters-backdrop {
-      position: fixed; inset: 0; background: rgba(0, 0, 0, .5); z-index: 1100;
+      position: fixed; inset: 0; z-index: 1100;
+      background: rgba(0, 0, 0, .5);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      animation: filters-fade-in .18s ease-out;
     }
     .filters-drawer {
       position: absolute; right: 0; margin-top: -.4rem; z-index: 1101;
       width: min(380px, 92vw); max-height: 75vh; overflow-y: auto;
-      background: #111a2f; border: 1px solid #2a3a4a; border-radius: 12px;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, .45);
+      background-color: rgba(18, 20, 28, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, .5);
+      animation: filters-drawer-in .2s ease-out;
+    }
+    @keyframes filters-fade-in { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes filters-drawer-in {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes filters-drawer-mobile-in {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     .filters-drawer-head {
       display: flex; align-items: center; justify-content: space-between;
-      padding: .9rem 1rem; border-bottom: 1px solid #2a3a4a;
+      padding: .9rem 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
-    .filters-drawer-head h3 { margin: 0; color: #fff; font-size: 1rem; }
+    .filters-drawer-head h3 { margin: 0; color: #fff; font-size: 1rem; font-weight: 700; }
+    .filters-drawer-head .close-btn {
+      background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .1);
+      color: #c8c8da; width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .filters-drawer-head .close-btn:hover { background: rgba(233, 69, 96, .18); color: #ff9aa9; }
     .filters-drawer-body { padding: .9rem 1rem; display: flex; flex-direction: column; gap: .9rem; }
     .filter-group { display: flex; flex-direction: column; gap: .4rem; }
-    .filter-group + .filter-group { padding-top: .9rem; border-top: 1px dashed #2a3a4a; }
+    .filter-group + .filter-group { padding-top: .9rem; border-top: 1px solid rgba(255, 255, 255, 0.06); }
     .filter-group-label {
       color: #9ba3b4; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
     }
     .filter-group input, .filter-group select {
-      padding: .5rem .7rem; background: #0f0f23; color: #c8c8da;
-      border: 1px solid #2a3a4a; border-radius: 6px; font-size: .88rem;
+      padding: .5rem .7rem; background: rgba(255, 255, 255, 0.04); color: #e5ebf7;
+      border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; font-size: .88rem;
+      transition: border-color .15s, background .15s;
     }
-    .filter-group input:focus, .filter-group select:focus { outline: none; border-color: #e94560; }
+    .filter-group input:focus, .filter-group select:focus {
+      outline: none; border-color: #e94560; background: rgba(255, 255, 255, 0.06);
+    }
 
     .color-chip-row { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
     .color-chip {
       padding: .3rem .75rem; border-radius: 999px; font-size: .8rem; font-weight: 600;
-      background: transparent; color: var(--c, #c8c8da); border: 1px solid var(--c, #2a3a4a);
-      cursor: pointer;
+      background: rgba(255, 255, 255, 0.04); color: var(--c, #c8c8da); border: 1px solid var(--c, rgba(255, 255, 255, 0.14));
+      cursor: pointer; transition: background .15s, transform .15s;
     }
+    .color-chip:hover { transform: translateY(-1px); }
     .color-chip.active { background: var(--c, #e94560); color: #0f0f23; }
     .clear-colors { background: none; border: none; color: #e94560; font-size: .78rem; cursor: pointer; }
 
@@ -527,9 +555,20 @@ interface RiftboundCartItem {
     .price-range-row input { flex: 1 1 0; min-width: 0; }
 
     .filters-drawer-actions {
-      display: flex; gap: .5rem; padding: .9rem 1rem; border-top: 1px solid #2a3a4a;
+      display: flex; gap: .5rem; padding: .9rem 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
-    .filters-drawer-actions .btn { flex: 1 1 0; text-align: center; }
+    .filters-drawer-actions .btn {
+      flex: 1 1 0; text-align: center; border-radius: 8px;
+      transition: background .15s, border-color .15s, transform .15s;
+    }
+    .filters-drawer-actions .btn:not(.btn-primary) {
+      background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12); color: #c8c8da;
+    }
+    .filters-drawer-actions .btn:not(.btn-primary):hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.22);
+    }
+    .filters-drawer-actions .btn-primary:hover:not(:disabled) { transform: translateY(-1px); }
 
     .results-count { color: #9ba3b4; font-size: .9rem; margin-bottom: 1rem; }
 
@@ -751,8 +790,14 @@ interface RiftboundCartItem {
       .filters-drawer {
         position: fixed; inset: 0; right: 0; margin-top: 0;
         width: 100%; max-height: 100%; border-radius: 0;
+        animation: filters-drawer-mobile-in .22s ease-out;
       }
-      .filters-drawer-actions { position: sticky; bottom: 0; background: #111a2f; }
+      .filters-drawer-actions {
+        position: sticky; bottom: 0;
+        background-color: rgba(18, 20, 28, 0.9);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+      }
       .cards-grid { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: .55rem; }
       .card-image img {
         object-fit: contain;

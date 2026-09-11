@@ -11,6 +11,7 @@ import { AuthService } from '../../../services/auth.service';
 import {
   RiftboundCollectionEntry, RiftboundCardLite, RiftboundPublicBinderProfile,
   RiftboundWishlistEntry, RiftboundStoreOrderCreatePayload,
+  RIFTBOUND_COLORS, RIFTBOUND_CARD_TYPES, RiftboundColor,
 } from '../../../models/riftbound';
 import { ShareImageComponent, ShareImageItem } from '../../../components/share-image/share-image.component';
 import { CardPhotoCarouselComponent } from '../../../components/card-photo-carousel/card-photo-carousel.component';
@@ -58,12 +59,34 @@ interface RiftboundCartItem {
           </p>
           @if (s.bio) { <p class="store-bio">{{ s.bio }}</p> }
           <div class="contact-row">
-            @if (s.whatsapp) { <a class="contact-chip wa" [href]="'https://wa.me/' + cleanWa(s.whatsapp)" target="_blank">📱 WhatsApp</a> }
-            @if (s.instagram) { <a class="contact-chip ig" [href]="'https://instagram.com/' + cleanHandle(s.instagram)" target="_blank">📷 Instagram</a> }
-            @if (s.discord) { <span class="contact-chip dc">💬 {{ s.discord }}</span> }
-            @if (s.email_public) { <a class="contact-chip em" [href]="'mailto:' + s.email_public">✉️ Email</a> }
-            @if (s.accepts_trades) { <span class="contact-chip tr">🔄 Acepta cambios</span> }
-            <a class="contact-chip" routerLink="/mis-compras" [queryParams]="{ game: 'riftbound', store: token }" target="_blank">📦 Mis pedidos</a>
+            @if (s.whatsapp) {
+              <a class="contact-chip wa" [href]="'https://wa.me/' + cleanWa(s.whatsapp)" target="_blank">
+                <span class="ci-icon" aria-hidden="true">📱</span><span class="ci-label">WhatsApp</span>
+              </a>
+            }
+            @if (s.instagram) {
+              <a class="contact-chip ig" [href]="'https://instagram.com/' + cleanHandle(s.instagram)" target="_blank">
+                <span class="ci-icon" aria-hidden="true">📷</span><span class="ci-label">Instagram</span>
+              </a>
+            }
+            @if (s.discord) {
+              <span class="contact-chip dc">
+                <span class="ci-icon" aria-hidden="true">💬</span><span class="ci-label">{{ s.discord }}</span>
+              </span>
+            }
+            @if (s.email_public) {
+              <a class="contact-chip em" [href]="'mailto:' + s.email_public">
+                <span class="ci-icon" aria-hidden="true">✉️</span><span class="ci-label">Email</span>
+              </a>
+            }
+            @if (s.accepts_trades) {
+              <span class="contact-chip tr">
+                <span class="ci-icon" aria-hidden="true">🔄</span><span class="ci-label">Acepta cambios</span>
+              </span>
+            }
+            <a class="contact-chip" routerLink="/mis-compras" [queryParams]="{ game: 'riftbound', store: token }" target="_blank">
+              <span class="ci-icon" aria-hidden="true">📦</span><span class="ci-label">Mis pedidos</span>
+            </a>
           </div>
           @if (s.payment_methods) { <p class="store-line"><strong>💳 Pago:</strong> {{ s.payment_methods }}</p> }
           @if (s.shipping_info) { <p class="store-line"><strong>🚚 Envío:</strong> {{ s.shipping_info }}</p> }
@@ -105,41 +128,97 @@ interface RiftboundCartItem {
       }
 
       @if (activeTab() === 'store') {
-      <div class="store-filter-card">
-        <div class="store-filter-grid">
-        <input class="sf-search" type="text" placeholder="Buscar..." [(ngModel)]="search" (keyup.enter)="applyFilters()" />
-        <select class="sf-type" [(ngModel)]="ftype">
-          <option value="">Todos los tipos</option>
-          <option value="unit">Unit</option><option value="spell">Spell</option>
-          <option value="champion">Champion</option><option value="legend">Legend</option>
-          <option value="gear">Gear</option><option value="battlefield">Battlefield</option>
-          <option value="rune">Rune</option>
-        </select>
-        <select class="sf-foil" [(ngModel)]="ffoil">
-          <option value="">Foil/Normal</option>
-          <option value="1">Solo foil</option>
-          <option value="0">Solo normal</option>
-        </select>
-        <input class="sf-price-min" type="number" placeholder="Precio mín." [(ngModel)]="priceMin" min="0" />
-        <input class="sf-price-max" type="number" placeholder="Precio máx." [(ngModel)]="priceMax" min="0" />
-        <select class="sf-order" [(ngModel)]="ordering">
-          <option value="-price">Precio ↓</option>
-          <option value="-id">Más recientes</option>
-          <option value="price">Precio ↑</option>
-          <option value="card__name">Nombre A-Z</option>
-        </select>
-        </div>
-        <div class="store-filter-actions">
-          <button class="btn btn-sm btn-primary" (click)="applyFilters()" [disabled]="loading()">🔎 Filtrar</button>
-          <button class="btn btn-sm" (click)="clearFilters()" [disabled]="loading()">Limpiar</button>
-        </div>
+      <div class="filters-bar">
+        <input class="filters-search" type="text" placeholder="Buscar carta..." [(ngModel)]="search" (keyup.enter)="applyFilters()" />
+        <button type="button" class="filters-toggle-btn" [class.active]="filtersOpen()"
+                (click)="filtersOpen.set(!filtersOpen())"
+                [attr.aria-expanded]="filtersOpen()" aria-label="Mostrar filtros">
+          <span class="ft-icon" aria-hidden="true">🔽</span>
+          <span class="ft-text">Filtros</span>
+          @if (activeFilterCount() > 0) { <span class="filter-badge">{{ activeFilterCount() }}</span> }
+        </button>
       </div>
+
+      @if (filtersOpen()) {
+        <div class="filters-backdrop" (click)="filtersOpen.set(false)"></div>
+        <div class="filters-drawer" role="dialog" aria-label="Filtros de la tienda">
+          <div class="filters-drawer-head">
+            <h3>Filtros</h3>
+            <button type="button" class="close-btn" (click)="filtersOpen.set(false)" aria-label="Cerrar filtros">✕</button>
+          </div>
+          <div class="filters-drawer-body">
+            <div class="filter-group">
+              <label class="filter-group-label">Tipo de carta</label>
+              <select class="sf-type" [(ngModel)]="ftype">
+                <option value="">Todos los tipos</option>
+                @for (t of cardTypes; track t.code) {
+                  <option [value]="t.code">{{ t.label }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label class="filter-group-label">Colores</label>
+              <div class="color-chip-row">
+                @for (c of riftboundColors; track c.code) {
+                  <button type="button" class="color-chip" [class.active]="fcolors().has(c.code)"
+                          [style.--c]="c.hex" (click)="toggleColor(c.code)">{{ c.label }}</button>
+                }
+                @if (fcolors().size > 0) {
+                  <button type="button" class="clear-colors" (click)="clearColors()">Limpiar</button>
+                }
+              </div>
+            </div>
+
+            <div class="filter-group">
+              <label class="filter-group-label">Estadísticas</label>
+              <div class="stats-row">
+                <label>Energía<input type="number" min="0" placeholder="—" [(ngModel)]="fenergy" /></label>
+                <label>Power<input type="number" min="0" placeholder="—" [(ngModel)]="fpower" /></label>
+                <label>Might<input type="number" min="0" placeholder="—" [(ngModel)]="fmight" /></label>
+              </div>
+            </div>
+
+            <div class="filter-group">
+              <label class="filter-group-label">Estado</label>
+              <select class="sf-foil" [(ngModel)]="ffoil">
+                <option value="">Foil/Normal</option>
+                <option value="1">Solo foil</option>
+                <option value="0">Solo normal</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label class="filter-group-label">Precio</label>
+              <div class="price-range-row">
+                <input type="number" placeholder="Mín." [(ngModel)]="priceMin" min="0" />
+                <span aria-hidden="true">—</span>
+                <input type="number" placeholder="Máx." [(ngModel)]="priceMax" min="0" />
+              </div>
+            </div>
+
+            <div class="filter-group">
+              <label class="filter-group-label">Ordenar por</label>
+              <select class="sf-order" [(ngModel)]="ordering">
+                <option value="-price">Precio ↓</option>
+                <option value="-id">Más recientes</option>
+                <option value="price">Precio ↑</option>
+                <option value="card__name">Nombre A-Z</option>
+              </select>
+            </div>
+          </div>
+          <div class="filters-drawer-actions">
+            <button type="button" class="btn btn-sm" (click)="clearFilters()" [disabled]="loading()">Limpiar filtros</button>
+            <button type="button" class="btn btn-sm btn-primary" (click)="applyFilters(); filtersOpen.set(false)" [disabled]="loading()">Aplicar</button>
+          </div>
+        </div>
+      }
 
       <p class="results-count">{{ count() }} cartas</p>
 
       <div class="cards-grid">
         @for (e of entries(); track e.id) {
-          <div class="store-card">
+          <div class="store-card" [class.in-cart]="inCart(e.id) > 0">
             <div class="card-image" (click)="openPreview(e.card_data)">
               @if (entryCardImage(e)) {
                 <app-card-photo-carousel
@@ -151,6 +230,12 @@ interface RiftboundCartItem {
                 </app-card-photo-carousel>
               } @else { <div class="img-fallback">{{ e.card_data.card_number }}</div> }
               @if (e.is_foil) { <div class="foil-badge">✨ FOIL</div> }
+              <button type="button" class="add-fab" [class.added]="inCart(e.id) > 0"
+                      (click)="addToCart(e, $event)"
+                      [disabled]="inCart(e.id) >= e.selling_quantity"
+                      [attr.aria-label]="inCart(e.id) > 0 ? ('En carrito, ' + inCart(e.id) + ' unidades') : 'Añadir al carrito'">
+                @if (inCart(e.id) > 0) { <span aria-hidden="true">✓</span> } @else { <span aria-hidden="true">+</span> }
+              </button>
             </div>
             <div class="card-body">
               <h4>{{ e.card_data.name }}</h4>
@@ -160,15 +245,9 @@ interface RiftboundCartItem {
                 <span class="qty">x{{ e.selling_quantity }}</span>
               </div>
               <app-tcg-price [cardName]="e.card_data.name || ''" [compact]="true" [showLink]="false" [showMarketPrice]="false"></app-tcg-price>
-              <button class="btn btn-sm btn-primary btn-add-cart"
-                      (click)="addToCart(e, $event)"
-                      [disabled]="inCart(e.id) >= e.selling_quantity">
-                @if (inCart(e.id)) {
-                  🛒 En carrito ({{ inCart(e.id) }})
-                } @else {
-                  🛒 Añadir
-                }
-              </button>
+              @if (inCart(e.id) > 0) {
+                <span class="in-cart-note">✓ En carrito ({{ inCart(e.id) }})</span>
+              }
             </div>
           </div>
         }
@@ -240,18 +319,20 @@ interface RiftboundCartItem {
             <ul class="cart-list">
               @for (item of cart(); track item.entryId) {
                 <li class="cart-item">
-                  @if (item.image) { <img [src]="item.image" [alt]="item.name" /> }
-                  <div class="cart-item-info">
-                    <strong>{{ item.name }}</strong>
-                    <small>{{ item.price != null ? ('$' + (item.price | number)) : 'Sin precio' }}</small>
+                  @if (item.image) { <img class="cart-item-thumb" [src]="item.image" [alt]="item.name" /> }
+                  <strong class="cart-item-name">{{ item.name }}</strong>
+                  <div class="cart-item-price">
+                    <strong>\${{ ((item.price || 0) * item.qty) | number }}</strong>
+                    <small>{{ item.price != null ? ('$' + (item.price | number) + ' c/u') : 'Sin precio' }}</small>
                   </div>
-                  <div class="cart-qty">
-                    <button (click)="changeCartQty(item, -1)">−</button>
-                    <span>{{ item.qty }}</span>
-                    <button (click)="changeCartQty(item, 1)" [disabled]="item.qty >= item.available">+</button>
+                  <div class="cart-item-controls">
+                    <div class="cart-qty">
+                      <button type="button" (click)="changeCartQty(item, -1)" aria-label="Quitar una unidad">−</button>
+                      <span>{{ item.qty }}</span>
+                      <button type="button" (click)="changeCartQty(item, 1)" [disabled]="item.qty >= item.available" aria-label="Agregar una unidad">+</button>
+                    </div>
+                    <button type="button" class="btn-icon" (click)="removeFromCart(item)" title="Quitar" aria-label="Quitar del carrito">🗑️</button>
                   </div>
-                  <strong class="cart-line-total">\${{ ((item.price || 0) * item.qty) | number }}</strong>
-                  <button class="btn-icon" (click)="removeFromCart(item)" title="Quitar">🗑️</button>
                 </li>
               }
             </ul>
@@ -344,6 +425,7 @@ interface RiftboundCartItem {
     .store-line strong { color: #c8c8da; }
     .contact-row { display: flex; gap: .4rem; flex-wrap: wrap; margin: .5rem 0; }
     .contact-chip {
+      display: inline-flex; align-items: center; gap: .4rem;
       padding: .35rem .7rem; border-radius: 6px; font-size: .82rem;
       background: #0f0f23; color: #c8c8da; border: 1px solid #2a3a4a;
       text-decoration: none;
@@ -371,42 +453,79 @@ interface RiftboundCartItem {
     .empty-state { padding: 2rem; text-align: center; color: #9ba3b4; }
     .wishlist-qty { color: #ff7e7e !important; }
 
-    .store-filter-card {
-      margin-bottom: 1rem;
-      padding: .7rem;
-      border-radius: 10px;
-      border: 1px solid #2a3a4a;
-      background: #111a2f;
+    /* ── Barra de filtros minimalista: búsqueda + botón "Filtros" ── */
+    .filters-bar {
+      position: relative;
+      display: flex; gap: .6rem; margin-bottom: 1rem;
     }
-    .store-filter-grid {
-      display: grid;
-      gap: .5rem;
-      grid-template-columns: repeat(14, minmax(0, 1fr));
+    .filters-search {
+      flex: 1 1 auto; min-width: 0;
+      padding: .6rem .8rem; background: #111a2f; color: #c8c8da;
+      border: 1px solid #2a3a4a; border-radius: 8px; font-size: .92rem;
     }
-    .sf-search { grid-column: span 4; }
-    .sf-type,
-    .sf-foil,
-    .sf-price-min,
-    .sf-price-max,
-    .sf-order {
-      grid-column: span 2;
+    .filters-search:focus { outline: none; border-color: #e94560; }
+    .filters-toggle-btn {
+      position: relative; flex: 0 0 auto; display: inline-flex; align-items: center; gap: .4rem;
+      padding: .6rem 1rem; border-radius: 8px; border: 1px solid #2a3a4a;
+      background: #111a2f; color: #c8c8da; font-size: .88rem; font-weight: 600; cursor: pointer;
     }
-    .store-filter-actions {
-      display: flex;
-      gap: .5rem;
-      justify-content: flex-end;
-      margin-top: .6rem;
+    .filters-toggle-btn:hover { border-color: #4a5a6a; }
+    .filters-toggle-btn.active { border-color: #e94560; color: #e94560; background: rgba(233, 69, 96, .1); }
+    .filters-toggle-btn .ft-icon { font-size: .85rem; }
+    .filter-badge {
+      position: absolute; top: -6px; right: -6px;
+      min-width: 16px; height: 16px; padding: 0 3px; border-radius: 8px;
+      background: #e94560; color: #fff; font-size: .65rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
     }
-    .store-filter-actions .btn { min-width: 118px; }
-    .filter-row { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
-    .filter-row input, .filter-row select, .store-filter-grid input, .store-filter-grid select {
+
+    /* ── Drawer / dropdown de filtros ── */
+    .filters-backdrop {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, .5); z-index: 1100;
+    }
+    .filters-drawer {
+      position: absolute; right: 0; margin-top: -.4rem; z-index: 1101;
+      width: min(380px, 92vw); max-height: 75vh; overflow-y: auto;
+      background: #111a2f; border: 1px solid #2a3a4a; border-radius: 12px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, .45);
+    }
+    .filters-drawer-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .9rem 1rem; border-bottom: 1px solid #2a3a4a;
+    }
+    .filters-drawer-head h3 { margin: 0; color: #fff; font-size: 1rem; }
+    .filters-drawer-body { padding: .9rem 1rem; display: flex; flex-direction: column; gap: .9rem; }
+    .filter-group { display: flex; flex-direction: column; gap: .4rem; }
+    .filter-group + .filter-group { padding-top: .9rem; border-top: 1px dashed #2a3a4a; }
+    .filter-group-label {
+      color: #9ba3b4; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+    }
+    .filter-group input, .filter-group select {
       padding: .5rem .7rem; background: #0f0f23; color: #c8c8da;
-      border: 1px solid #2a3a4a; border-radius: 6px;
+      border: 1px solid #2a3a4a; border-radius: 6px; font-size: .88rem;
     }
-    .filter-row input:focus, .filter-row select:focus, .store-filter-grid input:focus, .store-filter-grid select:focus {
-      outline: none;
-      border-color: #e94560;
+    .filter-group input:focus, .filter-group select:focus { outline: none; border-color: #e94560; }
+
+    .color-chip-row { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+    .color-chip {
+      padding: .3rem .75rem; border-radius: 999px; font-size: .8rem; font-weight: 600;
+      background: transparent; color: var(--c, #c8c8da); border: 1px solid var(--c, #2a3a4a);
+      cursor: pointer;
     }
+    .color-chip.active { background: var(--c, #e94560); color: #0f0f23; }
+    .clear-colors { background: none; border: none; color: #e94560; font-size: .78rem; cursor: pointer; }
+
+    .stats-row { display: flex; gap: .6rem; flex-wrap: wrap; }
+    .stats-row label { flex: 1 1 80px; display: flex; flex-direction: column; gap: .25rem; color: #9ba3b4; font-size: .78rem; }
+    .stats-row input { width: 100%; }
+
+    .price-range-row { display: flex; align-items: center; gap: .5rem; color: #9ba3b4; }
+    .price-range-row input { flex: 1 1 0; min-width: 0; }
+
+    .filters-drawer-actions {
+      display: flex; gap: .5rem; padding: .9rem 1rem; border-top: 1px solid #2a3a4a;
+    }
+    .filters-drawer-actions .btn { flex: 1 1 0; text-align: center; }
 
     .results-count { color: #9ba3b4; font-size: .9rem; margin-bottom: 1rem; }
 
@@ -415,6 +534,7 @@ interface RiftboundCartItem {
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     }
     .store-card { background: #16213e; border: 1px solid #2a3a4a; border-radius: 10px; overflow: hidden; }
+    .store-card.in-cart { border-color: #25d366; box-shadow: inset 0 0 0 1px rgba(37, 211, 102, .35); }
     .card-image { position: relative; aspect-ratio: 5/7; background: #0f0f23; cursor: pointer; overflow: hidden; }
     .card-image img { width: 100%; height: 100%; object-fit: cover; transition: transform .2s; }
     .card-image:hover img { transform: scale(1.04); }
@@ -428,15 +548,20 @@ interface RiftboundCartItem {
       color: #fff; padding: .2rem .5rem; border-radius: 4px;
       font-size: .7rem; font-weight: 700;
     }
-    .card-body { padding: .65rem .75rem .8rem; }
+    .card-body { padding: .55rem .65rem .7rem; }
     .card-body h4 {
       margin: 0 0 .25rem; font-size: .95rem; color: #fff;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden; text-overflow: ellipsis;
     }
     .card-meta { color: #9ba3b4; font-size: .78rem; }
     .price-row { display: flex; justify-content: space-between; align-items: center; margin-top: .5rem; }
     .price { color: #e94560; font-weight: 800; font-size: 1.05rem; }
     .qty { color: #4fc3f7; font-size: .85rem; }
+    .in-cart-note {
+      display: inline-flex; align-items: center; gap: .25rem;
+      margin-top: .45rem; color: #25d366; font-size: .78rem; font-weight: 700;
+    }
 
     .btn { padding: .4rem .8rem; border: 1px solid #2a3a4a; background: transparent; color: #c8c8da;
       border-radius: 6px; cursor: pointer; font-weight: 600; text-decoration: none; display: inline-block; }
@@ -470,7 +595,18 @@ interface RiftboundCartItem {
     .btn-tcg:hover { background: linear-gradient(135deg, #2980d9, #1a6bc4); transform: translateY(-1px); }
 
     /* Cart */
-    .btn-add-cart { width: 100%; margin-top: .55rem; font-size: .82rem; }
+    .add-fab {
+      position: absolute; right: 8px; bottom: 8px; z-index: 2;
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, .28);
+      background: rgba(15, 15, 35, .72);
+      color: #fff; font-size: 1.1rem; font-weight: 700; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: background .15s, border-color .15s, transform .15s;
+    }
+    .add-fab:hover:not(:disabled) { background: #e94560; border-color: #e94560; transform: scale(1.08); }
+    .add-fab:disabled { opacity: .55; cursor: not-allowed; }
+    .add-fab.added { background: rgba(37, 211, 102, .22); border-color: #25d366; color: #25d366; }
     .cart-fab {
       position: fixed; bottom: 1.25rem; right: 1.25rem; z-index: 999;
       padding: .85rem 1.3rem; border-radius: 999px; border: none;
@@ -489,20 +625,28 @@ interface RiftboundCartItem {
     .empty-cart { color: #9ba3b4; text-align: center; padding: 1rem; }
     .cart-list { list-style: none; padding: 0; margin: 0 0 .8rem; display: flex; flex-direction: column; gap: .55rem; }
     .cart-item {
-      display: grid; grid-template-columns: 48px 1fr auto auto auto; gap: .6rem;
-      align-items: center; padding: .5rem; background: #0f0f23;
+      display: grid;
+      grid-template-columns: 52px 1fr auto;
+      grid-template-areas: "thumb name controls" "thumb price controls";
+      column-gap: .7rem; row-gap: .15rem;
+      align-items: center; padding: .55rem .6rem; background: #0f0f23;
       border: 1px solid #2a3a4a; border-radius: 8px;
     }
-    .cart-item img { width: 48px; height: 67px; object-fit: cover; border-radius: 4px; }
-    .cart-item-info strong { display: block; color: #fff; font-size: .9rem; }
-    .cart-item-info small { color: #9ba3b4; font-size: .78rem; }
+    .cart-item-thumb { grid-area: thumb; width: 52px; height: 73px; object-fit: cover; border-radius: 5px; }
+    .cart-item-name { grid-area: name; color: #fff; font-size: .9rem; }
+    .cart-item-price { grid-area: price; display: flex; align-items: baseline; gap: .4rem; }
+    .cart-item-price strong { color: #e94560; font-size: .92rem; }
+    .cart-item-price small { color: #9ba3b4; font-size: .74rem; }
+    .cart-item-controls {
+      grid-area: controls; display: flex; flex-direction: column;
+      align-items: flex-end; gap: .35rem;
+    }
     .cart-qty { display: flex; align-items: center; gap: .3rem; }
     .cart-qty button {
       width: 26px; height: 26px; border-radius: 4px;
       background: #1e2d3d; color: #fff; border: 1px solid #2a3a4a; cursor: pointer;
     }
     .cart-qty button:disabled { opacity: .4; cursor: not-allowed; }
-    .cart-line-total { color: #e94560; font-size: .9rem; }
     .btn-icon { background: transparent; border: none; cursor: pointer; font-size: 1rem; }
     .cart-total {
       display: flex; align-items: center; justify-content: space-between;
@@ -534,9 +678,9 @@ interface RiftboundCartItem {
     .buyer-grid label.full { grid-column: 1 / -1; }
     .buyer-grid input, .buyer-grid textarea {
       padding: .5rem .65rem;
-      border-radius: 6px;
-      border: 1px solid #2a3a4a;
-      background: #171f30;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, .1);
+      background: rgba(255, 255, 255, .03);
       color: #e5ebf7;
       font-size: .9rem;
       font-family: inherit;
@@ -564,32 +708,27 @@ interface RiftboundCartItem {
 
     /* ── Mobile ── */
     @media (max-width: 768px) {
-      .store-filter-card {
-        padding: .6rem;
-        border-radius: 9px;
+      .contact-row { gap: .5rem; }
+      .contact-chip {
+        width: 40px; height: 40px; padding: 0; border-radius: 50%;
+        justify-content: center; background: rgba(255, 255, 255, .05);
+        border-color: rgba(255, 255, 255, .12); color: #fff;
       }
-      .store-filter-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+      .contact-chip.wa, .contact-chip.ig, .contact-chip.em, .contact-chip.tr {
+        color: #fff; border-color: rgba(255, 255, 255, .12);
       }
-      .sf-type,
-      .sf-foil {
-        grid-column: auto;
+      .contact-chip .ci-icon { font-size: 1.05rem; }
+      .contact-chip .ci-label {
+        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+        overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
       }
-      .sf-search,
-      .sf-price-min,
-      .sf-price-max,
-      .sf-order {
-        grid-column: 1 / -1;
+
+      .filters-toggle-btn .ft-text { display: none; }
+      .filters-drawer {
+        position: fixed; inset: 0; right: 0; margin-top: 0;
+        width: 100%; max-height: 100%; border-radius: 0;
       }
-      .store-filter-actions {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-      .store-filter-actions .btn {
-        width: 100%;
-        min-width: 0;
-        font-size: .82rem;
-      }
+      .filters-drawer-actions { position: sticky; bottom: 0; background: #111a2f; }
       .cards-grid { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: .55rem; }
       .card-image img {
         object-fit: contain;
@@ -603,38 +742,27 @@ interface RiftboundCartItem {
         display: block;
         border-radius: 14px;
       }
-      .card-body { padding: .55rem .6rem .65rem; }
+      .card-body { padding: .5rem .55rem .6rem; }
       .card-body h4 { font-size: .88rem; }
       .price { font-size: .95rem; }
-      .btn-add-cart {
-        margin-top: .5rem; padding: .55rem .6rem; font-size: .85rem;
-        background: #e94560; color: #fff; border-color: #e94560; font-weight: 700;
-      }
+      .add-fab { width: 30px; height: 30px; font-size: 1rem; right: 6px; bottom: 6px; }
       .cart-fab {
         bottom: calc(4.8rem + env(safe-area-inset-bottom, 0));
         right: .9rem; padding: .75rem 1.1rem; font-size: .9rem;
       }
       .cart-modal { padding: .9rem; max-height: 88vh; }
-      .cart-item { grid-template-columns: 40px 1fr auto; row-gap: .35rem; }
-      .cart-item img { width: 40px; height: 56px; }
-      .cart-item .cart-qty, .cart-item .cart-line-total, .cart-item .btn-icon {
-        grid-column: span 1;
-      }
+      .cart-item { padding: .45rem .5rem; }
+      .cart-item-thumb { width: 44px; height: 62px; }
+      .cart-item { grid-template-columns: 44px 1fr auto; }
     }
     @media (max-width: 480px) {
-      .store-filter-grid { grid-template-columns: 1fr; }
-      .sf-search,
-      .sf-price-min,
-      .sf-price-max,
-      .sf-order {
-        grid-column: auto;
-      }
       .cards-grid { grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: .45rem; }
       .card-body h4 { font-size: .76rem; }
       .card-meta { display: none; }
       .price { font-size: .82rem; }
       .qty { font-size: .74rem; }
-      .btn-add-cart { font-size: .74rem; padding: .4rem .45rem; }
+      .add-fab { width: 26px; height: 26px; font-size: .9rem; }
+      .in-cart-note { font-size: .68rem; }
     }
   `],
 })
@@ -688,6 +816,36 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
   priceMin: number | null = null;
   priceMax: number | null = null;
   ordering = '-price';
+  filtersOpen = signal(false);
+  fcolors = signal(new Set<RiftboundColor>());
+  fenergy: number | null = null;
+  fpower: number | null = null;
+  fmight: number | null = null;
+
+  readonly riftboundColors = RIFTBOUND_COLORS;
+  readonly cardTypes = RIFTBOUND_CARD_TYPES;
+
+  toggleColor(code: RiftboundColor) {
+    const next = new Set(this.fcolors());
+    if (next.has(code)) next.delete(code); else next.add(code);
+    this.fcolors.set(next);
+  }
+
+  clearColors() { this.fcolors.set(new Set()); }
+
+  activeFilterCount(): number {
+    let n = 0;
+    if (this.ftype) n++;
+    if (this.ffoil) n++;
+    if (this.priceMin != null) n++;
+    if (this.priceMax != null) n++;
+    if (this.ordering !== '-price') n++;
+    if (this.fcolors().size > 0) n++;
+    if (this.fenergy != null) n++;
+    if (this.fpower != null) n++;
+    if (this.fmight != null) n++;
+    return n;
+  }
 
   cartCount() { return this.cart().reduce((s, c) => s + c.qty, 0); }
   cartTotal() { return this.cart().reduce((s, c) => s + (c.price || 0) * c.qty, 0); }
@@ -745,6 +903,10 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
     this.priceMin = null;
     this.priceMax = null;
     this.ordering = '-price';
+    this.fcolors.set(new Set());
+    this.fenergy = null;
+    this.fpower = null;
+    this.fmight = null;
     this.reload();
   }
 
@@ -764,6 +926,10 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
       foil: this.ffoil || undefined,
       price_min: this.priceMin ?? undefined,
       price_max: this.priceMax ?? undefined,
+      colors: this.fcolors().size ? Array.from(this.fcolors()) : undefined,
+      energy: this.fenergy ?? undefined,
+      power: this.fpower ?? undefined,
+      might: this.fmight ?? undefined,
       ordering: this.ordering,
       page: this.page(),
     }).subscribe({

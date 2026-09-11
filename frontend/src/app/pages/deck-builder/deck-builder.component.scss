@@ -405,13 +405,14 @@
     flex: 1;
     overflow-y: auto;
     display: grid;
-    // Mismo tamaño de carta que en el constructor de Riftbound (no columnas fijas):
-    // el panel de MyL es más angosto (35% vs 65% en Riftbound), así que forzar la
-    // misma cantidad de columnas ahí daba cartas más grandes en vez de iguales.
-    grid-template-columns: repeat(auto-fill, minmax(133px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 0.6rem;
     align-content: start;
     padding-right: 0.2rem;
+
+    @media (max-width: 1300px) {
+      grid-template-columns: repeat(3, 1fr);
+    }
 
     &.skeleton-grid .mini-card.skeleton {
       aspect-ratio: 2.5 / 3.5;
@@ -460,11 +461,12 @@
         aspect-ratio: 2.5 / 3.5;
         border-radius: 7px;
         overflow: hidden;
+        background: #121217;
 
         img {
           width: 100%;
           height: 100%;
-          object-fit: cover;
+          object-fit: contain;
           display: block;
         }
 
@@ -743,7 +745,7 @@
     // Responsive: en móvil el panel de cartas ocupa todo el ancho de la pantalla
     // (ver .builder-layout @media 960px), así que agrandamos cartas y círculos táctiles.
     @media (max-width: 960px) {
-      grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+      grid-template-columns: repeat(2, 1fr);
       gap: 0.7rem;
 
       .mini-card .floating-selector {
@@ -953,40 +955,53 @@
     }
   }
 
-  // Deck Form Grid
-  .deck-form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr auto;
-    gap: 0.75rem;
-    align-items: flex-end;
+  // Deck Info Box (Nombre / Descripción)
+  .deck-info-box {
+    position: relative;
+    border: 1px solid color-mix(in srgb, var(--ui-accent) 40%, transparent);
+    border-radius: 12px;
+    padding: 1.35rem 1rem 1rem;
     margin-bottom: 1rem;
+    background: rgba(18, 18, 23, 0.5);
 
-    @media (max-width: 600px) {
-      grid-template-columns: 1fr;
-    }
+    .form-group.floating {
+      position: relative;
+      margin-bottom: 0.9rem;
 
-    .form-group {
       label {
-        display: block;
-        font-size: 0.72rem;
+        position: absolute;
+        top: -0.65rem;
+        left: 0.7rem;
+        padding: 0 0.4rem;
+        background: #121217;
+        border-radius: 4px;
+        font-size: 0.7rem;
         font-weight: 600;
         color: var(--ui-text-muted);
-        margin-bottom: 0.25rem;
       }
 
-      input {
+      input,
+      textarea {
         width: 100%;
-        padding: 0.45rem 0.75rem;
+        padding: 0.6rem 0.75rem;
         background: rgba(18, 18, 23, 0.8);
         border: 1px solid var(--ui-border);
-        border-radius: 6px;
+        border-radius: 8px;
         color: #ffffff;
         font-size: 0.85rem;
+        font-family: inherit;
         outline: none;
+        box-sizing: border-box;
 
         &:focus {
           border-color: var(--ui-accent);
         }
+      }
+
+      textarea {
+        resize: vertical;
+        min-height: 4.5rem;
+        line-height: 1.4;
       }
 
       &.has-error input {
@@ -997,7 +1012,7 @@
     .form-checkboxes {
       display: flex;
       gap: 0.75rem;
-      padding-bottom: 0.35rem;
+      flex-wrap: wrap;
 
       .checkbox-label {
         display: flex;
@@ -1366,25 +1381,33 @@
         }
       }
 
+      // Un solo "capsula" con fondo compartido (mismo criterio que el constructor de
+      // Riftbound), en vez de botones sueltos con espacio entre ellos.
       .entry-controls {
         display: flex;
-        align-items: center;
-        gap: 0.3rem;
+        align-items: stretch;
+        flex-shrink: 0;
+        background: rgba(39, 39, 42, 0.5);
+        border: 1px solid var(--ui-border);
+        border-radius: 10px;
+        overflow: hidden;
 
         .entry-qty {
+          display: flex;
+          align-items: center;
+          justify-content: center;
           font-size: 0.82rem;
           font-weight: 700;
           color: var(--ui-accent);
-          min-width: 14px;
-          text-align: center;
+          min-width: 18px;
+          padding: 0 2px;
         }
 
         .ctrl-btn {
-          width: 24px;
-          height: 24px;
-          border-radius: 6px;
-          border: 1px solid var(--ui-border);
-          background: rgba(39, 39, 42, 0.6);
+          width: 26px;
+          flex-shrink: 0;
+          border: none;
+          background: transparent;
           color: #ffffff;
           font-size: 0.8rem;
           font-weight: 700;
@@ -1395,19 +1418,21 @@
           transition: all 0.15s ease;
 
           &:hover:not(:disabled) {
-            background: var(--ui-accent);
-            border-color: var(--ui-accent);
-            color: #09090b;
+            background: color-mix(in srgb, var(--ui-accent) 20%, transparent);
+            color: var(--ui-accent);
           }
 
-          &.remove:hover:not(:disabled) {
-            background: #ef4444;
-            border-color: #ef4444;
-            color: #ffffff;
+          &.remove {
+            &:hover:not(:disabled) {
+              background: rgba(239, 68, 68, 0.15);
+              color: #ef4444;
+            }
           }
 
           &.move-btn {
             color: var(--ui-text-muted);
+            border-left: 1px solid var(--ui-border);
+
             &:hover:not(:disabled) {
               color: var(--ui-accent);
               background: var(--ui-accent-glow);

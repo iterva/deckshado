@@ -17,6 +17,7 @@ import { RiftboundService } from '../../../services/riftbound.service';
 import {
   RiftboundCard, RiftboundCardLite, RiftboundDeck, RiftboundDeckEntry,
   RiftboundZone, RIFTBOUND_ZONE_RULES, RIFTBOUND_ZONE_LABELS, RiftboundColor,
+  RIFTBOUND_COLORS,
 } from '../../../models/riftbound';
 import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.component';
 import { IconComponent } from '../../../components/icon/icon.component';
@@ -36,14 +37,7 @@ type CardImageLike = {
   image_url_small?: string | null;
 };
 
-const COLORS: { code: RiftboundColor; label: string; hex: string }[] = [
-  { code: 'fury',  label: 'Fury',  hex: '#f87171' },
-  { code: 'calm',  label: 'Calm',  hex: '#34d399' },
-  { code: 'mind',  label: 'Mind',  hex: '#38bdf8' },
-  { code: 'body',  label: 'Body',  hex: '#fb923c' },
-  { code: 'chaos', label: 'Chaos', hex: '#c084fc' },
-  { code: 'order', label: 'Order', hex: '#f472b6' },
-];
+const COLORS: { code: RiftboundColor; label: string; hex: string }[] = RIFTBOUND_COLORS;
 
 const TYPES = [
   { code: 'unit', label: 'Unidad' },
@@ -53,6 +47,7 @@ const TYPES = [
   { code: 'gear', label: 'Gear' },
   { code: 'battlefield', label: 'Battlefield' },
   { code: 'rune', label: 'Runa' },
+  { code: 'other', label: 'Otro' },
 ];
 
 const ZONE_TARGETS: Record<RiftboundZone, RiftboundZone | 'auto'> = {
@@ -133,70 +128,124 @@ function typeRank(t?: string): number {
               <button class="search-btn" (click)="reload()" title="Buscar">
                 <app-icon name="search" [size]="14"></app-icon>
               </button>
+              <button type="button" class="filters-toggle-btn" [class.active]="filtersOpen()"
+                      (click)="filtersOpen.set(!filtersOpen())"
+                      [attr.aria-expanded]="filtersOpen()" aria-label="Mostrar filtros">
+                <app-icon name="filter" [size]="14"></app-icon>
+                <span class="ft-text">Filtros</span>
+                @if (activeFilterCount() > 0) { <span class="filter-badge">{{ activeFilterCount() }}</span> }
+              </button>
             </div>
           </div>
 
-          <div class="type-chips" role="group" aria-label="Filtrar por tipo">
-            <button type="button"
-                    class="type-chip-btn"
-                    [class.active]="!typeFilter"
-                    (click)="setType('')">Todos</button>
-            @for (t of types; track t.code) {
-              <button type="button"
-                      class="type-chip-btn"
-                      [class.active]="typeFilter === t.code"
-                      (click)="setType(t.code)">{{ t.label }}</button>
-            }
-          </div>
+          @if (filtersOpen()) {
+            <div class="filters-backdrop" (click)="filtersOpen.set(false)"></div>
+            <div class="filters-panel" role="dialog" aria-label="Filtros de cartas">
+              <div class="filters-panel-head">
+                <h3>Filtros</h3>
+                <button type="button" class="close-btn" (click)="filtersOpen.set(false)" aria-label="Cerrar filtros">✕</button>
+              </div>
+              <div class="filters-panel-body">
+                <div class="filter-group">
+                  <label class="filter-label">Tipo de carta</label>
+                  <div class="type-chips" role="group" aria-label="Filtrar por tipo">
+                    <button type="button"
+                            class="type-chip-btn"
+                            [class.active]="!typeFilter"
+                            (click)="setType('')">Todos</button>
+                    @for (t of types; track t.code) {
+                      <button type="button"
+                              class="type-chip-btn"
+                              [class.active]="typeFilter === t.code"
+                              (click)="setType(t.code)">{{ t.label }}</button>
+                    }
+                  </div>
+                </div>
 
-          <div class="filter-row">
-            <div class="multi-filter">
-              <label class="filter-label">Set</label>
-              <select [(ngModel)]="setFilter" (ngModelChange)="page.set(1); reload()">
-                <option value="">Todos los sets</option>
-                @for (s of sets(); track s.code) {
-                  <option [value]="s.code">{{ s.code }} — {{ s.name }}</option>
-                }
-              </select>
+                <div class="filter-group">
+                  <label class="filter-label">Colores</label>
+                  <div class="color-row">
+                    @for (c of colors; track c.code) {
+                      <button type="button"
+                              class="color-chip"
+                              [class.active]="selectedColors().has(c.code)"
+                              [style.--c]="c.hex"
+                              (click)="toggleColor(c.code)">{{ c.label }}</button>
+                    }
+                    @if (selectedColors().size > 0) {
+                      <button type="button" class="clear-colors" (click)="clearColors()">Limpiar</button>
+                    }
+                  </div>
+                </div>
+
+                <div class="filter-group">
+                  <label class="filter-label">Set / Rareza</label>
+                  <div class="filter-row">
+                    <div class="multi-filter">
+                      <label class="filter-label">Set</label>
+                      <select [(ngModel)]="setFilter" (ngModelChange)="page.set(1); reload()">
+                        <option value="">Todos los sets</option>
+                        @for (s of sets(); track s.code) {
+                          <option [value]="s.code">{{ s.code }} — {{ s.name }}</option>
+                        }
+                      </select>
+                    </div>
+
+                    <div class="multi-filter">
+                      <label class="filter-label">Rareza</label>
+                      <select [(ngModel)]="rarityFilter" (ngModelChange)="page.set(1); reload()">
+                        <option value="">Todas</option>
+                        <option value="common">Common</option>
+                        <option value="uncommon">Uncommon</option>
+                        <option value="rare">Rare</option>
+                        <option value="epic">Epic</option>
+                        <option value="legendary">Legendary</option>
+                        <option value="champion">Champion</option>
+                        <option value="promo">Promo</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="filter-group">
+                  <label class="filter-label">Estadísticas</label>
+                  <div class="filter-row stats-row">
+                    <div class="multi-filter">
+                      <label class="filter-label">Energía</label>
+                      <select [(ngModel)]="energyFilter" (ngModelChange)="page.set(1); reload()">
+                        <option [ngValue]="null">Cualquiera</option>
+                        @for (n of energyBins; track n) {
+                          <option [ngValue]="n">{{ n }}</option>
+                        }
+                      </select>
+                    </div>
+                    <div class="multi-filter">
+                      <label class="filter-label">Power</label>
+                      <select [(ngModel)]="powerFilter" (ngModelChange)="page.set(1); reload()">
+                        <option [ngValue]="null">Cualquiera</option>
+                        @for (n of statBins; track n) {
+                          <option [ngValue]="n">{{ n }}</option>
+                        }
+                      </select>
+                    </div>
+                    <div class="multi-filter">
+                      <label class="filter-label">Might</label>
+                      <select [(ngModel)]="mightFilter" (ngModelChange)="page.set(1); reload()">
+                        <option [ngValue]="null">Cualquiera</option>
+                        @for (n of statBins; track n) {
+                          <option [ngValue]="n">{{ n }}</option>
+                        }
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="filters-panel-actions">
+                <button type="button" class="btn-clear-all" (click)="clearAllFilters()">Limpiar filtros</button>
+                <button type="button" class="btn-apply-all" (click)="filtersOpen.set(false)">Aplicar</button>
+              </div>
             </div>
-
-            <div class="multi-filter">
-              <label class="filter-label">Energía</label>
-              <select [(ngModel)]="energyFilter" (ngModelChange)="page.set(1); reload()">
-                <option [ngValue]="null">Cualquiera</option>
-                @for (n of [0,1,2,3,4,5,6,7,8]; track n) {
-                  <option [ngValue]="n">{{ n }}</option>
-                }
-              </select>
-            </div>
-
-            <div class="multi-filter">
-              <label class="filter-label">Rareza</label>
-              <select [(ngModel)]="rarityFilter" (ngModelChange)="page.set(1); reload()">
-                <option value="">Todas</option>
-                <option value="common">Common</option>
-                <option value="uncommon">Uncommon</option>
-                <option value="rare">Rare</option>
-                <option value="epic">Epic</option>
-                <option value="legendary">Legendary</option>
-                <option value="champion">Champion</option>
-                <option value="promo">Promo</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="color-row">
-            @for (c of colors; track c.code) {
-              <button type="button"
-                      class="color-chip"
-                      [class.active]="selectedColors().has(c.code)"
-                      [style.--c]="c.hex"
-                      (click)="toggleColor(c.code)">{{ c.label }}</button>
-            }
-            @if (selectedColors().size > 0) {
-              <button type="button" class="clear-colors" (click)="clearColors()">Limpiar</button>
-            }
-          </div>
+          }
         </div>
 
         @if (loading()) {
@@ -418,15 +467,15 @@ function typeRank(t?: string): number {
           </div>
         }
 
-        <div class="deck-form-grid">
-          <div class="form-group">
-            <label>Nombre del mazo</label>
+        <div class="deck-info-box">
+          <div class="form-group floating">
+            <label>Nombre del mazo (Título)</label>
             <input type="text" [(ngModel)]="deckName" placeholder="Mi mazo Riftbound" />
           </div>
 
-          <div class="form-group">
+          <div class="form-group floating">
             <label>Descripción (opcional)</label>
-            <input type="text" [(ngModel)]="description" placeholder="Descripción..." />
+            <textarea rows="3" [(ngModel)]="description" placeholder="Breve descripción (opcional)..."></textarea>
           </div>
 
           <label class="checkbox-label">
@@ -510,17 +559,21 @@ function typeRank(t?: string): number {
                 }
                 <div class="entry-info">
                   <span class="entry-name">{{ e.card.name }}</span>
-                  <span class="entry-meta">
-                    {{ e.card.card_number }}
-                    @if (e.card.energy !== null && e.card.energy !== undefined) { · Energía: {{ e.card.energy }} }
-                  </span>
-                </div>
-                <div class="entry-controls">
-                  <button class="ctrl-btn" (click)="dec(e)">−</button>
-                  <span class="entry-qty">{{ e.quantity }}</span>
-                  <button class="ctrl-btn" (click)="inc(e)"
-                          [disabled]="e.quantity >= maxCopiesForEntry(e)">+</button>
-                  <button class="ctrl-btn remove" (click)="remove(e)">✕</button>
+                  <div class="entry-meta-row">
+                    <span class="entry-meta">
+                      {{ e.card.card_number }}
+                      @if (e.card.energy !== null && e.card.energy !== undefined) { · Energía: {{ e.card.energy }} }
+                    </span>
+                    <div class="entry-controls">
+                      <button class="ctrl-btn" (click)="dec(e)" aria-label="Quitar una copia">−</button>
+                      <span class="entry-qty">{{ e.quantity }}</span>
+                      <button class="ctrl-btn" (click)="inc(e)"
+                              [disabled]="e.quantity >= maxCopiesForEntry(e)" aria-label="Añadir una copia">+</button>
+                      <button class="ctrl-btn remove" (click)="remove(e)" aria-label="Eliminar carta del mazo">
+                        <app-icon name="trash-2" [size]="13"></app-icon>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             }
@@ -623,8 +676,8 @@ function typeRank(t?: string): number {
                 }
               </div>
               <div class="preview-info-col">
-                <h3 class="preview-title">{{ c.name }}</h3>
                 <p class="muted">{{ c.card_number }} · {{ c.set?.name || c.set?.code || '—' }}</p>
+                <h3 class="preview-title">{{ c.name }}</h3>
                 <div class="preview-meta-badges">
                   @if (c.card_type) { <span class="stat-badge">{{ c.card_type }}</span> }
                   @if (c.rarity) { <span class="stat-badge rarity">{{ c.rarity }}</span> }
@@ -633,9 +686,27 @@ function typeRank(t?: string): number {
                   @for (st of c.subtypes; track st) { <span class="stat-badge">{{ st }}</span> }
                 </div>
                 <div class="preview-stats-row">
-                  @if (c.energy != null) { <div class="stat-item"><span class="stat-label">Energy</span><span class="stat-val">{{ c.energy }}</span></div> }
-                  @if (c.power != null) { <div class="stat-item"><span class="stat-label">Power</span><span class="stat-val">{{ c.power }}</span></div> }
-                  @if (c.might != null) { <div class="stat-item"><span class="stat-label">Might</span><span class="stat-val">{{ c.might }}</span></div> }
+                  @if (c.energy != null) {
+                    <div class="stat-item stat-energy">
+                      <app-icon name="zap" [size]="13"></app-icon>
+                      <span class="stat-label">Energy</span>
+                      <span class="stat-val">{{ c.energy }}</span>
+                    </div>
+                  }
+                  @if (c.power != null) {
+                    <div class="stat-item stat-power">
+                      <app-icon name="swords" [size]="13"></app-icon>
+                      <span class="stat-label">Power</span>
+                      <span class="stat-val">{{ c.power }}</span>
+                    </div>
+                  }
+                  @if (c.might != null) {
+                    <div class="stat-item stat-might">
+                      <app-icon name="shield" [size]="13"></app-icon>
+                      <span class="stat-label">Might</span>
+                      <span class="stat-val">{{ c.might }}</span>
+                    </div>
+                  }
                 </div>
                 @if (c.description) {
                   <div class="preview-ability-box">
@@ -643,7 +714,9 @@ function typeRank(t?: string): number {
                     <p class="ability-text">{{ c.description }}</p>
                   </div>
                 }
-                <app-tcg-price [cardName]="c.name" [compact]="false" [showLink]="true"></app-tcg-price>
+                <div class="preview-market-section">
+                  <app-tcg-price [cardName]="c.name" [compact]="false" [showLink]="true"></app-tcg-price>
+                </div>
               </div>
             </div>
           }
@@ -735,6 +808,12 @@ function typeRank(t?: string): number {
       .builder-layout { display: block; height: auto; padding: 0.75rem; }
       .mobile-builder-switcher { display: flex; }
       .mobile-hidden { display: none !important; }
+      .filters-toggle-btn .ft-text { display: none; }
+      .filters-panel {
+        position: fixed; inset: 0; top: 0; right: 0; margin-top: 0;
+        width: 100%; max-height: 100%; border-radius: 0;
+      }
+      .filters-panel-actions { position: sticky; bottom: 0; background: #121217; }
     }
 
     .card-browser, .deck-panel {
@@ -748,7 +827,7 @@ function typeRank(t?: string): number {
     .browser-title-wrap h2 { font-size: 1.05rem; font-weight: 700; color: #ffffff; margin: 0; }
     .format-badge { font-size: 0.75rem; color: #06b6d4; font-weight: 500; }
 
-    .browser-filters { display: flex; flex-direction: column; gap: 0.55rem; margin-bottom: 1rem; }
+    .browser-filters { position: relative; display: flex; flex-direction: column; gap: 0.55rem; margin-bottom: 1rem; }
     .search-row { display: flex; flex-direction: column; gap: 0.5rem; }
     .search-modes {
       display: flex; background: rgba(18, 18, 23, 0.6); border: 1px solid var(--ui-border);
@@ -772,6 +851,45 @@ function typeRank(t?: string): number {
       border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center;
     }
 
+    .filters-toggle-btn {
+      position: relative; display: inline-flex; align-items: center; gap: 0.35rem;
+      padding: 0.5rem 0.75rem; background: rgba(18, 18, 23, 0.8); border: 1px solid var(--ui-border);
+      border-radius: 8px; color: var(--ui-text-secondary); font-size: 0.78rem; font-weight: 600; cursor: pointer;
+    }
+    .filters-toggle-btn:hover { border-color: rgba(255, 255, 255, 0.3); }
+    .filters-toggle-btn.active { border-color: #06b6d4; color: #06b6d4; background: rgba(6, 182, 212, 0.1); }
+    .filter-badge {
+      position: absolute; top: -6px; right: -6px;
+      min-width: 16px; height: 16px; padding: 0 3px; border-radius: 8px;
+      background: #06b6d4; color: #09090b; font-size: 0.65rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .filters-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 1100; }
+    .filters-panel {
+      position: absolute; top: 100%; right: 0; z-index: 1101; margin-top: 0.3rem;
+      width: min(420px, 92vw); max-height: 70vh; overflow-y: auto;
+      background: #121217; border: 1px solid var(--ui-border); border-radius: 12px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    }
+    .filters-panel-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.8rem 0.9rem; border-bottom: 1px solid var(--ui-border);
+    }
+    .filters-panel-head h3 { margin: 0; color: #fff; font-size: 0.95rem; }
+    .filters-panel-head .close-btn { background: none; border: none; color: var(--ui-text-muted); font-size: 1rem; cursor: pointer; }
+    .filters-panel-body { padding: 0.8rem 0.9rem; display: flex; flex-direction: column; gap: 0.8rem; }
+    .filter-group { display: flex; flex-direction: column; gap: 0.4rem; }
+    .filter-group + .filter-group { padding-top: 0.8rem; border-top: 1px dashed var(--ui-border); }
+    .filters-panel-actions {
+      display: flex; gap: 0.5rem; padding: 0.8rem 0.9rem; border-top: 1px solid var(--ui-border);
+    }
+    .btn-clear-all, .btn-apply-all {
+      flex: 1 1 0; padding: 0.5rem; border-radius: 8px; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+    }
+    .btn-clear-all { background: transparent; border: 1px solid var(--ui-border); color: var(--ui-text-secondary); }
+    .btn-apply-all { background: #06b6d4; border: none; color: #09090b; }
+
     .type-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
     .type-chip-btn {
       padding: 0.28rem 0.6rem; background: rgba(39, 39, 42, 0.3); border: 1px solid var(--ui-border);
@@ -779,7 +897,7 @@ function typeRank(t?: string): number {
     }
     .type-chip-btn.active { background: rgba(6, 182, 212, 0.15); border-color: #06b6d4; color: #06b6d4; font-weight: 600; }
 
-    .filter-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+    .filter-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.5rem; }
     .filter-label { display: block; font-size: 0.68rem; color: var(--ui-text-muted); text-transform: uppercase; margin-bottom: 2px; }
     .filter-row select {
       width: 100%; padding: 0.35rem 0.5rem; background: rgba(18, 18, 23, 0.8);
@@ -974,15 +1092,49 @@ function typeRank(t?: string): number {
       display: inline-flex; align-items: center; gap: 0.3rem;
     }
 
-    .deck-form-grid {
-      display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.75rem; align-items: flex-end; margin-bottom: 1rem;
+    .deck-info-box {
+      position: relative;
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      border-radius: 12px;
+      padding: 1.35rem 1rem 1rem;
+      margin-bottom: 1rem;
+      background: rgba(18, 18, 23, 0.5);
     }
-    .form-group label { display: block; font-size: 0.72rem; color: var(--ui-text-muted); margin-bottom: 2px; }
-    .form-group input {
-      width: 100%; padding: 0.45rem 0.75rem; background: rgba(18, 18, 23, 0.8);
-      border: 1px solid var(--ui-border); border-radius: 6px; color: #ffffff; font-size: 0.85rem; outline: none;
+    .form-group.floating {
+      position: relative;
+      margin-bottom: 0.9rem;
+
+      &:last-of-type { margin-bottom: 0.75rem; }
+    }
+    .form-group.floating label {
+      position: absolute;
+      top: -0.65rem;
+      left: 0.7rem;
+      padding: 0 0.4rem;
+      background: #121217;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      color: var(--ui-text-muted);
+    }
+    .form-group.floating input,
+    .form-group.floating textarea {
+      width: 100%; padding: 0.6rem 0.75rem; background: rgba(18, 18, 23, 0.8);
+      border: 1px solid var(--ui-border); border-radius: 8px; color: #ffffff; font-size: 0.85rem; outline: none;
+      font-family: inherit;
+      box-sizing: border-box;
+
+      &:focus { border-color: #06b6d4; }
+    }
+    .form-group.floating textarea {
+      resize: vertical;
+      min-height: 4.5rem;
+      line-height: 1.4;
     }
     .checkbox-label { display: flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; color: var(--ui-text-secondary); }
+
+    @media (max-width: 720px) {
+      .deck-info-box { padding: 1.35rem 0.85rem 0.85rem; }
+    }
 
     .zones-summary { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1rem; }
     .zone-pill {
@@ -1025,12 +1177,45 @@ function typeRank(t?: string): number {
     }
     .cover-star { background: none; border: none; color: var(--ui-text-muted); cursor: pointer; padding: 2px; }
     .cover-star.active { color: #f59e0b; }
-    .deck-entry img { width: 32px; height: 44px; border-radius: 4px; object-fit: cover; border: 1px solid var(--ui-border); }
-    .entry-info { flex: 1; min-width: 0; }
-    .entry-name { font-size: 0.84rem; font-weight: 600; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .entry-meta { font-size: 0.72rem; color: var(--ui-text-muted); }
-    .entry-controls { display: flex; align-items: center; gap: 0.3rem; }
-    .entry-qty { font-size: 0.82rem; font-weight: 700; color: #06b6d4; min-width: 14px; text-align: center; }
+    .deck-entry img { width: 32px; height: 44px; border-radius: 4px; object-fit: cover; border: 1px solid var(--ui-border); flex-shrink: 0; }
+    .entry-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+    .entry-name {
+      display: block; width: 100%;
+      font-size: 0.84rem; font-weight: 600; color: #ffffff;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .entry-meta-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+    .entry-meta {
+      flex: 1; min-width: 0; font-size: 0.72rem; color: var(--ui-text-muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    // Nota: el sitio fuerza min-height: 40px en todo boton (styles.scss, regla de
+    // accesibilidad WCAG AA). Por eso el grupo va horizontal (no flechitas apiladas:
+    // 2 botones de 40px apilados se veian como un circulo roto).
+    .entry-controls {
+      display: flex; align-items: stretch; flex-shrink: 0;
+      background: rgba(39, 39, 42, 0.5); border: 1px solid var(--ui-border); border-radius: 10px;
+      overflow: hidden;
+    }
+    .entry-qty {
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.82rem; font-weight: 700; color: #06b6d4; min-width: 20px; padding: 0 2px;
+    }
+    .ctrl-btn {
+      width: 28px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: transparent; border: none;
+      color: #ffffff; font-size: 0.85rem; font-weight: 700; line-height: 1;
+      cursor: pointer; transition: all 0.15s ease;
+
+      &:hover:not(:disabled) { background: rgba(6, 182, 212, 0.2); color: #06b6d4; }
+      &:disabled { opacity: 0.35; cursor: not-allowed; }
+
+      &.remove {
+        color: var(--ui-text-muted); border-left: 1px solid var(--ui-border);
+        &:hover { background: rgba(220, 53, 69, 0.15); color: #ff6b6b; }
+      }
+    }
 
     .action-row {
       display: flex; gap: 0.5rem; margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--ui-border);
@@ -1055,6 +1240,58 @@ function typeRank(t?: string): number {
       border: 1px solid var(--ui-border); border-radius: 16px; box-shadow: 0 24px 48px rgba(0, 0, 0, 0.8);
       padding: 1.5rem; overflow-y: auto;
     }
+    .preview-panel { width: min(94vw, 820px); background: #1a1c23; }
+    .preview-panel .preview-layout {
+      display: flex; flex-direction: row; gap: 1.5rem; align-items: flex-start;
+    }
+    @media (max-width: 768px) {
+      .preview-panel .preview-layout { flex-direction: column; }
+    }
+    .preview-art-col { flex: 0 0 42%; display: flex; }
+    @media (max-width: 768px) {
+      .preview-art-col { flex: 0 0 auto; width: 100%; }
+    }
+    .preview-card-img {
+      width: 100%; height: auto; max-height: 65vh; border-radius: 10px;
+      object-fit: contain; background: rgba(12, 12, 16, 0.6);
+      border: 1px solid var(--ui-border); display: block; margin: auto;
+    }
+    @media (max-width: 768px) {
+      .preview-card-img { max-height: 40vh; }
+    }
+    .preview-info-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+    .preview-title { font-size: 1.2rem; font-weight: 700; color: #ffffff; margin: 0; }
+    .preview-meta-badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.3rem 0; }
+    .preview-meta-badges .stat-badge {
+      padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 600;
+      background: rgba(39, 39, 42, 0.5); border: 1px solid var(--ui-border); color: var(--ui-text-secondary);
+    }
+    .preview-meta-badges .stat-badge.rarity { border-color: #06b6d4; color: #06b6d4; }
+    .preview-stats-row {
+      display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.35rem;
+    }
+    .stat-item {
+      display: flex; align-items: center; gap: 0.4rem;
+      background: rgba(255, 255, 255, 0.05); border: 1px solid var(--ui-border); border-radius: 999px;
+      padding: 0.4rem 0.75rem;
+
+      app-icon { flex-shrink: 0; }
+    }
+    .stat-item.stat-energy app-icon { color: #f2c744; }
+    .stat-item.stat-power app-icon { color: #e94560; }
+    .stat-item.stat-might app-icon { color: #3aa6ff; }
+    .stat-label { font-size: 0.72rem; color: var(--ui-text-muted); font-weight: 600; }
+    .stat-val { font-size: 0.85rem; font-weight: 700; color: #ffffff; }
+    .preview-ability-box {
+      background: rgba(255, 255, 255, 0.03); border: 1px solid var(--ui-border); border-radius: 10px;
+      padding: 0.75rem 0.9rem;
+    }
+    .ability-title {
+      display: block; font-size: 0.7rem; font-weight: 700; color: #06b6d4;
+      text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;
+    }
+    .ability-text { font-size: 0.85rem; line-height: 1.55; color: #e2e8f0; margin: 0; white-space: pre-wrap; }
+    .preview-market-section { margin-top: 0.1rem; }
     .dp-head, .modal-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--ui-border); padding-bottom: 0.85rem; margin-bottom: 1rem; }
     .dp-head h2, .modal-head h3 { font-size: 1.15rem; font-weight: 700; color: #ffffff; margin: 0; display: flex; align-items: center; gap: 0.4rem; }
     .dp-close, .modal-close, .preview-close {
@@ -1102,7 +1339,35 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   setFilter = '';
   rarityFilter = '';
   energyFilter: number | null = null;
+  powerFilter: number | null = null;
+  mightFilter: number | null = null;
   selectedColors = signal(new Set<RiftboundColor>());
+  filtersOpen = signal(false);
+  readonly statBins = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+  activeFilterCount(): number {
+    let n = 0;
+    if (this.typeFilter) n++;
+    if (this.setFilter) n++;
+    if (this.rarityFilter) n++;
+    if (this.energyFilter != null) n++;
+    if (this.powerFilter != null) n++;
+    if (this.mightFilter != null) n++;
+    if (this.selectedColors().size > 0) n++;
+    return n;
+  }
+
+  clearAllFilters() {
+    this.typeFilter = '';
+    this.setFilter = '';
+    this.rarityFilter = '';
+    this.energyFilter = null;
+    this.powerFilter = null;
+    this.mightFilter = null;
+    this.selectedColors.set(new Set());
+    this.page.set(1);
+    this.reload();
+  }
 
   results = signal<RiftboundCardLite[]>([]);
   hasMore = signal(false);
@@ -1156,6 +1421,7 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   totalPages = computed(() => Math.max(1, Math.ceil(this.totalCount() / this.pageSize)));
   private cardsSentinelRef?: ElementRef<HTMLElement>;
   private cardsObserver?: IntersectionObserver;
+  private observedSentinel?: HTMLElement;
   private contentScrollEl: HTMLElement | null = null;
   @ViewChild('availableCardsEl') availableCardsRef?: ElementRef<HTMLElement>;
 
@@ -1200,9 +1466,6 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
 
   @HostListener('window:scroll')
   onWindowScroll() { this.tryInfiniteScrollFallback(); }
-
-  @HostListener('window:resize')
-  onWindowResize() { this.tryInfiniteScrollFallback(); }
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
@@ -1259,7 +1522,6 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   ngAfterViewInit() {
     this.setupCardsObserver();
     this.attachContentScrollListener();
-    this.tryInfiniteScrollFallback();
   }
 
   loadFromDeck(deck: RiftboundDeck) {
@@ -1347,6 +1609,8 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
       set: this.setFilter || undefined,
       rarity: this.rarityFilter || undefined,
       energy: this.energyFilter ?? undefined,
+      power: this.powerFilter ?? undefined,
+      might: this.mightFilter ?? undefined,
       colors: [...this.selectedColors()],
       page: this.page(),
       pageSize: this.pageSize,
@@ -1361,10 +1625,12 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
         this.totalCount.set(resp.count);
         this.hasMore.set(!!resp.next);
         this.loading.set(false);
-        setTimeout(() => {
-          this.setupCardsObserver();
-          this.tryInfiniteScrollFallback();
-        });
+        // Nota: NO llamamos tryInfiniteScrollFallback() aqui. isNearBottom() da true
+        // apenas el panel no tiene contenido suficiente para desbordar (comun en la
+        // primera pagina), asi que llamarlo tras cada fetch encadenaba cargas hasta
+        // traer todo el catalogo sin que el usuario bajara el scroll. El fallback solo
+        // debe correr en respuesta a un scroll real del usuario (ver onContentScroll).
+        setTimeout(() => this.setupCardsObserver());
       },
       error: () => this.loading.set(false),
     });
@@ -1372,9 +1638,17 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
 
   private setupCardsObserver() {
     if (typeof IntersectionObserver === 'undefined') return;
-    this.cardsObserver?.disconnect();
     const sentinel = this.cardsSentinelRef?.nativeElement;
-    if (!sentinel) return;
+    if (!sentinel) {
+      this.cardsObserver?.disconnect();
+      this.observedSentinel = undefined;
+      return;
+    }
+    // El nodo centinela persiste mientras hasMore() siga en true (mismo @if), así que
+    // reconectar el observer en cada página recreaba el "fire" inicial de IntersectionObserver
+    // sobre un nodo que ya estaba visible, encadenando cargas hasta traer todo el catálogo.
+    if (this.cardsObserver && this.observedSentinel === sentinel) return;
+    this.cardsObserver?.disconnect();
     const root = this.availableCardsRef?.nativeElement ?? null;
     this.cardsObserver = new IntersectionObserver(entries => {
       for (const entry of entries) {
@@ -1385,6 +1659,7 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
       }
     }, { root, rootMargin: '200px 0px' });
     this.cardsObserver.observe(sentinel);
+    this.observedSentinel = sentinel;
   }
 
   private attachContentScrollListener() {
@@ -1394,9 +1669,14 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
     if (!el) return;
     this.contentScrollEl = el;
     this.contentScrollEl.addEventListener('scroll', this.onContentScroll, { passive: true });
+    // El scroll de <body> no burbujea a window (solo lo hace el "scrolling element"
+    // del documento), y en esta app es <body> quien tiene overflow-y:auto real, no
+    // <html>. Sin este listener, el scroll del usuario nunca disparaba la carga.
+    document.body.addEventListener('scroll', this.onContentScroll, { passive: true });
   }
 
   private detachContentScrollListener() {
+    document.body.removeEventListener('scroll', this.onContentScroll);
     if (!this.contentScrollEl) return;
     this.contentScrollEl.removeEventListener('scroll', this.onContentScroll);
     this.contentScrollEl = null;
@@ -1412,9 +1692,20 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   private isNearBottom(offset = 300): boolean {
-    const container = this.contentScrollEl ?? this.availableCardsRef?.nativeElement;
-    if (!container) return false;
-    return container.scrollTop + container.clientHeight >= container.scrollHeight - offset;
+    const panel = this.contentScrollEl ?? this.availableCardsRef?.nativeElement;
+    if (panel && panel.scrollHeight > panel.clientHeight + 1) {
+      return panel.scrollTop + panel.clientHeight >= panel.scrollHeight - offset;
+    }
+    // El panel de cartas no tiene scroll propio en este layout (p. ej. modo apilado /
+    // móvil, donde .available-cards crece con el contenido en vez de scrollear
+    // internamente): en ese caso lo que se desplaza es <body> (esta app le pone
+    // overflow-y:auto explícito a body, NO a <html>, así que document.scrollingElement
+    // no sirve aquí).
+    const body = document.body;
+    if (body.scrollHeight > body.clientHeight + 1) {
+      return body.scrollTop + body.clientHeight >= body.scrollHeight - offset;
+    }
+    return false;
   }
 
   // ── Helpers de zona ──

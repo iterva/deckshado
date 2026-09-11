@@ -3,6 +3,29 @@ export type RiftboundCardType =
 
 export type RiftboundColor = 'fury' | 'calm' | 'mind' | 'body' | 'chaos' | 'order' | 'neutral';
 
+/** Paleta oficial de colores Riftbound, compartida entre Tienda y Constructor de mazos. */
+export const RIFTBOUND_COLORS: { code: RiftboundColor; label: string; hex: string }[] = [
+  { code: 'fury', label: 'Fury', hex: '#f87171' },
+  { code: 'calm', label: 'Calm', hex: '#34d399' },
+  { code: 'mind', label: 'Mind', hex: '#38bdf8' },
+  { code: 'body', label: 'Body', hex: '#fb923c' },
+  { code: 'chaos', label: 'Chaos', hex: '#c084fc' },
+  { code: 'order', label: 'Order', hex: '#f472b6' },
+  { code: 'neutral', label: 'Neutral', hex: '#9ca3af' },
+];
+
+/** Tipos de carta Riftbound (dominio propio: NO usar razas/frecuencias/ediciones de otros juegos). */
+export const RIFTBOUND_CARD_TYPES: { code: RiftboundCardType; label: string }[] = [
+  { code: 'champion', label: 'Champion' },
+  { code: 'legend', label: 'Legend' },
+  { code: 'unit', label: 'Unit' },
+  { code: 'spell', label: 'Spell' },
+  { code: 'gear', label: 'Gear' },
+  { code: 'battlefield', label: 'Battlefield' },
+  { code: 'rune', label: 'Rune' },
+  { code: 'other', label: 'Otro' },
+];
+
 export type RiftboundRarity =
   | 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'champion' | 'promo' | 'other';
 

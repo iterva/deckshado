@@ -1352,6 +1352,21 @@ def _rb_filter_store_qs(qs, params):
     rarity = params.get("rarity")
     if rarity:
         qs = qs.filter(card__rarity=rarity)
+    for field in ("energy", "power", "might"):
+        v = params.get(field)
+        if v not in (None, ""):
+            try:
+                qs = qs.filter(**{f"card__{field}": int(v)})
+            except ValueError:
+                pass
+    colors = (params.get("colors") or "").strip()
+    if colors:
+        color_set = {c.strip().lower() for c in colors.split(",") if c.strip()}
+        ids = [
+            pk for pk, cs in qs.values_list("id", "card__colors")
+            if cs and any((c or "").lower() in color_set for c in cs)
+        ]
+        qs = qs.filter(id__in=ids)
     cond = params.get("condition")
     if cond:
         qs = qs.filter(condition=cond)

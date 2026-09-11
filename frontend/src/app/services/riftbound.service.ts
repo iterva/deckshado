@@ -144,6 +144,8 @@ export class RiftboundService {
     colors?: string[];
     set?: string;
     energy?: number;
+    power?: number;
+    might?: number;
     page?: number;
     pageSize?: number;
     lite?: boolean;
@@ -162,6 +164,8 @@ export class RiftboundService {
     colors?: string[];
     set?: string;
     energy?: number;
+    power?: number;
+    might?: number;
     page?: number;
     pageSize?: number;
     lite?: boolean;
@@ -183,6 +187,8 @@ export class RiftboundService {
     if (opts.colors?.length) params = params.set('colors', opts.colors.join(','));
     if (opts.set) params = params.set('set', opts.set);
     if (opts.energy !== undefined) params = params.set('energy', String(opts.energy));
+    if (opts.power !== undefined) params = params.set('power', String(opts.power));
+    if (opts.might !== undefined) params = params.set('might', String(opts.might));
     if (opts.page) params = params.set('page', String(opts.page));
     if (opts.pageSize) params = params.set('page_size', String(opts.pageSize));
     if (opts.lite) params = params.set('lite', '1');
@@ -393,6 +399,7 @@ export class RiftboundService {
     condition?: string; foil?: '0' | '1'; price_min?: number; price_max?: number;
     only_priced?: '1'; ordering?: string; page?: number; page_size?: number;
     entry_ids?: number[] | string;
+    colors?: string[]; energy?: number; power?: number; might?: number;
   } = {}): Observable<PaginatedResponse<RiftboundCollectionEntry> & {
     store: RiftboundPublicBinderProfile; store_owner: string; store_avatar: string; store_binder_avatar: string;
   }> {

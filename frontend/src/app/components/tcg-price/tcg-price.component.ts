@@ -20,8 +20,8 @@ import { TcgmatchService, TcgmatchPrice } from '../../services/tcgmatch.service'
       <span class="tcg-price loading" [class.compact]="compact">
         <span class="tcg-spinner"></span>
       </span>
-    } @else if (price()?.market_price != null) {
-      @if (compact) {
+    } @else if (compact) {
+      @if (price()?.market_price != null) {
         <div class="tcg-compact-row">
           <span class="tcg-price compact" [title]="'TCGPlayer: Precio de mercado $' + price()!.market_price!.toFixed(2)">
             <span class="tcg-icon">💲</span>
@@ -36,95 +36,7 @@ import { TcgmatchService, TcgmatchPrice } from '../../services/tcgmatch.service'
             </a>
           }
         </div>
-      } @else {
-        <div class="tcg-market-stack">
-          <div class="tcg-price detailed">
-            <div class="tcg-header">
-              <span class="tcg-icon">💲</span>
-              <span>TCGPlayer</span>
-            </div>
-            <div class="tcg-rows">
-              <div class="tcg-row">
-                <span>Precio de mercado</span>
-                <strong>\${{ price()!.market_price!.toFixed(2) }}</strong>
-              </div>
-              @if (price()!.low_price != null) {
-                <div class="tcg-row">
-                  <span>Low</span>
-                  <span>\${{ price()!.low_price!.toFixed(2) }}</span>
-                </div>
-              }
-              @if (price()!.mid_price != null) {
-                <div class="tcg-row">
-                  <span>Mid</span>
-                  <span>\${{ price()!.mid_price!.toFixed(2) }}</span>
-                </div>
-              }
-            </div>
-            @if (showLink) {
-              <a class="tcg-btn"
-                 [href]="price()!.product_url || tcgSearchUrl"
-                 target="_blank" rel="noopener noreferrer">
-                Ir a TCGPlayer
-              </a>
-            }
-          </div>
-
-          @if (showExternalMarkets) {
-            <div class="tcg-price detailed tcg-alt-card">
-              <div class="tcg-header">
-                <span class="tcg-icon">🇨🇱</span>
-                <span>TCGMatch</span>
-              </div>
-              @if (tcgmatchLoading()) {
-                <span class="tcg-price loading">
-                  <span class="tcg-spinner"></span>
-                </span>
-              } @else {
-                <div class="tcg-rows">
-                  <div class="tcg-row">
-                    <span>Precio de mercado</span>
-                    <strong class="tcg-clp">{{ formatClp(tcgmatchPrice()?.market_price) }}</strong>
-                  </div>
-                  <div class="tcg-row">
-                    <span>Desde</span>
-                    <span class="tcg-clp">{{ formatClp(tcgmatchPrice()?.low_price) }}</span>
-                  </div>
-                </div>
-              }
-              @if (showLink) {
-                <a class="tcg-btn"
-                   [href]="tcgmatchPrice()?.product_url || tcgmatchSearchUrl"
-                   target="_blank" rel="noopener noreferrer">
-                  Ir a TCGMatch
-                </a>
-              }
-            </div>
-
-            <div class="tcg-price detailed tcg-alt-card">
-              <div class="tcg-header">
-                <span class="tcg-icon">🇪🇺</span>
-                <span>Cardmarket</span>
-              </div>
-              <div class="tcg-rows">
-                <div class="tcg-row">
-                  <span>Precio</span>
-                  <strong class="tcg-na">N/A</strong>
-                </div>
-              </div>
-              @if (showLink) {
-                <a class="tcg-btn"
-                   [href]="cardmarketSearchUrl"
-                   target="_blank" rel="noopener noreferrer">
-                  Buscar en Cardmarket
-                </a>
-              }
-            </div>
-          }
-        </div>
-      }
-    } @else if (!hideIfEmpty) {
-      @if (compact) {
+      } @else if (!hideIfEmpty) {
         <div class="tcg-compact-row">
           <span class="tcg-price no-price compact">
             <span class="tcg-icon">💲</span>
@@ -139,7 +51,9 @@ import { TcgmatchService, TcgmatchPrice } from '../../services/tcgmatch.service'
             </a>
           }
         </div>
-      } @else {
+      }
+    } @else if (price()?.market_price != null || !hideIfEmpty) {
+      <div class="tcg-market-block">
         <div class="tcg-market-stack">
           <div class="tcg-price detailed">
             <div class="tcg-header">
@@ -149,16 +63,25 @@ import { TcgmatchService, TcgmatchPrice } from '../../services/tcgmatch.service'
             <div class="tcg-rows">
               <div class="tcg-row">
                 <span>Precio de mercado</span>
-                <strong class="tcg-na">N/A</strong>
+                @if (price()?.market_price != null) {
+                  <strong>\${{ price()!.market_price!.toFixed(2) }}</strong>
+                } @else {
+                  <strong class="tcg-na">N/A</strong>
+                }
               </div>
+              @if (price()?.low_price != null) {
+                <div class="tcg-row">
+                  <span>Low</span>
+                  <span>\${{ price()!.low_price!.toFixed(2) }}</span>
+                </div>
+              }
+              @if (price()?.mid_price != null) {
+                <div class="tcg-row">
+                  <span>Mid</span>
+                  <span>\${{ price()!.mid_price!.toFixed(2) }}</span>
+                </div>
+              }
             </div>
-            @if (showLink) {
-              <a class="tcg-btn"
-                 [href]="tcgSearchUrl"
-                 target="_blank" rel="noopener noreferrer">
-                Ir a TCGPlayer
-              </a>
-            }
           </div>
 
           @if (showExternalMarkets) {
@@ -183,13 +106,6 @@ import { TcgmatchService, TcgmatchPrice } from '../../services/tcgmatch.service'
                   </div>
                 </div>
               }
-              @if (showLink) {
-                <a class="tcg-btn"
-                   [href]="tcgmatchPrice()?.product_url || tcgmatchSearchUrl"
-                   target="_blank" rel="noopener noreferrer">
-                  Ir a TCGMatch
-                </a>
-              }
             </div>
 
             <div class="tcg-price detailed tcg-alt-card">
@@ -203,17 +119,32 @@ import { TcgmatchService, TcgmatchPrice } from '../../services/tcgmatch.service'
                   <strong class="tcg-na">N/A</strong>
                 </div>
               </div>
-              @if (showLink) {
-                <a class="tcg-btn"
-                   [href]="cardmarketSearchUrl"
-                   target="_blank" rel="noopener noreferrer">
-                  Buscar en Cardmarket
-                </a>
-              }
             </div>
           }
         </div>
-      }
+
+        @if (showLink) {
+          <div class="tcg-actions">
+            <a class="tcg-btn-full"
+               [href]="price()?.product_url || tcgSearchUrl"
+               target="_blank" rel="noopener noreferrer">
+              Ir a TCGPlayer
+            </a>
+            @if (showExternalMarkets) {
+              <a class="tcg-btn-full"
+                 [href]="tcgmatchPrice()?.product_url || tcgmatchSearchUrl"
+                 target="_blank" rel="noopener noreferrer">
+                Ir a TCGMatch
+              </a>
+              <a class="tcg-btn-full"
+                 [href]="cardmarketSearchUrl"
+                 target="_blank" rel="noopener noreferrer">
+                Buscar en Cardmarket
+              </a>
+            }
+          </div>
+        }
+      </div>
     }
   `,
   styles: [`
@@ -270,6 +201,13 @@ import { TcgmatchService, TcgmatchPrice } from '../../services/tcgmatch.service'
       .tcg-label { display: none; }
     }
 
+    .tcg-market-block {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      min-width: 0;
+    }
     .tcg-price.detailed {
       display: flex; flex-direction: column; gap: 6px;
       background: #1a1a2e; border: 1px solid #2a2a4e;
@@ -288,6 +226,12 @@ import { TcgmatchService, TcgmatchPrice } from '../../services/tcgmatch.service'
     .tcg-market-stack .tcg-rows {
       flex: 1;
       min-height: 0;
+    }
+    .tcg-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
     }
     .tcg-alt-card {
       background: #17172a;
@@ -325,14 +269,37 @@ import { TcgmatchService, TcgmatchPrice } from '../../services/tcgmatch.service'
       min-height: 34px;
       white-space: normal;
     }
-    .tcg-price.detailed .tcg-btn { margin-top: auto; }
     .tcg-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
-    @media (max-width: 900px) {
-      .tcg-market-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tcg-btn-full {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .82rem;
+      font-weight: 600;
+      color: #fff;
+      text-decoration: none;
+      background: linear-gradient(135deg, #2d79c7, #1f5d9e);
+      border: 1px solid rgba(255, 255, 255, .16);
+      border-radius: 8px;
+      padding: 10px 14px;
+      box-sizing: border-box;
+      text-align: center;
+      transition: transform .12s ease, filter .12s ease;
+      width: 100%;
     }
+    .tcg-btn-full:hover { transform: translateY(-1px); filter: brightness(1.05); }
     @media (max-width: 640px) {
-      .tcg-market-stack { grid-template-columns: 1fr; }
       .tcg-btn { font-size: .72rem; padding: 3px 7px; }
+      .tcg-btn-full { font-size: .78rem; padding: 9px 12px; }
+      .tcg-price.detailed { padding: 6px 8px; }
+      .tcg-header { font-size: .68rem; }
+      .tcg-row {
+        flex-direction: column;
+        align-items: flex-start;
+        font-size: .72rem;
+        gap: 1px;
+        padding: 1px 0;
+      }
     }
   `],
 })

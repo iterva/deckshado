@@ -451,15 +451,15 @@
     </div>
 
     <!-- Deck Metadata Form -->
-    <div class="deck-form-grid">
-      <div class="form-group" [class.has-error]="fieldErrors.name">
-        <label>Nombre del mazo</label>
+    <div class="deck-info-box">
+      <div class="form-group floating" [class.has-error]="fieldErrors.name">
+        <label>Nombre del mazo (Título)</label>
         <input type="text" [(ngModel)]="deckName" placeholder="Mi mazo increíble" (input)="fieldErrors.name = false" (ngModelChange)="markDirty()" />
       </div>
 
-      <div class="form-group">
+      <div class="form-group floating">
         <label>Descripción (opcional)</label>
-        <input type="text" [(ngModel)]="deckDescription" placeholder="Estrategia, notas..." (ngModelChange)="markDirty()" />
+        <textarea rows="3" [(ngModel)]="deckDescription" placeholder="Breve descripción (opcional)..." (ngModelChange)="markDirty()"></textarea>
       </div>
 
       <div class="form-checkboxes">

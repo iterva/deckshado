@@ -211,11 +211,11 @@ const RARITIES = [
                   }
                 </div>
                 <div class="rb-modal-info">
-                  <h2>{{ c.name }}</h2>
                   <p class="card-edition-text">
                     <app-icon name="layers" [size]="12"></app-icon>
                     {{ c.card_number }} · {{ c.set?.name || c.set?.code || '—' }}
                   </p>
+                  <h2>{{ c.name }}</h2>
 
                   <div class="badges">
                     @if (c.card_type) { <span class="badge">{{ c.card_type }}</span> }
@@ -227,19 +227,22 @@ const RARITIES = [
 
                   <div class="stats-row">
                     @if (c.energy != null) {
-                      <div class="stat-pill">
+                      <div class="stat-pill stat-energy">
+                        <app-icon name="zap" [size]="13"></app-icon>
                         <span class="stat-label">Energía</span>
                         <span class="stat-val">{{ c.energy }}</span>
                       </div>
                     }
                     @if (c.power != null) {
-                      <div class="stat-pill">
+                      <div class="stat-pill stat-power">
+                        <app-icon name="swords" [size]="13"></app-icon>
                         <span class="stat-label">Power</span>
                         <span class="stat-val">{{ c.power }}</span>
                       </div>
                     }
                     @if (c.might != null) {
-                      <div class="stat-pill">
+                      <div class="stat-pill stat-might">
+                        <app-icon name="shield" [size]="13"></app-icon>
                         <span class="stat-label">Might</span>
                         <span class="stat-val">{{ c.might }}</span>
                       </div>
@@ -249,11 +252,13 @@ const RARITIES = [
                   @if (c.description) {
                     <div class="ability-block">
                       <h4><app-icon name="sparkles" [size]="13"></app-icon> Habilidad</h4>
-                      <pre class="desc">{{ c.description }}</pre>
+                      <p class="desc">{{ c.description }}</p>
                     </div>
                   }
 
-                  <app-tcg-price [cardName]="c.name" [compact]="false" [showLink]="true"></app-tcg-price>
+                  <div class="market-section">
+                    <app-tcg-price [cardName]="c.name" [compact]="false" [showLink]="true"></app-tcg-price>
+                  </div>
                 </div>
               </div>
             } @else {
@@ -681,10 +686,10 @@ const RARITIES = [
 
     .rb-modal {
       position: relative;
-      background: rgba(18, 18, 23, 0.96);
+      background: #1a1c23;
       border: 1px solid var(--ui-border);
       border-radius: 20px;
-      max-width: 750px;
+      max-width: 820px;
       width: 100%;
       max-height: 90vh;
       overflow-y: auto;
@@ -716,30 +721,46 @@ const RARITIES = [
       }
 
       .rb-modal-layout {
-        display: grid;
-        grid-template-columns: 260px 1fr;
+        display: flex;
+        flex-direction: row;
         gap: 1.5rem;
         padding: 1.5rem;
 
-        @media (max-width: 650px) {
-          grid-template-columns: 1fr;
+        @media (max-width: 768px) {
+          flex-direction: column;
           padding: 1.25rem;
         }
 
         .rb-modal-art {
+          flex: 0 0 42%;
+          display: flex;
+
           img {
             width: 100%;
+            height: auto;
+            max-height: 65vh;
             border-radius: 12px;
             object-fit: contain;
             background: #09090b;
             border: 1px solid var(--ui-border);
+            margin: auto;
+          }
+
+          @media (max-width: 768px) {
+            flex: 0 0 auto;
+
+            img {
+              max-height: 40vh;
+            }
           }
         }
 
         .rb-modal-info {
+          flex: 1;
           display: flex;
           flex-direction: column;
           gap: 0.6rem;
+          min-width: 0;
 
           h2 {
             margin: 0;
@@ -793,27 +814,30 @@ const RARITIES = [
 
             .stat-pill {
               display: flex;
-              flex-direction: column;
               align-items: center;
-              padding: 0.35rem 0.75rem;
-              background: rgba(255, 255, 255, 0.04);
+              gap: 0.4rem;
+              padding: 0.4rem 0.75rem;
+              background: rgba(255, 255, 255, 0.05);
               border: 1px solid var(--ui-border);
-              border-radius: 8px;
-              min-width: 60px;
+              border-radius: 999px;
+
+              app-icon { flex-shrink: 0; }
 
               .stat-label {
-                font-size: 0.65rem;
+                font-size: 0.72rem;
                 color: var(--ui-text-muted);
-                text-transform: uppercase;
-                letter-spacing: 0.04em;
                 font-weight: 600;
               }
 
               .stat-val {
-                font-size: 1.1rem;
+                font-size: 0.85rem;
                 font-weight: 700;
-                color: var(--ui-accent, #06b6d4);
+                color: #ffffff;
               }
+
+              &.stat-energy app-icon { color: #f2c744; }
+              &.stat-power app-icon { color: #e94560; }
+              &.stat-might app-icon { color: #3aa6ff; }
             }
           }
 
@@ -837,11 +861,14 @@ const RARITIES = [
             .desc {
               margin: 0;
               white-space: pre-wrap;
-              font-family: inherit;
               font-size: 0.85rem;
-              color: var(--ui-text-muted);
+              color: #e2e8f0;
               line-height: 1.55;
             }
+          }
+
+          .market-section {
+            margin-top: 0.2rem;
           }
         }
       }

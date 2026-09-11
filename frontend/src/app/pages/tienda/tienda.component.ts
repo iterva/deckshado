@@ -51,6 +51,8 @@ export class TiendaComponent implements OnInit, AfterViewInit, OnDestroy {
   viewPhotoUrl: string | null = null;
   showContactModal = false;
   showCart = false;
+  viewMode: 'grid' | 'list' = 'grid';
+  showFilterPanel = false;
 
   // Tabs
   activeTab: 'store' | 'wishlist' = 'store';
@@ -109,6 +111,7 @@ export class TiendaComponent implements OnInit, AfterViewInit, OnDestroy {
     const dt = this.route.snapshot.data?.['defaultTab'];
     if (dt === 'wishlist') this.activeTab = 'wishlist';
     this.loadCart();
+    this.loadViewMode();
     this.buyerName = this.auth.user()?.username || '';
     this.loadFilters();
     this.loadStore();
@@ -173,6 +176,32 @@ export class TiendaComponent implements OnInit, AfterViewInit, OnDestroy {
   toggleFilterPopover(filter: 'fmt' | 'edition' | 'race' | 'rarity' | 'type', event: Event) {
     event.stopPropagation();
     this.openFilter = this.openFilter === filter ? null : filter;
+  }
+
+  // ── View mode (grid/list) ──
+  private viewModeKey(): string { return 'tienda-view-mode'; }
+
+  loadViewMode() {
+    try {
+      const saved = localStorage.getItem(this.viewModeKey());
+      if (saved === 'grid' || saved === 'list') this.viewMode = saved;
+    } catch {}
+  }
+
+  setViewMode(mode: 'grid' | 'list') {
+    if (this.viewMode === mode) return;
+    this.viewMode = mode;
+    try { localStorage.setItem(this.viewModeKey(), mode); } catch {}
+  }
+
+  toggleFilterPanel(event: Event) {
+    event.stopPropagation();
+    this.showFilterPanel = !this.showFilterPanel;
+  }
+
+  get activeFilterCount(): number {
+    const keys: Array<'fmt' | 'edition' | 'race' | 'rarity' | 'type'> = ['fmt', 'edition', 'race', 'rarity', 'type'];
+    return keys.reduce((n, k) => n + (this.filters[k] ? 1 : 0), 0);
   }
 
   filterLabel(filter: 'fmt' | 'edition' | 'race' | 'rarity' | 'type'): string {

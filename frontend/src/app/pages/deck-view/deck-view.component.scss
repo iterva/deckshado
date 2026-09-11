@@ -1489,7 +1489,7 @@
   img {
     width: 130px;
     aspect-ratio: 35 / 50;
-    object-fit: cover;
+    object-fit: contain;
     border-radius: 6px;
     display: block;
     background: #16213e;
@@ -2435,7 +2435,7 @@
     img {
       width: 130px;
       aspect-ratio: 35 / 50;
-      object-fit: cover;
+      object-fit: contain;
       border-radius: 6px;
       display: block;
       border: 1px solid #1a3050;
@@ -2811,7 +2811,7 @@
     img {
       width: 100%;
       aspect-ratio: 35 / 50;
-      object-fit: cover;
+      object-fit: contain;
       border-radius: 3px;
     }
 

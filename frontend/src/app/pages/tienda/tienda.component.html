@@ -40,13 +40,23 @@
       </div>
       <div class="store-actions">
         @if (!isOwner) {
-          <button class="btn btn-primary btn-sm" (click)="showContactModal = true">📩 Contactar</button>
-          <a class="btn btn-sm" routerLink="/mis-compras" [queryParams]="{ game: 'myl', store: token }" target="_blank">📦 Mis pedidos</a>
+          <button class="btn btn-primary btn-sm" (click)="showContactModal = true">
+            <app-icon name="message-circle" [size]="15"></app-icon> Contactar
+          </button>
+          <a class="btn btn-sm" routerLink="/mis-compras" [queryParams]="{ game: 'myl', store: token }" target="_blank">
+            <app-icon name="package" [size]="15"></app-icon> Mis pedidos
+          </a>
         }
-        <button class="btn btn-sm" (click)="copyLink()">🔗 Copiar Link</button>
-        <button class="btn btn-sm" (click)="shareWhatsApp()">📱 Compartir</button>
+        <button class="icon-btn" (click)="copyLink()" title="Copiar link de la tienda">
+          <app-icon name="link" [size]="17"></app-icon>
+        </button>
+        <button class="icon-btn" (click)="shareWhatsApp()" title="Compartir por WhatsApp">
+          <app-icon name="share-2" [size]="17"></app-icon>
+        </button>
         @if (isOwner) {
-          <button class="btn btn-sm btn-pdf" (click)="exportPdf()">📄 PDF</button>
+          <button class="icon-btn" (click)="exportPdf()" title="Exportar como PDF">
+            <app-icon name="file-text" [size]="17"></app-icon>
+          </button>
           <app-share-image
             mode="selling"
             gameLabel="Mitos y Leyendas"
@@ -61,18 +71,42 @@
       </div>
     </div>
 
-    <!-- Tabs -->
-    <div class="tabs-bar">
-      <button class="tab-btn" [class.active]="activeTab === 'store'" (click)="switchTab('store')"
-              [disabled]="store?.has_store === false">
-        🏪 Tienda
-        @if (store?.selling_count) { <span class="tab-count">{{ store?.selling_count }}</span> }
-      </button>
-      <button class="tab-btn" [class.active]="activeTab === 'wishlist'" (click)="switchTab('wishlist')"
-              [disabled]="store?.has_wishlist === false">
-        ❤️ Wishlist
-        @if (store?.wishlist_count) { <span class="tab-count">{{ store?.wishlist_count }}</span> }
-      </button>
+    <!-- Tabs + Toolbar (sticky) -->
+    <div class="tienda-sticky-bar">
+      <div class="tabs-bar pill-tabs">
+        <button class="tab-btn" [class.active]="activeTab === 'store'" (click)="switchTab('store')"
+                [disabled]="store?.has_store === false">
+          <app-icon name="store" [size]="15"></app-icon> Tienda
+          @if (store?.selling_count) { <span class="tab-count">{{ store?.selling_count }}</span> }
+        </button>
+        <button class="tab-btn" [class.active]="activeTab === 'wishlist'" (click)="switchTab('wishlist')"
+                [disabled]="store?.has_wishlist === false">
+          <app-icon name="heart-fill" [size]="15"></app-icon> Wishlist
+          @if (store?.wishlist_count) { <span class="tab-count">{{ store?.wishlist_count }}</span> }
+        </button>
+      </div>
+
+      @if (activeTab === 'store') {
+        <div class="toolbar-actions">
+          <div class="toolbar-search">
+            <app-icon name="search" [size]="15"></app-icon>
+            <input type="text" placeholder="Buscar carta..." [(ngModel)]="filters.search" (keyup.enter)="applyFilter()" />
+          </div>
+          <div class="view-toggle" role="group" aria-label="Cambiar vista">
+            <button type="button" [class.active]="viewMode === 'grid'" (click)="setViewMode('grid')" title="Vista en cuadrícula">
+              <app-icon name="grid" [size]="16"></app-icon>
+            </button>
+            <button type="button" [class.active]="viewMode === 'list'" (click)="setViewMode('list')" title="Vista en lista">
+              <app-icon name="list" [size]="16"></app-icon>
+            </button>
+          </div>
+          <button type="button" class="btn-filters" [class.has-filters]="activeFilterCount > 0" (click)="toggleFilterPanel($event)">
+            <app-icon name="sliders-horizontal" [size]="15"></app-icon>
+            Filtros
+            @if (activeFilterCount > 0) { <span class="filter-count">{{ activeFilterCount }}</span> }
+          </button>
+        </div>
+      }
     </div>
 
     @if (createdOrderId) {
@@ -83,9 +117,16 @@
     }
 
     @if (activeTab === 'store') {
-    <div class="filters-bar">
-      <input type="text" placeholder="🔍 Buscar carta..." [(ngModel)]="filters.search" (keyup.enter)="applyFilter()" class="search-input" />
-
+    @if (showFilterPanel) {
+      <div class="filter-panel-overlay" (click)="showFilterPanel = false">
+        <div class="filter-panel" (click)="$event.stopPropagation()">
+          <div class="filter-panel-head">
+            <h3><app-icon name="sliders-horizontal" [size]="16"></app-icon> Filtros</h3>
+            <button type="button" class="close-btn" (click)="showFilterPanel = false" aria-label="Cerrar filtros">
+              <app-icon name="x" [size]="18"></app-icon>
+            </button>
+          </div>
+          <div class="filter-panel-body">
       <!-- Formato combobox -->
       <div class="tienda-multi-filter" [class.open]="openFilter === 'fmt'" (click)="$event.stopPropagation()">
         <button type="button" class="tienda-multi-trigger" [class.has-value]="filters.fmt" (click)="toggleFilterPopover('fmt', $event)">
@@ -211,15 +252,24 @@
         }
       </div>
 
-      <select [(ngModel)]="filters.ordering" (change)="applyFilter()">
-        <option value="-id">Más recientes</option>
-        <option value="price">Precio ↑</option>
-        <option value="-price">Precio ↓</option>
-        <option value="card__name">Nombre A→Z</option>
-        <option value="-card__name">Nombre Z→A</option>
-      </select>
-      <button class="btn btn-xs btn-ghost" (click)="resetFilters()">Limpiar</button>
-    </div>
+      <div class="filter-panel-sort">
+        <span>Ordenar por</span>
+        <select [(ngModel)]="filters.ordering" (change)="applyFilter()">
+          <option value="-id">Más recientes</option>
+          <option value="price">Precio ↑</option>
+          <option value="-price">Precio ↓</option>
+          <option value="card__name">Nombre A→Z</option>
+          <option value="-card__name">Nombre Z→A</option>
+        </select>
+      </div>
+          </div>
+          <div class="filter-panel-foot">
+            <button class="btn btn-xs btn-ghost" (click)="resetFilters()">Limpiar filtros</button>
+            <button class="btn btn-primary btn-sm" (click)="showFilterPanel = false">Aplicar</button>
+          </div>
+        </div>
+      </div>
+    }
 
     @if (loading) { <div class="loading">Cargando...</div> }
     @if (!loading && entries.length === 0) {
@@ -229,7 +279,7 @@
     }
 
     <!-- Cards Grid -->
-    <div class="store-grid">
+    <div class="store-grid" [class.view-list]="viewMode === 'list'">
       @for (entry of entries; track entry.id) {
         <div class="store-card" [class.in-wishlist]="entry.in_my_wishlist">
           @if (entry.in_my_wishlist) {
@@ -242,6 +292,17 @@
               [alt]="entry.card_detail.name"
               [thumbWidth]="350">
             </app-card-photo-carousel>
+            @if (viewMode === 'grid') {
+              <button class="btn-add-overlay"
+                      (click)="addToCart(entry, $event)"
+                      [disabled]="inCart(entry.id) >= entry.selling_quantity">
+                @if (inCart(entry.id)) {
+                  <app-icon name="check" [size]="14"></app-icon> En carrito ({{ inCart(entry.id) }})
+                } @else {
+                  <app-icon name="plus" [size]="14"></app-icon> Añadir
+                }
+              </button>
+            }
           </div>
           <div class="card-body">
             <h4>{{ entry.card_detail.name }}</h4>
@@ -260,15 +321,17 @@
               }
               <span class="qty-tag">x{{ entry.selling_quantity }}</span>
             </div>
-            <button class="btn btn-xs btn-primary btn-add-cart"
-                    (click)="addToCart(entry, $event)"
-                    [disabled]="inCart(entry.id) >= entry.selling_quantity">
-              @if (inCart(entry.id)) {
-                🛒 En carrito ({{ inCart(entry.id) }})
-              } @else {
-                🛒 Añadir
-              }
-            </button>
+            @if (viewMode === 'list') {
+              <button class="btn btn-xs btn-primary btn-add-cart"
+                      (click)="addToCart(entry, $event)"
+                      [disabled]="inCart(entry.id) >= entry.selling_quantity">
+                @if (inCart(entry.id)) {
+                  🛒 En carrito ({{ inCart(entry.id) }})
+                } @else {
+                  🛒 Añadir
+                }
+              </button>
+            }
             @if (entry.photo_url) {
               <button class="btn btn-xs btn-photo-view"
                       (click)="viewPhotoUrl = entry.photo_url; $event.stopPropagation()"
@@ -292,13 +355,27 @@
     }
     } @else if (activeTab === 'wishlist') {
       <!-- Wishlist tab -->
-      <div class="filters-bar">
-        <input type="text" placeholder="🔍 Buscar en wishlist..." [(ngModel)]="wishlistSearch"
-               (keyup.enter)="applyWishlistFilter()" class="search-input" />
-        <button class="btn btn-xs" (click)="applyWishlistFilter()">Buscar</button>
+      <div class="toolbar-actions">
+        <div class="toolbar-search">
+          <app-icon name="search" [size]="15"></app-icon>
+          <input type="text" placeholder="Buscar en wishlist..." [(ngModel)]="wishlistSearch"
+                 (keyup.enter)="applyWishlistFilter()" />
+        </div>
+        <div class="view-toggle" role="group" aria-label="Cambiar vista">
+          <button type="button" [class.active]="viewMode === 'grid'" (click)="setViewMode('grid')" title="Vista en cuadrícula">
+            <app-icon name="grid" [size]="16"></app-icon>
+          </button>
+          <button type="button" [class.active]="viewMode === 'list'" (click)="setViewMode('list')" title="Vista en lista">
+            <app-icon name="list" [size]="16"></app-icon>
+          </button>
+        </div>
         <span class="flex-spacer"></span>
-        <button class="btn btn-xs" (click)="shareWishlistLink()">🔗 Copiar link wishlist</button>
-        <button class="btn btn-xs" (click)="shareWishlistWhatsApp()">📱 Compartir wishlist</button>
+        <button class="icon-btn" (click)="shareWishlistLink()" title="Copiar link de la wishlist">
+          <app-icon name="link" [size]="16"></app-icon>
+        </button>
+        <button class="icon-btn" (click)="shareWishlistWhatsApp()" title="Compartir wishlist por WhatsApp">
+          <app-icon name="share-2" [size]="16"></app-icon>
+        </button>
       </div>
 
       @if (wishlistLoading) { <div class="loading">Cargando wishlist...</div> }
@@ -308,12 +385,13 @@
         </div>
       }
 
-      <div class="store-grid">
+      <div class="store-grid" [class.view-list]="viewMode === 'list'">
         @for (w of wishlistEntries; track w.id) {
           <div class="store-card wishlist-card">
             <div class="card-image" (click)="openPreviewCard(w.card_detail)">
               <img [src]="w.card_detail.image_url | thumb:350" [alt]="w.card_detail.name" loading="lazy"
                 (error)="$any($event.target).src = w.card_detail.image_url" />
+              <span class="wish-badge">❤️ x{{ w.desired_quantity }}</span>
             </div>
             <div class="card-body">
               <h4>{{ w.card_detail.name }}</h4>

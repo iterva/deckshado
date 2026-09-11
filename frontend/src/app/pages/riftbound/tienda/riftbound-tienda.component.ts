@@ -230,12 +230,19 @@ interface RiftboundCartItem {
                 </app-card-photo-carousel>
               } @else { <div class="img-fallback">{{ e.card_data.card_number }}</div> }
               @if (e.is_foil) { <div class="foil-badge">✨ FOIL</div> }
-              <button type="button" class="add-fab" [class.added]="inCart(e.id) > 0"
-                      (click)="addToCart(e, $event)"
-                      [disabled]="inCart(e.id) >= e.selling_quantity"
-                      [attr.aria-label]="inCart(e.id) > 0 ? ('En carrito, ' + inCart(e.id) + ' unidades') : 'Añadir al carrito'">
-                @if (inCart(e.id) > 0) { <span aria-hidden="true">✓</span> } @else { <span aria-hidden="true">+</span> }
-              </button>
+              @if (inCart(e.id) > 0) {
+                <div class="qty-capsule" (click)="$event.stopPropagation()">
+                  <button type="button" class="qty-btn qty-btn-minus" (click)="decreaseFromCart(e, $event)" aria-label="Quitar una unidad">−</button>
+                  <span class="qty-value">{{ inCart(e.id) }}</span>
+                  <button type="button" class="qty-btn qty-btn-plus" (click)="addToCart(e, $event)"
+                          [disabled]="inCart(e.id) >= e.selling_quantity" aria-label="Agregar una unidad">+</button>
+                </div>
+              } @else {
+                <button type="button" class="add-fab" (click)="addToCart(e, $event)"
+                        [disabled]="e.selling_quantity <= 0" aria-label="Añadir al carrito">
+                  <span aria-hidden="true">+</span>
+                </button>
+              }
             </div>
             <div class="card-body">
               <h4>{{ e.card_data.name }}</h4>
@@ -245,9 +252,6 @@ interface RiftboundCartItem {
                 <span class="qty">x{{ e.selling_quantity }}</span>
               </div>
               <app-tcg-price [cardName]="e.card_data.name || ''" [compact]="true" [showLink]="false" [showMarketPrice]="false"></app-tcg-price>
-              @if (inCart(e.id) > 0) {
-                <span class="in-cart-note">✓ En carrito ({{ inCart(e.id) }})</span>
-              }
             </div>
           </div>
         }
@@ -558,10 +562,6 @@ interface RiftboundCartItem {
     .price-row { display: flex; justify-content: space-between; align-items: center; margin-top: .5rem; }
     .price { color: #e94560; font-weight: 800; font-size: 1.05rem; }
     .qty { color: #4fc3f7; font-size: .85rem; }
-    .in-cart-note {
-      display: inline-flex; align-items: center; gap: .25rem;
-      margin-top: .45rem; color: #25d366; font-size: .78rem; font-weight: 700;
-    }
 
     .btn { padding: .4rem .8rem; border: 1px solid #2a3a4a; background: transparent; color: #c8c8da;
       border-radius: 6px; cursor: pointer; font-weight: 600; text-decoration: none; display: inline-block; }
@@ -606,7 +606,31 @@ interface RiftboundCartItem {
     }
     .add-fab:hover:not(:disabled) { background: #e94560; border-color: #e94560; transform: scale(1.08); }
     .add-fab:disabled { opacity: .55; cursor: not-allowed; }
-    .add-fab.added { background: rgba(37, 211, 102, .22); border-color: #25d366; color: #25d366; }
+
+    /* Cápsula de cantidad [-] [qty] [+], reemplaza al add-fab cuando ya hay unidades en el carrito. */
+    .qty-capsule {
+      position: absolute; right: 8px; bottom: 8px; z-index: 2;
+      display: flex; align-items: center; gap: .3rem;
+      padding: .2rem .3rem;
+      border-radius: 999px;
+      background: rgba(20, 20, 25, 0.85);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, .15);
+      transition: all .2s ease;
+    }
+    .qty-btn {
+      width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+      border: none; background: rgba(255, 255, 255, .08);
+      color: #fff; font-size: .95rem; font-weight: 700; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: background .15s, transform .15s;
+    }
+    .qty-btn:hover:not(:disabled) { background: #e94560; transform: scale(1.08); }
+    .qty-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+    .qty-value {
+      min-width: 14px; text-align: center;
+      color: #fff; font-size: .85rem; font-weight: 700;
+    }
     .cart-fab {
       position: fixed; bottom: 1.25rem; right: 1.25rem; z-index: 999;
       padding: .85rem 1.3rem; border-radius: 999px; border: none;
@@ -746,6 +770,9 @@ interface RiftboundCartItem {
       .card-body h4 { font-size: .88rem; }
       .price { font-size: .95rem; }
       .add-fab { width: 30px; height: 30px; font-size: 1rem; right: 6px; bottom: 6px; }
+      .qty-capsule { right: 6px; bottom: 6px; gap: .25rem; padding: .15rem .25rem; }
+      .qty-btn { width: 20px; height: 20px; font-size: .85rem; }
+      .qty-value { font-size: .78rem; }
       .cart-fab {
         bottom: calc(4.8rem + env(safe-area-inset-bottom, 0));
         right: .9rem; padding: .75rem 1.1rem; font-size: .9rem;
@@ -762,7 +789,9 @@ interface RiftboundCartItem {
       .price { font-size: .82rem; }
       .qty { font-size: .74rem; }
       .add-fab { width: 26px; height: 26px; font-size: .9rem; }
-      .in-cart-note { font-size: .68rem; }
+      .qty-capsule { gap: .2rem; padding: .12rem .2rem; }
+      .qty-btn { width: 18px; height: 18px; font-size: .78rem; }
+      .qty-value { font-size: .7rem; min-width: 10px; }
     }
   `],
 })
@@ -1186,6 +1215,14 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
   removeFromCart(item: RiftboundCartItem) {
     this.cart.set(this.cart().filter(c => c.entryId !== item.entryId));
     this.saveCart();
+  }
+
+  /** Resta una unidad directamente desde la tarjeta de la tienda (cápsula +/-). */
+  decreaseFromCart(entry: RiftboundCollectionEntry, ev: MouseEvent) {
+    ev.stopPropagation();
+    const item = this.cart().find(c => c.entryId === entry.id);
+    if (!item) return;
+    this.changeCartQty(item, -1);
   }
 
   changeCartQty(item: RiftboundCartItem, delta: number) {

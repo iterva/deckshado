@@ -63,7 +63,7 @@ interface RiftboundCartItem {
             @if (s.discord) { <span class="contact-chip dc">💬 {{ s.discord }}</span> }
             @if (s.email_public) { <a class="contact-chip em" [href]="'mailto:' + s.email_public">✉️ Email</a> }
             @if (s.accepts_trades) { <span class="contact-chip tr">🔄 Acepta cambios</span> }
-            <a class="contact-chip" routerLink="/mis-compras" [queryParams]="{ game: 'riftbound' }" target="_blank">📦 Mis pedidos</a>
+            <a class="contact-chip" routerLink="/mis-compras" [queryParams]="{ game: 'riftbound', store: token }" target="_blank">📦 Mis pedidos</a>
           </div>
           @if (s.payment_methods) { <p class="store-line"><strong>💳 Pago:</strong> {{ s.payment_methods }}</p> }
           @if (s.shipping_info) { <p class="store-line"><strong>🚚 Envío:</strong> {{ s.shipping_info }}</p> }
@@ -100,7 +100,7 @@ interface RiftboundCartItem {
       @if (createdOrderId) {
         <div class="order-success">
           ✅ Pedido #{{ createdOrderId }} creado correctamente. El vendedor ya lo ve en su carpeta.
-          <a routerLink="/mis-compras" [queryParams]="{ game: 'riftbound' }" target="_blank">Ver mis pedidos ↗</a>
+          <a routerLink="/mis-compras" [queryParams]="{ game: 'riftbound', store: token }" target="_blank">Ver mis pedidos ↗</a>
         </div>
       }
 

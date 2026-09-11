@@ -1618,13 +1618,24 @@
     }
 
     .preview-art-col {
+      width: 100%;
+
+      @media (max-width: 600px) {
+        max-width: 250px;
+      }
+
       .preview-card-img {
         width: 100%;
         aspect-ratio: 0.71;
         border-radius: 10px;
-        object-fit: cover;
+        object-fit: contain; /* Muestra la carta entera sin zoomear/recortar */
+        background: rgba(12, 12, 16, 0.6);
         border: 1px solid var(--ui-border);
         box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
+
+        @media (max-width: 600px) {
+          max-height: 45vh;
+        }
       }
     }
 

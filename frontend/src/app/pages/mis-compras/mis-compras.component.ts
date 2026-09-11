@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, OnInit, signal, computed, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnInit, signal, inject } from '@angular/core';
 import { RouterLink, ActivatedRoute } from '@angular/router';
 import { CarpetaService } from '../../services/carpeta.service';
 import { RiftboundService } from '../../services/riftbound.service';

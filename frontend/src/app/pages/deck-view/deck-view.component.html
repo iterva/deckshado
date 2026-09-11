@@ -75,7 +75,7 @@
         </button>
       </div>
 
-      <div class="orient-wrapper" (click)="$event.stopPropagation()">
+      <div class="orient-wrapper hide-mobile" (click)="$event.stopPropagation()">
         <button class="action-btn" (click)="toggleStackOrientationMenu($event)" [attr.aria-expanded]="showStackOrientationMenu" title="Orientación de apilado">
           <app-icon [name]="stackOrientation === 'up' ? 'arrow-up-square' : stackOrientation === 'down' ? 'arrow-down-square' : stackOrientation === 'left' ? 'arrow-left-square' : stackOrientation === 'right' ? 'arrow-right-square' : 'square'" [size]="15"></app-icon><span>Orientación</span>
         </button>
@@ -100,7 +100,7 @@
         }
       </div>
 
-      <div class="export-options-wrapper" (click)="$event.stopPropagation()">
+      <div class="export-options-wrapper hide-mobile" (click)="$event.stopPropagation()">
         <button class="action-btn" (click)="openExportOptionsModal($event)" [attr.aria-expanded]="showExportOptionsModal" title="Opciones de imagen">
           <app-icon name="sliders" [size]="15"></app-icon><span>Imagen</span>
         </button>
@@ -108,12 +108,12 @@
 
       <div class="action-spacer"></div>
 
-      <button class="action-btn" (click)="showHandModal = true" title="Probar mano (8 cartas)">
+      <button class="action-btn hide-mobile" (click)="showHandModal = true" title="Probar mano (8 cartas)">
         <app-icon name="hand" [size]="15"></app-icon><span>Probar mano</span>
       </button>
 
       @if (isOwner) {
-        <button class="action-btn" (click)="toggleVisibility()" [disabled]="togglingVisibility" [title]="deck.is_public ? 'Hacer privado' : 'Hacer público'">
+        <button class="action-btn hide-mobile" (click)="toggleVisibility()" [disabled]="togglingVisibility" [title]="deck.is_public ? 'Hacer privado' : 'Hacer público'">
           <app-icon [name]="deck.is_public ? 'globe' : 'lock'" [size]="15"></app-icon>
           <span>{{ deck.is_public ? 'Hacer privado' : 'Hacer público' }}</span>
         </button>
@@ -122,7 +122,7 @@
         </button>
       }
 
-      <button class="action-btn" (click)="togglePresentation()" title="Modo presentación (F)">
+      <button class="action-btn hide-mobile" (click)="togglePresentation()" title="Modo presentación (F)">
         <app-icon [name]="presentationMode ? 'minimize' : 'maximize'" [size]="16"></app-icon>
       </button>
 
@@ -133,6 +133,46 @@
         </button>
         @if (showMoreMenu) {
           <div class="more-menu" role="menu">
+            <!-- Acciones secundarias colapsadas: solo visibles en móvil, en desktop
+                 tienen su propio botón directo en la action-bar. -->
+            <button class="mobile-only-item" role="menuitem" (click)="showHandModal = true; showMoreMenu = false">
+              <app-icon name="hand" [size]="14"></app-icon> Probar mano
+            </button>
+            @if (isOwner) {
+              <button class="mobile-only-item" role="menuitem" (click)="toggleVisibility(); showMoreMenu = false" [disabled]="togglingVisibility">
+                <app-icon [name]="deck.is_public ? 'globe' : 'lock'" [size]="14"></app-icon>
+                {{ deck.is_public ? 'Hacer privado' : 'Hacer público' }}
+              </button>
+            }
+            <button class="mobile-only-item" role="menuitem" (click)="togglePresentation(); showMoreMenu = false">
+              <app-icon [name]="presentationMode ? 'minimize' : 'maximize'" [size]="14"></app-icon>
+              {{ presentationMode ? 'Salir de presentación' : 'Modo presentación' }}
+            </button>
+            <div class="more-divider mobile-only-item"></div>
+            <div class="more-orient-group mobile-only-item">
+              <span class="more-orient-title">Orientación de apilado</span>
+              <div class="more-orient-options">
+                <button type="button" [class.active]="stackOrientation === 'center'" (click)="setStackOrientation('center')" aria-label="Centro" title="Centro">
+                  <app-icon name="square" [size]="14"></app-icon>
+                </button>
+                <button type="button" [class.active]="stackOrientation === 'up'" (click)="setStackOrientation('up')" aria-label="Hacia arriba" title="Hacia arriba">
+                  <app-icon name="arrow-up-square" [size]="14"></app-icon>
+                </button>
+                <button type="button" [class.active]="stackOrientation === 'down'" (click)="setStackOrientation('down')" aria-label="Hacia abajo" title="Hacia abajo">
+                  <app-icon name="arrow-down-square" [size]="14"></app-icon>
+                </button>
+                <button type="button" [class.active]="stackOrientation === 'left'" (click)="setStackOrientation('left')" aria-label="Hacia la izquierda" title="Hacia la izquierda">
+                  <app-icon name="arrow-left-square" [size]="14"></app-icon>
+                </button>
+                <button type="button" [class.active]="stackOrientation === 'right'" (click)="setStackOrientation('right')" aria-label="Hacia la derecha" title="Hacia la derecha">
+                  <app-icon name="arrow-right-square" [size]="14"></app-icon>
+                </button>
+              </div>
+            </div>
+            <button class="mobile-only-item" role="menuitem" (click)="openExportOptionsModal($event)">
+              <app-icon name="sliders" [size]="14"></app-icon> Opciones de imagen...
+            </button>
+            <div class="more-divider mobile-only-item"></div>
             <button role="menuitem" (click)="exportText(); showMoreMenu = false">
               <app-icon name="file-text" [size]="14"></app-icon> Copiar como texto
             </button>

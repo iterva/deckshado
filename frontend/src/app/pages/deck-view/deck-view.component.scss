@@ -827,6 +827,51 @@
   }
 }
 
+// Acciones secundarias que en desktop tienen botón propio en la action-bar,
+// y en móvil se colapsan dentro del menú "..." para evitar el desborde.
+.mobile-only-item { display: none; }
+
+@media (max-width: 768px) {
+  .hide-mobile { display: none !important; }
+  .more-menu .mobile-only-item { display: flex; }
+}
+
+.more-orient-group {
+  padding: 0.4rem 0.65rem 0.55rem;
+
+  .more-orient-title {
+    display: block;
+    color: #8ea1b6;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+  }
+
+  .more-orient-options {
+    display: flex;
+    gap: 0.35rem;
+
+    button {
+      flex: 1;
+      width: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.4rem 0;
+      border: 1px solid #2a3a4a;
+      border-radius: 7px;
+      background: #0f1923;
+      color: #8ea1b6;
+      cursor: pointer;
+
+      &:hover { border-color: #4fc3f7; color: #8bd9ff; }
+      &.active { background: rgba(79,195,247,0.18); border-color: #4fc3f7; color: #8bd9ff; }
+    }
+  }
+}
+
 // Kebab menu
 .more-wrapper {
   position: relative;
@@ -2861,9 +2906,9 @@
       i { font-size: 0.65rem; }
     }
 
-    // En móvil ocultamos el badge siempre-visible: la estrella superior-izquierda
-    // (.cover-star) hace de toggle. Aparece al tocar/acercar el dedo (:active /
-    // :focus) y queda tenue cuando es la portada actual para no estorbar.
+    // En móvil no hay :hover, así que la estrella de portada queda siempre
+    // visible (opacidad tenue) para poder tocarla directamente; al ser la
+    // portada actual se resalta al 100%.
     .cover-badge { display: none; }
 
     .cover-star {
@@ -2872,19 +2917,16 @@
       font-size: 0.5rem;
       top: 2px;
       left: 2px;
-      opacity: 0;
+      opacity: 0.55;
       background: rgba(0, 0, 0, 0.5);
 
       i { font-size: 0.55rem; }
 
-      &.is-cover { opacity: 0.4; }
+      &.is-cover { opacity: 1; }
       &:active,
       &:focus,
       &:focus-visible { opacity: 1; }
     }
-    // Cualquier interacción con la carta también la revela
-    &:active .cover-star,
-    .img-wrapper:active .cover-star { opacity: 1; }
   }
 
   // compensate stacked card offsets so they don't clip

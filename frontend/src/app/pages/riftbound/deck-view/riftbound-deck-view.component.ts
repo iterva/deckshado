@@ -2991,17 +2991,30 @@ export class RiftboundDeckViewComponent implements OnInit {
 
       const targetWidth = this.orientation() === 'horizontal' ? 1680 : 1140;
       const targetHeight = this.orientation() === 'horizontal' ? 945 : 1520;
-      const html2canvas = (await import('html2canvas')).default;
-      const sourceCanvas = await html2canvas(el, {
-        backgroundColor: '#0a1628',
-        useCORS: true,
-        allowTaint: false,
-        scale: 2,
-        width: targetWidth,
-        height: el.scrollHeight,
-        windowWidth: targetWidth,
-        windowHeight: el.scrollHeight,
-      });
+
+      // html2canvas re-implements CSS layout itself and does not reliably
+      // support CSS Grid track sizing (fr/minmax) or the aspect-ratio
+      // property, which was collapsing/squashing the card grid in the
+      // exported image even though it renders correctly on screen. To work
+      // around that, bake the browser's real (correct) layout into fixed
+      // pixel positions right before capture, then restore it afterwards.
+      const unfreeze = this.freezeGridLayout(el);
+      let sourceCanvas: HTMLCanvasElement;
+      try {
+        const html2canvas = (await import('html2canvas')).default;
+        sourceCanvas = await html2canvas(el, {
+          backgroundColor: '#0a1628',
+          useCORS: true,
+          allowTaint: false,
+          scale: 2,
+          width: targetWidth,
+          height: el.scrollHeight,
+          windowWidth: targetWidth,
+          windowHeight: el.scrollHeight,
+        });
+      } finally {
+        unfreeze();
+      }
 
       const outputCanvas = document.createElement('canvas');
       outputCanvas.width = targetWidth * 2;
@@ -3041,6 +3054,65 @@ export class RiftboundDeckViewComponent implements OnInit {
 
   private nextRenderTick(): Promise<void> {
     return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  }
+
+  /**
+   * Reads the browser's already-correct CSS Grid layout for every
+   * `.card-grid` inside `root` and pins each `.card-stack` to absolute
+   * pixel coordinates, so html2canvas only has to draw fixed boxes instead
+   * of re-solving Grid/aspect-ratio itself. Returns a function that
+   * restores the original inline styles.
+   */
+  private freezeGridLayout(root: HTMLElement): () => void {
+    // Phase 1: measure every grid/card while the ORIGINAL CSS Grid layout
+    // is still fully intact. Mutating an element mid-loop would reflow its
+    // still-in-flow siblings and corrupt their measurements, so nothing is
+    // written to the DOM until every rect has been read.
+    const grids = Array.from(root.querySelectorAll<HTMLElement>('.card-grid'));
+    const plan = grids.map(grid => {
+      const gridRect = grid.getBoundingClientRect();
+      const stacks = Array.from(grid.querySelectorAll<HTMLElement>(':scope > .card-stack'));
+      const stackPlan = stacks.map(stack => ({
+        stack,
+        prevStyle: stack.getAttribute('style'),
+        rect: stack.getBoundingClientRect(),
+      }));
+      return { grid, prevStyle: grid.getAttribute('style'), gridRect, stackPlan };
+    });
+
+    // Phase 2: apply fixed pixel positions computed from those measurements.
+    for (const { grid, gridRect, stackPlan } of plan) {
+      grid.style.display = 'block';
+      grid.style.position = 'relative';
+      grid.style.height = `${gridRect.height}px`;
+
+      for (const { stack, rect } of stackPlan) {
+        stack.style.position = 'absolute';
+        stack.style.left = `${rect.left - gridRect.left}px`;
+        stack.style.top = `${rect.top - gridRect.top}px`;
+        stack.style.width = `${rect.width}px`;
+        stack.style.height = `${rect.height}px`;
+        // The stylesheet gives .card-stack a percentage `padding-bottom`
+        // aspect-ratio box; once absolutely positioned that percentage
+        // resolves against the grid's width instead of the card's own
+        // width, ballooning the height. Pin it to 0 now that height is
+        // an explicit pixel value.
+        stack.style.padding = '0';
+        stack.style.maxWidth = 'none';
+        stack.style.margin = '0';
+      }
+    }
+
+    return () => {
+      for (const { grid, prevStyle, stackPlan } of plan) {
+        if (prevStyle === null) grid.removeAttribute('style');
+        else grid.setAttribute('style', prevStyle);
+        for (const { stack, prevStyle: prevStackStyle } of stackPlan) {
+          if (prevStackStyle === null) stack.removeAttribute('style');
+          else stack.setAttribute('style', prevStackStyle);
+        }
+      }
+    };
   }
 
   private waitForImages(el: HTMLElement): Promise<void[]> {

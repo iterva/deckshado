@@ -1700,6 +1700,9 @@ function typeRank(t?: string): number {
 
     /* Export capture (always desktop layout) */
     .deck-export-area.export-capture {
+      /* Mobile browsers may inflate text in this wide off-screen sheet, which would change the export on phones. */
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
       position: fixed;
       left: -10000px;
       top: 0;

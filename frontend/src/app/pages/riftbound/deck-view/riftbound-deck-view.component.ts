@@ -547,7 +547,7 @@ function typeRank(t?: string): number {
 
                   <div class="rb-export-zone-grid" [attr.data-stack-orientation]="stackOrientation()">
                     @if (runeEntries.length) {
-                      <section class="rb-export-zone zone-runes">
+                      <section class="rb-export-zone zone-runes" [style.--rb-zone-cols]="runeEntries.length">
                         <h3 class="rb-export-zone-title">Runes <span>{{ sumEntryQuantity(runeEntries) }}</span></h3>
                         <div class="card-grid" [attr.data-stack-orientation]="stackOrientation()">
                           @for (e of runeEntries; track e.id || e.card) {
@@ -574,7 +574,7 @@ function typeRank(t?: string): number {
                     }
 
                     @if (battlefieldEntries.length) {
-                      <section class="rb-export-zone zone-battlefields">
+                      <section class="rb-export-zone zone-battlefields" [style.--rb-zone-cols]="battlefieldEntries.length">
                         <h3 class="rb-export-zone-title">Battlefields <span>{{ sumEntryQuantity(battlefieldEntries) }}</span></h3>
                         <div class="card-grid" [attr.data-stack-orientation]="stackOrientation()">
                           @for (e of battlefieldEntries; track e.id || e.card) {
@@ -601,7 +601,7 @@ function typeRank(t?: string): number {
                     }
 
                     @if (unitEntries.length) {
-                      <section class="rb-export-zone zone-units">
+                      <section class="rb-export-zone zone-units" [style.--rb-zone-cols]="unitEntries.length">
                         <h3 class="rb-export-zone-title">Units <span>{{ sumEntryQuantity(unitEntries) }}</span></h3>
                         <div class="card-grid" [attr.data-stack-orientation]="stackOrientation()">
                           @for (e of unitEntries; track e.id || e.card) {
@@ -628,7 +628,7 @@ function typeRank(t?: string): number {
                     }
 
                     @if (spellEntries.length) {
-                      <section class="rb-export-zone zone-spells">
+                      <section class="rb-export-zone zone-spells" [style.--rb-zone-cols]="spellEntries.length">
                         <h3 class="rb-export-zone-title">Spells <span>{{ sumEntryQuantity(spellEntries) }}</span></h3>
                         <div class="card-grid" [attr.data-stack-orientation]="stackOrientation()">
                           @for (e of spellEntries; track e.id || e.card) {
@@ -655,7 +655,7 @@ function typeRank(t?: string): number {
                     }
 
                     @if (gearEntries.length) {
-                      <section class="rb-export-zone zone-gear">
+                      <section class="rb-export-zone zone-gear" [style.--rb-zone-cols]="gearEntries.length">
                         <h3 class="rb-export-zone-title">Gear <span>{{ sumEntryQuantity(gearEntries) }}</span></h3>
                         <div class="card-grid" [attr.data-stack-orientation]="stackOrientation()">
                           @for (e of gearEntries; track e.id || e.card) {
@@ -682,7 +682,7 @@ function typeRank(t?: string): number {
                     }
 
                     @if (otherMainEntries.length) {
-                      <section class="rb-export-zone zone-other">
+                      <section class="rb-export-zone zone-other" [style.--rb-zone-cols]="otherMainEntries.length">
                         <h3 class="rb-export-zone-title">Other Main <span>{{ sumEntryQuantity(otherMainEntries) }}</span></h3>
                         <div class="card-grid" [attr.data-stack-orientation]="stackOrientation()">
                           @for (e of otherMainEntries; track e.id || e.card) {
@@ -709,7 +709,7 @@ function typeRank(t?: string): number {
                     }
 
                     @if (sideEntries.length) {
-                      <section class="rb-export-zone zone-side-deck">
+                      <section class="rb-export-zone zone-side-deck" [style.--rb-zone-cols]="sideEntries.length">
                         <h3 class="rb-export-zone-title">Side Deck <span>{{ sumEntryQuantity(sideEntries) }}</span></h3>
                         <div class="card-grid" [attr.data-stack-orientation]="stackOrientation()">
                           @for (e of sideEntries; track e.id || e.card) {
@@ -1408,10 +1408,12 @@ function typeRank(t?: string): number {
     }
     .card-grid[data-stack-orientation='center'] .card-stack .shadow { display: none; }
     .card-stack {
-      /* padding-bottom percentage box instead of aspect-ratio: html2canvas
-         (used for the export image) does not support the aspect-ratio
-         property and collapses these to zero height, stretching the cards. */
-      position: relative; padding: 0 0 139.68%;
+      /* Space kept beside the card for its stacked copies, scaled with stacking intensity. */
+      --stack-rx: calc((var(--stack-reserve-left, 0px) + var(--stack-reserve-right, 0px)) * var(--stack-intensity-mult, 1));
+      --stack-ry: calc((var(--stack-reserve-top, 0px) + var(--stack-reserve-bottom, 0px)) * var(--stack-intensity-mult, 1));
+      position: relative;
+      /* Exact 63:88 card for the width left after the reserve: html2canvas ignores object-fit and stretches art to its box. */
+      padding: 0 0 calc(139.68% - var(--stack-rx) * 1.3968 + var(--stack-ry));
       background: transparent; border: none; cursor: pointer;
       width: 100%;
       height: 0;
@@ -1424,12 +1426,13 @@ function typeRank(t?: string): number {
     .card-stack:focus-visible { outline: 2px solid #e94560; outline-offset: 4px; border-radius: 6px; }
     .card-stack .top, .card-stack .shadow {
       position: absolute;
-      top: var(--stack-reserve-top, 0px);
-      left: var(--stack-reserve-left, 0px);
+      /* The stack offsets come from the translate() below; also offsetting by the reserve pushed up/left stacks out of their slot. */
+      top: 0;
+      left: 0;
       right: auto;
       bottom: auto;
-      width: calc(100% - var(--stack-reserve-left, 0px) - var(--stack-reserve-right, 0px));
-      height: calc(100% - var(--stack-reserve-top, 0px) - var(--stack-reserve-bottom, 0px));
+      width: calc(100% - var(--stack-rx));
+      height: calc(100% - var(--stack-ry));
       object-fit: contain; border-radius: 6px;
       box-shadow: 0 4px 14px rgba(0,0,0,.4);
       background: #0b1320;
@@ -1828,14 +1831,25 @@ function typeRank(t?: string): number {
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    /* Zone panels flow and wrap instead of sitting in fixed 12-column slots:
+       each panel is as wide as its own cards need (--rb-zone-cols), and the
+       leftover space on a row is shared out in proportion to that same
+       count, which keeps every card the same width across all zones. */
     .deck-export-area.export-capture.capture-horizontal .rb-export-zone-grid {
-      display: grid;
-      grid-template-columns: repeat(12, minmax(0, 1fr));
+      --rb-card-gap-x: 10px;
+      --rb-zone-chrome: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      align-content: flex-start;
       gap: .55rem;
-      align-items: start;
       flex: 1;
     }
     .deck-export-area.export-capture.capture-horizontal .rb-export-zone {
+      --rb-zone-slot: calc(var(--rb-card-w, 170px) + var(--rb-card-gap-x));
+      flex: var(--rb-zone-cols, 1) 1
+            calc(var(--rb-zone-cols, 1) * var(--rb-zone-slot) + var(--rb-zone-chrome));
+      max-width: 100%;
       padding: .45rem;
       border-radius: 10px;
       border: 1px solid rgba(200,214,229,.2);
@@ -1858,15 +1872,6 @@ function typeRank(t?: string): number {
       font-size: .92rem;
       font-weight: 800;
     }
-    .deck-export-area.export-capture.capture-horizontal .zone-runes { grid-column: span 2; }
-    .deck-export-area.export-capture.capture-horizontal .zone-battlefields { grid-column: span 4; }
-    .deck-export-area.export-capture.capture-horizontal .zone-units { grid-column: span 6; }
-    .deck-export-area.export-capture.capture-horizontal .zone-spells { grid-column: span 8; }
-    .deck-export-area.export-capture.capture-horizontal .zone-gear { grid-column: span 4; }
-    .deck-export-area.export-capture.capture-horizontal .zone-other { grid-column: span 4; }
-    .deck-export-area.export-capture.capture-horizontal .zone-side-deck {
-      grid-column: 1 / -1;
-    }
     .deck-export-area.export-capture.capture-horizontal .zone-units { order: 1; }
     .deck-export-area.export-capture.capture-horizontal .zone-spells { order: 2; }
     .deck-export-area.export-capture.capture-horizontal .zone-gear { order: 3; }
@@ -1874,13 +1879,14 @@ function typeRank(t?: string): number {
     .deck-export-area.export-capture.capture-horizontal .zone-side-deck { order: 5; }
     .deck-export-area.export-capture.capture-horizontal .zone-runes { order: 6; }
     .deck-export-area.export-capture.capture-horizontal .zone-battlefields { order: 7; }
-    /* Let each zone's grid size its own columns from the available panel
-       width instead of forcing a fixed column count sized for the
-       zone's theoretical max card count — a fixed count made cards look
-       small/cramped whenever a zone had fewer cards than that count. */
+    /* Fixed-width columns (not 1fr) so a card is exactly the same size in
+       every zone and every row; the width itself is fitted to the sheet at
+       export time. Panels stretch to fill their row, so the slack shows up
+       as room inside the panel rather than as a hole in the layout. */
     .deck-export-area.export-capture.capture-horizontal .rb-export-zone .card-grid {
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: .9rem .7rem;
+      grid-template-columns: repeat(auto-fill, var(--rb-card-w, 170px));
+      justify-content: start;
+      gap: .5rem var(--rb-card-gap-x);
     }
     .deck-export-area.export-capture.capture-horizontal .rb-export-zone .card-stack {
       max-width: none;
@@ -2978,12 +2984,11 @@ export class RiftboundDeckViewComponent implements OnInit {
       const targetWidth = this.orientation() === 'horizontal' ? 1680 : 1140;
       const targetHeight = this.orientation() === 'horizontal' ? 945 : 1520;
 
-      // html2canvas re-implements CSS layout itself and does not reliably
-      // support CSS Grid track sizing (fr/minmax) or the aspect-ratio
-      // property, which was collapsing/squashing the card grid in the
-      // exported image even though it renders correctly on screen. To work
-      // around that, bake the browser's real (correct) layout into fixed
-      // pixel positions right before capture, then restore it afterwards.
+      if (this.orientation() === 'horizontal') {
+        this.fitExportCardWidth(el, targetHeight);
+      }
+
+      // Pin cards to their measured pixel boxes so the capture matches the on-screen layout.
       const unfreeze = this.freezeGridLayout(el);
       let sourceCanvas: HTMLCanvasElement;
       try {
@@ -3040,6 +3045,26 @@ export class RiftboundDeckViewComponent implements OnInit {
 
   private nextRenderTick(): Promise<void> {
     return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  }
+
+  /** Largest card width whose sheet still fits the canvas height, so the capture isn't letterboxed. */
+  private fitExportCardWidth(el: HTMLElement, targetHeight: number): void {
+    // Reading scrollHeight forces a synchronous layout, so no change detection or frame wait is needed.
+    const measure = (width: number): number => {
+      el.style.setProperty('--rb-card-w', `${width}px`);
+      return el.scrollHeight;
+    };
+
+    let lo = 92;
+    let hi = 290;
+    if (measure(hi) <= targetHeight) return;
+
+    while (hi - lo > 2) {
+      const mid = Math.round((lo + hi) / 2);
+      if (measure(mid) > targetHeight) hi = mid;
+      else lo = mid;
+    }
+    measure(lo);
   }
 
   /**

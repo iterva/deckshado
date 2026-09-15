@@ -220,6 +220,10 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
       font-size: 1.3rem;
       font-weight: 700;
       color: #ffffff !important;
+      background: none !important;
+      -webkit-background-clip: initial !important;
+      background-clip: initial !important;
+      -webkit-text-fill-color: #ffffff !important;
       display: flex;
       align-items: center;
       gap: 0.5rem;

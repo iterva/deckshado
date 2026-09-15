@@ -322,6 +322,7 @@ function typeRank(t?: string): number {
                 <div class="export-preview-frame">
                   <img [src]="previewUrl" alt="Preview exportado del mazo" />
                 </div>
+                <p class="export-preview-size">Imagen completa, idéntica al archivo final · {{ exportPreviewSizeLabel() }}</p>
                 <div class="export-preview-actions">
                   <button type="button" class="preview-action-btn" (click)="copyExportPreviewToClipboard()">
                     <app-icon name="copy" [size]="14"></app-icon> Copiar
@@ -1275,18 +1276,26 @@ function typeRank(t?: string): number {
       border-radius: 10px;
       background: #0b141d;
       padding: .5rem;
-      overflow: auto;
-      max-height: 68vh;
+      overflow: hidden;
       display: flex;
       justify-content: center;
+      align-items: center;
     }
+    /* Scaled to fit but never cropped or scrolled, so the preview shows the whole exported file. */
     .export-preview-frame img {
-      width: 100%;
-      min-width: 0;
-      max-width: 100%;
+      width: auto;
       height: auto;
+      max-width: 100%;
+      max-height: 64vh;
+      object-fit: contain;
       border-radius: 8px;
       display: block;
+    }
+    .export-preview-size {
+      margin: .45rem 0 0;
+      color: #a9bacd;
+      font-size: .82rem;
+      text-align: center;
     }
     .export-preview-actions {
       margin-top: .75rem;
@@ -2273,6 +2282,7 @@ export class RiftboundDeckViewComponent implements OnInit {
   showExportOptionsModal = signal(false);
   showExportPreviewModal = signal(false);
   exportPreviewDataUrl = signal<string | null>(null);
+  exportPreviewSizeLabel = signal('');
   exportQrDataUrl = signal<string | null>(null);
   exporting = signal(false);
   captureMode = signal(false);
@@ -2926,6 +2936,8 @@ export class RiftboundDeckViewComponent implements OnInit {
     const canvas = await this.renderExportCanvas();
     if (!canvas) return;
     this.exportPreviewDataUrl.set(canvas.toDataURL('image/png'));
+    const format = this.orientation() === 'horizontal' ? 'Horizontal 16:9' : 'Instagram 4:5';
+    this.exportPreviewSizeLabel.set(`${canvas.width} × ${canvas.height} px · ${format}`);
     this.showExportOptionsModal.set(false);
     this.showExportPreviewModal.set(true);
     this.cdr.detectChanges();

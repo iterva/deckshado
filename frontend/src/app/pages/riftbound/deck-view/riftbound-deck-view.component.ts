@@ -1874,27 +1874,13 @@ function typeRank(t?: string): number {
     .deck-export-area.export-capture.capture-horizontal .zone-side-deck { order: 5; }
     .deck-export-area.export-capture.capture-horizontal .zone-runes { order: 6; }
     .deck-export-area.export-capture.capture-horizontal .zone-battlefields { order: 7; }
-    .deck-export-area.export-capture.capture-horizontal .zone-runes .card-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    .deck-export-area.export-capture.capture-horizontal .zone-battlefields .card-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-    .deck-export-area.export-capture.capture-horizontal .zone-units .card-grid {
-      grid-template-columns: repeat(7, minmax(0, 1fr));
-    }
-    .deck-export-area.export-capture.capture-horizontal .zone-spells .card-grid {
-      grid-template-columns: repeat(8, minmax(0, 1fr));
-    }
-    .deck-export-area.export-capture.capture-horizontal .zone-gear .card-grid,
-    .deck-export-area.export-capture.capture-horizontal .zone-other .card-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-    .deck-export-area.export-capture.capture-horizontal .zone-side-deck .card-grid {
-      grid-template-columns: repeat(11, minmax(0, 1fr));
-    }
+    /* Let each zone's grid size its own columns from the available panel
+       width instead of forcing a fixed column count sized for the
+       zone's theoretical max card count — a fixed count made cards look
+       small/cramped whenever a zone had fewer cards than that count. */
     .deck-export-area.export-capture.capture-horizontal .rb-export-zone .card-grid {
-      gap: .82rem .55rem;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: .9rem .7rem;
     }
     .deck-export-area.export-capture.capture-horizontal .rb-export-zone .card-stack {
       max-width: none;

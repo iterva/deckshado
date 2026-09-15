@@ -1244,11 +1244,34 @@
   // Active Deck Entries List
   .deck-entries {
     flex: 1;
+    // `.deck-panel` ya es `overflow-y:auto` y tiene siblings de altura variable
+    // (form de nombre/descripción, banner de stats, curva de recursos,
+    // violaciones...). Con `flex:1` (flex-basis:0%) + `overflow-y:auto`, el
+    // tamaño mínimo automático de este item es 0 (regla CSS: un scroll
+    // container dentro de un flex container tiene min-size automático 0).
+    // Si los siblings ya llenan la altura del panel (mazos con muchas cartas
+    // de golpe, banlist/violaciones visibles, etc.), no queda "espacio libre"
+    // que repartir y esta lista se aplasta a ~0px de alto — invisible aunque
+    // el contenido siga en el DOM. `min-height` evita el colapso: garantiza
+    // una zona visible y deja que `.deck-panel` se encargue del overflow.
+    min-height: 220px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 0.85rem;
     padding-right: 0.2rem;
+
+    // En mobile, `.builder-layout` pasa a `display:block; height:auto` (ver
+    // @media 960px arriba), así que `.deck-panel` deja de tener una altura
+    // definida. Un hijo `flex:1` + `overflow-y:auto` dentro de un contenedor
+    // de altura auto colapsa a 0px (min-height automático = 0), por lo que
+    // la lista de cartas del mazo desaparecía. En mobile debe sizarse a su
+    // contenido en vez de intentar flexear/recortar.
+    @media (max-width: 960px) {
+      flex: none;
+      overflow-y: visible;
+      min-height: 0;
+    }
 
     .deck-empty-prompt {
       padding: 3rem 1.5rem;

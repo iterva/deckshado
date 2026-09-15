@@ -505,7 +505,7 @@ function typeRank(t?: string): number {
             }
 
             @default {
-              @if (captureMode() && orientation() === 'horizontal') {
+              @if (captureMode()) {
                 @let coverCard = exportCoverCardData();
                 @let runeEntries = entriesByZone('rune');
                 @let battlefieldEntries = entriesByZone('bg');
@@ -1700,42 +1700,43 @@ function typeRank(t?: string): number {
       box-sizing: border-box;
       border-radius: 0;
     }
-    .deck-export-area.export-capture.capture-horizontal {
-      width: 1680px;
+    .deck-export-area.export-capture.capture-horizontal { width: 1680px; }
+    .deck-export-area.export-capture.capture-horizontal,
+    .deck-export-area.export-capture.capture-vertical {
       display: grid;
       grid-template-columns: repeat(12, minmax(0, 1fr));
       gap: .7rem .8rem;
       align-items: start;
     }
 
-    .deck-export-area.export-capture.capture-horizontal .rb-export-layout {
+    .deck-export-area.export-capture .rb-export-layout {
       grid-column: 1 / -1;
       display: flex;
       flex-direction: column;
       gap: .6rem;
       min-height: 100%;
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-top-line {
+    .deck-export-area.export-capture .rb-export-top-line {
       height: 6px;
       border-radius: 999px;
       background: linear-gradient(90deg, #d04f45 0%, #ea6d4f 35%, #a04a7a 70%, #6d5ecf 100%);
       opacity: .9;
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-head {
+    .deck-export-area.export-capture .rb-export-head {
       display: flex;
       justify-content: space-between;
       gap: .8rem;
       padding-bottom: .55rem;
       border-bottom: 1px solid rgba(200,214,229,.28);
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-head-main {
+    .deck-export-area.export-capture .rb-export-head-main {
       display: flex;
       align-items: stretch;
       gap: .8rem;
       min-width: 0;
       flex: 1;
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-cover {
+    .deck-export-area.export-capture .rb-export-cover {
       width: 88px;
       height: 124px;
       border-radius: 9px;
@@ -1744,7 +1745,7 @@ function typeRank(t?: string): number {
       box-shadow: 0 8px 24px rgba(0,0,0,.35);
       flex-shrink: 0;
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-cover-empty {
+    .deck-export-area.export-capture .rb-export-cover-empty {
       display: grid;
       place-items: center;
       background: linear-gradient(140deg, #253045, #101a2b);
@@ -1753,14 +1754,14 @@ function typeRank(t?: string): number {
       letter-spacing: .08em;
       font-weight: 700;
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-copy {
+    .deck-export-area.export-capture .rb-export-copy {
       min-width: 0;
       display: flex;
       flex-direction: column;
       justify-content: center;
       gap: .2rem;
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-kicker {
+    .deck-export-area.export-capture .rb-export-kicker {
       margin: 0;
       color: #c7d5e8;
       font-size: .72rem;
@@ -1768,7 +1769,7 @@ function typeRank(t?: string): number {
       text-transform: uppercase;
       font-weight: 700;
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-title {
+    .deck-export-area.export-capture .rb-export-title {
       margin: 0;
       font-size: 2.05rem;
       line-height: 1.08;
@@ -1778,13 +1779,13 @@ function typeRank(t?: string): number {
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-date {
+    .deck-export-area.export-capture .rb-export-date {
       margin: 0;
       color: #c7d5e8;
       font-size: .95rem;
       font-weight: 500;
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-brand {
+    .deck-export-area.export-capture .rb-export-brand {
       min-width: 300px;
       display: flex;
       flex-direction: column;
@@ -1792,8 +1793,8 @@ function typeRank(t?: string): number {
       justify-content: flex-end;
       gap: .45rem;
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-qr-image,
-    .deck-export-area.export-capture.capture-horizontal .rb-export-qr-fallback {
+    .deck-export-area.export-capture .rb-export-qr-image,
+    .deck-export-area.export-capture .rb-export-qr-fallback {
       width: 108px;
       height: 108px;
       border-radius: 10px;
@@ -1801,11 +1802,11 @@ function typeRank(t?: string): number {
       box-shadow: 0 10px 30px rgba(0,0,0,.28);
       overflow: hidden;
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-qr-image {
+    .deck-export-area.export-capture .rb-export-qr-image {
       background: #ffffff;
       object-fit: cover;
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-qr-fallback {
+    .deck-export-area.export-capture .rb-export-qr-fallback {
       display: grid;
       place-items: center;
       background: linear-gradient(135deg, #ffffff, #d8e2ef);
@@ -1814,14 +1815,14 @@ function typeRank(t?: string): number {
       font-weight: 800;
       letter-spacing: .05em;
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-brand-mark {
+    .deck-export-area.export-capture .rb-export-brand-mark {
       color: #f6bf57;
       font-weight: 800;
       font-size: 1.65rem;
       letter-spacing: -.01em;
       text-transform: lowercase;
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-url {
+    .deck-export-area.export-capture .rb-export-url {
       margin: 0;
       max-width: 100%;
       color: #9db3ca;
@@ -1835,7 +1836,7 @@ function typeRank(t?: string): number {
        each panel is as wide as its own cards need (--rb-zone-cols), and the
        leftover space on a row is shared out in proportion to that same
        count, which keeps every card the same width across all zones. */
-    .deck-export-area.export-capture.capture-horizontal .rb-export-zone-grid {
+    .deck-export-area.export-capture .rb-export-zone-grid {
       --rb-card-gap-x: 10px;
       --rb-zone-chrome: 18px;
       display: flex;
@@ -1845,7 +1846,7 @@ function typeRank(t?: string): number {
       gap: .55rem;
       flex: 1;
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-zone {
+    .deck-export-area.export-capture .rb-export-zone {
       --rb-zone-slot: calc(var(--rb-card-w, 170px) + var(--rb-card-gap-x));
       flex: var(--rb-zone-cols, 1) 1
             calc(var(--rb-zone-cols, 1) * var(--rb-zone-slot) + var(--rb-zone-chrome));
@@ -1856,7 +1857,7 @@ function typeRank(t?: string): number {
       background: rgba(8,15,25,.45);
       min-width: 0;
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-zone-title {
+    .deck-export-area.export-capture .rb-export-zone-title {
       display: flex;
       align-items: center;
       gap: .4rem;
@@ -1867,31 +1868,31 @@ function typeRank(t?: string): number {
       line-height: 1;
       font-weight: 700;
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-zone-title span {
+    .deck-export-area.export-capture .rb-export-zone-title span {
       color: #f6bf57;
       font-size: .92rem;
       font-weight: 800;
     }
-    .deck-export-area.export-capture.capture-horizontal .zone-units { order: 1; }
-    .deck-export-area.export-capture.capture-horizontal .zone-spells { order: 2; }
-    .deck-export-area.export-capture.capture-horizontal .zone-gear { order: 3; }
-    .deck-export-area.export-capture.capture-horizontal .zone-other { order: 4; }
-    .deck-export-area.export-capture.capture-horizontal .zone-side-deck { order: 5; }
-    .deck-export-area.export-capture.capture-horizontal .zone-runes { order: 6; }
-    .deck-export-area.export-capture.capture-horizontal .zone-battlefields { order: 7; }
+    .deck-export-area.export-capture .rb-export-zone.zone-units { order: 1; }
+    .deck-export-area.export-capture .rb-export-zone.zone-spells { order: 2; }
+    .deck-export-area.export-capture .rb-export-zone.zone-gear { order: 3; }
+    .deck-export-area.export-capture .rb-export-zone.zone-other { order: 4; }
+    .deck-export-area.export-capture .rb-export-zone.zone-side-deck { order: 5; }
+    .deck-export-area.export-capture .rb-export-zone.zone-runes { order: 6; }
+    .deck-export-area.export-capture .rb-export-zone.zone-battlefields { order: 7; }
     /* Fixed-width columns (not 1fr) so a card is exactly the same size in
        every zone and every row; the width itself is fitted to the sheet at
        export time. Panels stretch to fill their row, so the slack shows up
        as room inside the panel rather than as a hole in the layout. */
-    .deck-export-area.export-capture.capture-horizontal .rb-export-zone .card-grid {
+    .deck-export-area.export-capture .rb-export-zone .card-grid {
       grid-template-columns: repeat(auto-fill, var(--rb-card-w, 170px));
       justify-content: start;
       gap: .5rem var(--rb-card-gap-x);
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-zone .card-stack {
+    .deck-export-area.export-capture .rb-export-zone .card-stack {
       max-width: none;
     }
-    .deck-export-area.export-capture.capture-horizontal .rb-export-summary {
+    .deck-export-area.export-capture .rb-export-summary {
       border-top: 1px solid rgba(200,214,229,.24);
       padding-top: .5rem;
       color: #c7d5e8;
@@ -1900,8 +1901,9 @@ function typeRank(t?: string): number {
       letter-spacing: .01em;
     }
 
+    /* Instagram portrait post (4:5). */
     .deck-export-area.export-capture.capture-vertical {
-      width: 1140px;
+      width: 1080px;
     }
     .deck-export-area.export-capture .zone-section {
       margin-bottom: .55rem;
@@ -2971,22 +2973,16 @@ export class RiftboundDeckViewComponent implements OnInit {
     if (previousViewMode !== 'grid') this.viewMode.set('grid');
 
     try {
-      if (this.orientation() === 'horizontal') {
-        await this.ensureExportQrDataUrl();
-      } else {
-        this.exportQrDataUrl.set(null);
-      }
+      await this.ensureExportQrDataUrl();
       this.cdr.detectChanges();
       await this.nextRenderTick();
       await this.waitForImagesToSettle(el);
       await this.nextRenderTick();
 
-      const targetWidth = this.orientation() === 'horizontal' ? 1680 : 1140;
-      const targetHeight = this.orientation() === 'horizontal' ? 945 : 1520;
+      const targetWidth = this.orientation() === 'horizontal' ? 1680 : 1080;
+      const targetHeight = this.orientation() === 'horizontal' ? 945 : 1350;
 
-      if (this.orientation() === 'horizontal') {
-        this.fitExportCardWidth(el, targetHeight);
-      }
+      this.fitExportCardWidth(el, targetHeight);
 
       // Pin cards to their measured pixel boxes so the capture matches the on-screen layout.
       const unfreeze = this.freezeGridLayout(el);

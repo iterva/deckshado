@@ -1408,9 +1408,13 @@ function typeRank(t?: string): number {
     }
     .card-grid[data-stack-orientation='center'] .card-stack .shadow { display: none; }
     .card-stack {
-      position: relative; aspect-ratio: 63/88; padding: 0;
+      /* padding-bottom percentage box instead of `aspect-ratio`: html2canvas
+         (used for the export image) does not support the aspect-ratio
+         property and collapses these to zero height, stretching the cards. */
+      position: relative; padding: 0 0 139.68%;
       background: transparent; border: none; cursor: pointer;
       width: 100%;
+      height: 0;
       max-width: 150px;
       justify-self: center;
       transition: transform .15s; outline: none;

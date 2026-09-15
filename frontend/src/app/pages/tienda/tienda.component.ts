@@ -436,7 +436,6 @@ export class TiendaComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.canSubmitOrder()) return;
     this.orderSubmitting = true;
     this.orderError = '';
-    const pendingWhatsApp = this.store?.whatsapp ? window.open('about:blank', '_blank') : null;
 
     const entryIds = Array.from(new Set(this.cart.map(c => c.entryId)));
     this.carpetaService.getPublicStore(this.token, {
@@ -465,7 +464,6 @@ export class TiendaComponent implements OnInit, AfterViewInit, OnDestroy {
 
           this.orderSubmitting = false;
           this.orderError = msg.join(' ');
-          if (pendingWhatsApp && !pendingWhatsApp.closed) pendingWhatsApp.close();
           this.loadStore();
           this.cdr.detectChanges();
           return;
@@ -482,22 +480,16 @@ export class TiendaComponent implements OnInit, AfterViewInit, OnDestroy {
           next: (order) => {
             this.createdOrderId = order.id;
             const waUrl = this.buildWhatsAppOrderUrl(order.id);
-            if (waUrl) {
-              if (pendingWhatsApp && !pendingWhatsApp.closed) pendingWhatsApp.location.href = waUrl;
-              else window.open(waUrl, '_blank');
-            } else if (pendingWhatsApp && !pendingWhatsApp.closed) {
-              pendingWhatsApp.close();
-            }
             this.orderSubmitting = false;
             this.clearCart();
             this.showCart = false;
             this.loadStore();
             this.cdr.detectChanges();
+            if (waUrl) window.location.href = waUrl;
           },
           error: (err) => {
             this.orderSubmitting = false;
             this.orderError = err?.error?.detail || 'No se pudo crear el pedido. Revisa stock y vuelve a intentar.';
-            if (pendingWhatsApp && !pendingWhatsApp.closed) pendingWhatsApp.close();
             this.cdr.detectChanges();
           },
         });
@@ -505,7 +497,6 @@ export class TiendaComponent implements OnInit, AfterViewInit, OnDestroy {
       error: (err) => {
         this.orderSubmitting = false;
         this.orderError = err?.error?.detail || 'No se pudo validar stock actualizado. Intenta nuevamente.';
-        if (pendingWhatsApp && !pendingWhatsApp.closed) pendingWhatsApp.close();
         this.cdr.detectChanges();
       },
     });

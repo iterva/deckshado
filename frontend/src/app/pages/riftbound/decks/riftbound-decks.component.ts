@@ -123,9 +123,10 @@ const COLOR_LABEL: Record<RiftboundColor, string> = {
           @for (deck of decks(); track deck.id) {
             <div class="deck-card" [style.--accent]="getAccent(deck)">
               <a class="cover-link" [routerLink]="['/riftbound/decks', deck.id]" tabindex="-1">
-                @if (deck.cover_card_data?.image; as img) {
+                @if (coverUrl(deck); as img) {
                   <div class="deck-cover single">
-                    <img [src]="img" [alt]="deck.cover_card_data?.name || ''" loading="lazy" decoding="async" />
+                    <img [src]="img" [alt]="deck.cover_card_data?.name || ''" loading="lazy" decoding="async"
+                         (error)="onCoverError(deck.id)" />
                     <div class="cover-fade"></div>
                   </div>
                 } @else {
@@ -437,6 +438,8 @@ export class RiftboundDecksComponent implements OnInit {
   totalCount = signal(0);
   duplicatingId = signal<number | null>(null);
   activeTab = signal<Tab>('public');
+  private coverAttempt = new Map<number, number>();
+  private coverAttemptBump = signal(0);
   readonly pageSize = 20;
   totalPages = () => Math.max(1, Math.ceil(this.totalCount() / this.pageSize));
 
@@ -479,6 +482,21 @@ export class RiftboundDecksComponent implements OnInit {
     if (diff < 86400) return `hace ${Math.floor(diff/3600)} h`;
     if (diff < 86400 * 7) return `hace ${Math.floor(diff/86400)} d`;
     return d.toLocaleDateString('es-CL');
+  }
+
+  /** URL de portada, probando candidatos alternativos si la preferida no existe (404 en el CDN). */
+  coverUrl(deck: RiftboundDeck): string {
+    this.coverAttemptBump();
+    const c = deck.cover_card_data;
+    if (!c) return '';
+    const candidates = Array.from(new Set([c.image, c.image_url, c.cdn_image_url, c.image_url_small].filter((u): u is string => !!u)));
+    const attempt = this.coverAttempt.get(deck.id) ?? 0;
+    return candidates[attempt] || '';
+  }
+
+  onCoverError(id: number) {
+    this.coverAttempt.set(id, (this.coverAttempt.get(id) ?? 0) + 1);
+    this.coverAttemptBump.update(n => n + 1);
   }
 
   ngOnInit() { this.reload(); }

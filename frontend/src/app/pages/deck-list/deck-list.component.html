@@ -345,14 +345,22 @@
 <!-- Plantilla de portada (cover_card_detail o mosaico cover_preview) -->
 <ng-template #cover let-deck>
   @if (getCoverCard(deck); as cv) {
-    <div class="deck-cover single">
-      <img [src]="cv.image_url | thumb:350" [alt]="cv.name" loading="lazy" decoding="async">
-      <div class="cover-fade"></div>
-    </div>
+    @if (!brokenCoverIds.has(cv.id)) {
+      <div class="deck-cover single">
+        <img [src]="cv.image_url | thumb:350" [alt]="cv.name" loading="lazy" decoding="async" (error)="onCoverError(cv.id)">
+        <div class="cover-fade"></div>
+      </div>
+    } @else {
+      <div class="deck-cover empty-cover">
+        <app-icon name="layers" [size]="28"></app-icon>
+      </div>
+    }
   } @else if (getMosaic(deck).length > 0) {
     <div class="deck-cover mosaic" [class.cells-1]="getMosaic(deck).length === 1" [class.cells-2]="getMosaic(deck).length === 2" [class.cells-3]="getMosaic(deck).length === 3">
       @for (c of getMosaic(deck); track c.id) {
-        <img [src]="c.image_url | thumb:200" [alt]="c.name" loading="lazy" decoding="async">
+        @if (!brokenCoverIds.has(c.id)) {
+          <img [src]="c.image_url | thumb:200" [alt]="c.name" loading="lazy" decoding="async" (error)="onCoverError(c.id)">
+        }
       }
       <div class="cover-fade"></div>
     </div>

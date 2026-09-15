@@ -1924,6 +1924,11 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
     const existing = list.find(e => e.card.id === c.id);
     // Máximo por zona (champion/bg = 1), si no aplica límite por carta.
     const max = (z === 'champion' || z === 'bg') ? 1 : this.getMaxCopies(c);
+    // Una carta prohibida (max === 0) no debe poder agregarse ni como primera
+    // copia: antes este chequeo solo corría para `existing`, así que una
+    // carta banned sin copias previas en la zona se agregaba igual (la UI lo
+    // tapa deshabilitando el botón, pero el método en sí no se defendía).
+    if (max <= 0) return;
     if (existing) {
       if (existing.quantity >= max) return;
       existing.quantity += 1;

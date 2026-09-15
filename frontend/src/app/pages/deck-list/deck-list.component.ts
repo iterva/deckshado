@@ -122,6 +122,12 @@ export class DeckListComponent implements OnInit {
     return (deck.cover_preview || []).slice(0, 3);
   }
 
+  /** Portadas cuya imagen falló al cargar; se ocultan a favor del icono por defecto. */
+  brokenCoverIds = new Set<number>();
+  onCoverError(id: number) {
+    this.brokenCoverIds.add(id);
+  }
+
   /** ¿Hay algún filtro activo (excluye orden)? */
   get activeFilterCount(): number {
     let n = 0;

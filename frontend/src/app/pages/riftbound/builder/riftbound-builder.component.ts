@@ -94,7 +94,7 @@ function typeRank(t?: string): number {
       <!-- ══════════════════════════════════════════════════════ -->
       <!-- LEFT PANEL (65%): Card Browser                        -->
       <!-- ══════════════════════════════════════════════════════ -->
-      <div class="card-browser" [class.mobile-hidden]="activeMobileTab() === 'deck'">
+      <div class="card-browser" [class.mobile-hidden]="activeMobileTab() === 'deck'" [class.filters-modal-open]="filtersOpen()">
         <div class="browser-head">
           <div class="browser-title-wrap">
             <h2>Cartas Riftbound</h2>
@@ -804,17 +804,6 @@ function typeRank(t?: string): number {
       height: calc(100vh - 60px); max-width: 1700px; margin: 0 auto;
       padding: 1rem 1.5rem; overflow: hidden; box-sizing: border-box;
     }
-    @media (max-width: 960px) {
-      .builder-layout { display: block; height: auto; padding: 0.75rem; }
-      .mobile-builder-switcher { display: flex; }
-      .mobile-hidden { display: none !important; }
-      .filters-toggle-btn .ft-text { display: none; }
-      .filters-panel {
-        position: fixed; inset: 0; top: 0; right: 0; margin-top: 0;
-        width: 100%; max-height: 100%; border-radius: 0;
-      }
-      .filters-panel-actions { position: sticky; bottom: 0; background: #121217; }
-    }
 
     .card-browser, .deck-panel {
       display: flex; flex-direction: column; height: 100%; min-height: 0;
@@ -842,17 +831,17 @@ function typeRank(t?: string): number {
     .search-input-row { position: relative; display: flex; align-items: center; gap: 0.4rem; }
     .search-input-icon { position: absolute; left: 0.75rem; color: var(--ui-text-muted); }
     .search-input-row input {
-      flex: 1; padding: 0.5rem 0.75rem 0.5rem 2.2rem; background: rgba(18, 18, 23, 0.8);
+      flex: 1; min-width: 0; padding: 0.5rem 0.75rem 0.5rem 2.2rem; background: rgba(18, 18, 23, 0.8);
       border: 1px solid var(--ui-border); border-radius: 8px; color: #ffffff; font-size: 0.85rem; outline: none;
     }
     .search-input-row input:focus { border-color: #06b6d4; box-shadow: 0 0 10px rgba(6, 182, 212, 0.2); }
     .search-btn {
-      padding: 0.5rem 0.75rem; background: #06b6d4; color: #09090b; border: none;
+      flex-shrink: 0; padding: 0.5rem 0.75rem; background: #06b6d4; color: #09090b; border: none;
       border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center;
     }
 
     .filters-toggle-btn {
-      position: relative; display: inline-flex; align-items: center; gap: 0.35rem;
+      flex-shrink: 0; position: relative; display: inline-flex; align-items: center; gap: 0.35rem;
       padding: 0.5rem 0.75rem; background: rgba(18, 18, 23, 0.8); border: 1px solid var(--ui-border);
       border-radius: 8px; color: var(--ui-text-secondary); font-size: 0.78rem; font-weight: 600; cursor: pointer;
     }
@@ -1297,6 +1286,26 @@ function typeRank(t?: string): number {
     .dp-close, .modal-close, .preview-close {
       background: rgba(39, 39, 42, 0.5); border: 1px solid var(--ui-border); border-radius: 6px;
       color: var(--ui-text-muted); cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Kept last in the stylesheet on purpose: these overrides share selector
+       specificity with their base rules above (e.g. .filters-panel), so source
+       order is what makes them win the cascade at narrow widths. */
+    @media (max-width: 960px) {
+      .builder-layout { display: block; height: auto; padding: 0.75rem; }
+      .mobile-builder-switcher { display: flex; }
+      .mobile-hidden { display: none !important; }
+      .filters-toggle-btn .ft-text { display: none; }
+      .filters-panel {
+        position: fixed; inset: 0; top: 0; right: 0; margin-top: 0;
+        width: 100%; max-height: 100%; border-radius: 0;
+      }
+      .filters-panel-actions { position: sticky; bottom: 0; background: #121217; }
+      /* backdrop-filter on .card-browser creates a containing block for our
+         position:fixed backdrop/panel, pinning them to the (scrolled) card-browser
+         box instead of the viewport. Drop it while the modal is open so inset:0
+         resolves against the real viewport. */
+      .card-browser.filters-modal-open { backdrop-filter: none; -webkit-backdrop-filter: none; }
     }
   `],
 })

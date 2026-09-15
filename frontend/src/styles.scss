@@ -632,6 +632,9 @@ body.mode-riftbound,
   // Riftbound Sideboard Accent (Ámbar / Dorado)
   --ui-accent-side: #f59e0b;
   --ui-accent-side-glow: rgba(245, 158, 11, 0.15);
+
+  // Modal overlay (usado por guide-modal y demás modales de Carpeta)
+  --ui-overlay: rgba(9, 13, 20, 0.85);
 }
 
 body.light-theme {

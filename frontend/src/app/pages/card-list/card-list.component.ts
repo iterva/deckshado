@@ -82,6 +82,13 @@ export class CardListComponent implements OnInit, AfterViewInit, OnDestroy {
       const q = params.get('search') ?? '';
       this.search = q;
       this.reloadCards();
+
+      const highlightId = params.get('highlight');
+      if (highlightId) {
+        this.cardService.getCard(Number(highlightId)).subscribe({
+          next: (card) => { this.selectedCard = card; this.cdr.detectChanges(); },
+        });
+      }
     });
   }
 

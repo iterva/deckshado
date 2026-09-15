@@ -1,36 +1,116 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, signal, ChangeDetectorRef, HostListener, ViewChild, ElementRef } from '@angular/core';
+import {
+  Component, OnInit, AfterViewInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef,
+  ElementRef, ViewChild, HostListener, inject, signal, computed,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe, DatePipe } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { CarpetaService } from '../../services/carpeta.service';
 import { CardService } from '../../services/card.service';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
 import { ShareImageComponent, ShareImageItem } from '../../components/share-image/share-image.component';
+import { TourOverlayComponent } from '../../components/tour-overlay/tour-overlay.component';
+import { TourService, TourStep } from '../../services/tour.service';
+import { CarpetaGuideModalComponent } from './components/guide-modal/guide-modal.component';
 import QRCode from 'qrcode';
 import {
   Card, CollectionEntry, WishlistEntry, BinderProfile,
-  Edition, CardType, Race, Rarity, CarpetaIds,
+  Edition, CardType, Race, Rarity,
   StoreOrder, StoreOrderStatus,
+  MylWorkspace, MylStoreCollaboratorPermission, MylStorePermissionFlags,
 } from '../../models';
 
 import { IconComponent } from '../../components/icon/icon.component';
 
-type Tab = 'carpeta' | 'codex' | 'wishlist' | 'mercado' | 'pedidos' | 'historial' | 'stats';
+type Tab = 'carpeta' | 'codex' | 'wishlist' | 'mercado' | 'pedidos' | 'stats' | 'permisos';
+
+type CollaboratorRole = 'lector' | 'gestor_mercado' | 'administrador' | 'personalizado';
+
+const ROLE_PRESETS: Record<Exclude<CollaboratorRole, 'personalizado'>, Array<keyof MylStorePermissionFlags>> = {
+  lector: ['view_collection', 'view_orders', 'view_history'],
+  gestor_mercado: ['view_collection', 'view_orders', 'view_history', 'edit_market', 'remove_from_market', 'accept_orders', 'reject_orders'],
+  administrador: ['view_collection', 'edit_collection', 'delete_collection', 'edit_market', 'remove_from_market', 'view_orders', 'view_history', 'accept_orders', 'reject_orders', 'manage_permissions'],
+};
+
+function permsMatchRole(perms: Partial<MylStorePermissionFlags>, allKeys: Array<keyof MylStorePermissionFlags>, role: Exclude<CollaboratorRole, 'personalizado'>): boolean {
+  const active = new Set(ROLE_PRESETS[role]);
+  return allKeys.every(key => !!perms[key] === active.has(key));
+}
+
+function detectCollaboratorRole(perms: Partial<MylStorePermissionFlags>, allKeys: Array<keyof MylStorePermissionFlags>): CollaboratorRole {
+  if (permsMatchRole(perms, allKeys, 'administrador')) return 'administrador';
+  if (permsMatchRole(perms, allKeys, 'gestor_mercado')) return 'gestor_mercado';
+  if (permsMatchRole(perms, allKeys, 'lector')) return 'lector';
+  return 'personalizado';
+}
+
+const TOUR_STEPS: Record<string, TourStep[]> = {
+  carpeta: [
+    { target: '[data-tour="carpeta-search"]', title: 'Buscar en tu carpeta', description: 'Escribe el nombre de una carta para filtrar rápidamente lo que ya posees.' },
+    { target: '[data-tour="carpeta-filter-selling"]', title: 'Solo en venta', description: 'Filtra la grilla para ver únicamente las cartas que tienes listadas en el mercado.' },
+    { target: '[data-tour="carpeta-bulk-import"]', title: 'Importar lista', description: 'Pega una lista de cartas (una por línea) para agregarlas todas de una vez a tu carpeta.' },
+    { target: '[data-tour="carpeta-grid"]', title: 'Tu colección', description: 'Cada carta muestra cuántas copias tienes y si está en venta. Tócala para editar cantidad, precio, idioma, foil y notas.' },
+  ],
+  codex: [
+    { target: '[data-tour="codex-search"]', title: 'Buscar cartas', description: 'Escribe el nombre de cualquier carta de Mitos y Leyendas para encontrarla en el catálogo completo.' },
+    { target: '[data-tour="codex-filters"]', title: 'Filtrar por formato, edición, tipo, raza o frecuencia', description: 'Combina estos filtros para acotar la búsqueda a exactamente lo que buscas.' },
+    { target: '[data-tour="codex-grid"]', title: 'Agregar o desear', description: 'Al pasar el mouse sobre una carta aparecen acciones para añadirla a tu carpeta o guardarla en tu wishlist.' },
+  ],
+  wishlist: [
+    { target: '[data-tour="wishlist-search"]', title: 'Buscar en tu wishlist', description: 'Filtra rápidamente las cartas que marcaste como deseadas.' },
+    { target: '[data-tour="wishlist-share"]', title: 'Genera tu imagen de "busco"', description: 'El botón de imagen genera una foto lista para compartir con las cartas de tu wishlist.' },
+    { target: '[data-tour="wishlist-grid"]', title: 'Tus cartas deseadas', description: 'Ajusta cuántas copias quieres de cada una.' },
+  ],
+  mercado: [
+    { target: '[data-tour="mercado-config"]', title: 'Configurar tienda', description: 'Define nombre público, ciudad, WhatsApp, métodos de pago y más para que los compradores confíen en tu tienda.' },
+    { target: '[data-tour="mercado-toolbar"]', title: 'Herramientas de tienda', description: 'Copia el link para compartir, genera un QR o exporta un PDF con tu catálogo en venta.' },
+    { target: '[data-tour="mercado-grid"]', title: 'Cartas en venta', description: 'Toca cualquier carta para actualizar su precio, cantidad en venta o subir una foto real del ejemplar.' },
+  ],
+  pedidos: [
+    { target: '[data-tour="pedidos-pills"]', title: 'Filtra por estado', description: 'Cambia entre Pendientes, Todos, Completados y Cancelados para revisar el estado de tus ventas.' },
+    { target: '[data-tour="pedidos-table"]', title: 'Gestiona cada pedido', description: 'Toca una fila para ver el detalle completo, o usa los íconos ✓/✕ para aceptar o cancelar un pedido pendiente directamente.' },
+  ],
+  stats: [
+    { target: '[data-tour="stats-overview"]', title: 'Resumen de tu colección', description: 'Cartas totales, únicas y el valor estimado según los precios que asignaste.' },
+  ],
+};
+
+interface DirtyPatch {
+  quantity?: number;
+  price?: number | null;
+  selling_quantity?: number;
+  condition?: string;
+  language?: string;
+  is_foil?: boolean;
+  notes?: string;
+}
 
 @Component({
   selector: 'app-carpeta',
-  standalone: true,
-  imports: [FormsModule, ThumbnailPipe, DecimalPipe, DatePipe, RouterLink, ShareImageComponent, IconComponent],
+  imports: [
+    FormsModule, ThumbnailPipe, DecimalPipe, DatePipe, RouterLink, ShareImageComponent, IconComponent,
+    TourOverlayComponent, CarpetaGuideModalComponent,
+  ],
   templateUrl: './carpeta.component.html',
   styleUrl: './carpeta.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
-  activeTab: Tab = 'carpeta';
-  binderProfile: BinderProfile | null = null;
+  public readonly auth = inject(AuthService);
+  private readonly carpetaService = inject(CarpetaService);
+  private readonly cardService = inject(CardService);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private queryParamSub?: Subscription;
 
   @HostListener('document:click')
-  onDocClick() { this.codexOpenFilter = null; }
+  onDocClick() {
+    this.codexOpenFilter.set(null);
+    this.openNavGroup.set(null);
+  }
 
   @HostListener('window:scroll')
   onWindowScroll() { this.tryInfiniteScrollFallback(); }
@@ -38,127 +118,450 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   @HostListener('window:resize')
   onWindowResize() { this.tryInfiniteScrollFallback(); }
 
+  activeTab = signal<Tab>('carpeta');
+  binderProfile = signal<BinderProfile | null>(null);
+
+  // ── Colaboración / "Carpetas Compartidas" ──
+  workspaceMode = signal(false);
+  workspacesLoading = signal(false);
+  workspaces = signal<MylWorkspace[]>([]);
+  selectedWorkspaceId = signal<number | null>(null);
+  selectedWorkspace = computed(() => this.workspaces().find(w => w.store_profile_id === this.selectedWorkspaceId()) || null);
+  selectedWorkspacePermissions = computed(() => this.selectedWorkspace()?.permissions || null);
+
+  private wsId(): number | undefined {
+    return this.workspaceMode() ? (this.selectedWorkspaceId() ?? undefined) : undefined;
+  }
+
+  hasPermission(key: keyof MylStorePermissionFlags): boolean {
+    if (!this.workspaceMode()) return true;
+    return !!this.selectedWorkspacePermissions()?.[key];
+  }
+
+  canUseWorkspaceContent(): boolean {
+    return !this.workspaceMode() || !!this.selectedWorkspaceId();
+  }
+
+  canManagePermissions(): boolean {
+    return this.hasPermission('manage_permissions');
+  }
+
+  showAdminNavGroup(): boolean {
+    return !this.workspaceMode()
+      || this.hasPermission('view_orders')
+      || this.hasPermission('view_history')
+      || this.canManagePermissions();
+  }
+
+  goToCollaborate() {
+    this.router.navigate(['/carpeta/colaborar']);
+  }
+
+  goToMyFolder() {
+    this.router.navigate(['/carpeta']);
+  }
+
+  loadWorkspaces() {
+    this.workspacesLoading.set(true);
+    this.carpetaService.listWorkspaces().subscribe({
+      next: (res) => {
+        this.workspaces.set(res.results || []);
+        this.workspacesLoading.set(false);
+        const current = this.selectedWorkspaceId();
+        if (current == null || !res.results.some(w => w.store_profile_id === current)) {
+          const firstOther = res.results.find(w => !w.is_owner);
+          if (firstOther) this.onWorkspaceChange(String(firstOther.store_profile_id));
+        }
+        this.cdr.markForCheck();
+      },
+      error: () => { this.workspacesLoading.set(false); this.cdr.markForCheck(); },
+    });
+  }
+
+  workspaceLabel(ws: MylWorkspace): string {
+    return ws.is_owner ? `${ws.owner_username} (yo)` : ws.owner_username;
+  }
+
+  onWorkspaceChange(value: string) {
+    const id = parseInt(value, 10);
+    if (!id) return;
+    this.selectedWorkspaceId.set(id);
+    this.activeTab.set('carpeta');
+    this.loadCollection();
+    this.loadMercado();
+  }
+
+  // ── Permisos: gestión de colaboradores ──
+  workspacePermissionsLoading = signal(false);
+  permissionsSaving = signal(false);
+  collaboratorPermissions = signal<MylStoreCollaboratorPermission[]>([]);
+  newCollaboratorUser = '';
+  newCollaboratorRole = signal<CollaboratorRole>('personalizado');
+  readonly permissionKeys: Array<keyof MylStorePermissionFlags> = [
+    'view_collection', 'edit_collection', 'delete_collection',
+    'edit_market', 'remove_from_market',
+    'view_orders', 'view_history', 'accept_orders', 'reject_orders',
+    'manage_permissions',
+  ];
+  newCollaboratorPerms = signal<MylStorePermissionFlags>({
+    view_collection: true,
+    edit_collection: true,
+    delete_collection: false,
+    edit_market: true,
+    remove_from_market: false,
+    view_orders: true,
+    view_history: true,
+    accept_orders: false,
+    reject_orders: false,
+    manage_permissions: false,
+  });
+
+  onNewCollaboratorRoleChange(role: CollaboratorRole) {
+    this.newCollaboratorRole.set(role);
+    if (role === 'personalizado') return;
+    const active = new Set<keyof MylStorePermissionFlags>(ROLE_PRESETS[role]);
+    const next = {} as MylStorePermissionFlags;
+    for (const key of this.permissionKeys) next[key] = active.has(key);
+    this.newCollaboratorPerms.set(next);
+  }
+
+  toggleNewCollaboratorPerm(key: keyof MylStorePermissionFlags, value: boolean) {
+    this.newCollaboratorPerms.update(p => ({ ...p, [key]: value }));
+    this.newCollaboratorRole.set('personalizado');
+  }
+
+  collaboratorRoleFor(row: MylStoreCollaboratorPermission): CollaboratorRole {
+    const effective: Partial<MylStorePermissionFlags> = {};
+    for (const key of this.permissionKeys) effective[key] = this.collaboratorPermValue(row, key);
+    return detectCollaboratorRole(effective, this.permissionKeys);
+  }
+
+  collaboratorPermValue(row: MylStoreCollaboratorPermission, key: keyof MylStorePermissionFlags): boolean {
+    return !!row.permissions[key];
+  }
+
+  onCollaboratorRoleChange(row: MylStoreCollaboratorPermission, role: CollaboratorRole) {
+    if (role === 'personalizado') return;
+    const active = new Set<keyof MylStorePermissionFlags>(ROLE_PRESETS[role]);
+    for (const key of this.permissionKeys) {
+      this.toggleCollaboratorPerm(row.id, key, active.has(key));
+    }
+  }
+
+  private collaboratorDirty = new Map<number, Partial<MylStorePermissionFlags>>();
+
+  toggleCollaboratorPerm(permissionId: number, key: keyof MylStorePermissionFlags, value: boolean) {
+    const pending = this.collaboratorDirty.get(permissionId) || {};
+    pending[key] = value;
+    this.collaboratorDirty.set(permissionId, pending);
+    this.collaboratorPermissions.update(list =>
+      list.map(row => row.id === permissionId
+        ? { ...row, permissions: { ...row.permissions, [key]: value } }
+        : row));
+  }
+
+  loadWorkspacePermissions() {
+    const targetId = this.canManagePermissions() ? this.managedProfileId() : null;
+    if (!targetId) return;
+    this.workspacePermissionsLoading.set(true);
+    this.carpetaService.listWorkspacePermissions(targetId).subscribe({
+      next: (res) => {
+        this.collaboratorPermissions.set(res.results || []);
+        this.workspacePermissionsLoading.set(false);
+        this.cdr.markForCheck();
+      },
+      error: () => { this.workspacePermissionsLoading.set(false); this.cdr.markForCheck(); },
+    });
+  }
+
+  private ownProfileId(): number | null {
+    const mine = this.workspaces().find(w => w.is_owner);
+    return mine?.store_profile_id ?? this.binderProfile()?.id ?? null;
+  }
+
+  private managedProfileId(): number | null {
+    return this.workspaceMode() ? this.selectedWorkspaceId() : this.ownProfileId();
+  }
+
+  addCollaborator() {
+    const profileId = this.managedProfileId();
+    const identifier = this.newCollaboratorUser.trim();
+    if (!profileId || !identifier) return;
+    this.permissionsSaving.set(true);
+    this.carpetaService.upsertWorkspacePermission(profileId, identifier, this.newCollaboratorPerms()).subscribe({
+      next: () => {
+        this.newCollaboratorUser = '';
+        this.permissionsSaving.set(false);
+        this.loadWorkspacePermissions();
+      },
+      error: (err) => {
+        this.permissionsSaving.set(false);
+        alert(err?.error?.detail || 'No se pudo agregar al colaborador.');
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  saveCollaboratorPerms(row: MylStoreCollaboratorPermission) {
+    const profileId = this.managedProfileId();
+    const pending = this.collaboratorDirty.get(row.id);
+    if (!profileId || !pending) return;
+    this.permissionsSaving.set(true);
+    this.carpetaService.updateWorkspacePermission(profileId, row.id, pending).subscribe({
+      next: () => {
+        this.collaboratorDirty.delete(row.id);
+        this.permissionsSaving.set(false);
+        this.loadWorkspacePermissions();
+      },
+      error: (err) => {
+        this.permissionsSaving.set(false);
+        alert(err?.error?.detail || 'No se pudo actualizar el permiso.');
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  isCollaboratorDirty(row: MylStoreCollaboratorPermission): boolean {
+    return this.collaboratorDirty.has(row.id);
+  }
+
+  permissionLabel(key: keyof MylStorePermissionFlags): string {
+    const labels: Record<keyof MylStorePermissionFlags, string> = {
+      view_collection: 'Ver carpeta',
+      edit_collection: 'Editar carpeta',
+      delete_collection: 'Eliminar de carpeta',
+      edit_market: 'Editar venta/precio',
+      remove_from_market: 'Quitar de venta',
+      view_orders: 'Ver pedidos',
+      view_history: 'Ver historial',
+      accept_orders: 'Aceptar pedidos',
+      reject_orders: 'Rechazar pedidos',
+      manage_permissions: 'Gestionar permisos',
+    };
+    return labels[key];
+  }
+
+  removeCollaborator(row: MylStoreCollaboratorPermission) {
+    const profileId = this.managedProfileId();
+    if (!profileId) return;
+    if (!confirm(`¿Quitar el acceso de ${row.username}?`)) return;
+    this.carpetaService.deleteWorkspacePermission(profileId, row.id).subscribe({
+      next: () => this.loadWorkspacePermissions(),
+      error: (err) => alert(err?.error?.detail || 'No se pudo quitar el acceso.'),
+    });
+  }
+
   // ── Carpeta (Collection) ──
-  collectionEntries: CollectionEntry[] = [];
-  collectionTotal = 0;
-  collectionPage = 1;
-  collectionHasMore = false;
+  collectionEntries = signal<CollectionEntry[]>([]);
+  collectionTotal = signal(0);
+  collectionPage = signal(1);
+  collectionHasMore = signal(false);
   collectionSearch = '';
   @ViewChild('collectionSentinel') collectionSentinelRef?: ElementRef<HTMLElement>;
   private collectionObserver?: IntersectionObserver;
 
   // ── Stats ──
-  stats: any = null;
-  statsLoading = false;
-  statsError: string | null = null;
-  collectionLoading = false;
-  showSellingOnly = false;
-  dirtyEntries = new Map<number, { quantity?: number; price?: number | null; selling_quantity?: number; condition?: string; language?: string; is_foil?: boolean; notes?: string }>();
-  previewCard: Card | null = null;
+  stats = signal<any>(null);
+  statsLoading = signal(false);
+  statsError = signal<string | null>(null);
+  collectionLoading = signal(false);
+  showSellingOnly = signal(false);
+  dirtyEntries = new Map<number, DirtyPatch>();
+  previewCard = signal<Card | null>(null);
 
   // ── Codex ──
-  codexCards: Card[] = [];
-  codexTotal = 0;
-  codexPage = 1;
+  codexCards = signal<Card[]>([]);
+  codexTotal = signal(0);
+  codexPage = signal(1);
   codexSearch = '';
-  codexLoading = false;
-  codexHasMore = false;
-  editions: Edition[] = [];
-  types: CardType[] = [];
-  races: Race[] = [];
-  rarities: Rarity[] = [];
+  codexLoading = signal(false);
+  codexHasMore = signal(false);
+  editions = signal<Edition[]>([]);
+  types = signal<CardType[]>([]);
+  races = signal<Race[]>([]);
+  rarities = signal<Rarity[]>([]);
   selectedFormat = '';
   selectedEditions: string[] = [];
   selectedTypes: string[] = [];
   selectedRaces: string[] = [];
   selectedRarities: string[] = [];
-  selectedCard: Card | null = null;
+  selectedCard = signal<Card | null>(null);
   addQty = 1;
-  filtersOpen = true;
-  codexOpenFilter: 'edition' | 'type' | 'race' | 'rarity' | null = null;
+  quickEditEntry = signal<CollectionEntry | null>(null);
+  quickEditMercadoEntry = signal<CollectionEntry | null>(null);
+
+  openQuickEdit(entry: CollectionEntry) { this.quickEditEntry.set(entry); }
+  closeQuickEdit() { this.quickEditEntry.set(null); }
+  openMercadoQuickEdit(entry: CollectionEntry) { this.quickEditMercadoEntry.set(entry); }
+  closeMercadoQuickEdit() { this.quickEditMercadoEntry.set(null); }
+
+  // ── Navegación agrupada (dropdowns) ──
+  openNavGroup = signal<'coleccion' | 'admin' | null>(null);
+
+  toggleNavGroup(group: 'coleccion' | 'admin', ev: Event) {
+    ev.stopPropagation();
+    this.openNavGroup.update(curr => (curr === group ? null : group));
+  }
+
+  closeNavGroup() {
+    this.openNavGroup.set(null);
+  }
+
+  isTabInGroup(group: 'coleccion' | 'admin'): boolean {
+    const t = this.activeTab();
+    if (group === 'coleccion') return t === 'carpeta' || t === 'codex' || t === 'wishlist';
+    return t === 'pedidos' || t === 'stats';
+  }
+
+  // ── Guía interactiva ──
+  showGuide = signal(false);
+  completedTours = signal<Set<string>>(new Set());
+  private readonly tourService = inject(TourService);
+
+  private loadTours() {
+    this.carpetaService.getTours().subscribe({
+      next: (res) => this.completedTours.set(new Set(res.completed)),
+      error: () => {},
+    });
+  }
+
+  onStartCardTour(tourId: string) {
+    const steps = TOUR_STEPS[tourId];
+    if (!steps) return;
+    const targetTab = tourId as Tab;
+    this.switchTab(targetTab);
+    setTimeout(() => {
+      this.tourService.start(tourId, steps, () => this.markTourComplete(tourId));
+    }, 150);
+  }
+
+  private markTourComplete(tourId: string) {
+    this.carpetaService.completeTour(tourId).subscribe({
+      next: (res) => this.completedTours.set(new Set(res.completed)),
+      error: () => this.completedTours.update(s => new Set([...s, tourId])),
+    });
+  }
+  filtersOpen = signal(true);
+  codexOpenFilter = signal<'edition' | 'type' | 'race' | 'rarity' | null>(null);
   @ViewChild('codexSentinel') codexSentinelRef?: ElementRef<HTMLElement>;
   private codexObserver?: IntersectionObserver;
 
+  filteredEditions = computed(() => {
+    const fmt = this.selectedFormatSignal();
+    const eds = this.editions();
+    if (!fmt) return eds;
+    return eds.filter(e => e.format_code === fmt);
+  });
+  filteredRaces = computed(() => this.races().filter(r => r.slug !== 'noraza'));
+  // selectedFormat is ngModel-bound (plain field); mirrored into a signal so `filteredEditions` stays reactive.
+  private selectedFormatSignal = signal('');
+
+  codexTotalPages = computed(() => Math.ceil(this.codexTotal() / 40));
+  collectionTotalPages = computed(() => Math.ceil(this.collectionTotal() / 40));
+  wishlistTotalPages = computed(() => Math.ceil(this.wishlistTotal() / 40));
+  mercadoTotalPages = computed(() => Math.ceil(this.mercadoTotal() / 40));
+
   // ── Wishlist ──
-  wishlistEntries: WishlistEntry[] = [];
-  wishlistTotal = 0;
-  wishlistPage = 1;
-  wishlistHasMore = false;
+  wishlistEntries = signal<WishlistEntry[]>([]);
+  wishlistTotal = signal(0);
+  wishlistPage = signal(1);
+  wishlistHasMore = signal(false);
   wishlistSearch = '';
-  wishlistLoading = false;
+  wishlistLoading = signal(false);
   @ViewChild('wishlistSentinel') wishlistSentinelRef?: ElementRef<HTMLElement>;
   private wishlistObserver?: IntersectionObserver;
 
   // ── IDs for quick status checks ──
-  collectionIds: { [cardId: number]: number } = {};
-  wishlistIds = new Set<number>();
+  private collectionIds: { [cardId: number]: number } = {};
+  private wishlistIds = new Set<number>();
 
   // ── Mercado (store) ──
-  mercadoEntries: CollectionEntry[] = [];
-  mercadoTotal = 0;
-  mercadoPage = 1;
-  mercadoHasMore = false;
+  mercadoEntries = signal<CollectionEntry[]>([]);
+  mercadoTotal = signal(0);
+  mercadoPage = signal(1);
+  mercadoHasMore = signal(false);
   mercadoSearch = '';
-  mercadoLoading = false;
+  mercadoLoading = signal(false);
   mercadoDirty = new Map<number, { price?: number | null; selling_quantity?: number }>();
   @ViewChild('mercadoSentinel') mercadoSentinelRef?: ElementRef<HTMLElement>;
   private mercadoObserver?: IntersectionObserver;
   private contentScrollEl: HTMLElement | null = null;
   shareToken = '';
-  shareLinkCopied = false;
-  qrDownloading = false;
-  batchSaving = false;
-  exportingPdf = false;
-  mercadoAllEntries: CollectionEntry[] = [];
+  shareLinkCopied = signal(false);
+  qrDownloading = signal(false);
+  batchSaving = signal(false);
+  exportingPdf = signal(false);
+  mercadoAllEntries = signal<CollectionEntry[]>([]);
   mercadoSelected = new Map<number, CollectionEntry>();
 
-  // ── Pedidos de vendedor ──
-  pendingOrders: StoreOrder[] = [];
-  historyOrders: StoreOrder[] = [];
-  ordersLoading = false;
-  historyLoading = false;
-  historyStatusFilter: '' | StoreOrderStatus = '';
+  // ── Gestión de pedidos (unificada: Pedidos + Historial) ──
+  pendingOrders = signal<StoreOrder[]>([]);
+  historyOrders = signal<StoreOrder[]>([]);
+  ordersLoading = signal(false);
+  historyLoading = signal(false);
+  ordersPill = signal<'pendientes' | 'todos' | 'completados' | 'cancelados'>('pendientes');
+  orderDetail = signal<StoreOrder | null>(null);
+  cancelOrderTarget = signal<StoreOrder | null>(null);
+  cancelOrderReason = '';
+  cancelOrderSubmitting = signal(false);
+
+  ordersForPill = computed<StoreOrder[]>(() => {
+    const pill = this.ordersPill();
+    if (pill === 'pendientes') return this.pendingOrders();
+    if (pill === 'completados') return this.historyOrders().filter(o => o.status === 'accepted');
+    if (pill === 'cancelados') return this.historyOrders().filter(o => o.status === 'cancelled');
+    return [...this.pendingOrders(), ...this.historyOrders().filter(o => o.status !== 'pending')];
+  });
+
   assignedByEntry: Record<number, number> = {};
 
   // Foto real de la carta (por entry.id + slot)
-  uploadingPhotoFor: number | null = null;
-  uploadingPhotoSlot: 1 | 2 | null = null;
-  viewPhotoUrl: string | null = null;
+  uploadingPhotoFor = signal<number | null>(null);
+  uploadingPhotoSlot = signal<1 | 2 | null>(null);
+  viewPhotoUrl = signal<string | null>(null);
 
   // ── Tienda config ──
-  storeConfigOpen = false;
-  storeProfileSaving = false;
-  storeProfileSaved = false;
-  storeRegenerating = false;
+  storeConfigOpen = signal(false);
+  storeProfileSaving = signal(false);
+  storeProfileSaved = signal(false);
+  storeRegenerating = signal(false);
 
   // ── Bulk import ──
-  importOpen = false;
+  importOpen = signal(false);
   importText = '';
   importMode: 'add' | 'set' = 'add';
-  importing = false;
-  importResult: any = null;
+  importing = signal(false);
+  importResult = signal<any>(null);
 
   getSellingCount(): number {
-    return this.collectionEntries.filter(e => (e.selling_quantity || 0) > 0).length;
+    return this.collectionEntries().filter(e => (e.selling_quantity || 0) > 0).length;
   }
-
-  constructor(
-    public auth: AuthService,
-    private carpetaService: CarpetaService,
-    private cardService: CardService,
-    private cdr: ChangeDetectorRef,
-    private router: Router,
-  ) {}
 
   ngOnInit() {
     if (!this.auth.isAuthenticated()) {
       this.router.navigate(['/login']);
       return;
     }
-    this.loadBinderProfile();
-    this.loadIds();
-    this.loadCollection();
+
+    this.workspaceMode.set(!!this.route.snapshot.data?.['workspaceMode']);
+
+    if (this.workspaceMode()) {
+      this.loadWorkspaces();
+    } else {
+      this.loadBinderProfile();
+      this.loadIds();
+      this.loadCollection();
+      this.loadTours();
+    }
     this.loadFilters();
+
+    const validTabs: Tab[] = ['carpeta', 'codex', 'wishlist', 'mercado', 'pedidos', 'stats', 'permisos'];
+    this.queryParamSub = this.route.queryParamMap.subscribe(params => {
+      const requestedTab = params.get('tab');
+      if (requestedTab && (validTabs as string[]).includes(requestedTab) && requestedTab !== this.activeTab()) {
+        this.switchTab(requestedTab as Tab);
+      }
+    });
   }
 
   ngAfterViewInit() {
@@ -176,6 +579,7 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.wishlistObserver?.disconnect();
     this.mercadoObserver?.disconnect();
     this.detachContentScrollListener();
+    this.queryParamSub?.unsubscribe();
   }
 
   private attachContentScrollListener() {
@@ -197,14 +601,14 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   };
 
   switchTab(tab: Tab) {
-    this.activeTab = tab;
+    this.activeTab.set(tab);
     if (tab === 'carpeta') this.loadCollection();
-    if (tab === 'codex' && !this.codexCards.length) this.loadCodex();
+    if (tab === 'codex' && !this.codexCards().length) this.loadCodex();
     if (tab === 'wishlist') this.loadWishlist();
     if (tab === 'mercado') this.loadMercado();
-    if (tab === 'pedidos') this.loadPendingOrders();
-    if (tab === 'historial') this.loadHistoryOrders();
-    if (tab === 'stats' && !this.stats) this.loadStats();
+    if (tab === 'pedidos') { this.loadPendingOrders(); this.loadHistoryOrders(); }
+    if (tab === 'stats' && !this.stats()) this.loadStats();
+    if (tab === 'permisos') this.loadWorkspacePermissions();
     queueMicrotask(() => {
       this.setupCollectionObserver();
       this.setupCodexObserver();
@@ -215,16 +619,16 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   loadStats() {
-    this.statsLoading = true;
-    this.statsError = null;
+    this.statsLoading.set(true);
+    this.statsError.set(null);
     this.carpetaService.getCollectionStats().subscribe({
-      next: (s) => { this.stats = s; this.statsLoading = false; this.cdr.detectChanges(); },
+      next: (s) => { this.stats.set(s); this.statsLoading.set(false); this.cdr.markForCheck(); },
       error: (err) => {
-        this.statsLoading = false;
+        this.statsLoading.set(false);
         const status = err?.status ?? '?';
         const detail = err?.error?.detail || err?.message || 'sin detalle';
-        this.statsError = `HTTP ${status}: ${detail}`;
-        this.cdr.detectChanges();
+        this.statsError.set(`HTTP ${status}: ${detail}`);
+        this.cdr.markForCheck();
       },
     });
   }
@@ -232,9 +636,9 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   // ── Binder Profile ──
   loadBinderProfile() {
     this.carpetaService.getBinderProfile().subscribe(p => {
-      this.binderProfile = p;
+      this.binderProfile.set(p);
       this.shareToken = p.share_token;
-      this.cdr.detectChanges();
+      this.cdr.markForCheck();
     });
   }
 
@@ -242,8 +646,8 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
     this.carpetaService.uploadBinderAvatar(file).subscribe(p => {
-      this.binderProfile = p;
-      this.cdr.detectChanges();
+      this.binderProfile.set(p);
+      this.cdr.markForCheck();
     });
   }
 
@@ -252,7 +656,7 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.carpetaService.getMyIds().subscribe(ids => {
       this.collectionIds = ids.collection;
       this.wishlistIds = new Set(ids.wishlist);
-      this.cdr.detectChanges();
+      this.cdr.markForCheck();
     });
   }
 
@@ -270,43 +674,43 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ── Collection ──
   loadCollection() {
-    this.collectionPage = 1;
-    this.collectionEntries = [];
-    this.collectionHasMore = false;
+    this.collectionPage.set(1);
+    this.collectionEntries.set([]);
+    this.collectionHasMore.set(false);
     this.fetchCollectionPage();
   }
 
-  onCollectionSearch() { this.collectionPage = 1; this.loadCollection(); }
-  toggleSellingFilter() { this.showSellingOnly = !this.showSellingOnly; this.collectionPage = 1; this.loadCollection(); }
+  onCollectionSearch() { this.collectionPage.set(1); this.loadCollection(); }
+  toggleSellingFilter() { this.showSellingOnly.update(v => !v); this.collectionPage.set(1); this.loadCollection(); }
   loadMoreCollection() {
-    if (this.activeTab !== 'carpeta' || this.collectionLoading || !this.collectionHasMore) return;
-    this.collectionPage++;
+    if (this.activeTab() !== 'carpeta' || this.collectionLoading() || !this.collectionHasMore()) return;
+    this.collectionPage.update(p => p + 1);
     this.fetchCollectionPage(true);
   }
   private fetchCollectionPage(append = false) {
-    this.collectionLoading = true;
+    this.collectionLoading.set(true);
     this.carpetaService.getCollection(
-      this.collectionPage,
+      this.collectionPage(),
       this.collectionSearch || undefined,
-      this.showSellingOnly,
+      this.showSellingOnly(),
+      this.wsId(),
     ).subscribe({
       next: res => {
-        this.collectionEntries = append ? [...this.collectionEntries, ...res.results] : res.results;
-        this.collectionTotal = res.count;
-        this.collectionHasMore = !!res.next;
-        this.collectionLoading = false;
-        this.cdr.detectChanges();
+        this.collectionEntries.set(append ? [...this.collectionEntries(), ...res.results] : res.results);
+        this.collectionTotal.set(res.count);
+        this.collectionHasMore.set(!!res.next);
+        this.collectionLoading.set(false);
+        this.cdr.markForCheck();
         queueMicrotask(() => {
           this.setupCollectionObserver();
           this.tryInfiniteScrollFallback();
         });
       },
-      error: () => { this.collectionLoading = false; this.cdr.detectChanges(); },
+      error: () => { this.collectionLoading.set(false); this.cdr.markForCheck(); },
     });
   }
-  collectionPrev() { if (this.collectionPage > 1) { this.collectionPage--; this.loadCollection(); } }
-  collectionNext() { if (this.collectionPage * 40 < this.collectionTotal) { this.collectionPage++; this.loadCollection(); } }
-  get collectionTotalPages() { return Math.ceil(this.collectionTotal / 40); }
+  collectionPrev() { if (this.collectionPage() > 1) { this.collectionPage.update(p => p - 1); this.loadCollection(); } }
+  collectionNext() { if (this.collectionPage() * 40 < this.collectionTotal()) { this.collectionPage.update(p => p + 1); this.loadCollection(); } }
 
   onFieldChange(entry: CollectionEntry, field: string, value: any) {
     let pending = this.dirtyEntries.get(entry.id) || {};
@@ -318,6 +722,7 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
       pending.selling_quantity = qty;
     }
     this.dirtyEntries.set(entry.id, pending);
+    this.cdr.markForCheck();
   }
 
   saveEntry(entry: CollectionEntry) {
@@ -332,44 +737,39 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
       language: (pending.language ?? entry.language) as any,
       is_foil: pending.is_foil ?? entry.is_foil,
       notes: pending.notes ?? entry.notes,
-    }).subscribe(updated => {
-      const idx = this.collectionEntries.findIndex(e => e.id === entry.id);
-      if (idx >= 0) this.collectionEntries[idx] = updated;
+    }, { store_profile_id: this.wsId() }).subscribe(updated => {
+      const entries = this.collectionEntries();
+      const idx = entries.findIndex(e => e.id === entry.id);
+      if (idx >= 0) {
+        const next = [...entries];
+        next[idx] = updated;
+        this.collectionEntries.set(next);
+      }
       this.collectionIds[updated.card_detail.id] = updated.quantity;
       this.dirtyEntries.delete(entry.id);
-      this.cdr.detectChanges();
+      this.cdr.markForCheck();
     });
   }
 
   removeFromCollection(entry: CollectionEntry) {
-    this.carpetaService.removeFromCollection(entry.card_detail.id).subscribe(() => {
-      this.collectionEntries = this.collectionEntries.filter(e => e.id !== entry.id);
+    this.carpetaService.removeFromCollection(entry.card_detail.id, this.wsId()).subscribe(() => {
+      this.collectionEntries.set(this.collectionEntries().filter(e => e.id !== entry.id));
       delete this.collectionIds[entry.card_detail.id];
-      this.collectionTotal--;
-      this.cdr.detectChanges();
+      this.collectionTotal.update(t => t - 1);
+      this.cdr.markForCheck();
     });
   }
 
   // ── Codex ──
   loadFilters() {
-    this.cardService.getEditions().subscribe(d => { this.editions = d; this.cdr.detectChanges(); });
-    this.cardService.getTypes().subscribe(d => { this.types = d; this.cdr.detectChanges(); });
-    this.cardService.getRaces().subscribe(d => { this.races = d; this.cdr.detectChanges(); });
-    this.cardService.getRarities().subscribe(d => { this.rarities = d; this.cdr.detectChanges(); });
-  }
-
-  get filteredEditions(): Edition[] {
-    if (!this.selectedFormat) return this.editions;
-    return this.editions.filter(e => e.format_code === this.selectedFormat);
-  }
-
-  get filteredRaces(): Race[] {
-    // Hide 'noraza' / 'Sin Raza' from filter (internal use)
-    return this.races.filter(r => r.slug !== 'noraza');
+    this.cardService.getEditions().subscribe(d => { this.editions.set(d); this.cdr.markForCheck(); });
+    this.cardService.getTypes().subscribe(d => { this.types.set(d); this.cdr.markForCheck(); });
+    this.cardService.getRaces().subscribe(d => { this.races.set(d); this.cdr.markForCheck(); });
+    this.cardService.getRarities().subscribe(d => { this.rarities.set(d); this.cdr.markForCheck(); });
   }
 
   loadCodex(append = false) {
-    this.codexLoading = true;
+    this.codexLoading.set(true);
     this.cardService.getCards({
       search: this.codexSearch || undefined,
       format: this.selectedFormat || undefined,
@@ -378,29 +778,30 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
       deck_race: this.selectedRaces.length === 1 ? this.selectedRaces[0] : undefined,
       race: this.selectedRaces.length > 1 ? this.selectedRaces.join(',') : undefined,
       rarity: this.selectedRarities.length ? this.selectedRarities.join(',') : undefined,
-      page: this.codexPage,
+      page: this.codexPage(),
     }).subscribe({
       next: res => {
-        this.codexCards = append ? [...this.codexCards, ...res.results] : res.results;
-        this.codexTotal = res.count;
-        this.codexHasMore = !!res.next;
-        this.codexLoading = false;
-        this.cdr.detectChanges();
+        this.codexCards.set(append ? [...this.codexCards(), ...res.results] : res.results);
+        this.codexTotal.set(res.count);
+        this.codexHasMore.set(!!res.next);
+        this.codexLoading.set(false);
+        this.cdr.markForCheck();
         queueMicrotask(() => {
           this.setupCodexObserver();
           this.tryInfiniteScrollFallback();
         });
       },
-      error: () => { this.codexLoading = false; this.cdr.detectChanges(); },
+      error: () => { this.codexLoading.set(false); this.cdr.markForCheck(); },
     });
   }
 
-  onCodexSearch() { this.codexPage = 1; this.loadCodex(); }
-  onCodexFilter() { this.codexPage = 1; this.loadCodex(); }
+  onCodexSearch() { this.codexPage.set(1); this.loadCodex(); }
+  onCodexFilter() { this.codexPage.set(1); this.loadCodex(); }
 
   onFormatChange() {
     // Clear edition selection when format changes (editions are now different)
     this.selectedEditions = [];
+    this.selectedFormatSignal.set(this.selectedFormat);
     this.onCodexFilter();
   }
 
@@ -417,6 +818,7 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   clearFilters() {
     this.selectedFormat = '';
+    this.selectedFormatSignal.set('');
     this.selectedEditions = [];
     this.selectedTypes = [];
     this.selectedRaces = [];
@@ -426,7 +828,7 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   toggleCodexPopover(filter: 'edition' | 'type' | 'race' | 'rarity', event: Event) {
     event.stopPropagation();
-    this.codexOpenFilter = this.codexOpenFilter === filter ? null : filter;
+    this.codexOpenFilter.update(curr => (curr === filter ? null : filter));
   }
 
   codexFilterLabel(filter: 'edition' | 'type' | 'race' | 'rarity'): string {
@@ -439,10 +841,10 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
     const { arr, label } = map[filter];
     if (arr.length === 0) return label;
     if (arr.length === 1) {
-      if (filter === 'edition') return this.filteredEditions.find(e => e.slug === arr[0])?.title || arr[0];
-      if (filter === 'type') return this.types.find(t => t.slug === arr[0])?.name || arr[0];
-      if (filter === 'race') return this.filteredRaces.find(r => r.slug === arr[0])?.name || arr[0];
-      return this.rarities.find(r => r.slug === arr[0])?.name || arr[0];
+      if (filter === 'edition') return this.filteredEditions().find(e => e.slug === arr[0])?.title || arr[0];
+      if (filter === 'type') return this.types().find(t => t.slug === arr[0])?.name || arr[0];
+      if (filter === 'race') return this.filteredRaces().find(r => r.slug === arr[0])?.name || arr[0];
+      return this.rarities().find(r => r.slug === arr[0])?.name || arr[0];
     }
     return `${arr.length} seleccionados`;
   }
@@ -454,20 +856,19 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
     else this.selectedRarities = [];
     this.onCodexFilter();
   }
-  codexPrev() { if (this.codexPage > 1) { this.codexPage--; this.loadCodex(); } }
-  codexNext() { if (this.codexPage * 40 < this.codexTotal) { this.codexPage++; this.loadCodex(); } }
-  get codexTotalPages() { return Math.ceil(this.codexTotal / 40); }
+  codexPrev() { if (this.codexPage() > 1) { this.codexPage.update(p => p - 1); this.loadCodex(); } }
+  codexNext() { if (this.codexPage() * 40 < this.codexTotal()) { this.codexPage.update(p => p + 1); this.loadCodex(); } }
 
   loadMoreCodex() {
-    if (this.activeTab !== 'codex' || this.codexLoading || !this.codexHasMore) return;
-    this.codexPage++;
+    if (this.activeTab() !== 'codex' || this.codexLoading() || !this.codexHasMore()) return;
+    this.codexPage.update(p => p + 1);
     this.loadCodex(true);
   }
 
   private setupCodexObserver() {
     if (typeof IntersectionObserver === 'undefined') return;
     this.codexObserver?.disconnect();
-    if (this.activeTab !== 'codex') return;
+    if (this.activeTab() !== 'codex') return;
     const sentinel = this.codexSentinelRef?.nativeElement;
     if (!sentinel) return;
     this.codexObserver = new IntersectionObserver(entries => {
@@ -484,7 +885,7 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   private setupCollectionObserver() {
     if (typeof IntersectionObserver === 'undefined') return;
     this.collectionObserver?.disconnect();
-    if (this.activeTab !== 'carpeta') return;
+    if (this.activeTab() !== 'carpeta') return;
     const sentinel = this.collectionSentinelRef?.nativeElement;
     if (!sentinel) return;
     this.collectionObserver = new IntersectionObserver(entries => {
@@ -499,24 +900,39 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   selectCodexCard(card: Card) {
-    this.selectedCard = this.selectedCard?.id === card.id ? null : card;
+    this.selectedCard.update(curr => (curr?.id === card.id ? null : card));
     this.addQty = 1;
   }
 
   addToCollection(card: Card) {
-    this.carpetaService.upsertCollection({ card: card.id, quantity: this.addQty }).subscribe(entry => {
+    this.carpetaService.upsertCollection({ card: card.id, quantity: this.addQty }, { store_profile_id: this.wsId() }).subscribe(entry => {
       this.collectionIds[card.id] = entry.quantity;
-      this.selectedCard = null;
-      this.cdr.detectChanges();
+      this.selectedCard.set(null);
+      this.cdr.markForCheck();
     });
   }
 
   quickAddToCollection(card: Card, event: MouseEvent) {
     event.stopPropagation();
     const newQty = (this.collectionIds[card.id] || 0) + 1;
-    this.carpetaService.upsertCollection({ card: card.id, quantity: newQty }).subscribe(entry => {
+    this.carpetaService.upsertCollection({ card: card.id, quantity: newQty }, { store_profile_id: this.wsId() }).subscribe(entry => {
       this.collectionIds[card.id] = entry.quantity;
-      this.cdr.detectChanges();
+      this.cdr.markForCheck();
+    });
+  }
+
+  /** Desde Colección: agrega (si hace falta) y marca la carta para venta, luego abre el quick-edit para fijar precio. */
+  sellFromCodex(card: Card, ev?: MouseEvent) {
+    ev?.stopPropagation();
+    const qty = this.collectionIds[card.id] || 1;
+    this.carpetaService.upsertCollection({ card: card.id, quantity: qty, selling_quantity: qty }, { store_profile_id: this.wsId() }).subscribe({
+      next: (updated) => {
+        this.collectionIds[updated.card_detail.id] = updated.quantity;
+        this.switchTab('carpeta');
+        this.openQuickEdit(updated);
+        this.cdr.markForCheck();
+      },
+      error: (err) => alert(err?.error?.detail || 'No se pudo preparar la carta para venta.'),
     });
   }
 
@@ -528,49 +944,48 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
       } else {
         this.wishlistIds.delete(card.id);
       }
-      this.cdr.detectChanges();
+      this.cdr.markForCheck();
     });
   }
 
   // ── Wishlist ──
   loadWishlist() {
-    this.wishlistPage = 1;
-    this.wishlistEntries = [];
-    this.wishlistHasMore = false;
+    this.wishlistPage.set(1);
+    this.wishlistEntries.set([]);
+    this.wishlistHasMore.set(false);
     this.fetchWishlistPage();
   }
 
-  onWishlistSearch() { this.wishlistPage = 1; this.loadWishlist(); }
+  onWishlistSearch() { this.wishlistPage.set(1); this.loadWishlist(); }
   loadMoreWishlist() {
-    if (this.activeTab !== 'wishlist' || this.wishlistLoading || !this.wishlistHasMore) return;
-    this.wishlistPage++;
+    if (this.activeTab() !== 'wishlist' || this.wishlistLoading() || !this.wishlistHasMore()) return;
+    this.wishlistPage.update(p => p + 1);
     this.fetchWishlistPage(true);
   }
   private fetchWishlistPage(append = false) {
-    this.wishlistLoading = true;
-    this.carpetaService.getWishlist(this.wishlistPage, this.wishlistSearch || undefined).subscribe({
+    this.wishlistLoading.set(true);
+    this.carpetaService.getWishlist(this.wishlistPage(), this.wishlistSearch || undefined).subscribe({
       next: res => {
-        this.wishlistEntries = append ? [...this.wishlistEntries, ...res.results] : res.results;
-        this.wishlistTotal = res.count;
-        this.wishlistHasMore = !!res.next;
-        this.wishlistLoading = false;
-        this.cdr.detectChanges();
+        this.wishlistEntries.set(append ? [...this.wishlistEntries(), ...res.results] : res.results);
+        this.wishlistTotal.set(res.count);
+        this.wishlistHasMore.set(!!res.next);
+        this.wishlistLoading.set(false);
+        this.cdr.markForCheck();
         queueMicrotask(() => {
           this.setupWishlistObserver();
           this.tryInfiniteScrollFallback();
         });
       },
-      error: () => { this.wishlistLoading = false; this.cdr.detectChanges(); },
+      error: () => { this.wishlistLoading.set(false); this.cdr.markForCheck(); },
     });
   }
-  wishlistPrev() { if (this.wishlistPage > 1) { this.wishlistPage--; this.loadWishlist(); } }
-  wishlistNext() { if (this.wishlistPage * 40 < this.wishlistTotal) { this.wishlistPage++; this.loadWishlist(); } }
-  get wishlistTotalPages() { return Math.ceil(this.wishlistTotal / 40); }
+  wishlistPrev() { if (this.wishlistPage() > 1) { this.wishlistPage.update(p => p - 1); this.loadWishlist(); } }
+  wishlistNext() { if (this.wishlistPage() * 40 < this.wishlistTotal()) { this.wishlistPage.update(p => p + 1); this.loadWishlist(); } }
 
   private setupWishlistObserver() {
     if (typeof IntersectionObserver === 'undefined') return;
     this.wishlistObserver?.disconnect();
-    if (this.activeTab !== 'wishlist') return;
+    if (this.activeTab() !== 'wishlist') return;
     const sentinel = this.wishlistSentinelRef?.nativeElement;
     if (!sentinel) return;
     this.wishlistObserver = new IntersectionObserver(entries => {
@@ -587,7 +1002,7 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   private setupMercadoObserver() {
     if (typeof IntersectionObserver === 'undefined') return;
     this.mercadoObserver?.disconnect();
-    if (this.activeTab !== 'mercado') return;
+    if (this.activeTab() !== 'mercado') return;
     const sentinel = this.mercadoSentinelRef?.nativeElement;
     if (!sentinel) return;
     this.mercadoObserver = new IntersectionObserver(entries => {
@@ -603,10 +1018,11 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private tryInfiniteScrollFallback() {
     if (!this.isNearPageBottom()) return;
-    if (this.activeTab === 'carpeta') this.loadMoreCollection();
-    if (this.activeTab === 'codex') this.loadMoreCodex();
-    if (this.activeTab === 'wishlist') this.loadMoreWishlist();
-    if (this.activeTab === 'mercado') this.loadMoreMercado();
+    const tab = this.activeTab();
+    if (tab === 'carpeta') this.loadMoreCollection();
+    if (tab === 'codex') this.loadMoreCodex();
+    if (tab === 'wishlist') this.loadMoreWishlist();
+    if (tab === 'mercado') this.loadMoreMercado();
   }
 
   private isNearPageBottom(offset = 900): boolean {
@@ -625,28 +1041,34 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   updateWishlistQty(entry: WishlistEntry, qty: number) {
     if (qty < 1) return;
     this.carpetaService.updateWishlist(entry.card_detail.id, qty).subscribe(updated => {
-      const idx = this.wishlistEntries.findIndex(e => e.id === entry.id);
-      if (idx >= 0) this.wishlistEntries[idx] = updated;
-      this.cdr.detectChanges();
+      const entries = this.wishlistEntries();
+      const idx = entries.findIndex(e => e.id === entry.id);
+      if (idx >= 0) {
+        const next = [...entries];
+        next[idx] = updated;
+        this.wishlistEntries.set(next);
+      }
+      this.cdr.markForCheck();
     });
   }
 
   removeFromWishlist(entry: WishlistEntry) {
     this.carpetaService.toggleWishlist(entry.card_detail.id).subscribe(() => {
-      this.wishlistEntries = this.wishlistEntries.filter(e => e.id !== entry.id);
+      this.wishlistEntries.set(this.wishlistEntries().filter(e => e.id !== entry.id));
       this.wishlistIds.delete(entry.card_detail.id);
-      this.wishlistTotal--;
-      this.cdr.detectChanges();
+      this.wishlistTotal.update(t => t - 1);
+      this.cdr.markForCheck();
     });
   }
 
   // ── Batch Save (Carpeta tab) ──
   saveAllChanges() {
     if (this.dirtyEntries.size === 0) return;
-    this.batchSaving = true;
+    this.batchSaving.set(true);
     const items: any[] = [];
+    const entries = this.collectionEntries();
     this.dirtyEntries.forEach((pending, entryId) => {
-      const entry = this.collectionEntries.find(e => e.id === entryId);
+      const entry = entries.find(e => e.id === entryId);
       if (!entry) return;
       items.push({
         card: entry.card_detail.id,
@@ -659,63 +1081,64 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
         notes: pending.notes ?? entry.notes,
       });
     });
-    this.carpetaService.batchUpsertCollection(items).subscribe({
+    this.carpetaService.batchUpsertCollection(items, { store_profile_id: this.wsId() }).subscribe({
       next: () => {
         this.dirtyEntries.clear();
-        this.batchSaving = false;
+        this.batchSaving.set(false);
         this.loadCollection();
       },
-      error: () => { this.batchSaving = false; this.cdr.detectChanges(); },
+      error: () => { this.batchSaving.set(false); this.cdr.markForCheck(); },
     });
   }
 
   // ── Mercado ──
   loadMercado() {
-    this.mercadoPage = 1;
-    this.mercadoEntries = [];
-    this.mercadoHasMore = false;
+    this.mercadoPage.set(1);
+    this.mercadoEntries.set([]);
+    this.mercadoHasMore.set(false);
     this.mercadoSelected.clear();
     this.fetchMercadoPage();
   }
 
   loadMoreMercado() {
-    if (this.activeTab !== 'mercado' || this.mercadoLoading || !this.mercadoHasMore) return;
-    this.mercadoPage++;
+    if (this.activeTab() !== 'mercado' || this.mercadoLoading() || !this.mercadoHasMore()) return;
+    this.mercadoPage.update(p => p + 1);
     this.fetchMercadoPage(true);
   }
 
   private fetchMercadoPage(append = false) {
-    this.mercadoLoading = true;
+    this.mercadoLoading.set(true);
     this.carpetaService.getCollection(
-      this.mercadoPage,
+      this.mercadoPage(),
       this.mercadoSearch || undefined,
       true, // selling only
+      this.wsId(),
     ).subscribe({
       next: res => {
-        this.mercadoEntries = append ? [...this.mercadoEntries, ...res.results] : res.results;
-        this.mercadoTotal = res.count;
-        this.mercadoHasMore = !!res.next;
-        this.mercadoLoading = false;
+        this.mercadoEntries.set(append ? [...this.mercadoEntries(), ...res.results] : res.results);
+        this.mercadoTotal.set(res.count);
+        this.mercadoHasMore.set(!!res.next);
+        this.mercadoLoading.set(false);
         if (!append) this.loadAssignedSummary();
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
         queueMicrotask(() => {
           this.setupMercadoObserver();
           this.tryInfiniteScrollFallback();
         });
       },
-      error: () => { this.mercadoLoading = false; this.cdr.detectChanges(); },
+      error: () => { this.mercadoLoading.set(false); this.cdr.markForCheck(); },
     });
   }
 
   loadAssignedSummary() {
-    this.carpetaService.getMyOrderAssignedSummary().subscribe({
+    this.carpetaService.getMyOrderAssignedSummary(this.wsId()).subscribe({
       next: (res) => {
         this.assignedByEntry = res.assigned_by_entry || {};
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
       error: () => {
         this.assignedByEntry = {};
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
     });
   }
@@ -724,27 +1147,26 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.assignedByEntry[entryId] || 0;
   }
 
-  onMercadoSearch() { this.mercadoPage = 1; this.loadMercado(); }
-  mercadoPrev() { if (this.mercadoPage > 1) { this.mercadoPage--; this.loadMercado(); } }
-  mercadoNext() { if (this.mercadoPage * 40 < this.mercadoTotal) { this.mercadoPage++; this.loadMercado(); } }
-  get mercadoTotalPages() { return Math.ceil(this.mercadoTotal / 40); }
+  onMercadoSearch() { this.mercadoPage.set(1); this.loadMercado(); }
+  mercadoPrev() { if (this.mercadoPage() > 1) { this.mercadoPage.update(p => p - 1); this.loadMercado(); } }
+  mercadoNext() { if (this.mercadoPage() * 40 < this.mercadoTotal()) { this.mercadoPage.update(p => p + 1); this.loadMercado(); } }
 
-  get showFloatingSaveButton(): boolean {
-    return (this.activeTab === 'carpeta' && this.dirtyEntries.size > 0)
-      || (this.activeTab === 'mercado' && this.mercadoDirty.size > 0);
-  }
+  showFloatingSaveButton = computed(() => {
+    return (this.activeTab() === 'carpeta' && this.dirtyEntries.size > 0)
+      || (this.activeTab() === 'mercado' && this.mercadoDirty.size > 0);
+  });
 
   get floatingSaveLabel(): string {
-    if (this.batchSaving) return '⏳ Guardando...';
-    if (this.activeTab === 'carpeta') return `💾 Guardar carpeta (${this.dirtyEntries.size})`;
-    if (this.activeTab === 'mercado') return `💾 Guardar tienda (${this.mercadoDirty.size})`;
+    if (this.batchSaving()) return '⏳ Guardando...';
+    if (this.activeTab() === 'carpeta') return `💾 Guardar carpeta (${this.dirtyEntries.size})`;
+    if (this.activeTab() === 'mercado') return `💾 Guardar tienda (${this.mercadoDirty.size})`;
     return '💾 Guardar cambios';
   }
 
   onFloatingSaveClick() {
-    if (this.batchSaving) return;
-    if (this.activeTab === 'carpeta') { this.saveAllChanges(); return; }
-    if (this.activeTab === 'mercado') { this.saveMercadoChanges(); }
+    if (this.batchSaving()) return;
+    if (this.activeTab() === 'carpeta') { this.saveAllChanges(); return; }
+    if (this.activeTab() === 'mercado') { this.saveMercadoChanges(); }
   }
 
   onMercadoFieldChange(entry: CollectionEntry, field: string, value: number) {
@@ -756,14 +1178,16 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
       pending.selling_quantity = entry.quantity;
     }
     this.mercadoDirty.set(entry.id, pending);
+    this.cdr.markForCheck();
   }
 
   saveMercadoChanges() {
     if (this.mercadoDirty.size === 0) return;
-    this.batchSaving = true;
+    this.batchSaving.set(true);
     const items: { card: number; price?: number | null; selling_quantity?: number }[] = [];
+    const entries = this.mercadoEntries();
     this.mercadoDirty.forEach((pending, entryId) => {
-      const entry = this.mercadoEntries.find(e => e.id === entryId);
+      const entry = entries.find(e => e.id === entryId);
       if (!entry) return;
       items.push({
         card: entry.card_detail.id,
@@ -771,52 +1195,46 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
         selling_quantity: pending.selling_quantity ?? entry.selling_quantity,
       });
     });
-    this.carpetaService.batchUpsertCollection(items).subscribe({
+    this.carpetaService.batchUpsertCollection(items, { store_profile_id: this.wsId() }).subscribe({
       next: () => {
         this.mercadoDirty.clear();
-        this.batchSaving = false;
+        this.batchSaving.set(false);
         this.loadMercado();
         this.loadPendingOrders();
       },
-      error: () => { this.batchSaving = false; this.cdr.detectChanges(); },
+      error: () => { this.batchSaving.set(false); this.cdr.markForCheck(); },
     });
   }
 
   loadPendingOrders() {
-    this.ordersLoading = true;
-    this.carpetaService.listMyStoreOrders({ status: 'pending', page: 1 }).subscribe({
+    this.ordersLoading.set(true);
+    this.carpetaService.listMyStoreOrders({ status: 'pending', page: 1, store_profile_id: this.wsId() }).subscribe({
       next: (res) => {
-        this.pendingOrders = res.results || [];
-        this.ordersLoading = false;
+        this.pendingOrders.set(res.results || []);
+        this.ordersLoading.set(false);
         this.loadAssignedSummary();
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
       error: () => {
-        this.ordersLoading = false;
-        this.cdr.detectChanges();
+        this.ordersLoading.set(false);
+        this.cdr.markForCheck();
       },
     });
   }
 
   loadHistoryOrders() {
-    this.historyLoading = true;
-    const status = this.historyStatusFilter || 'history';
-    this.carpetaService.listMyStoreOrders({ status, page: 1 }).subscribe({
+    this.historyLoading.set(true);
+    this.carpetaService.listMyStoreOrders({ status: 'history', page: 1, store_profile_id: this.wsId() }).subscribe({
       next: (res) => {
-        this.historyOrders = (res.results || []).filter(o => o.status !== 'pending');
-        this.historyLoading = false;
-        this.cdr.detectChanges();
+        this.historyOrders.set((res.results || []).filter(o => o.status !== 'pending'));
+        this.historyLoading.set(false);
+        this.cdr.markForCheck();
       },
       error: () => {
-        this.historyLoading = false;
-        this.cdr.detectChanges();
+        this.historyLoading.set(false);
+        this.cdr.markForCheck();
       },
     });
-  }
-
-  onHistoryFilterChange(value: string) {
-    this.historyStatusFilter = value === 'accepted' || value === 'cancelled' ? value : '';
-    this.loadHistoryOrders();
   }
 
   orderStatusLabel(status: StoreOrderStatus): string {
@@ -826,12 +1244,13 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   acceptOrder(order: StoreOrder) {
-    if (!confirm(`¿Aceptar pedido #${order.id}? Se descontará del stock real.`)) return;
     this.carpetaService.acceptStoreOrder(order.id).subscribe({
       next: () => {
-        this.loadPendingOrders();
+        this.pendingOrders.update(arr => arr.filter(o => o.id !== order.id));
+        this.orderDetail.set(null);
         this.loadHistoryOrders();
         this.loadMercado();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         alert(err?.error?.detail || 'No se pudo aceptar el pedido.');
@@ -840,15 +1259,36 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   cancelOrder(order: StoreOrder) {
-    if (!confirm(`¿Cancelar pedido #${order.id}? Se devolverá la reserva a stock en venta.`)) return;
-    this.carpetaService.cancelStoreOrder(order.id).subscribe({
+    this.cancelOrderReason = '';
+    this.cancelOrderTarget.set(order);
+  }
+
+  closeCancelOrderModal() {
+    if (this.cancelOrderSubmitting()) return;
+    this.cancelOrderTarget.set(null);
+    this.cancelOrderReason = '';
+  }
+
+  confirmCancelOrder() {
+    const order = this.cancelOrderTarget();
+    const reason = this.cancelOrderReason.trim();
+    if (!order || !reason) return;
+    this.cancelOrderSubmitting.set(true);
+    this.carpetaService.cancelStoreOrder(order.id, reason).subscribe({
       next: () => {
-        this.loadPendingOrders();
+        this.pendingOrders.update(arr => arr.filter(o => o.id !== order.id));
+        this.orderDetail.set(null);
+        this.cancelOrderSubmitting.set(false);
+        this.cancelOrderTarget.set(null);
+        this.cancelOrderReason = '';
         this.loadHistoryOrders();
         this.loadMercado();
+        this.cdr.markForCheck();
       },
       error: (err) => {
+        this.cancelOrderSubmitting.set(false);
         alert(err?.error?.detail || 'No se pudo cancelar el pedido.');
+        this.cdr.markForCheck();
       },
     });
   }
@@ -857,17 +1297,17 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.shareToken) return;
     const url = `${window.location.origin}/tienda/${this.shareToken}`;
     navigator.clipboard.writeText(url).then(() => {
-      this.shareLinkCopied = true;
-      this.cdr.detectChanges();
-      setTimeout(() => { this.shareLinkCopied = false; this.cdr.detectChanges(); }, 2000);
+      this.shareLinkCopied.set(true);
+      this.cdr.markForCheck();
+      setTimeout(() => { this.shareLinkCopied.set(false); this.cdr.markForCheck(); }, 2000);
     });
   }
 
   async downloadStoreQr() {
     if (!this.shareToken) return;
     const url = `${window.location.origin}/tienda/${this.shareToken}`;
-    this.qrDownloading = true;
-    this.cdr.detectChanges();
+    this.qrDownloading.set(true);
+    this.cdr.markForCheck();
     try {
       const qrDataUrl = await QRCode.toDataURL(url, {
         width: 1024,
@@ -886,13 +1326,13 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
       console.error('QR generation error:', e);
       alert('No se pudo generar el QR. Intenta de nuevo.');
     } finally {
-      this.qrDownloading = false;
-      this.cdr.detectChanges();
+      this.qrDownloading.set(false);
+      this.cdr.markForCheck();
     }
   }
 
   private getStoreQrLogoUrl(): string | null {
-    const binderAvatar = (this.binderProfile?.binder_avatar_url || '').trim();
+    const binderAvatar = (this.binderProfile()?.binder_avatar_url || '').trim();
     if (binderAvatar) return binderAvatar;
     const userAvatar = (this.auth.user()?.avatar_url || '').trim();
     return userAvatar || null;
@@ -963,10 +1403,10 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.carpetaService.upsertCollection({
       card: entry.card_detail.id,
       selling_quantity: 0,
-    }).subscribe(() => {
-      this.mercadoEntries = this.mercadoEntries.filter(e => e.id !== entry.id);
-      this.mercadoTotal--;
-      this.cdr.detectChanges();
+    }, { store_profile_id: this.wsId() }).subscribe(() => {
+      this.mercadoEntries.set(this.mercadoEntries().filter(e => e.id !== entry.id));
+      this.mercadoTotal.update(t => t - 1);
+      this.cdr.markForCheck();
     });
   }
 
@@ -992,25 +1432,25 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
       input.value = '';
       return;
     }
-    this.uploadingPhotoFor = entry.id;
-    this.uploadingPhotoSlot = slot;
-    this.cdr.detectChanges();
-    this.carpetaService.uploadEntryPhoto(entry.card_detail.id, file, slot).subscribe({
+    this.uploadingPhotoFor.set(entry.id);
+    this.uploadingPhotoSlot.set(slot);
+    this.cdr.markForCheck();
+    this.carpetaService.uploadEntryPhoto(entry.card_detail.id, file, slot, this.wsId()).subscribe({
       next: (updated) => {
         entry.photo_url = updated.photo_url;
         entry.photo_url_2 = updated.photo_url_2;
-        this.uploadingPhotoFor = null;
-        this.uploadingPhotoSlot = null;
+        this.uploadingPhotoFor.set(null);
+        this.uploadingPhotoSlot.set(null);
         input.value = '';
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error subiendo foto:', err);
         alert('No se pudo subir la foto. Intenta de nuevo.');
-        this.uploadingPhotoFor = null;
-        this.uploadingPhotoSlot = null;
+        this.uploadingPhotoFor.set(null);
+        this.uploadingPhotoSlot.set(null);
         input.value = '';
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
     });
   }
@@ -1022,25 +1462,25 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!confirm('¿Quitar esta foto?')) return;
     const patch: any = { card: entry.card_detail.id };
     patch[slot === 2 ? 'photo_url_2' : 'photo_url'] = '';
-    this.carpetaService.upsertCollection(patch).subscribe(() => {
+    this.carpetaService.upsertCollection(patch, { store_profile_id: this.wsId() }).subscribe(() => {
       if (slot === 2) entry.photo_url_2 = ''; else entry.photo_url = '';
-      this.cdr.detectChanges();
+      this.cdr.markForCheck();
     });
   }
 
   openPhotoModal(url: string | null | undefined, ev?: Event) {
     if (ev) ev.stopPropagation();
     if (!url) return;
-    this.viewPhotoUrl = url;
+    this.viewPhotoUrl.set(url);
   }
 
   closePhotoModal() {
-    this.viewPhotoUrl = null;
+    this.viewPhotoUrl.set(null);
   }
 
   // ── Share image (Wishlist + Mercado) ──
   get shareWishlistItems(): ShareImageItem[] {
-    return this.wishlistEntries.map(w => ({
+    return this.wishlistEntries().map(w => ({
       name: w.card_detail?.name || '',
       image: w.card_detail?.image_url || '',
       quantity: w.desired_quantity || 1,
@@ -1052,7 +1492,7 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   get shareMercadoItems(): ShareImageItem[] {
     const source = this.mercadoSelected.size > 0
       ? Array.from(this.mercadoSelected.values())
-      : this.mercadoEntries;
+      : this.mercadoEntries();
     return source.map(e => ({
       name: e.card_detail?.name || '',
       image: e.card_detail?.image_url || '',
@@ -1066,26 +1506,28 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.mercadoSelected.has(entryId)) {
       this.mercadoSelected.delete(entryId);
     } else {
-      const entry = this.mercadoEntries.find(e => e.id === entryId);
+      const entry = this.mercadoEntries().find(e => e.id === entryId);
       if (entry) this.mercadoSelected.set(entryId, entry);
     }
+    this.cdr.markForCheck();
   }
 
   toggleSelectAllMercado() {
-    if (this.mercadoSelected.size === this.mercadoEntries.length) {
+    if (this.mercadoSelected.size === this.mercadoEntries().length) {
       this.mercadoSelected.clear();
     } else {
-      this.mercadoEntries.forEach(e => this.mercadoSelected.set(e.id, e));
+      this.mercadoEntries().forEach(e => this.mercadoSelected.set(e.id, e));
     }
+    this.cdr.markForCheck();
   }
 
   get shareSellerName(): string {
-    return this.binderProfile?.display_name || ('@' + (this.auth.user()?.username || ''));
+    return this.binderProfile()?.display_name || ('@' + (this.auth.user()?.username || ''));
   }
 
   async exportMercadoPdf() {
-    this.exportingPdf = true;
-    this.cdr.detectChanges();
+    this.exportingPdf.set(true);
+    this.cdr.markForCheck();
 
     try {
       // Load ALL selling entries (no pagination) for the export
@@ -1102,8 +1544,8 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
           hasMore = false;
         }
       }
-      this.mercadoAllEntries = allPages;
-      this.cdr.detectChanges();
+      this.mercadoAllEntries.set(allPages);
+      this.cdr.markForCheck();
 
       const el = document.getElementById('mercado-export')!;
       // Render off-screen so user doesn't see it
@@ -1164,57 +1606,60 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
       console.error('Error exporting mercado:', e);
     }
 
-    this.exportingPdf = false;
-    this.cdr.detectChanges();
+    this.exportingPdf.set(false);
+    this.cdr.markForCheck();
   }
 
   // ── Tienda config ──
   saveStoreProfile() {
-    if (!this.binderProfile) return;
-    this.storeProfileSaving = true;
+    const profile = this.binderProfile();
+    if (!profile) return;
+    this.storeProfileSaving.set(true);
     const payload = {
-      is_store_public: this.binderProfile.is_store_public,
-      display_name: this.binderProfile.display_name,
-      bio: this.binderProfile.bio,
-      city: this.binderProfile.city,
-      country: this.binderProfile.country,
-      whatsapp: this.binderProfile.whatsapp,
-      instagram: this.binderProfile.instagram,
-      discord: this.binderProfile.discord,
-      email_public: this.binderProfile.email_public,
-      payment_methods: this.binderProfile.payment_methods,
-      shipping_info: this.binderProfile.shipping_info,
-      accepts_trades: this.binderProfile.accepts_trades,
+      is_store_public: profile.is_store_public,
+      display_name: profile.display_name,
+      bio: profile.bio,
+      city: profile.city,
+      country: profile.country,
+      whatsapp: profile.whatsapp,
+      instagram: profile.instagram,
+      discord: profile.discord,
+      email_public: profile.email_public,
+      payment_methods: profile.payment_methods,
+      shipping_info: profile.shipping_info,
+      accepts_trades: profile.accepts_trades,
     };
     this.carpetaService.updateBinderProfile(payload).subscribe({
       next: p => {
-        this.binderProfile = p;
-        this.storeProfileSaving = false;
-        this.storeProfileSaved = true;
-        this.cdr.detectChanges();
-        setTimeout(() => { this.storeProfileSaved = false; this.cdr.detectChanges(); }, 2000);
+        this.binderProfile.set(p);
+        this.storeProfileSaving.set(false);
+        this.storeProfileSaved.set(true);
+        this.cdr.markForCheck();
+        setTimeout(() => { this.storeProfileSaved.set(false); this.cdr.markForCheck(); }, 2000);
       },
-      error: () => { this.storeProfileSaving = false; this.cdr.detectChanges(); },
+      error: () => { this.storeProfileSaving.set(false); this.cdr.markForCheck(); },
     });
   }
 
   regenerateShareToken() {
     if (!confirm('¿Generar un nuevo enlace privado? El anterior dejará de funcionar.')) return;
-    this.storeRegenerating = true;
+    this.storeRegenerating.set(true);
     this.carpetaService.regenerateShareToken().subscribe({
       next: r => {
         this.shareToken = r.share_token;
-        if (this.binderProfile) this.binderProfile.share_token = r.share_token;
-        this.storeRegenerating = false;
-        this.cdr.detectChanges();
+        const profile = this.binderProfile();
+        if (profile) this.binderProfile.set({ ...profile, share_token: r.share_token });
+        this.storeRegenerating.set(false);
+        this.cdr.markForCheck();
       },
-      error: () => { this.storeRegenerating = false; this.cdr.detectChanges(); },
+      error: () => { this.storeRegenerating.set(false); this.cdr.markForCheck(); },
     });
   }
 
   publicStoreUrl(): string {
-    if (!this.binderProfile?.store_slug) return '';
-    return `${window.location.origin}/t/${this.binderProfile.store_slug}`;
+    const slug = this.binderProfile()?.store_slug;
+    if (!slug) return '';
+    return `${window.location.origin}/t/${slug}`;
   }
 
   privateStoreUrl(): string {
@@ -1224,33 +1669,57 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   copyPublicUrl() {
     navigator.clipboard.writeText(this.publicStoreUrl()).then(() => {
-      this.shareLinkCopied = true;
-      this.cdr.detectChanges();
-      setTimeout(() => { this.shareLinkCopied = false; this.cdr.detectChanges(); }, 2000);
+      this.shareLinkCopied.set(true);
+      this.cdr.markForCheck();
+      setTimeout(() => { this.shareLinkCopied.set(false); this.cdr.markForCheck(); }, 2000);
     });
   }
 
   // ── Bulk import ──
   runBulkImport() {
     if (!this.importText.trim()) return;
-    this.importing = true;
-    this.importResult = null;
+    this.importing.set(true);
+    this.importResult.set(null);
     this.carpetaService.bulkImport(this.importText, this.importMode).subscribe({
       next: res => {
-        this.importing = false;
-        this.importResult = res;
+        this.importing.set(false);
+        this.importResult.set(res);
         if (res.added || res.updated) {
           this.loadIds();
           this.loadCollection();
         }
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
       },
-      error: () => { this.importing = false; this.cdr.detectChanges(); },
+      error: () => { this.importing.set(false); this.cdr.markForCheck(); },
     });
   }
 
   clearImport() {
     this.importText = '';
-    this.importResult = null;
+    this.importResult.set(null);
+  }
+
+  // ── Stats: donut por rareza ──
+  private readonly DONUT_PALETTE = ['#f59e0b', '#4fc3f7', '#9b6ad8', '#7cb342', '#e94560', '#c89b3c', '#8896a8', '#2a8a8a'];
+  private readonly DONUT_RADIUS = 45;
+
+  donutSegments(rows: { card__rarity__name: string | null; count: number }[]): Array<{ key: string; count: number; color: string; dashArray: string; dashOffset: string }> {
+    const total = rows.reduce((sum, r) => sum + (r.count || 0), 0);
+    if (total === 0) return [];
+    const circumference = 2 * Math.PI * this.DONUT_RADIUS;
+    let cumulative = 0;
+    return rows.map((r, i) => {
+      const length = ((r.count || 0) / total) * circumference;
+      const dashArray = `${length} ${circumference - length}`;
+      const dashOffset = `${-cumulative}`;
+      cumulative += length;
+      return {
+        key: r.card__rarity__name || 'Sin rareza',
+        count: r.count,
+        color: this.DONUT_PALETTE[i % this.DONUT_PALETTE.length],
+        dashArray,
+        dashOffset,
+      };
+    });
   }
 }

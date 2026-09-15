@@ -180,3 +180,86 @@ class StoreOrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity}x {self.card_name or self.card.name} (pedido #{self.order_id})"
+
+
+class MylStorePermission(models.Model):
+    """Permisos granulares para colaborar en una tienda MYL ajena."""
+
+    store_profile = models.ForeignKey(
+        BinderProfile,
+        on_delete=models.CASCADE,
+        related_name="collaborators",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="myl_store_permissions",
+    )
+    granted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="myl_granted_store_permissions",
+    )
+
+    # Vista base de la carpeta/tienda
+    can_view_collection = models.BooleanField(default=False)
+
+    # Carpeta
+    can_edit_collection = models.BooleanField(default=False)
+    can_delete_collection = models.BooleanField(default=False)
+
+    # Mercado
+    can_edit_market = models.BooleanField(default=False)
+    can_remove_from_market = models.BooleanField(default=False)
+
+    # Pedidos
+    can_view_orders = models.BooleanField(default=False)
+    can_view_history = models.BooleanField(default=False)
+    can_accept_orders = models.BooleanField(default=False)
+    can_reject_orders = models.BooleanField(default=False)
+
+    # Gestión de colaboradores
+    can_manage_permissions = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("store_profile", "user")
+
+    def __str__(self):
+        return f"Permisos {self.user.username} -> {self.store_profile.user.username}"
+
+    def permissions_dict(self):
+        return {
+            "view_collection": bool(self.can_view_collection),
+            "edit_collection": bool(self.can_edit_collection),
+            "delete_collection": bool(self.can_delete_collection),
+            "edit_market": bool(self.can_edit_market),
+            "remove_from_market": bool(self.can_remove_from_market),
+            "view_orders": bool(self.can_view_orders),
+            "view_history": bool(self.can_view_history),
+            "accept_orders": bool(self.can_accept_orders),
+            "reject_orders": bool(self.can_reject_orders),
+            "manage_permissions": bool(self.can_manage_permissions),
+        }
+
+
+class CarpetaTourProgress(models.Model):
+    """Registra qué guías interactivas ('tours') completó cada usuario en la Carpeta de MYL."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="carpeta_tour_progress",
+    )
+    tour_id = models.CharField(max_length=64)
+    completed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "tour_id")
+
+    def __str__(self):
+        return f"{self.user.username} -> {self.tour_id}"

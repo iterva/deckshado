@@ -80,6 +80,9 @@ type AnyOrder = StoreOrder | RiftboundStoreOrder;
                     </li>
                   }
                 </ul>
+                @if (order.status === 'cancelled' && order.seller_note) {
+                  <p class="cancel-reason">Motivo de cancelación: {{ order.seller_note }}</p>
+                }
                 <div class="order-footer">
                   <span class="order-date">{{ formatDate(order.created_at) }}</span>
                   @if (order.total_estimated !== null) {
@@ -150,6 +153,11 @@ type AnyOrder = StoreOrder | RiftboundStoreOrder;
     .item-qty { font-weight: 700; color: var(--ui-accent); min-width: 28px; }
     .item-name { flex: 1; }
     .item-total { color: var(--ui-text-muted); }
+
+    .cancel-reason {
+      margin: 0 0 0.6rem; padding: 0.5rem 0.7rem; border-radius: 8px; font-size: 0.8rem;
+      background: rgba(239, 68, 68, 0.1); border-left: 3px solid #ef4444; color: var(--ui-text-secondary);
+    }
 
     .order-footer {
       display: flex; align-items: center; justify-content: space-between;

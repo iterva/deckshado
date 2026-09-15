@@ -471,6 +471,14 @@ export class RiftboundService {
     return this.http.get<{ results: RiftboundWorkspace[] }>(`${this.base}/workspaces/`);
   }
 
+  getTourProgress(): Observable<{ completed: string[] }> {
+    return this.http.get<{ completed: string[] }>(`${this.base}/tours/`);
+  }
+
+  completeTour(tourId: string): Observable<{ completed: string[] }> {
+    return this.http.post<{ completed: string[] }>(`${this.base}/tours/`, { tour_id: tourId });
+  }
+
   listWorkspacePermissions(profileId: number): Observable<{ store_profile_id: number; results: RiftboundStoreCollaboratorPermission[] }> {
     return this.http.get<{ store_profile_id: number; results: RiftboundStoreCollaboratorPermission[] }>(
       `${this.base}/workspaces/${profileId}/permissions/`,

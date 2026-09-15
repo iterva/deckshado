@@ -84,7 +84,7 @@ interface RiftboundCartItem {
                 <span class="ci-icon" aria-hidden="true">🔄</span><span class="ci-label">Acepta cambios</span>
               </span>
             }
-            <a class="contact-chip" routerLink="/mis-compras" [queryParams]="{ game: 'riftbound', store: token }" target="_blank">
+            <a class="contact-chip" routerLink="/mis-compras" [queryParams]="{ game: 'riftbound', store: token }">
               <span class="ci-icon" aria-hidden="true">📦</span><span class="ci-label">Mis pedidos</span>
             </a>
           </div>
@@ -123,7 +123,7 @@ interface RiftboundCartItem {
       @if (createdOrderId) {
         <div class="order-success">
           ✅ Pedido #{{ createdOrderId }} creado correctamente. El vendedor ya lo ve en su carpeta.
-          <a routerLink="/mis-compras" [queryParams]="{ game: 'riftbound', store: token }" target="_blank">Ver mis pedidos ↗</a>
+          <a routerLink="/mis-compras" [queryParams]="{ game: 'riftbound', store: token }">Ver mis pedidos</a>
         </div>
       }
 
@@ -492,26 +492,27 @@ interface RiftboundCartItem {
       animation: filters-fade-in .18s ease-out;
     }
     .filters-drawer {
-      position: absolute; right: 0; margin-top: -.4rem; z-index: 1101;
-      width: min(380px, 92vw); max-height: 75vh; overflow-y: auto;
-      background-color: rgba(18, 20, 28, 0.75);
+      position: fixed; top: 0; right: 0; bottom: 0; z-index: 1101;
+      width: min(380px, 92vw); height: 100%; overflow: hidden;
+      display: flex; flex-direction: column;
+      background-color: rgba(18, 20, 28, 0.45);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, .5);
+      border-left: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: -10px 0 40px rgba(0, 0, 0, .5);
       animation: filters-drawer-in .2s ease-out;
     }
     @keyframes filters-fade-in { from { opacity: 0; } to { opacity: 1; } }
     @keyframes filters-drawer-in {
-      from { opacity: 0; transform: translateY(-8px); }
-      to { opacity: 1; transform: translateY(0); }
+      from { opacity: 0; transform: translateX(24px); }
+      to { opacity: 1; transform: translateX(0); }
     }
     @keyframes filters-drawer-mobile-in {
       from { opacity: 0; transform: translateY(16px); }
       to { opacity: 1; transform: translateY(0); }
     }
     .filters-drawer-head {
+      flex: 0 0 auto;
       display: flex; align-items: center; justify-content: space-between;
       padding: .9rem 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
@@ -522,7 +523,10 @@ interface RiftboundCartItem {
       transition: background .15s, color .15s;
     }
     .filters-drawer-head .close-btn:hover { background: rgba(233, 69, 96, .18); color: #ff9aa9; }
-    .filters-drawer-body { padding: .9rem 1rem; display: flex; flex-direction: column; gap: .9rem; }
+    .filters-drawer-body {
+      flex: 1 1 auto; overflow-y: auto;
+      padding: .9rem 1rem; display: flex; flex-direction: column; gap: .9rem;
+    }
     .filter-group { display: flex; flex-direction: column; gap: .4rem; }
     .filter-group + .filter-group { padding-top: .9rem; border-top: 1px solid rgba(255, 255, 255, 0.06); }
     .filter-group-label {
@@ -555,6 +559,7 @@ interface RiftboundCartItem {
     .price-range-row input { flex: 1 1 0; min-width: 0; }
 
     .filters-drawer-actions {
+      flex: 0 0 auto;
       display: flex; gap: .5rem; padding: .9rem 1rem;
       border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
@@ -788,15 +793,8 @@ interface RiftboundCartItem {
 
       .filters-toggle-btn .ft-text { display: none; }
       .filters-drawer {
-        position: fixed; inset: 0; right: 0; margin-top: 0;
-        width: 100%; max-height: 100%; border-radius: 0;
+        left: 0; width: 100%; border-left: none;
         animation: filters-drawer-mobile-in .22s ease-out;
-      }
-      .filters-drawer-actions {
-        position: sticky; bottom: 0;
-        background-color: rgba(18, 20, 28, 0.9);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
       }
       .cards-grid { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: .55rem; }
       .card-image img {

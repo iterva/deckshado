@@ -32,4 +32,12 @@ urlpatterns = [
     path("orders/mine/assigned-summary/", views.my_order_assignments, name="my-store-order-assignments"),
     path("orders/<int:order_id>/accept/", views.accept_store_order, name="accept-store-order"),
     path("orders/<int:order_id>/cancel/", views.cancel_store_order, name="cancel-store-order"),
+    # Guía interactiva (tours)
+    path("tours/", views.carpeta_tours, name="carpeta-tours"),
+    # Colaboración / permisos ("Carpetas Compartidas")
+    path("workspaces/", views.myl_workspaces, name="myl-workspaces"),
+    path("workspaces/<int:profile_id>/permissions/", views.myl_workspace_permissions, name="myl-workspace-permissions"),
+    path("workspaces/<int:profile_id>/permissions/upsert/", views.myl_workspace_permission_upsert, name="myl-workspace-permission-upsert"),
+    path("workspaces/<int:profile_id>/permissions/<int:permission_id>/", views.myl_workspace_permission_update, name="myl-workspace-permission-update"),
+    path("workspaces/<int:profile_id>/permissions/<int:permission_id>/delete/", views.myl_workspace_permission_delete, name="myl-workspace-permission-delete"),
 ]

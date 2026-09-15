@@ -21,6 +21,7 @@ from .models import (
     RiftboundCard, RiftboundSet, RiftboundFormat, RiftboundBanlistEntry,
     RiftboundDeck, RiftboundCollectionEntry, RiftboundWishlistEntry, RiftboundIcon,
     RiftboundBinderProfile, RiftboundStoreOrder, RiftboundStoreOrderItem, RiftboundStorePermission,
+    RiftboundTourProgress,
 )
 from .serializers import (
     RiftboundCardSerializer, RiftboundCardLiteSerializer,
@@ -1195,6 +1196,24 @@ def riftbound_workspaces(request):
     return Response({"results": results})
 
 
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def riftbound_tours(request):
+    """GET: tours completados por el usuario. POST {tour_id}: marca uno como completado."""
+    if request.method == "POST":
+        tour_id = str((request.data or {}).get("tour_id") or "").strip()[:64]
+        if not tour_id:
+            return Response({"detail": "tour_id requerido"}, status=400)
+        RiftboundTourProgress.objects.get_or_create(user=request.user, tour_id=tour_id)
+
+    completed = list(
+        RiftboundTourProgress.objects
+        .filter(user=request.user)
+        .values_list("tour_id", flat=True)
+    )
+    return Response({"completed": completed})
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def riftbound_workspace_permissions(request, profile_id):
@@ -1777,7 +1796,7 @@ def _rb_update_order_status(request, order_id, new_status):
                 user=order.buyer_user,
                 notif_type="general",
                 message=msg,
-                link=f"/riftbound/tienda/{order.store_profile.share_token}",
+                link=f"/mis-compras?game=riftbound&store={order.store_profile.share_token}",
             )
     except Exception:
         pass

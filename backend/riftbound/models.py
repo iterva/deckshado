@@ -560,3 +560,24 @@ class RiftboundIcon(models.Model):
 
     def __str__(self):
         return f"[{self.kind}] {self.code}"
+
+
+# ───────────────────────── Progreso de guías interactivas ──────────────────────────
+
+
+class RiftboundTourProgress(models.Model):
+    """Registra qué guías interactivas ('tours') completó cada usuario en la Carpeta."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="riftbound_tour_progress",
+    )
+    tour_id = models.CharField(max_length=64)
+    completed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "tour_id")
+
+    def __str__(self):
+        return f"{self.user.username} -> {self.tour_id}"

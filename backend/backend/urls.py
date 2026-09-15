@@ -43,24 +43,40 @@ from riftbound.views_admin import (
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def global_search(request):
-    """Search cards, decks, users in one call."""
+    """Search cards, decks, users in one call. `game` selects myl (default) or riftbound."""
     q = request.query_params.get("q", "").strip()
+    game = request.query_params.get("game", "myl").strip().lower()
     if len(q) < 2:
         return Response({"cards": [], "decks": [], "users": []})
-    from cards.models import Card
-    from decks.models import Deck
     from django.contrib.auth import get_user_model
     User = get_user_model()
-    cards = list(
-        Card.objects.filter(name__icontains=q)
-        .select_related("edition", "card_type")
-        .values("id", "name", "edition__title", "card_type__name")[:8]
-    )
-    decks = list(
-        Deck.objects.filter(is_public=True, name__icontains=q)
-        .select_related("owner")
-        .values("id", "name", "owner__username", "format", "race")[:8]
-    )
+
+    if game == "riftbound":
+        from riftbound.models import RiftboundCard, RiftboundDeck
+        cards = list(
+            RiftboundCard.objects.filter(name__icontains=q, is_active=True)
+            .select_related("set")
+            .values("id", "name", "card_number", "set__name")[:8]
+        )
+        decks = list(
+            RiftboundDeck.objects.filter(is_public=True, name__icontains=q)
+            .select_related("owner")
+            .values("id", "name", "owner__username")[:8]
+        )
+    else:
+        from cards.models import Card
+        from decks.models import Deck
+        cards = list(
+            Card.objects.filter(name__icontains=q)
+            .select_related("edition", "card_type")
+            .values("id", "name", "edition__title", "card_type__name")[:8]
+        )
+        decks = list(
+            Deck.objects.filter(is_public=True, name__icontains=q)
+            .select_related("owner")
+            .values("id", "name", "owner__username", "format", "race")[:8]
+        )
+
     users = list(
         User.objects.filter(username__icontains=q)
         .values("id", "username")[:5]

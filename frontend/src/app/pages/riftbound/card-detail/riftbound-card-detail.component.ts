@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { RiftboundService } from '../../../services/riftbound.service';
@@ -14,9 +14,9 @@ import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.compo
       <article class="rb-card-detail">
         <a routerLink="/riftbound/cards" class="back">← Volver al catálogo</a>
         <div class="layout">
-          @if (c.image) {
+          @if (imgUrl(); as src) {
             <div class="img-wrap" [class.battlefield]="c.card_type === 'battlefield'">
-              <img [src]="c.image" [alt]="c.name" />
+              <img [src]="src" [alt]="c.name" (error)="onImageError($event)" />
             </div>
           }
           <div class="info">
@@ -88,6 +88,19 @@ export class RiftboundCardDetailComponent implements OnInit {
   card = signal<RiftboundCard | null>(null);
   loading = signal(true);
 
+  private brokenUrls = new Set<string>();
+  private imageFallbackNonce = signal(0);
+
+  imgUrl = computed(() => {
+    this.imageFallbackNonce();
+    const c = this.card();
+    if (!c) return '';
+    for (const url of this.candidateImageUrls(c)) {
+      if (!this.brokenUrls.has(url)) return url;
+    }
+    return '';
+  });
+
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('cardNumber');
     if (!id) { this.loading.set(false); return; }
@@ -95,5 +108,57 @@ export class RiftboundCardDetailComponent implements OnInit {
       next: (c) => { this.card.set(c); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
+  }
+
+  onImageError(event: Event) {
+    const img = event.target as HTMLImageElement | null;
+    const failedUrls = [img?.currentSrc, img?.src]
+      .map((url) => (url || '').trim())
+      .filter(Boolean);
+    if (!failedUrls.length) return;
+
+    let changed = false;
+    for (const url of failedUrls) {
+      if (!this.brokenUrls.has(url)) {
+        this.brokenUrls.add(url);
+        changed = true;
+      }
+    }
+    if (changed) this.imageFallbackNonce.update((value) => value + 1);
+  }
+
+  private toHttps(url: string | null | undefined): string {
+    const value = (url || '').trim();
+    if (!value) return '';
+    return value.startsWith('http://') ? `https://${value.slice(7)}` : value;
+  }
+
+  private imageUrlVariants(url: string | null | undefined): string[] {
+    const raw = (url || '').trim();
+    if (!raw) return [];
+    const https = this.toHttps(raw);
+    return raw === https ? [raw] : [raw, https];
+  }
+
+  private cloudinaryFetchVariants(url: string | null | undefined): string[] {
+    const variants = this.imageUrlVariants(url);
+    if (!variants.length) return [];
+    return variants.map((candidate) =>
+      `https://res.cloudinary.com/daobfx9yb/image/fetch/f_auto,q_auto/${encodeURIComponent(candidate)}`
+    );
+  }
+
+  private candidateImageUrls(c: RiftboundCard): string[] {
+    const candidates = [
+      ...this.imageUrlVariants(c.cdn_image_url),
+      ...this.cloudinaryFetchVariants(c.image_url),
+      ...this.cloudinaryFetchVariants(c.image_url_small),
+      ...this.cloudinaryFetchVariants(c.image),
+      ...this.imageUrlVariants(c.image_url),
+      ...this.imageUrlVariants(c.image_url_small),
+      ...this.imageUrlVariants(c.image),
+    ].filter(Boolean);
+
+    return Array.from(new Set(candidates));
   }
 }

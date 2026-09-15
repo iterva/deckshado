@@ -3,8 +3,8 @@
   <div class="carpeta-header-layout">
     <div class="carpeta-profile-card">
       <div class="binder-avatar-wrapper">
-        @if (binderProfile?.binder_avatar_url) {
-          <img [src]="binderProfile!.binder_avatar_url" alt="Avatar Carpeta" class="binder-avatar" />
+        @if (binderProfile()?.binder_avatar_url) {
+          <img [src]="binderProfile()!.binder_avatar_url" alt="Avatar Carpeta" class="binder-avatar" />
         } @else {
           <div class="binder-avatar-placeholder">
             <app-icon name="folder" [size]="24"></app-icon>
@@ -16,78 +16,177 @@
         </label>
       </div>
       <div class="binder-info">
-        <h1>Mi Carpeta</h1>
-        <p class="binder-user">{{ auth.user()?.username }}</p>
+        <h1>{{ workspaceMode() ? 'Carpetas · MYL' : 'Mi Carpeta' }}</h1>
+        <p class="binder-user">
+          @if (workspaceMode()) {
+            @if (selectedWorkspace(); as ws) {
+              Tienda de <strong>{{ ws.owner_username }}</strong>
+            } @else {
+              Selecciona una tienda
+            }
+          } @else {
+            {{ auth.user()?.username }}
+          }
+        </p>
       </div>
+      <button class="guide-trigger-btn" (click)="showGuide.set(true)" title="Guía de la Carpeta" aria-label="Abrir guía">
+        <app-icon name="help-circle" [size]="18"></app-icon>
+      </button>
     </div>
 
     <!-- Collection Stats Summary Banner -->
-    <div class="collection-stats-banner">
-      <div class="stat-item owned">
-        <span class="stat-num">{{ collectionTotal }}</span>
-        <span class="stat-title"><app-icon name="check-circle" [size]="12"></app-icon> Poseídas</span>
+    @if (!workspaceMode()) {
+      <div class="collection-stats-banner">
+        <div class="stat-item owned">
+          <span class="stat-num">{{ collectionTotal() }}</span>
+          <span class="stat-title"><app-icon name="check-circle" [size]="12"></app-icon> Poseídas</span>
+        </div>
+        <div class="stat-item wishlist">
+          <span class="stat-num">{{ wishlistTotal() }}</span>
+          <span class="stat-title"><app-icon name="heart" [size]="12"></app-icon> Wishlist</span>
+        </div>
+        <div class="stat-item selling">
+          <span class="stat-num">{{ getSellingCount() }}</span>
+          <span class="stat-title"><app-icon name="store" [size]="12"></app-icon> En Venta</span>
+        </div>
       </div>
-      <div class="stat-item wishlist">
-        <span class="stat-num">{{ wishlistEntries.length }}</span>
-        <span class="stat-title"><app-icon name="heart" [size]="12"></app-icon> Wishlist</span>
+    }
+  </div>
+
+  @if (workspaceMode()) {
+    <div class="workspace-panel">
+      <div class="workspace-field">
+        <label>Tienda con acceso</label>
+        <select [value]="selectedWorkspaceId() ?? ''" (change)="onWorkspaceChange($any($event.target).value)">
+          <option value="" disabled>Seleccionar tienda...</option>
+          @for (ws of workspaces(); track ws.store_profile_id) {
+            <option [value]="ws.store_profile_id">{{ workspaceLabel(ws) }}</option>
+          }
+        </select>
       </div>
-      <div class="stat-item selling">
-        <span class="stat-num">{{ getSellingCount() }}</span>
-        <span class="stat-title"><app-icon name="store" [size]="12"></app-icon> En Venta</span>
+      <div class="workspace-perms">
+        @if (selectedWorkspacePermissions(); as perms) {
+          @if (perms.edit_collection) { <span class="perm-chip">Editar carpeta</span> }
+          @if (perms.delete_collection) { <span class="perm-chip">Eliminar de carpeta</span> }
+          @if (perms.edit_market) { <span class="perm-chip">Editar mercado</span> }
+          @if (perms.remove_from_market) { <span class="perm-chip">Quitar de venta</span> }
+          @if (perms.view_orders) { <span class="perm-chip">Ver pedidos</span> }
+          @if (perms.view_history) { <span class="perm-chip">Ver historial</span> }
+          @if (perms.accept_orders) { <span class="perm-chip">Aceptar pedidos</span> }
+          @if (perms.reject_orders) { <span class="perm-chip">Rechazar pedidos</span> }
+          @if (perms.manage_permissions) { <span class="perm-chip">Gestionar permisos</span> }
+        }
       </div>
     </div>
-  </div>
+  }
 
   <!-- Tabs -->
   <div class="tabs">
-    <button class="tab" [class.active]="activeTab === 'carpeta'" (click)="switchTab('carpeta')">
-      <app-icon name="folder" [size]="15"></app-icon> <span>CARPETA</span>
-    </button>
-    <button class="tab" [class.active]="activeTab === 'codex'" (click)="switchTab('codex')">
-      <app-icon name="library" [size]="15"></app-icon> <span>COLECCIÓN</span>
-    </button>
-    <button class="tab" [class.active]="activeTab === 'wishlist'" (click)="switchTab('wishlist')">
-      <app-icon name="heart" [size]="15"></app-icon> <span>WISHLIST</span>
-    </button>
-    <button class="tab" [class.active]="activeTab === 'mercado'" (click)="switchTab('mercado')">
-      <app-icon name="store" [size]="15"></app-icon> <span>MERCADO</span>
-    </button>
-    <button class="tab" [class.active]="activeTab === 'pedidos'" (click)="switchTab('pedidos')">
-      <app-icon name="file-text" [size]="15"></app-icon> <span>PEDIDOS</span>
-    </button>
-    <button class="tab" [class.active]="activeTab === 'historial'" (click)="switchTab('historial')">
-      <app-icon name="clock" [size]="15"></app-icon> <span>HISTORIAL</span>
-    </button>
-    <button class="tab" [class.active]="activeTab === 'stats'" (click)="switchTab('stats')">
-      <app-icon name="bar-chart-3" [size]="15"></app-icon> <span>STATS</span>
-    </button>
+    @if (!workspaceMode() || hasPermission('view_collection')) {
+      <div class="tab-group">
+        <button class="tab tab-group-btn" [class.active]="isTabInGroup('coleccion')"
+                (click)="toggleNavGroup('coleccion', $event)">
+          <app-icon name="folder" [size]="15"></app-icon> <span>MI COLECCIÓN</span>
+          <app-icon name="chevron-down" [size]="12"></app-icon>
+        </button>
+        @if (openNavGroup() === 'coleccion') {
+          <div class="tab-dropdown" (click)="$event.stopPropagation()">
+            <button class="tab-dropdown-item" [class.active]="activeTab() === 'carpeta'"
+                    (click)="switchTab('carpeta'); closeNavGroup()">
+              <app-icon name="folder" [size]="14"></app-icon> Carpeta
+            </button>
+            <button class="tab-dropdown-item" [class.active]="activeTab() === 'codex'"
+                    (click)="switchTab('codex'); closeNavGroup()">
+              <app-icon name="library" [size]="14"></app-icon> Colección
+            </button>
+            @if (!workspaceMode()) {
+              <button class="tab-dropdown-item" [class.active]="activeTab() === 'wishlist'"
+                      (click)="switchTab('wishlist'); closeNavGroup()">
+                <app-icon name="heart" [size]="14"></app-icon> Wishlist
+              </button>
+            }
+          </div>
+        }
+      </div>
+    }
+    @if (!workspaceMode() || hasPermission('view_collection')) {
+      <button class="tab" [class.active]="activeTab() === 'mercado'" (click)="switchTab('mercado')">
+        <app-icon name="store" [size]="15"></app-icon> <span>MERCADO</span>
+      </button>
+    }
+    @if (!workspaceMode()) {
+      <button class="tab tab-link" (click)="goToCollaborate()">
+        <app-icon name="users" [size]="15"></app-icon> <span>CARPETAS COMPARTIDAS</span>
+      </button>
+    } @else {
+      <button class="tab tab-link" (click)="goToMyFolder()" title="Volver a mi carpeta">
+        <app-icon name="folder" [size]="15"></app-icon> <span>MI CARPETA</span>
+      </button>
+    }
+    @if (showAdminNavGroup()) {
+      <div class="tab-group">
+        <button class="tab tab-group-btn" [class.active]="isTabInGroup('admin')"
+                (click)="toggleNavGroup('admin', $event)">
+          <app-icon name="settings" [size]="15"></app-icon> <span>ADMINISTRACIÓN</span>
+          <app-icon name="chevron-down" [size]="12"></app-icon>
+        </button>
+        @if (openNavGroup() === 'admin') {
+          <div class="tab-dropdown" (click)="$event.stopPropagation()">
+            @if (!workspaceMode() || hasPermission('view_orders') || hasPermission('view_history')) {
+              <button class="tab-dropdown-item" [class.active]="activeTab() === 'pedidos'"
+                      (click)="switchTab('pedidos'); closeNavGroup()">
+                <app-icon name="file-text" [size]="14"></app-icon> Gestión de Pedidos
+              </button>
+            }
+            @if (!workspaceMode()) {
+              <button class="tab-dropdown-item" [class.active]="activeTab() === 'stats'"
+                      (click)="switchTab('stats'); closeNavGroup()">
+                <app-icon name="bar-chart-3" [size]="14"></app-icon> Stats
+              </button>
+            }
+            @if (canManagePermissions()) {
+              <button class="tab-dropdown-item" [class.active]="activeTab() === 'permisos'"
+                      (click)="switchTab('permisos'); closeNavGroup()">
+                <app-icon name="shield" [size]="14"></app-icon> Permisos
+              </button>
+            }
+          </div>
+        }
+      </div>
+    }
   </div>
 
+  @if (workspaceMode() && !selectedWorkspaceId()) {
+    <div class="empty-state" style="margin-top: 1rem;">
+      <p>Selecciona una tienda de la lista para trabajar sobre su carpeta compartida.</p>
+    </div>
+  }
+
   <!-- ═══ TAB: CARPETA ═══ -->
-  @if (activeTab === 'carpeta') {
+  @if (activeTab() === 'carpeta' && canUseWorkspaceContent()) {
     <div class="tab-content">
       <div class="tab-toolbar">
-        <div class="search-bar">
+        <div class="search-bar" data-tour="carpeta-search">
           <input type="text" placeholder="Buscar en tu colección..." [(ngModel)]="collectionSearch" (keyup.enter)="onCollectionSearch()" />
           <button class="btn btn-primary btn-sm" (click)="onCollectionSearch()">
             <app-icon name="search" [size]="14"></app-icon> <span>Buscar</span>
           </button>
         </div>
-        <button class="btn btn-sm btn-filter" [class.active]="showSellingOnly" (click)="toggleSellingFilter()">
+        <button class="btn btn-sm btn-filter" data-tour="carpeta-filter-selling" [class.active]="showSellingOnly()" (click)="toggleSellingFilter()">
           <app-icon name="tag" [size]="14"></app-icon> <span>Solo en venta</span>
         </button>
-        <button class="btn btn-sm btn-filter" [class.active]="importOpen" (click)="importOpen = !importOpen">
+        <button class="btn btn-sm btn-filter" data-tour="carpeta-bulk-import" [class.active]="importOpen()" (click)="importOpen.set(!importOpen())" [disabled]="!hasPermission('edit_collection')">
           <app-icon name="upload" [size]="14"></app-icon> <span>Importar lista</span>
         </button>
-        @if (dirtyEntries.size > 0) {
-          <button class="btn btn-sm btn-primary" (click)="saveAllChanges()" [disabled]="batchSaving">
+        @if (dirtyEntries.size > 0 && (hasPermission('edit_collection') || hasPermission('edit_market') || hasPermission('remove_from_market'))) {
+          <button class="btn btn-sm btn-primary" (click)="saveAllChanges()" [disabled]="batchSaving()">
             <app-icon name="save" [size]="14"></app-icon>
-            <span>{{ batchSaving ? 'Guardando...' : 'Guardar Cambios (' + dirtyEntries.size + ')' }}</span>
+            <span>{{ batchSaving() ? 'Guardando...' : 'Guardar Cambios (' + dirtyEntries.size + ')' }}</span>
           </button>
         }
       </div>
 
-      @if (importOpen) {
+      @if (importOpen()) {
         <div class="import-panel">
           <h4>📥 Importar cartas desde texto <span class="beta-badge">BETA</span></h4>
           <p class="beta-warn">⚠ Función experimental: revisa el reporte después de importar; nombres con tildes o variantes pueden no encontrarse o salir ambiguos.</p>
@@ -96,22 +195,22 @@
           <div class="import-controls">
             <label><input type="radio" [(ngModel)]="importMode" value="add" /> Sumar a cantidades existentes</label>
             <label><input type="radio" [(ngModel)]="importMode" value="set" /> Reemplazar cantidades</label>
-            <button class="btn btn-sm btn-primary" (click)="runBulkImport()" [disabled]="importing || !importText.trim()">
-              {{ importing ? '⏳ Importando...' : '✅ Importar' }}
+            <button class="btn btn-sm btn-primary" (click)="runBulkImport()" [disabled]="importing() || !importText.trim()">
+              {{ importing() ? '⏳ Importando...' : '✅ Importar' }}
             </button>
             <button class="btn btn-sm btn-ghost" (click)="clearImport()">Limpiar</button>
           </div>
-          @if (importResult) {
+          @if (importResult(); as res) {
             <div class="import-result">
-              <p><strong>Añadidas:</strong> {{ importResult.added }} · <strong>Actualizadas:</strong> {{ importResult.updated }} · <strong>No encontradas:</strong> {{ importResult.not_found }} · <strong>Ambiguas:</strong> {{ importResult.ambiguous }}</p>
-              @if (importResult.not_found_lines?.length) {
-                <details><summary>Líneas no encontradas ({{ importResult.not_found_lines.length }})</summary>
-                  <ul>@for (l of importResult.not_found_lines; track l) { <li>{{ l }}</li> }</ul>
+              <p><strong>Añadidas:</strong> {{ res.added }} · <strong>Actualizadas:</strong> {{ res.updated }} · <strong>No encontradas:</strong> {{ res.not_found }} · <strong>Ambiguas:</strong> {{ res.ambiguous }}</p>
+              @if (res.not_found_lines?.length) {
+                <details><summary>Líneas no encontradas ({{ res.not_found_lines.length }})</summary>
+                  <ul>@for (l of res.not_found_lines; track l) { <li>{{ l }}</li> }</ul>
                 </details>
               }
-              @if (importResult.ambiguous_lines?.length) {
-                <details><summary>Líneas ambiguas ({{ importResult.ambiguous_lines.length }})</summary>
-                  <ul>@for (a of importResult.ambiguous_lines; track a.line) {
+              @if (res.ambiguous_lines?.length) {
+                <details><summary>Líneas ambiguas ({{ res.ambiguous_lines.length }})</summary>
+                  <ul>@for (a of res.ambiguous_lines; track a.line) {
                     <li><strong>{{ a.line }}</strong> → {{ a.matches.join(', ') }}</li>
                   }</ul>
                 </details>
@@ -121,50 +220,81 @@
         </div>
       }
 
-      <p class="results-count">{{ collectionTotal }} cartas en tu colección</p>
+      <p class="results-count">{{ collectionTotal() }} cartas en tu colección</p>
 
-      @if (collectionLoading) {
+      @if (collectionLoading()) {
         <div class="loading">Cargando...</div>
       }
 
-      @if (!collectionLoading && collectionEntries.length === 0) {
+      @if (!collectionLoading() && collectionEntries().length === 0) {
         <div class="empty-state">
           <p>Tu carpeta está vacía. Ve a <strong>Colección</strong> para añadir cartas.</p>
         </div>
       }
 
-      <div class="collection-grid">
-        @for (entry of collectionEntries; track entry.id) {
+      <div class="collection-grid" data-tour="carpeta-grid">
+        @for (entry of collectionEntries(); track entry.id) {
           <div class="collection-card">
-            <div class="card-image" (click)="previewCard = entry.card_detail">
+            <div class="card-image" (click)="previewCard.set(entry.card_detail)">
               <img [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" loading="lazy"
                 (error)="$any($event.target).src = entry.card_detail.image_url" />
               <div class="eye-overlay">👁️</div>
+              @if (entry.is_foil) { <div class="foil-badge">✨ FOIL</div> }
             </div>
-            <div class="card-body">
+            <div class="card-body-compact" (click)="openQuickEdit(entry)">
               <h4>{{ entry.card_detail.name }}</h4>
               <span class="card-meta">{{ entry.card_detail.type_name }} · {{ entry.card_detail.edition_title }}</span>
+              <div class="card-badges-row">
+                <span class="qty-badge" [class.zero]="entry.quantity === 0">
+                  ✓ {{ entry.quantity }}
+                </span>
+                @if (entry.selling_quantity > 0) {
+                  <span class="sale-badge">🏷️ {{ entry.selling_quantity }}</span>
+                }
+                @if (dirtyEntries.has(entry.id)) {
+                  <span class="dirty-badge" title="Cambios sin guardar"></span>
+                }
+                <span class="edit-badge">✎ Editar</span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- ═══ QUICK EDIT: Carpeta ═══ -->
+      @if (quickEditEntry(); as qe) {
+        <div class="modal-overlay" (click)="closeQuickEdit()">
+          <div class="modal quick-edit-modal" (click)="$event.stopPropagation()">
+            <button class="close-btn" (click)="closeQuickEdit()">✕</button>
+            <div class="quick-edit-header">
+              <img [src]="qe.card_detail.image_url | thumb:200" [alt]="qe.card_detail.name" class="quick-edit-thumb" />
+              <div>
+                <h3>{{ qe.card_detail.name }}</h3>
+                <span class="quick-edit-meta">{{ qe.card_detail.type_name }} · {{ qe.card_detail.edition_title }}</span>
+              </div>
+            </div>
+            <div class="quick-edit-body">
               <div class="inline-fields">
                 <div class="field">
                   <label>Tengo</label>
-                  <input type="number" [value]="entry.quantity" min="1"
-                    (input)="onFieldChange(entry, 'quantity', $any($event.target).valueAsNumber)" />
+                  <input type="number" [value]="qe.quantity" min="1"
+                    (input)="onFieldChange(qe, 'quantity', $any($event.target).valueAsNumber)" />
                 </div>
                 <div class="field">
                   <label>Precio $</label>
-                  <input type="number" [value]="entry.price" min="0" placeholder="—"
-                    (input)="onFieldChange(entry, 'price', $any($event.target).valueAsNumber)" />
+                  <input type="number" [value]="qe.price" min="0" placeholder="—"
+                    (input)="onFieldChange(qe, 'price', $any($event.target).valueAsNumber)" />
                 </div>
                 <div class="field">
                   <label>Vendo</label>
-                  <input type="number" [value]="entry.selling_quantity" min="0" [max]="entry.quantity"
-                    (input)="onFieldChange(entry, 'selling_quantity', $any($event.target).valueAsNumber)" />
+                  <input type="number" [value]="qe.selling_quantity" min="0" [max]="qe.quantity"
+                    (input)="onFieldChange(qe, 'selling_quantity', $any($event.target).valueAsNumber)" />
                 </div>
               </div>
               <div class="inline-fields tcg-fields">
                 <div class="field">
                   <label>Cond.</label>
-                  <select [value]="entry.condition" (change)="onFieldChange(entry, 'condition', $any($event.target).value)">
+                  <select [value]="qe.condition" (change)="onFieldChange(qe, 'condition', $any($event.target).value)">
                     <option value="NM">NM</option>
                     <option value="LP">LP</option>
                     <option value="MP">MP</option>
@@ -174,7 +304,7 @@
                 </div>
                 <div class="field">
                   <label>Idioma</label>
-                  <select [value]="entry.language" (change)="onFieldChange(entry, 'language', $any($event.target).value)">
+                  <select [value]="qe.language" (change)="onFieldChange(qe, 'language', $any($event.target).value)">
                     <option value="ES">ES</option>
                     <option value="EN">EN</option>
                     <option value="PT">PT</option>
@@ -183,43 +313,48 @@
                   </select>
                 </div>
                 <label class="foil-toggle">
-                  <input type="checkbox" [checked]="entry.is_foil"
-                    (change)="onFieldChange(entry, 'is_foil', $any($event.target).checked)" />
+                  <input type="checkbox" [checked]="qe.is_foil"
+                    (change)="onFieldChange(qe, 'is_foil', $any($event.target).checked)" />
                   ✨ Foil
                 </label>
               </div>
+              <div class="field full">
+                <label>Notas</label>
+                <input type="text" [value]="qe.notes" maxlength="200" placeholder="Notas privadas (opcional)"
+                  (input)="onFieldChange(qe, 'notes', $any($event.target).value)" />
+              </div>
               <div class="card-action-row">
-                @if (dirtyEntries.has(entry.id)) {
-                  <button class="btn btn-xs btn-primary" (click)="saveEntry(entry)">💾 Guardar</button>
+                @if (dirtyEntries.has(qe.id) && (hasPermission('edit_collection') || hasPermission('edit_market') || hasPermission('remove_from_market'))) {
+                  <button class="btn btn-sm btn-primary" (click)="saveEntry(qe)">💾 Guardar</button>
                 }
-                <button class="btn btn-xs btn-danger" (click)="removeFromCollection(entry)">🗑️</button>
+                <button class="btn btn-sm btn-danger" (click)="removeFromCollection(qe); closeQuickEdit()" [disabled]="!hasPermission('delete_collection')">🗑️ Quitar</button>
               </div>
             </div>
           </div>
-        }
-      </div>
+        </div>
+      }
 
-      @if (collectionHasMore) {
+      @if (collectionHasMore()) {
         <div #collectionSentinel class="infinite-sentinel" aria-hidden="true"></div>
       }
-      @if (collectionLoading && collectionEntries.length > 0) {
+      @if (collectionLoading() && collectionEntries().length > 0) {
         <div class="loading">Cargando más...</div>
       }
-      @if (!collectionHasMore && collectionEntries.length > 0) {
+      @if (!collectionHasMore() && collectionEntries().length > 0) {
         <p class="results-count" style="margin-top: 1rem;">— Fin de la colección —</p>
       }
     </div>
   }
 
   <!-- ═══ TAB: CODEX ═══ -->
-  @if (activeTab === 'codex') {
+  @if (activeTab() === 'codex' && canUseWorkspaceContent()) {
     <div class="tab-content">
       <div class="tab-toolbar">
-        <div class="search-bar">
+        <div class="search-bar" data-tour="codex-search">
           <input type="text" placeholder="Buscar cartas..." [(ngModel)]="codexSearch" (keyup.enter)="onCodexSearch()" />
           <button class="btn btn-primary btn-sm" (click)="onCodexSearch()">Buscar</button>
         </div>
-        <button class="btn btn-sm btn-filter" [class.active]="filtersOpen" (click)="filtersOpen = !filtersOpen">
+        <button class="btn btn-sm btn-filter" [class.active]="filtersOpen()" (click)="filtersOpen.set(!filtersOpen())">
           🔽 Filtros
         </button>
         @if (selectedEditions.length || selectedTypes.length || selectedRaces.length || selectedRarities.length) {
@@ -227,8 +362,8 @@
         }
       </div>
 
-      @if (filtersOpen) {
-        <div class="checkbox-filters codex-combo-filters">
+      @if (filtersOpen()) {
+        <div class="checkbox-filters codex-combo-filters" data-tour="codex-filters">
           <!-- Formato -->
           <div class="filter-section">
             <select [(ngModel)]="selectedFormat" (change)="onFormatChange()">
@@ -242,12 +377,12 @@
           </div>
 
           <!-- Ediciones -->
-          <div class="codex-multi-filter" [class.open]="codexOpenFilter === 'edition'">
+          <div class="codex-multi-filter" [class.open]="codexOpenFilter() === 'edition'">
             <button type="button" class="codex-multi-trigger" [class.has-value]="selectedEditions.length > 0" (click)="toggleCodexPopover('edition', $event)">
               <span>{{ codexFilterLabel('edition') }}</span>
               <app-icon name="chevron-down" [size]="14"></app-icon>
             </button>
-            @if (codexOpenFilter === 'edition') {
+            @if (codexOpenFilter() === 'edition') {
               <div class="codex-multi-popover" (click)="$event.stopPropagation()">
                 <div class="codex-multi-head">
                   <span>EDICIONES</span>
@@ -256,7 +391,7 @@
                   }
                 </div>
                 <div class="codex-multi-list">
-                  @for (ed of filteredEditions; track ed.id) {
+                  @for (ed of filteredEditions(); track ed.id) {
                     <label class="codex-multi-item">
                       <input type="checkbox" [checked]="isSelected(selectedEditions, ed.slug)" (change)="toggleFilter(selectedEditions, ed.slug)">
                       <span>{{ ed.title }}</span>
@@ -268,12 +403,12 @@
           </div>
 
           <!-- Tipos -->
-          <div class="codex-multi-filter" [class.open]="codexOpenFilter === 'type'">
+          <div class="codex-multi-filter" [class.open]="codexOpenFilter() === 'type'">
             <button type="button" class="codex-multi-trigger" [class.has-value]="selectedTypes.length > 0" (click)="toggleCodexPopover('type', $event)">
               <span>{{ codexFilterLabel('type') }}</span>
               <app-icon name="chevron-down" [size]="14"></app-icon>
             </button>
-            @if (codexOpenFilter === 'type') {
+            @if (codexOpenFilter() === 'type') {
               <div class="codex-multi-popover" (click)="$event.stopPropagation()">
                 <div class="codex-multi-head">
                   <span>TIPOS</span>
@@ -282,7 +417,7 @@
                   }
                 </div>
                 <div class="codex-multi-list">
-                  @for (t of types; track t.id) {
+                  @for (t of types(); track t.id) {
                     <label class="codex-multi-item">
                       <input type="checkbox" [checked]="isSelected(selectedTypes, t.slug)" (change)="toggleFilter(selectedTypes, t.slug)">
                       <span>{{ t.name }}</span>
@@ -294,12 +429,12 @@
           </div>
 
           <!-- Razas -->
-          <div class="codex-multi-filter" [class.open]="codexOpenFilter === 'race'">
+          <div class="codex-multi-filter" [class.open]="codexOpenFilter() === 'race'">
             <button type="button" class="codex-multi-trigger" [class.has-value]="selectedRaces.length > 0" (click)="toggleCodexPopover('race', $event)">
               <span>{{ codexFilterLabel('race') }}</span>
               <app-icon name="chevron-down" [size]="14"></app-icon>
             </button>
-            @if (codexOpenFilter === 'race') {
+            @if (codexOpenFilter() === 'race') {
               <div class="codex-multi-popover" (click)="$event.stopPropagation()">
                 <div class="codex-multi-head">
                   <span>RAZAS</span>
@@ -308,7 +443,7 @@
                   }
                 </div>
                 <div class="codex-multi-list">
-                  @for (r of filteredRaces; track r.id) {
+                  @for (r of filteredRaces(); track r.id) {
                     <label class="codex-multi-item">
                       <input type="checkbox" [checked]="isSelected(selectedRaces, r.slug)" (change)="toggleFilter(selectedRaces, r.slug)">
                       <span>{{ r.name }}</span>
@@ -320,12 +455,12 @@
           </div>
 
           <!-- Frecuencias -->
-          <div class="codex-multi-filter" [class.open]="codexOpenFilter === 'rarity'">
+          <div class="codex-multi-filter" [class.open]="codexOpenFilter() === 'rarity'">
             <button type="button" class="codex-multi-trigger" [class.has-value]="selectedRarities.length > 0" (click)="toggleCodexPopover('rarity', $event)">
               <span>{{ codexFilterLabel('rarity') }}</span>
               <app-icon name="chevron-down" [size]="14"></app-icon>
             </button>
-            @if (codexOpenFilter === 'rarity') {
+            @if (codexOpenFilter() === 'rarity') {
               <div class="codex-multi-popover" (click)="$event.stopPropagation()">
                 <div class="codex-multi-head">
                   <span>FRECUENCIA</span>
@@ -334,7 +469,7 @@
                   }
                 </div>
                 <div class="codex-multi-list">
-                  @for (r of rarities; track r.id) {
+                  @for (r of rarities(); track r.id) {
                     <label class="codex-multi-item">
                       <input type="checkbox" [checked]="isSelected(selectedRarities, r.slug)" (change)="toggleFilter(selectedRarities, r.slug)">
                       <span>{{ r.name }}</span>
@@ -347,14 +482,14 @@
         </div>
       }
 
-      <p class="results-count">{{ codexCards.length }} de {{ codexTotal }} cartas</p>
+      <p class="results-count">{{ codexCards().length }} de {{ codexTotal() }} cartas</p>
 
-      @if (codexLoading) {
+      @if (codexLoading()) {
         <div class="loading">Cargando...</div>
       }
 
-      <div class="card-grid">
-        @for (card of codexCards; track card.id) {
+      <div class="card-grid" data-tour="codex-grid">
+        @for (card of codexCards(); track card.id) {
           <div class="card-item" (click)="selectCodexCard(card)">
             <div class="card-image">
               <img [src]="card.image_url | thumb:350" [alt]="card.name" loading="lazy" />
@@ -367,23 +502,28 @@
               <span class="card-type">{{ card.type_name }}</span>
             </div>
             <div class="card-overlay-actions">
-              <button class="btn-icon btn-add" (click)="quickAddToCollection(card, $event)" title="Añadir a colección">
+              <button class="btn-icon btn-add" (click)="quickAddToCollection(card, $event)" title="Añadir a colección" [disabled]="!hasPermission('edit_collection')">
                 ➕
               </button>
-              <button class="btn-icon btn-heart" [class.active]="isInWishlist(card.id)" (click)="toggleWishlist(card, $event)" title="Wishlist">
-                {{ isInWishlist(card.id) ? '❤️' : '🤍' }}
+              <button class="btn-icon btn-sell" (click)="sellFromCodex(card, $event)" title="Vender" [disabled]="!hasPermission('edit_market')">
+                🏷️
               </button>
+              @if (!workspaceMode()) {
+                <button class="btn-icon btn-heart" [class.active]="isInWishlist(card.id)" (click)="toggleWishlist(card, $event)" title="Wishlist">
+                  {{ isInWishlist(card.id) ? '❤️' : '🤍' }}
+                </button>
+              }
             </div>
           </div>
         }
       </div>
 
-      @if (codexTotalPages > 1) {
+      @if (codexTotalPages() > 1) {
         <div #codexSentinel class="infinite-sentinel" aria-hidden="true"></div>
-        @if (codexLoading && codexCards.length > 0) {
+        @if (codexLoading() && codexCards().length > 0) {
           <div class="loading">Cargando más...</div>
         }
-        @if (!codexHasMore && codexCards.length > 0) {
+        @if (!codexHasMore() && codexCards().length > 0) {
           <p class="results-count" style="margin-top: 1rem;">— Fin de la colección —</p>
         }
       }
@@ -391,41 +531,43 @@
   }
 
   <!-- ═══ TAB: WISHLIST ═══ -->
-  @if (activeTab === 'wishlist') {
+  @if (activeTab() === 'wishlist' && !workspaceMode()) {
     <div class="tab-content">
       <div class="tab-toolbar">
-        <div class="search-bar">
+        <div class="search-bar" data-tour="wishlist-search">
           <input type="text" placeholder="Buscar en wishlist..." [(ngModel)]="wishlistSearch" (keyup.enter)="onWishlistSearch()" />
           <button class="btn btn-primary btn-sm" (click)="onWishlistSearch()">Buscar</button>
         </div>
-        <app-share-image
-          mode="buying"
-          gameLabel="Mitos y Leyendas"
-          [sellerName]="shareSellerName"
-          contactLine="¿Tienes alguna? Escríbeme · ShadowForge"
-          [items]="shareWishlistItems"
-          ctaLabel="📷 Imagen busco"
-          filenamePrefix="shadowforge-myl-wishlist"
-          footerTagline="ShadowForge · Marketplace TCG">
-        </app-share-image>
+        <div data-tour="wishlist-share">
+          <app-share-image
+            mode="buying"
+            gameLabel="Mitos y Leyendas"
+            [sellerName]="shareSellerName"
+            contactLine="¿Tienes alguna? Escríbeme · ShadowForge"
+            [items]="shareWishlistItems"
+            ctaLabel="📷 Imagen busco"
+            filenamePrefix="shadowforge-myl-wishlist"
+            footerTagline="ShadowForge · Marketplace TCG">
+          </app-share-image>
+        </div>
       </div>
 
-      <p class="results-count">{{ wishlistTotal }} cartas en tu wishlist</p>
+      <p class="results-count">{{ wishlistTotal() }} cartas en tu wishlist</p>
 
-      @if (wishlistLoading) {
+      @if (wishlistLoading()) {
         <div class="loading">Cargando...</div>
       }
 
-      @if (!wishlistLoading && wishlistEntries.length === 0) {
+      @if (!wishlistLoading() && wishlistEntries().length === 0) {
         <div class="empty-state">
           <p>Tu wishlist está vacía. Usa el ❤️ en el <strong>Codex</strong> para añadir cartas.</p>
         </div>
       }
 
-      <div class="wishlist-grid">
-        @for (entry of wishlistEntries; track entry.id) {
+      <div class="wishlist-grid" data-tour="wishlist-grid">
+        @for (entry of wishlistEntries(); track entry.id) {
           <div class="wishlist-card">
-            <div class="card-image" (click)="previewCard = entry.card_detail">
+            <div class="card-image" (click)="previewCard.set(entry.card_detail)">
               <img [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" loading="lazy"
                 (error)="$any($event.target).src = entry.card_detail.image_url" />
               <div class="eye-overlay">👁️</div>
@@ -448,34 +590,35 @@
         }
       </div>
 
-      @if (wishlistHasMore) {
+      @if (wishlistHasMore()) {
         <div #wishlistSentinel class="infinite-sentinel" aria-hidden="true"></div>
       }
-      @if (wishlistLoading && wishlistEntries.length > 0) {
+      @if (wishlistLoading() && wishlistEntries().length > 0) {
         <div class="loading">Cargando más...</div>
       }
-      @if (!wishlistHasMore && wishlistEntries.length > 0) {
+      @if (!wishlistHasMore() && wishlistEntries().length > 0) {
         <p class="results-count" style="margin-top: 1rem;">— Fin de la wishlist —</p>
       }
     </div>
   }
 
   <!-- ═══ TAB: MERCADO ═══ -->
-  @if (activeTab === 'mercado') {
+  @if (activeTab() === 'mercado' && canUseWorkspaceContent()) {
     <div class="tab-content">
       <!-- Tienda config -->
-      <div class="store-config-panel" [class.open]="storeConfigOpen">
-        <button class="config-toggle" (click)="storeConfigOpen = !storeConfigOpen">
+      @if (!workspaceMode()) {
+      <div class="store-config-panel" data-tour="mercado-config" [class.open]="storeConfigOpen()">
+        <button class="config-toggle" (click)="storeConfigOpen.set(!storeConfigOpen())">
           ⚙️ Configurar mi tienda pública
-          <span class="chev">{{ storeConfigOpen ? '▲' : '▼' }}</span>
+          <span class="chev">{{ storeConfigOpen() ? '▲' : '▼' }}</span>
         </button>
 
-        @if (storeConfigOpen && binderProfile) {
+        @if (storeConfigOpen() && binderProfile(); as profile) {
           <div class="config-body">
             <div class="config-row toggle-row">
               <label class="toggle">
-                <input type="checkbox" [(ngModel)]="binderProfile.is_store_public" />
-                <span>Tienda <strong>{{ binderProfile.is_store_public ? 'pública' : 'privada' }}</strong></span>
+                <input type="checkbox" [(ngModel)]="profile.is_store_public" />
+                <span>Tienda <strong>{{ profile.is_store_public ? 'pública' : 'privada' }}</strong></span>
               </label>
               <small>Si la activas, aparece en el índice <a routerLink="/tiendas">/tiendas</a> y es buscable.</small>
             </div>
@@ -483,19 +626,19 @@
             <div class="config-grid">
               <div class="field">
                 <label>Nombre público</label>
-                <input type="text" [(ngModel)]="binderProfile.display_name" placeholder="ej: Cartas de Iván" maxlength="80" />
+                <input type="text" [(ngModel)]="profile.display_name" placeholder="ej: Cartas de Iván" maxlength="80" />
               </div>
               <div class="field full">
                 <label>Bio (máx 500)</label>
-                <textarea [(ngModel)]="binderProfile.bio" rows="2" maxlength="500" placeholder="Vendo desde 2022, envíos a todo Chile..."></textarea>
+                <textarea [(ngModel)]="profile.bio" rows="2" maxlength="500" placeholder="Vendo desde 2022, envíos a todo Chile..."></textarea>
               </div>
               <div class="field">
                 <label>Ciudad</label>
-                <input type="text" [(ngModel)]="binderProfile.city" maxlength="80" />
+                <input type="text" [(ngModel)]="profile.city" maxlength="80" />
               </div>
               <div class="field">
                 <label>País</label>
-                <select [(ngModel)]="binderProfile.country">
+                <select [(ngModel)]="profile.country">
                   <option value="CL">Chile</option><option value="AR">Argentina</option>
                   <option value="PE">Perú</option><option value="MX">México</option>
                   <option value="CO">Colombia</option><option value="UY">Uruguay</option>
@@ -507,47 +650,47 @@
               </div>
               <div class="field">
                 <label>WhatsApp <small>(con código país)</small></label>
-                <input type="text" [(ngModel)]="binderProfile.whatsapp" placeholder="+56912345678" maxlength="20" />
+                <input type="text" [(ngModel)]="profile.whatsapp" placeholder="+56912345678" maxlength="20" />
               </div>
               <div class="field">
                 <label>Instagram</label>
-                <input type="text" [(ngModel)]="binderProfile.instagram" placeholder="usuario" maxlength="80" />
+                <input type="text" [(ngModel)]="profile.instagram" placeholder="usuario" maxlength="80" />
               </div>
               <div class="field">
                 <label>Discord</label>
-                <input type="text" [(ngModel)]="binderProfile.discord" placeholder="usuario#1234" maxlength="80" />
+                <input type="text" [(ngModel)]="profile.discord" placeholder="usuario#1234" maxlength="80" />
               </div>
               <div class="field">
                 <label>Email público</label>
-                <input type="email" [(ngModel)]="binderProfile.email_public" maxlength="254" />
+                <input type="email" [(ngModel)]="profile.email_public" maxlength="254" />
               </div>
               <div class="field full">
                 <label>Métodos de pago</label>
-                <input type="text" [(ngModel)]="binderProfile.payment_methods" placeholder="Transferencia, efectivo, MercadoPago..." maxlength="200" />
+                <input type="text" [(ngModel)]="profile.payment_methods" placeholder="Transferencia, efectivo, MercadoPago..." maxlength="200" />
               </div>
               <div class="field full">
                 <label>Info de envío</label>
-                <textarea [(ngModel)]="binderProfile.shipping_info" rows="2" maxlength="500" placeholder="Envío Starken/Chilexpress por pagar, retiro en metro Los Leones..."></textarea>
+                <textarea [(ngModel)]="profile.shipping_info" rows="2" maxlength="500" placeholder="Envío Starken/Chilexpress por pagar, retiro en metro Los Leones..."></textarea>
               </div>
               <label class="checkbox-row">
-                <input type="checkbox" [(ngModel)]="binderProfile.accepts_trades" />
+                <input type="checkbox" [(ngModel)]="profile.accepts_trades" />
                 🔄 Acepto cambios / trades
               </label>
             </div>
 
             <div class="config-actions">
-              <button class="btn btn-primary btn-sm" (click)="saveStoreProfile()" [disabled]="storeProfileSaving">
-                {{ storeProfileSaving ? '⏳ Guardando...' : (storeProfileSaved ? '✅ Guardado' : '💾 Guardar perfil') }}
+              <button class="btn btn-primary btn-sm" (click)="saveStoreProfile()" [disabled]="storeProfileSaving()">
+                {{ storeProfileSaving() ? '⏳ Guardando...' : (storeProfileSaved() ? '✅ Guardado' : '💾 Guardar perfil') }}
               </button>
             </div>
 
             <div class="links-block">
               <h5>🌐 Enlaces de tu tienda</h5>
-              @if (binderProfile.is_store_public) {
+              @if (profile.is_store_public) {
                 <div class="link-row">
                   <span class="link-label">Pública:</span>
                   <code>{{ publicStoreUrl() }}</code>
-                  <button class="btn btn-xs" (click)="copyPublicUrl()">{{ shareLinkCopied ? '✅' : '📋 Copiar' }}</button>
+                  <button class="btn btn-xs" (click)="copyPublicUrl()">{{ shareLinkCopied() ? '✅' : '📋 Copiar' }}</button>
                 </div>
               } @else {
                 <p class="hint-warn">⚠ Activa "Tienda pública" para tener URL bonita y aparecer en el índice.</p>
@@ -555,50 +698,55 @@
               <div class="link-row">
                 <span class="link-label">Privada:</span>
                 <code class="trunc">{{ privateStoreUrl() }}</code>
-                <button class="btn btn-xs" (click)="copyShareLink()">{{ shareLinkCopied ? '✅' : '📋' }}</button>
-                <button class="btn btn-xs btn-warn" (click)="regenerateShareToken()" [disabled]="storeRegenerating">
-                  {{ storeRegenerating ? '⏳' : '♻️ Regenerar' }}
+                <button class="btn btn-xs" (click)="copyShareLink()">{{ shareLinkCopied() ? '✅' : '📋' }}</button>
+                <button class="btn btn-xs btn-warn" (click)="regenerateShareToken()" [disabled]="storeRegenerating()">
+                  {{ storeRegenerating() ? '⏳' : '♻️ Regenerar' }}
                 </button>
               </div>
             </div>
           </div>
         }
       </div>
+      }
 
-      <div class="tab-toolbar">
+      <div class="tab-toolbar" data-tour="mercado-toolbar">
         <div class="search-bar">
           <input type="text" placeholder="Buscar en tu mercado..." [(ngModel)]="mercadoSearch" (keyup.enter)="onMercadoSearch()" />
           <button class="btn btn-primary btn-sm" (click)="onMercadoSearch()">Buscar</button>
         </div>
-        <button class="btn btn-sm btn-share" (click)="copyShareLink()">
-          {{ shareLinkCopied ? '✅ Copiado!' : '🔗 Copiar Link Tienda' }}
+        @if (!workspaceMode()) {
+          <button class="btn btn-sm btn-share" (click)="copyShareLink()">
+            {{ shareLinkCopied() ? '✅ Copiado!' : '🔗 Copiar Link Tienda' }}
+          </button>
+          <button class="btn btn-sm btn-share" (click)="downloadStoreQr()" [disabled]="qrDownloading()">
+            {{ qrDownloading() ? '⏳ Generando...' : '📱 Generar QR' }}
+          </button>
+        }
+        <button class="btn btn-sm btn-pdf" (click)="exportMercadoPdf()" [disabled]="exportingPdf() || mercadoEntries().length === 0">
+          {{ exportingPdf() ? '⏳ Generando...' : '📄 Exportar PDF' }}
         </button>
-        <button class="btn btn-sm btn-share" (click)="downloadStoreQr()" [disabled]="qrDownloading">
-          {{ qrDownloading ? '⏳ Generando...' : '📱 Generar QR' }}
-        </button>
-        <button class="btn btn-sm btn-pdf" (click)="exportMercadoPdf()" [disabled]="exportingPdf || mercadoEntries.length === 0">
-          {{ exportingPdf ? '⏳ Generando...' : '📄 Exportar PDF' }}
-        </button>
-        <app-share-image
-          mode="selling"
-          gameLabel="Mitos y Leyendas"
-          [sellerName]="shareSellerName"
-          contactLine="Escríbeme para comprar · ShadowForge"
-          [items]="shareMercadoItems"
-          ctaLabel="📷 Imagen vendo"
-          filenamePrefix="shadowforge-myl-vendo"
-          footerTagline="ShadowForge · Marketplace TCG">
-        </app-share-image>
-        @if (mercadoDirty.size > 0) {
-          <button class="btn btn-sm btn-primary" (click)="saveMercadoChanges()" [disabled]="batchSaving">
-            {{ batchSaving ? '⏳ Guardando...' : '💾 Guardar Cambios (' + mercadoDirty.size + ')' }}
+        @if (!workspaceMode()) {
+          <app-share-image
+            mode="selling"
+            gameLabel="Mitos y Leyendas"
+            [sellerName]="shareSellerName"
+            contactLine="Escríbeme para comprar · ShadowForge"
+            [items]="shareMercadoItems"
+            ctaLabel="📷 Imagen vendo"
+            filenamePrefix="shadowforge-myl-vendo"
+            footerTagline="ShadowForge · Marketplace TCG">
+          </app-share-image>
+        }
+        @if (mercadoDirty.size > 0 && (hasPermission('edit_market') || hasPermission('remove_from_market'))) {
+          <button class="btn btn-sm btn-primary" (click)="saveMercadoChanges()" [disabled]="batchSaving()">
+            {{ batchSaving() ? '⏳ Guardando...' : '💾 Guardar Cambios (' + mercadoDirty.size + ')' }}
           </button>
         }
       </div>
 
       <div class="mercado-select-bar">
         <label class="checkbox-inline">
-          <input type="checkbox" [checked]="mercadoSelected.size === mercadoEntries.length && mercadoEntries.length > 0" (change)="toggleSelectAllMercado()" />
+          <input type="checkbox" [checked]="mercadoSelected.size === mercadoEntries().length && mercadoEntries().length > 0" (change)="toggleSelectAllMercado()" />
           Seleccionar todas
         </label>
         @if (mercadoSelected.size > 0) {
@@ -606,237 +754,350 @@
         }
       </div>
 
-      <p class="results-count">{{ mercadoTotal }} cartas en venta</p>
+      <p class="results-count">{{ mercadoTotal() }} cartas en venta</p>
 
-      @if (mercadoLoading) {
+      @if (mercadoLoading()) {
         <div class="loading">Cargando...</div>
       }
 
-      @if (!mercadoLoading && mercadoEntries.length === 0) {
+      @if (!mercadoLoading() && mercadoEntries().length === 0) {
         <div class="empty-state">
           <p>No tienes cartas en venta. Ve a <strong>Carpeta</strong> y configura la cantidad de venta y precio.</p>
         </div>
       }
 
-      <div class="collection-grid">
-        @for (entry of mercadoEntries; track entry.id) {
+      <div class="collection-grid" data-tour="mercado-grid">
+        @for (entry of mercadoEntries(); track entry.id) {
           <div class="collection-card mercado-card" [class.mercado-selected]="mercadoSelected.has(entry.id)">
-            <label class="mercado-check">
+            <label class="mercado-check" (click)="$event.stopPropagation()">
               <input type="checkbox" [checked]="mercadoSelected.has(entry.id)" (change)="toggleMercadoSelect(entry.id)" />
             </label>
-            <div class="card-image" (click)="previewCard = entry.card_detail">
+            <div class="card-image" (click)="previewCard.set(entry.card_detail)">
               <img [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" loading="lazy"
                 (error)="$any($event.target).src = entry.card_detail.image_url" />
               <div class="eye-overlay">👁️</div>
             </div>
-            <div class="card-body">
+            <!-- Inputs de foto viven fuera del body compacto: sus IDs son globales por entry.id -->
+            <input type="file" accept="image/*" capture="environment"
+                   [id]="'photo-input-' + entry.id + '-1'"
+                   (change)="onPhotoSelected(entry, $event, 1)" hidden />
+            <input type="file" accept="image/*" capture="environment"
+                   [id]="'photo-input-' + entry.id + '-2'"
+                   (change)="onPhotoSelected(entry, $event, 2)" hidden />
+            <div class="card-body-compact" (click)="openMercadoQuickEdit(entry)">
               <h4>{{ entry.card_detail.name }}</h4>
               <span class="card-meta">{{ entry.card_detail.type_name }} · {{ entry.card_detail.edition_title }}</span>
-              <div class="inline-fields">
-                <div class="field">
-                  <label>Precio $</label>
-                  <input type="number" [value]="entry.price" min="0" placeholder="—"
-                    (input)="onMercadoFieldChange(entry, 'price', $any($event.target).valueAsNumber)" />
-                </div>
-                <div class="field">
-                  <label>Vendo</label>
-                  <input type="number" [value]="entry.selling_quantity" min="0" [max]="entry.quantity"
-                    (input)="onMercadoFieldChange(entry, 'selling_quantity', $any($event.target).valueAsNumber)" />
-                </div>
-                <div class="field">
-                  <label>Asignadas</label>
-                  <input type="number" [value]="assignedForEntry(entry.id)" readonly />
-                </div>
-              </div>
-              <div class="card-action-row">
-                @if (mercadoDirty.has(entry.id)) {
-                  <span class="dirty-badge">· sin guardar</span>
-                }
-                <button class="btn btn-xs btn-danger" (click)="removeMercadoEntry(entry)" title="Quitar de venta">🗑️</button>
-              </div>
-
-              <div class="card-photo-row">
-                <!-- Slot 1 -->
-                <input type="file" accept="image/*" capture="environment"
-                       [id]="'photo-input-' + entry.id + '-1'"
-                       (change)="onPhotoSelected(entry, $event, 1)" hidden />
-                @if (entry.photo_url) {
-                  <button class="btn btn-xs btn-photo" (click)="openPhotoModal(entry.photo_url, $event)" title="Ver foto 1">
-                    <img class="photo-thumb" [src]="entry.photo_url" alt="Foto 1" />
-                    📸 1
-                  </button>
-                  <button class="btn btn-xs btn-photo-action" (click)="triggerPhotoUpload(entry, $event, 1)"
-                          [disabled]="uploadingPhotoFor === entry.id" title="Reemplazar foto 1">
-                    {{ uploadingPhotoFor === entry.id && uploadingPhotoSlot === 1 ? '⏳' : '🔄' }}
-                  </button>
-                  <button class="btn btn-xs btn-photo-action btn-danger" (click)="removeMercadoPhoto(entry, $event, 1)" title="Quitar foto 1">✕</button>
-                } @else {
-                  <button class="btn btn-xs btn-photo btn-photo-empty" (click)="triggerPhotoUpload(entry, $event, 1)"
-                          [disabled]="uploadingPhotoFor === entry.id" title="Subir foto 1">
-                    {{ uploadingPhotoFor === entry.id && uploadingPhotoSlot === 1 ? '⏳ Subiendo...' : '📷 Foto 1' }}
-                  </button>
-                }
-
-                <!-- Slot 2 -->
-                <input type="file" accept="image/*" capture="environment"
-                       [id]="'photo-input-' + entry.id + '-2'"
-                       (change)="onPhotoSelected(entry, $event, 2)" hidden />
-                @if (entry.photo_url_2) {
-                  <button class="btn btn-xs btn-photo" (click)="openPhotoModal(entry.photo_url_2, $event)" title="Ver foto 2">
-                    <img class="photo-thumb" [src]="entry.photo_url_2" alt="Foto 2" />
-                    📸 2
-                  </button>
-                  <button class="btn btn-xs btn-photo-action" (click)="triggerPhotoUpload(entry, $event, 2)"
-                          [disabled]="uploadingPhotoFor === entry.id" title="Reemplazar foto 2">
-                    {{ uploadingPhotoFor === entry.id && uploadingPhotoSlot === 2 ? '⏳' : '🔄' }}
-                  </button>
-                  <button class="btn btn-xs btn-photo-action btn-danger" (click)="removeMercadoPhoto(entry, $event, 2)" title="Quitar foto 2">✕</button>
-                } @else if (entry.photo_url) {
-                  <button class="btn btn-xs btn-photo btn-photo-empty" (click)="triggerPhotoUpload(entry, $event, 2)"
-                          [disabled]="uploadingPhotoFor === entry.id" title="Subir foto 2 (opcional)">
-                    {{ uploadingPhotoFor === entry.id && uploadingPhotoSlot === 2 ? '⏳ Subiendo...' : '➕ Foto 2' }}
-                  </button>
-                }
+              <div class="card-badges-row">
+                <span class="sale-badge">🏷️ {{ entry.selling_quantity }}</span>
+                @if (entry.photo_url) { <span class="qty-badge">📸 Foto</span> }
+                @if (assignedForEntry(entry.id) > 0) { <span class="qty-badge">📦 {{ assignedForEntry(entry.id) }} asignadas</span> }
+                @if (mercadoDirty.has(entry.id)) { <span class="dirty-badge" title="Cambios sin guardar"></span> }
+                <span class="edit-badge">✎ Editar</span>
               </div>
             </div>
           </div>
         }
       </div>
 
-      @if (mercadoHasMore) {
+      <!-- ═══ QUICK EDIT: Mercado ═══ -->
+      @if (quickEditMercadoEntry(); as qe) {
+        <div class="modal-overlay" (click)="closeMercadoQuickEdit()">
+          <div class="modal quick-edit-modal" (click)="$event.stopPropagation()">
+            <button class="close-btn" (click)="closeMercadoQuickEdit()">✕</button>
+            <div class="quick-edit-header">
+              <img [src]="qe.card_detail.image_url | thumb:200" [alt]="qe.card_detail.name" class="quick-edit-thumb" />
+              <div>
+                <h3>{{ qe.card_detail.name }}</h3>
+                <span class="quick-edit-meta">{{ qe.card_detail.type_name }} · {{ qe.card_detail.edition_title }}</span>
+              </div>
+            </div>
+            <div class="quick-edit-body">
+              <div class="inline-fields">
+                <div class="field">
+                  <label>Precio $</label>
+                  <input type="number" [value]="qe.price" min="0" placeholder="—"
+                    [disabled]="!hasPermission('edit_market')"
+                    (input)="onMercadoFieldChange(qe, 'price', $any($event.target).valueAsNumber)" />
+                </div>
+                <div class="field">
+                  <label>Vendo</label>
+                  <input type="number" [value]="qe.selling_quantity" min="0" [max]="qe.quantity"
+                    [disabled]="!hasPermission('edit_market') && !hasPermission('remove_from_market')"
+                    (input)="onMercadoFieldChange(qe, 'selling_quantity', $any($event.target).valueAsNumber)" />
+                </div>
+                <div class="field">
+                  <label>Asignadas</label>
+                  <input type="number" [value]="assignedForEntry(qe.id)" readonly />
+                </div>
+              </div>
+              <div class="card-photo-row">
+                <!-- Slot 1 -->
+                @if (qe.photo_url) {
+                  <button class="btn btn-xs btn-photo" (click)="openPhotoModal(qe.photo_url, $event)" title="Ver foto 1">
+                    <img class="photo-thumb" [src]="qe.photo_url" alt="Foto 1" /> 📸 1
+                  </button>
+                  <button class="btn btn-xs btn-photo-action" (click)="triggerPhotoUpload(qe, $event, 1)"
+                          [disabled]="uploadingPhotoFor() === qe.id || !hasPermission('edit_market')" title="Reemplazar foto 1">
+                    {{ uploadingPhotoFor() === qe.id && uploadingPhotoSlot() === 1 ? '⏳' : '🔄' }}
+                  </button>
+                  <button class="btn btn-xs btn-photo-action btn-danger" (click)="removeMercadoPhoto(qe, $event, 1)" title="Quitar foto 1" [disabled]="!hasPermission('edit_market')">✕</button>
+                } @else {
+                  <button class="btn btn-xs btn-photo btn-photo-empty" (click)="triggerPhotoUpload(qe, $event, 1)"
+                          [disabled]="uploadingPhotoFor() === qe.id || !hasPermission('edit_market')" title="Subir foto 1">
+                    {{ uploadingPhotoFor() === qe.id && uploadingPhotoSlot() === 1 ? '⏳ Subiendo...' : '📷 Foto 1' }}
+                  </button>
+                }
+
+                <!-- Slot 2 -->
+                @if (qe.photo_url_2) {
+                  <button class="btn btn-xs btn-photo" (click)="openPhotoModal(qe.photo_url_2, $event)" title="Ver foto 2">
+                    <img class="photo-thumb" [src]="qe.photo_url_2" alt="Foto 2" /> 📸 2
+                  </button>
+                  <button class="btn btn-xs btn-photo-action" (click)="triggerPhotoUpload(qe, $event, 2)"
+                          [disabled]="uploadingPhotoFor() === qe.id || !hasPermission('edit_market')" title="Reemplazar foto 2">
+                    {{ uploadingPhotoFor() === qe.id && uploadingPhotoSlot() === 2 ? '⏳' : '🔄' }}
+                  </button>
+                  <button class="btn btn-xs btn-photo-action btn-danger" (click)="removeMercadoPhoto(qe, $event, 2)" title="Quitar foto 2" [disabled]="!hasPermission('edit_market')">✕</button>
+                } @else if (qe.photo_url) {
+                  <button class="btn btn-xs btn-photo btn-photo-empty" (click)="triggerPhotoUpload(qe, $event, 2)"
+                          [disabled]="uploadingPhotoFor() === qe.id || !hasPermission('edit_market')" title="Subir foto 2 (opcional)">
+                    {{ uploadingPhotoFor() === qe.id && uploadingPhotoSlot() === 2 ? '⏳ Subiendo...' : '➕ Foto 2' }}
+                  </button>
+                }
+              </div>
+              <div class="card-action-row">
+                @if (mercadoDirty.has(qe.id) && (hasPermission('edit_market') || hasPermission('remove_from_market'))) {
+                  <button class="btn btn-sm btn-primary" (click)="saveMercadoChanges()" [disabled]="batchSaving()">
+                    {{ batchSaving() ? 'Guardando...' : '💾 Guardar cambios' }}
+                  </button>
+                }
+                <button class="btn btn-sm btn-danger" (click)="removeMercadoEntry(qe); closeMercadoQuickEdit()" title="Quitar de venta" [disabled]="!hasPermission('remove_from_market') && !hasPermission('edit_market')">🗑️ Quitar de venta</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (mercadoHasMore()) {
         <div #mercadoSentinel class="infinite-sentinel" aria-hidden="true"></div>
       }
-      @if (mercadoLoading && mercadoEntries.length > 0) {
+      @if (mercadoLoading() && mercadoEntries().length > 0) {
         <div class="loading">Cargando más...</div>
       }
-      @if (!mercadoHasMore && mercadoEntries.length > 0) {
+      @if (!mercadoHasMore() && mercadoEntries().length > 0) {
         <p class="results-count" style="margin-top: 1rem;">— Fin del mercado —</p>
       }
     </div>
   }
 
-  <!-- ═══ TAB: PEDIDOS (Pendientes) ═══ -->
-  @if (activeTab === 'pedidos') {
+  <!-- ═══ TAB: GESTIÓN DE PEDIDOS (unifica Pedidos + Historial) ═══ -->
+  @if (activeTab() === 'pedidos' && canUseWorkspaceContent()) {
     <div class="tab-content">
       <div class="orders-toolbar">
-        <button class="btn btn-sm" (click)="loadPendingOrders()">🔄 Recargar</button>
+        <div class="orders-pills" data-tour="pedidos-pills">
+          <button class="pill" [class.active]="ordersPill() === 'pendientes'" (click)="ordersPill.set('pendientes')">
+            Pendientes
+            @if (pendingOrders().length > 0) { <span class="pill-count">{{ pendingOrders().length }}</span> }
+          </button>
+          <button class="pill" [class.active]="ordersPill() === 'todos'" (click)="ordersPill.set('todos')">Todos</button>
+          <button class="pill" [class.active]="ordersPill() === 'completados'" (click)="ordersPill.set('completados')">Completados</button>
+          <button class="pill" [class.active]="ordersPill() === 'cancelados'" (click)="ordersPill.set('cancelados')">Cancelados</button>
+        </div>
+        <button class="btn btn-sm" (click)="loadPendingOrders(); loadHistoryOrders()">🔄 Recargar</button>
       </div>
 
-      @if (ordersLoading) {
+      @if (ordersLoading() || historyLoading()) {
         <div class="loading">Cargando pedidos...</div>
       }
 
-      @if (!ordersLoading && pendingOrders.length === 0) {
+      @if (!ordersLoading() && !historyLoading() && ordersForPill().length === 0) {
         <div class="empty-state">
-          <p>No tienes pedidos pendientes.</p>
+          <p>No hay pedidos para este filtro.</p>
         </div>
       }
 
-      <div class="orders-grid">
-        @for (o of pendingOrders; track o.id) {
-          <div class="order-card">
-            <div class="order-head">
-              <h4>Pedido #{{ o.id }}</h4>
-              <span class="order-status pending">{{ orderStatusLabel(o.status) }}</span>
-            </div>
-            <p class="order-meta">Comprador: <strong>{{ o.buyer_name || o.buyer_username || 'Anónimo' }}</strong></p>
-            <p class="order-meta">WhatsApp: <strong>{{ o.buyer_whatsapp || '—' }}</strong></p>
-            <p class="order-meta">Creado: {{ o.created_at | date:'short' }}</p>
-            @if (o.total_estimated != null) {
-              <p class="order-meta">Total estimado: <strong>${{ o.total_estimated | number:'1.0-0':'es-CL' }}</strong></p>
-            }
-            @if (o.buyer_note) {
-              <p class="order-note">📝 {{ o.buyer_note }}</p>
-            }
-            <div class="order-items">
-              @for (it of o.items; track it.id) {
-                <div class="order-item-row">
-                  <span>{{ it.quantity }}x {{ it.card_name || it.card_detail?.name || ('Carta #' + it.card) }}</span>
-                  <span>
-                    @if (it.line_total != null) {
-                      ${{ it.line_total | number:'1.0-0':'es-CL' }}
-                    } @else {
-                      —
+      @if (ordersForPill().length > 0) {
+        <div class="orders-table-wrap" data-tour="pedidos-table">
+          <table class="orders-table">
+            <thead>
+              <tr>
+                <th>Pedido</th><th>Comprador</th><th>Fecha</th><th>Artículos</th><th>Total</th><th>Estado</th><th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (o of ordersForPill(); track o.id) {
+                <tr (click)="orderDetail.set(o)">
+                  <td>#{{ o.id }}</td>
+                  <td>{{ o.buyer_name || o.buyer_username || 'Anónimo' }}</td>
+                  <td>{{ o.created_at | date:'short' }}</td>
+                  <td>{{ o.items.length }}</td>
+                  <td>{{ o.total_estimated != null ? ('$' + (o.total_estimated | number:'1.0-0':'es-CL')) : '—' }}</td>
+                  <td>
+                    <span class="order-status" [class.pending]="o.status === 'pending'"
+                          [class.accepted]="o.status === 'accepted'" [class.cancelled]="o.status === 'cancelled'">
+                      {{ orderStatusLabel(o.status) }}
+                    </span>
+                  </td>
+                  <td class="orders-table-actions">
+                    @if (o.status === 'pending') {
+                      <button class="btn-icon btn-accept" (click)="acceptOrder(o); $event.stopPropagation()"
+                              [disabled]="!hasPermission('accept_orders')" title="Aceptar">✓</button>
+                      <button class="btn-icon btn-reject" (click)="cancelOrder(o); $event.stopPropagation()"
+                              [disabled]="!hasPermission('reject_orders')" title="Cancelar">✕</button>
                     }
-                  </span>
-                </div>
+                  </td>
+                </tr>
               }
-            </div>
-            <div class="order-actions">
-              <button class="btn btn-sm btn-primary" (click)="acceptOrder(o)">✅ Aceptar</button>
-              <button class="btn btn-sm btn-danger" (click)="cancelOrder(o)">❌ Cancelar</button>
-            </div>
-          </div>
-        }
-      </div>
+            </tbody>
+          </table>
+        </div>
+      }
     </div>
+
+    <!-- ═══ MODAL: Detalle de pedido ═══ -->
+    @if (orderDetail(); as o) {
+      <div class="modal-overlay" (click)="orderDetail.set(null)">
+        <div class="modal quick-edit-modal" (click)="$event.stopPropagation()">
+          <button class="close-btn" (click)="orderDetail.set(null)">✕</button>
+          <div class="order-detail-head">
+            <h3>Pedido #{{ o.id }}</h3>
+            <span class="order-status" [class.pending]="o.status === 'pending'"
+                  [class.accepted]="o.status === 'accepted'" [class.cancelled]="o.status === 'cancelled'">
+              {{ orderStatusLabel(o.status) }}
+            </span>
+          </div>
+          <p class="order-meta">Comprador: <strong>{{ o.buyer_name || o.buyer_username || 'Anónimo' }}</strong></p>
+          @if (o.buyer_whatsapp) { <p class="order-meta">WhatsApp: <strong>{{ o.buyer_whatsapp }}</strong></p> }
+          <p class="order-meta">Creado: {{ o.created_at | date:'short' }}</p>
+          @if (o.responded_at) { <p class="order-meta">Cierre: {{ o.responded_at | date:'short' }}</p> }
+          @if (o.total_estimated != null) { <p class="order-meta">Total estimado: <strong>${{ o.total_estimated | number:'1.0-0':'es-CL' }}</strong></p> }
+          @if (o.buyer_note) { <p class="order-note">📝 {{ o.buyer_note }}</p> }
+          @if (o.seller_note) { <p class="order-note">Nota vendedor: {{ o.seller_note }}</p> }
+          <div class="order-items">
+            @for (it of o.items; track it.id) {
+              <div class="order-item-row">
+                <span>{{ it.quantity }}x {{ it.card_name || it.card_detail?.name || ('Carta #' + it.card) }}</span>
+                <span>
+                  @if (it.line_total != null) { ${{ it.line_total | number:'1.0-0':'es-CL' }} } @else { — }
+                </span>
+              </div>
+            }
+          </div>
+          @if (o.status === 'pending') {
+            <div class="card-action-row">
+              <button class="btn btn-sm btn-primary" (click)="acceptOrder(o)" [disabled]="!hasPermission('accept_orders')">✅ Aceptar</button>
+              <button class="btn btn-sm btn-danger" (click)="cancelOrder(o)" [disabled]="!hasPermission('reject_orders')">❌ Cancelar</button>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ═══ MODAL: Motivo de cancelación ═══ -->
+    @if (cancelOrderTarget(); as co) {
+      <div class="modal-overlay" (click)="closeCancelOrderModal()">
+        <div class="modal quick-edit-modal" (click)="$event.stopPropagation()">
+          <button class="close-btn" (click)="closeCancelOrderModal()">✕</button>
+          <h3 class="cancel-modal-title">Cancelar pedido #{{ co.id }}</h3>
+          <p class="quick-edit-meta">Indica el motivo de la cancelación; el comprador lo verá en su pedido.</p>
+          <div class="field full">
+            <label>Motivo</label>
+            <textarea rows="3" [(ngModel)]="cancelOrderReason" maxlength="300"
+                      placeholder="Ej: Sin stock disponible"></textarea>
+          </div>
+          <div class="card-action-row">
+            <button class="btn btn-sm" (click)="closeCancelOrderModal()">Volver</button>
+            <button class="btn btn-sm btn-danger" (click)="confirmCancelOrder()"
+                    [disabled]="!cancelOrderReason.trim() || cancelOrderSubmitting()">
+              {{ cancelOrderSubmitting() ? 'Cancelando...' : '❌ Confirmar cancelación' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
   }
 
-  <!-- ═══ TAB: HISTORIAL (Aceptados/Cancelados) ═══ -->
-  @if (activeTab === 'historial') {
+  <!-- ═══ TAB: PERMISOS ═══ -->
+  @if (activeTab() === 'permisos' && canUseWorkspaceContent() && canManagePermissions()) {
     <div class="tab-content">
-      <div class="orders-toolbar">
-        <select [value]="historyStatusFilter" (change)="onHistoryFilterChange($any($event.target).value)">
-          <option value="">Todos</option>
-          <option value="accepted">Aceptados</option>
-          <option value="cancelled">Cancelados</option>
-        </select>
-        <button class="btn btn-sm" (click)="loadHistoryOrders()">🔄 Recargar</button>
+      <div class="permissions-panel" data-tour="permisos-panel">
+        <h3>Gestionar colaboradores</h3>
+        <p class="hint">Asigna permisos por acción. No se usan roles fijos.</p>
+
+        <div class="permissions-create-row">
+          <input type="text" placeholder="Usuario o email" [(ngModel)]="newCollaboratorUser" maxlength="120" />
+          <button class="btn btn-primary btn-sm" (click)="addCollaborator()" [disabled]="permissionsSaving()">
+            {{ permissionsSaving() ? '⏳ Guardando...' : '➕ Dar acceso' }}
+          </button>
+        </div>
+
+        <div class="role-select-row" data-tour="permisos-role">
+          <label>Rol</label>
+          <select [value]="newCollaboratorRole()" (change)="onNewCollaboratorRoleChange($any($event.target).value)">
+            <option value="lector">Lector</option>
+            <option value="gestor_mercado">Gestor de Mercado</option>
+            <option value="administrador">Administrador</option>
+            <option value="personalizado">Personalizado</option>
+          </select>
+        </div>
+        @if (newCollaboratorRole() === 'personalizado') {
+          <div class="permissions-grid">
+            @for (key of permissionKeys; track key) {
+              <label class="perm-check">
+                <input type="checkbox" [checked]="newCollaboratorPerms()[key]" (change)="toggleNewCollaboratorPerm(key, $any($event.target).checked)" />
+                <span>{{ permissionLabel(key) }}</span>
+              </label>
+            }
+          </div>
+        }
       </div>
 
-      @if (historyLoading) {
-        <div class="loading">Cargando historial...</div>
-      }
-
-      @if (!historyLoading && historyOrders.length === 0) {
-        <div class="empty-state">
-          <p>No hay pedidos en historial para este filtro.</p>
-        </div>
-      }
-
-      <div class="orders-grid history-grid">
-        @for (o of historyOrders; track o.id) {
-          <div class="order-card">
-            <div class="order-head">
-              <h4>Pedido #{{ o.id }}</h4>
-              <span class="order-status" [class.accepted]="o.status === 'accepted'" [class.cancelled]="o.status === 'cancelled'">
-                {{ orderStatusLabel(o.status) }}
-              </span>
+      <div class="permissions-list" data-tour="permisos-list">
+        @if (workspacePermissionsLoading()) {
+          <div class="loading">Cargando permisos...</div>
+        }
+        @if (!workspacePermissionsLoading() && collaboratorPermissions().length === 0) {
+          <div class="empty-state"><p>No hay colaboradores con permisos en esta tienda.</p></div>
+        }
+        @for (row of collaboratorPermissions(); track row.id) {
+          <div class="permission-row-card">
+            <div class="permission-row-head">
+              <strong>{{ row.username }}</strong>
+              <div class="permission-row-actions">
+                @if (isCollaboratorDirty(row)) {
+                  <button class="btn btn-xs btn-primary" (click)="saveCollaboratorPerms(row)" [disabled]="permissionsSaving()">Guardar</button>
+                }
+                <button class="btn btn-xs btn-danger" (click)="removeCollaborator(row)" [disabled]="permissionsSaving()">Quitar acceso</button>
+              </div>
             </div>
-            <p class="order-meta">Comprador: <strong>{{ o.buyer_name || o.buyer_username || 'Anónimo' }}</strong></p>
-            <p class="order-meta">Creado: {{ o.created_at | date:'short' }}</p>
-            <p class="order-meta">Cierre: {{ o.responded_at ? (o.responded_at | date:'short') : '—' }}</p>
-            @if (o.total_estimated != null) {
-              <p class="order-meta">Total estimado: <strong>${{ o.total_estimated | number:'1.0-0':'es-CL' }}</strong></p>
-            }
-            @if (o.buyer_note) {
-              <p class="order-note">📝 {{ o.buyer_note }}</p>
-            }
-            @if (o.seller_note) {
-              <p class="order-note">Nota vendedor: {{ o.seller_note }}</p>
-            }
-            <div class="order-items">
-              @for (it of o.items; track it.id) {
-                <div class="order-item-row">
-                  <span>{{ it.quantity }}x {{ it.card_name || it.card_detail?.name || ('Carta #' + it.card) }}</span>
-                  <span>
-                    @if (it.line_total != null) {
-                      ${{ it.line_total | number:'1.0-0':'es-CL' }}
-                    } @else {
-                      —
-                    }
-                  </span>
-                </div>
-              }
+            <div class="role-select-row">
+              <label>Rol</label>
+              <select [value]="collaboratorRoleFor(row)" (change)="onCollaboratorRoleChange(row, $any($event.target).value)">
+                <option value="lector">Lector</option>
+                <option value="gestor_mercado">Gestor de Mercado</option>
+                <option value="administrador">Administrador</option>
+                <option value="personalizado">Personalizado</option>
+              </select>
             </div>
+            @if (collaboratorRoleFor(row) === 'personalizado') {
+              <div class="permissions-grid">
+                @for (key of permissionKeys; track key) {
+                  <label class="perm-check">
+                    <input type="checkbox" [checked]="collaboratorPermValue(row, key)"
+                           (change)="toggleCollaboratorPerm(row.id, key, $any($event.target).checked)" />
+                    <span>{{ permissionLabel(key) }}</span>
+                  </label>
+                }
+              </div>
+            }
           </div>
         }
       </div>
     </div>
   }
 
-  @if (showFloatingSaveButton) {
-    <button class="floating-save-btn" (click)="onFloatingSaveClick()" [disabled]="batchSaving">
+  @if (showFloatingSaveButton()) {
+    <button class="floating-save-btn" (click)="onFloatingSaveClick()" [disabled]="batchSaving()">
       {{ floatingSaveLabel }}
     </button>
   }
@@ -845,10 +1106,10 @@
   <div id="mercado-export" class="mercado-export-area">
     <div class="export-header">
       <h2>🏪 Tienda de {{ auth.user()?.username }}</h2>
-      <p>{{ mercadoAllEntries.length }} cartas en venta</p>
+      <p>{{ mercadoAllEntries().length }} cartas en venta</p>
     </div>
     <div class="export-grid">
-      @for (entry of mercadoAllEntries; track entry.id) {
+      @for (entry of mercadoAllEntries(); track entry.id) {
         <div class="export-card">
           <img [src]="entry.card_detail.image_url" [alt]="entry.card_detail.name" crossorigin="anonymous" />
           <div class="export-card-info">
@@ -862,39 +1123,39 @@
   </div>
 
   <!-- ═══ MODAL: Detalle de carta (Codex) ═══ -->
-  @if (selectedCard) {
-    <div class="modal-overlay" (click)="selectedCard = null">
+  @if (selectedCard(); as card) {
+    <div class="modal-overlay" (click)="selectedCard.set(null)">
       <div class="modal modal-detail" (click)="$event.stopPropagation()">
-        <button class="close-btn" (click)="selectedCard = null">✕</button>
-        <img [src]="selectedCard.image_url" [alt]="selectedCard.name" class="detail-image" />
+        <button class="close-btn" (click)="selectedCard.set(null)">✕</button>
+        <img [src]="card.image_url" [alt]="card.name" class="detail-image" />
         <div class="detail-info">
-          <h2>{{ selectedCard.name }}</h2>
+          <h2>{{ card.name }}</h2>
           <div class="detail-meta">
-            @if (selectedCard.type_name) { <span class="badge">{{ selectedCard.type_name }}</span> }
-            @if (selectedCard.race_name) { <span class="badge">{{ selectedCard.race_name }}</span> }
-            @if (selectedCard.rarity_name) { <span class="badge rarity">{{ selectedCard.rarity_name }}</span> }
+            @if (card.type_name) { <span class="badge">{{ card.type_name }}</span> }
+            @if (card.race_name) { <span class="badge">{{ card.race_name }}</span> }
+            @if (card.rarity_name) { <span class="badge rarity">{{ card.rarity_name }}</span> }
           </div>
           <div class="detail-stats">
-            @if (selectedCard.cost !== null) { <span>💰 Coste: {{ selectedCard.cost }}</span> }
-            @if (selectedCard.damage !== null) { <span>⚔️ Fuerza: {{ selectedCard.damage }}</span> }
+            @if (card.cost !== null) { <span>💰 Coste: {{ card.cost }}</span> }
+            @if (card.damage !== null) { <span>⚔️ Fuerza: {{ card.damage }}</span> }
           </div>
-          @if (selectedCard.ability) {
+          @if (card.ability) {
             <div class="detail-ability">
               <h4>Habilidad</h4>
-              <p>{{ selectedCard.ability }}</p>
+              <p>{{ card.ability }}</p>
             </div>
           }
-          <p class="detail-edition">{{ selectedCard.edition_title }}</p>
+          <p class="detail-edition">{{ card.edition_title }}</p>
           <div class="detail-actions">
             <div class="add-qty-group">
               <label>Cantidad:</label>
               <input type="number" [(ngModel)]="addQty" min="1" />
             </div>
-            <button class="btn btn-primary" (click)="addToCollection(selectedCard)">
+            <button class="btn btn-primary" (click)="addToCollection(card)">
               ➕ Añadir a Carpeta
             </button>
-            <button class="btn btn-heart-lg" [class.active]="isInWishlist(selectedCard.id)" (click)="toggleWishlist(selectedCard, $event)">
-              {{ isInWishlist(selectedCard.id) ? '❤️ En Wishlist' : '🤍 Wishlist' }}
+            <button class="btn btn-heart-lg" [class.active]="isInWishlist(card.id)" (click)="toggleWishlist(card, $event)">
+              {{ isInWishlist(card.id) ? '❤️ En Wishlist' : '🤍 Wishlist' }}
             </button>
           </div>
         </div>
@@ -903,30 +1164,30 @@
   }
 
   <!-- ═══ TAB: STATS ═══ -->
-  @if (activeTab === 'stats') {
+  @if (activeTab() === 'stats' && !workspaceMode()) {
     <div class="tab-content">
-      @if (statsLoading) {
+      @if (statsLoading()) {
         <p class="loading">Calculando estadísticas...</p>
-      } @else if (stats) {
-        <div class="stats-overview">
+      } @else if (stats(); as st) {
+        <div class="stats-overview" data-tour="stats-overview">
           <div class="stat-card-s">
-            <div class="stat-big">{{ stats.total_cards }}</div>
+            <div class="stat-big">{{ st.total_cards }}</div>
             <div class="stat-desc">Cartas totales</div>
           </div>
           <div class="stat-card-s">
-            <div class="stat-big">{{ stats.unique_cards }}</div>
+            <div class="stat-big">{{ st.unique_cards }}</div>
             <div class="stat-desc">Cartas únicas</div>
           </div>
           <div class="stat-card-s">
-            <div class="stat-big">${{ stats.total_value | number }}</div>
+            <div class="stat-big">${{ st.total_value | number }}</div>
             <div class="stat-desc">Valor estimado</div>
           </div>
         </div>
 
-        @if (stats.edition_completeness.length) {
+        @if (st.edition_completeness.length) {
           <h3 class="stats-heading">Completitud por Edición</h3>
           <div class="completeness-grid">
-            @for (ed of stats.edition_completeness; track ed.edition) {
+            @for (ed of st.edition_completeness; track ed.edition) {
               <div class="completeness-item">
                 <div class="completeness-label">{{ ed.edition }}</div>
                 <div class="completeness-bar-wrap">
@@ -938,22 +1199,35 @@
           </div>
         }
 
-        @if (stats.by_rarity.length) {
-          <h3 class="stats-heading">Por Rareza</h3>
-          <div class="stats-dist">
-            @for (r of stats.by_rarity; track r.card__rarity__name) {
-              <div class="dist-row">
-                <span class="dist-label">{{ r.card__rarity__name || 'Sin rareza' }}</span>
-                <span class="dist-count">{{ r.count }}</span>
-              </div>
-            }
+        @if (st.by_rarity.length) {
+          <h3 class="stats-heading">Distribución por Rareza</h3>
+          <div class="donut-section">
+            <svg viewBox="0 0 120 120" class="donut-chart">
+              <circle cx="60" cy="60" r="45" fill="none" stroke="var(--ui-bg-soft, #1a1a2e)" stroke-width="18" />
+              @for (seg of donutSegments(st.by_rarity); track seg.key) {
+                <circle cx="60" cy="60" r="45" fill="none" [attr.stroke]="seg.color" stroke-width="18"
+                        [attr.stroke-dasharray]="seg.dashArray" [attr.stroke-dashoffset]="seg.dashOffset"
+                        transform="rotate(-90 60 60)" />
+              }
+              <text x="60" y="57" text-anchor="middle" class="donut-total-num">{{ st.unique_cards }}</text>
+              <text x="60" y="73" text-anchor="middle" class="donut-total-label">cartas</text>
+            </svg>
+            <div class="donut-legend">
+              @for (seg of donutSegments(st.by_rarity); track seg.key) {
+                <div class="donut-legend-item">
+                  <span class="donut-dot" [style.background]="seg.color"></span>
+                  <span>{{ seg.key }}</span>
+                  <strong>{{ seg.count }}</strong>
+                </div>
+              }
+            </div>
           </div>
         }
 
-        @if (stats.by_type.length) {
+        @if (st.by_type.length) {
           <h3 class="stats-heading">Por Tipo</h3>
           <div class="stats-dist">
-            @for (t of stats.by_type; track t.card__card_type__name) {
+            @for (t of st.by_type; track t.card__card_type__name) {
               <div class="dist-row">
                 <span class="dist-label">{{ t.card__card_type__name || 'Sin tipo' }}</span>
                 <span class="dist-count">{{ t.count }}</span>
@@ -962,10 +1236,10 @@
           </div>
         }
 
-        @if (stats.by_edition.length) {
+        @if (st.by_edition.length) {
           <h3 class="stats-heading">Top Ediciones</h3>
           <div class="stats-dist">
-            @for (e of stats.by_edition; track e.card__edition__name) {
+            @for (e of st.by_edition; track e.card__edition__name) {
               <div class="dist-row">
                 <span class="dist-label">{{ e.card__edition__name || 'Sin edición' }}</span>
                 <span class="dist-count">{{ e.count }}</span>
@@ -976,8 +1250,8 @@
       } @else {
         <div class="empty-state">
           <p>No se pudieron cargar las estadísticas.</p>
-          @if (statsError) {
-            <p style="font-size: 0.8rem; color: #f87171; font-family: monospace;">{{ statsError }}</p>
+          @if (statsError(); as err) {
+            <p style="font-size: 0.8rem; color: #f87171; font-family: monospace;">{{ err }}</p>
           }
           <p style="font-size: 0.85rem; color: #888;">
             Si acabas de actualizar, asegúrate de aplicar las migraciones del backend y recargar la web app.
@@ -989,22 +1263,29 @@
   }
 
   <!-- ═══ MODAL: Preview carta grande ═══ -->
-  @if (previewCard) {
-    <div class="modal-overlay" (click)="previewCard = null">
+  @if (previewCard(); as pc) {
+    <div class="modal-overlay" (click)="previewCard.set(null)">
       <div class="preview-modal" (click)="$event.stopPropagation()">
-        <button class="close-btn" (click)="previewCard = null">✕</button>
-        <img [src]="previewCard.image_url" [alt]="previewCard.name" class="preview-image" />
+        <button class="close-btn" (click)="previewCard.set(null)">✕</button>
+        <img [src]="pc.image_url" [alt]="pc.name" class="preview-image" />
       </div>
     </div>
   }
 
   <!-- ═══ MODAL: Foto real de la carta ═══ -->
-  @if (viewPhotoUrl) {
+  @if (viewPhotoUrl(); as photoUrl) {
     <div class="modal-overlay" (click)="closePhotoModal()">
       <div class="preview-modal" (click)="$event.stopPropagation()">
         <button class="close-btn" (click)="closePhotoModal()">✕</button>
-        <img [src]="viewPhotoUrl" alt="Foto real de la carta" class="preview-image" />
+        <img [src]="photoUrl" alt="Foto real de la carta" class="preview-image" />
       </div>
     </div>
   }
+
+  <!-- ═══ Guía interactiva ═══ -->
+  <app-carpeta-guide-modal [isOpen]="showGuide()" [completedTours]="completedTours()"
+                    (close)="showGuide.set(false)" (startTour)="showGuide.set(false)"
+                    (startCardTour)="onStartCardTour($event)"></app-carpeta-guide-modal>
+
+  <app-tour-overlay></app-tour-overlay>
 </div>

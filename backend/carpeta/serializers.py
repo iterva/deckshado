@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import BinderProfile, CollectionEntry, WishlistEntry, StoreOrder, StoreOrderItem
+from .models import BinderProfile, CollectionEntry, WishlistEntry, StoreOrder, StoreOrderItem, MylStorePermission
 from cards.serializers import CardListSerializer
 
 
@@ -181,3 +181,38 @@ class StoreOrderCreateSerializer(serializers.Serializer):
     buyer_whatsapp = serializers.CharField(required=True, allow_blank=False, max_length=30)
     buyer_note = serializers.CharField(required=False, allow_blank=True, max_length=800)
     items = StoreOrderCreateItemSerializer(many=True, allow_empty=False)
+
+
+class MylStorePermissionSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+    user_id = serializers.IntegerField(source="user.id", read_only=True)
+    granted_by_username = serializers.CharField(source="granted_by.username", read_only=True)
+    permissions = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MylStorePermission
+        fields = [
+            "id",
+            "store_profile",
+            "user_id",
+            "username",
+            "granted_by",
+            "granted_by_username",
+            "permissions",
+            "can_view_collection",
+            "can_edit_collection",
+            "can_delete_collection",
+            "can_edit_market",
+            "can_remove_from_market",
+            "can_view_orders",
+            "can_view_history",
+            "can_accept_orders",
+            "can_reject_orders",
+            "can_manage_permissions",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "store_profile", "user_id", "username", "granted_by_username", "created_at", "updated_at"]
+
+    def get_permissions(self, obj):
+        return obj.permissions_dict()

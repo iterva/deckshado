@@ -131,17 +131,24 @@ export class App implements OnInit {
   onSearch() {
     const q = this.searchQuery.trim();
     if (q.length < 2) { this.searchResults = null; return; }
-    this.http.get(`${environment.apiUrl}/search/`, { params: { q } }).subscribe((res: any) => {
+    const game = this.gameMode.isRiftbound() ? 'riftbound' : 'myl';
+    this.http.get(`${environment.apiUrl}/search/`, { params: { q, game } }).subscribe((res: any) => {
       this.searchResults = res;
     });
   }
 
-  goToResult(type: string, id: number) {
+  goToResult(type: string, item: any) {
     this.showSearch.set(false);
     this.searchResults = null;
     this.searchQuery = '';
-    if (type === 'card') this.router.navigate(['/cards'], { queryParams: { highlight: id } });
-    else if (type === 'deck') this.router.navigate(['/decks', id]);
+    const isRiftbound = this.gameMode.isRiftbound();
+    if (type === 'card') {
+      if (isRiftbound) this.router.navigate(['/riftbound/cards', item.card_number]);
+      else this.router.navigate(['/cards'], { queryParams: { highlight: item.id } });
+    } else if (type === 'deck') {
+      if (isRiftbound) this.router.navigate(['/riftbound/decks', item.id]);
+      else this.router.navigate(['/decks', item.id]);
+    }
   }
 
   onNotifClick(notif: any) {

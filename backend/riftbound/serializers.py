@@ -123,12 +123,16 @@ class RiftboundBanlistEntrySerializer(serializers.ModelSerializer):
     card_number = serializers.CharField(source="card.card_number", read_only=True)
     card_type = serializers.CharField(source="card.card_type", read_only=True)
     card_image = serializers.SerializerMethodField()
+    card_cdn_image_url = serializers.CharField(source="card.cdn_image_url", read_only=True)
+    card_image_url = serializers.CharField(source="card.image_url", read_only=True)
+    card_image_url_small = serializers.CharField(source="card.image_url_small", read_only=True)
     format_code = serializers.CharField(source="format.code", read_only=True)
 
     class Meta:
         model = RiftboundBanlistEntry
         fields = [
             "id", "card", "card_name", "card_number", "card_type", "card_image",
+            "card_cdn_image_url", "card_image_url", "card_image_url_small",
             "format", "format_code",
             "status", "max_copies", "note", "effective_from",
         ]

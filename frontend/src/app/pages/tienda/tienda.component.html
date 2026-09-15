@@ -43,7 +43,7 @@
           <button class="btn btn-primary btn-sm" (click)="showContactModal = true">
             <app-icon name="message-circle" [size]="15"></app-icon> Contactar
           </button>
-          <a class="btn btn-sm" routerLink="/mis-compras" [queryParams]="{ game: 'myl', store: token }" target="_blank">
+          <a class="btn btn-sm" routerLink="/mis-compras" [queryParams]="{ game: 'myl', store: token }">
             <app-icon name="package" [size]="15"></app-icon> Mis pedidos
           </a>
         }
@@ -112,7 +112,7 @@
     @if (createdOrderId) {
       <div class="order-created-banner">
         ✅ Pedido #{{ createdOrderId }} creado correctamente. El vendedor ya lo ve en su carpeta.
-        <a routerLink="/mis-compras" [queryParams]="{ game: 'myl', store: token }" target="_blank">Ver mis pedidos ↗</a>
+        <a routerLink="/mis-compras" [queryParams]="{ game: 'myl', store: token }">Ver mis pedidos ↗</a>
       </div>
     }
 

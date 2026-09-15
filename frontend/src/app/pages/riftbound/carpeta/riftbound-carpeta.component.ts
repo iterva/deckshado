@@ -5,6 +5,7 @@ import {
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import QRCode from 'qrcode';
 
 import { RiftboundService } from '../../../services/riftbound.service';
@@ -12,6 +13,9 @@ import { AuthService } from '../../../services/auth.service';
 import { ShareImageComponent, ShareImageItem } from '../../../components/share-image/share-image.component';
 import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.component';
 import { IconComponent } from '../../../components/icon/icon.component';
+import { GuideModalComponent } from './components/guide-modal/guide-modal.component';
+import { TourOverlayComponent } from '../../../components/tour-overlay/tour-overlay.component';
+import { TourService, TourStep } from '../../../services/tour.service';
 import {
   RiftboundCard, RiftboundCardLite, RiftboundCollectionEntry, RiftboundWishlistEntry,
   RiftboundSet, RiftboundCollectionStats, RiftboundBinderProfile, RiftboundBulkImportResult,
@@ -19,7 +23,7 @@ import {
   RiftboundWorkspace, RiftboundStorePermissionFlags, RiftboundStoreCollaboratorPermission,
 } from '../../../models/riftbound';
 
-type Tab = 'carpeta' | 'codex' | 'wishlist' | 'mercado' | 'pedidos' | 'historial' | 'stats' | 'permisos';
+type Tab = 'carpeta' | 'codex' | 'wishlist' | 'mercado' | 'pedidos' | 'stats' | 'permisos';
 
 interface DirtyPatch {
   quantity?: number;
@@ -44,10 +48,64 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
   manage_permissions: true,
 };
 
+const TOUR_STEPS: Record<string, TourStep[]> = {
+  carpeta: [
+    { target: '[data-tour="carpeta-search"]', title: 'Buscar en tu carpeta', description: 'Escribe el nombre de una carta para filtrar rápidamente lo que ya posees.' },
+    { target: '[data-tour="carpeta-filter-selling"]', title: 'Solo en venta', description: 'Filtra la grilla para ver únicamente las cartas que tienes listadas en el mercado.' },
+    { target: '[data-tour="carpeta-bulk-import"]', title: 'Importar masivo', description: 'Pega una lista de cartas (una por línea) para agregarlas todas de una vez a tu carpeta.' },
+    { target: '[data-tour="carpeta-grid"]', title: 'Tu colección', description: 'Cada carta muestra cuántas copias tienes y si está en venta. Tócala para editar cantidad, precio, idioma, foil y notas.' },
+  ],
+  mercado: [
+    { target: '[data-tour="mercado-toolbar"]', title: 'Herramientas de tienda', description: 'Aquí configuras los datos públicos de tu tienda, copias el link para compartir y generas un QR o PDF.' },
+    { target: '[data-tour="mercado-config"]', title: 'Configurar tienda', description: 'Define nombre público, ciudad, WhatsApp, métodos de pago y más para que los compradores confíen en tu tienda.' },
+    { target: '[data-tour="mercado-grid"]', title: 'Cartas en venta', description: 'Toca cualquier carta para actualizar su precio, cantidad en venta o subir una foto real del ejemplar.' },
+  ],
+  codex: [
+    { target: '[data-tour="codex-search"]', title: 'Buscar cartas', description: 'Escribe el nombre de cualquier carta de Riftbound para encontrarla en el catálogo completo.' },
+    { target: '[data-tour="codex-filters"]', title: 'Filtrar por set, tipo, rareza o color', description: 'Combina estos filtros para acotar la búsqueda a exactamente lo que buscas.' },
+    { target: '[data-tour="codex-grid"]', title: 'Agregar, vender o desear', description: 'Al pasar el mouse sobre una carta aparecen 3 acciones: añadir a tu carpeta, ponerla en venta directamente, o guardarla en tu wishlist.' },
+  ],
+  wishlist: [
+    { target: '[data-tour="wishlist-search"]', title: 'Buscar en tu wishlist', description: 'Filtra rápidamente las cartas que marcaste como deseadas.' },
+    { target: '[data-tour="wishlist-share-row"]', title: 'Genera tu imagen de "busco"', description: 'El botón "Imagen busco" genera una foto lista para compartir con las cartas que selecciones en ese momento. También puedes copiar o enviar el link de tu wishlist por WhatsApp.' },
+    { target: '[data-tour="wishlist-share-check"]', title: 'Elige qué mostrar', description: 'Marca esta casilla en cada carta para incluirla en la próxima imagen que generes. Puedes cambiar la selección cada vez.' },
+    { target: '[data-tour="wishlist-grid"]', title: 'Tus cartas deseadas', description: 'Ajusta cuántas copias quieres de cada una.' },
+  ],
+  pedidos: [
+    { target: '[data-tour="pedidos-pills"]', title: 'Filtra por estado', description: 'Cambia entre Pendientes, Todos, Completados y Cancelados para revisar el estado de tus ventas.' },
+    { target: '[data-tour="pedidos-table"]', title: 'Gestiona cada pedido', description: 'Toca una fila para ver el detalle completo, o usa los íconos ✓/✕ para aceptar o cancelar un pedido pendiente directamente.' },
+  ],
+  permisos: [
+    { target: '[data-tour="permisos-panel"]', title: 'Dar acceso a un colaborador', description: 'Ingresa su usuario o email para invitarlo a administrar tu tienda.' },
+    { target: '[data-tour="permisos-role"]', title: 'Elige un rol', description: 'Lector, Gestor de Mercado o Administrador aplican un set de permisos predefinido. Elige "Personalizado" para ajustar cada permiso manualmente.' },
+    { target: '[data-tour="permisos-list"]', title: 'Colaboradores actuales', description: 'Aquí ves y editas el rol de cada persona con acceso, o le quitas el acceso por completo.' },
+  ],
+};
+
+type CollaboratorRole = 'lector' | 'gestor_mercado' | 'administrador' | 'personalizado';
+
+const ROLE_PRESETS: Record<Exclude<CollaboratorRole, 'personalizado'>, Array<keyof RiftboundStorePermissionFlags>> = {
+  lector: ['view_collection', 'view_orders', 'view_history'],
+  gestor_mercado: ['view_collection', 'view_orders', 'view_history', 'edit_market', 'remove_from_market', 'accept_orders', 'reject_orders'],
+  administrador: ['view_collection', 'edit_collection', 'delete_collection', 'edit_market', 'remove_from_market', 'view_orders', 'view_history', 'accept_orders', 'reject_orders', 'manage_permissions'],
+};
+
+function permsMatchRole(perms: Partial<RiftboundStorePermissionFlags>, allKeys: Array<keyof RiftboundStorePermissionFlags>, role: Exclude<CollaboratorRole, 'personalizado'>): boolean {
+  const active = new Set(ROLE_PRESETS[role]);
+  return allKeys.every(key => !!perms[key] === active.has(key));
+}
+
+function detectCollaboratorRole(perms: Partial<RiftboundStorePermissionFlags>, allKeys: Array<keyof RiftboundStorePermissionFlags>): CollaboratorRole {
+  if (permsMatchRole(perms, allKeys, 'administrador')) return 'administrador';
+  if (permsMatchRole(perms, allKeys, 'gestor_mercado')) return 'gestor_mercado';
+  if (permsMatchRole(perms, allKeys, 'lector')) return 'lector';
+  return 'personalizado';
+}
+
 @Component({
   selector: 'app-riftbound-carpeta',
   standalone: true,
-  imports: [CommonModule, FormsModule, DecimalPipe, ShareImageComponent, TcgPriceComponent, IconComponent],
+  imports: [CommonModule, FormsModule, DecimalPipe, ShareImageComponent, TcgPriceComponent, IconComponent, GuideModalComponent, TourOverlayComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
   <div class="carpeta-container">
@@ -82,6 +140,9 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
             }
           </p>
         </div>
+        <button class="guide-trigger-btn" (click)="showGuide.set(true)" title="Guía de la Carpeta" aria-label="Abrir guía">
+          <app-icon name="help-circle" [size]="18"></app-icon>
+        </button>
       </div>
 
       <!-- Collection Stats Banner -->
@@ -135,42 +196,76 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
     <!-- Tabs -->
     <div class="tabs">
       @if (!workspaceMode() || hasPermission('view_collection')) {
-        <button class="tab" [class.active]="activeTab() === 'carpeta'" (click)="switchTab('carpeta')">
-          <app-icon name="folder" [size]="15"></app-icon> <span>CARPETA</span>
-        </button>
-        <button class="tab" [class.active]="activeTab() === 'codex'" (click)="switchTab('codex')">
-          <app-icon name="library" [size]="15"></app-icon> <span>COLECCIÓN</span>
-        </button>
-      }
-      @if (!workspaceMode()) {
-        <button class="tab" [class.active]="activeTab() === 'wishlist'" (click)="switchTab('wishlist')">
-          <app-icon name="heart" [size]="15"></app-icon> <span>WISHLIST</span>
-        </button>
+        <div class="tab-group">
+          <button class="tab tab-group-btn" [class.active]="isTabInGroup('coleccion')"
+                  (click)="toggleNavGroup('coleccion', $event)">
+            <app-icon name="folder" [size]="15"></app-icon> <span>MI COLECCIÓN</span>
+            <app-icon name="chevron-down" [size]="12"></app-icon>
+          </button>
+          @if (openNavGroup() === 'coleccion') {
+            <div class="tab-dropdown">
+              <button class="tab-dropdown-item" [class.active]="activeTab() === 'carpeta'"
+                      (click)="switchTab('carpeta'); closeNavGroup()">
+                <app-icon name="folder" [size]="14"></app-icon> Carpeta
+              </button>
+              <button class="tab-dropdown-item" [class.active]="activeTab() === 'codex'"
+                      (click)="switchTab('codex'); closeNavGroup()">
+                <app-icon name="library" [size]="14"></app-icon> Colección
+              </button>
+              @if (!workspaceMode()) {
+                <button class="tab-dropdown-item" [class.active]="activeTab() === 'wishlist'"
+                        (click)="switchTab('wishlist'); closeNavGroup()">
+                  <app-icon name="heart" [size]="14"></app-icon> Wishlist
+                </button>
+              }
+            </div>
+          }
+        </div>
       }
       @if (!workspaceMode() || hasPermission('view_collection')) {
         <button class="tab" [class.active]="activeTab() === 'mercado'" (click)="switchTab('mercado')">
           <app-icon name="store" [size]="15"></app-icon> <span>MERCADO</span>
         </button>
       }
-      @if (!workspaceMode() || hasPermission('view_orders')) {
-        <button class="tab" [class.active]="activeTab() === 'pedidos'" (click)="switchTab('pedidos')">
-          <app-icon name="file-text" [size]="15"></app-icon> <span>PEDIDOS</span>
-        </button>
-      }
-      @if (!workspaceMode() || hasPermission('view_history')) {
-        <button class="tab" [class.active]="activeTab() === 'historial'" (click)="switchTab('historial')">
-          <app-icon name="clock" [size]="15"></app-icon> <span>HISTORIAL</span>
-        </button>
-      }
       @if (!workspaceMode()) {
-        <button class="tab" [class.active]="activeTab() === 'stats'" (click)="switchTab('stats')">
-          <app-icon name="bar-chart-3" [size]="15"></app-icon> <span>STATS</span>
+        <button class="tab tab-link" (click)="goToCollaborate()" title="Ver y administrar carpetas de otras tiendas donde colaboras">
+          <app-icon name="users" [size]="15"></app-icon> <span>CARPETAS COMPARTIDAS</span>
+        </button>
+      } @else {
+        <button class="tab tab-link" (click)="goToMyFolder()" title="Volver a mi carpeta">
+          <app-icon name="folder" [size]="15"></app-icon> <span>MI CARPETA</span>
         </button>
       }
-      @if (canManagePermissions()) {
-        <button class="tab" [class.active]="activeTab() === 'permisos'" (click)="switchTab('permisos')">
-          <app-icon name="shield" [size]="15"></app-icon> <span>PERMISOS</span>
-        </button>
+      @if (showAdminNavGroup()) {
+        <div class="tab-group">
+          <button class="tab tab-group-btn" [class.active]="isTabInGroup('admin')"
+                  (click)="toggleNavGroup('admin', $event)">
+            <app-icon name="settings" [size]="15"></app-icon> <span>ADMINISTRACIÓN</span>
+            <app-icon name="chevron-down" [size]="12"></app-icon>
+          </button>
+          @if (openNavGroup() === 'admin') {
+            <div class="tab-dropdown">
+              @if (!workspaceMode() || hasPermission('view_orders') || hasPermission('view_history')) {
+                <button class="tab-dropdown-item" [class.active]="activeTab() === 'pedidos'"
+                        (click)="switchTab('pedidos'); closeNavGroup()">
+                  <app-icon name="file-text" [size]="14"></app-icon> Gestión de Pedidos
+                </button>
+              }
+              @if (!workspaceMode()) {
+                <button class="tab-dropdown-item" [class.active]="activeTab() === 'stats'"
+                        (click)="switchTab('stats'); closeNavGroup()">
+                  <app-icon name="bar-chart-3" [size]="14"></app-icon> Stats
+                </button>
+              }
+              @if (canManagePermissions()) {
+                <button class="tab-dropdown-item" [class.active]="activeTab() === 'permisos'"
+                        (click)="switchTab('permisos'); closeNavGroup()">
+                  <app-icon name="shield" [size]="14"></app-icon> Permisos
+                </button>
+              }
+            </div>
+          }
+        </div>
       }
     </div>
 
@@ -184,17 +279,17 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
     @if (activeTab() === 'carpeta' && canUseWorkspaceContent()) {
       <div class="tab-content">
         <div class="tab-toolbar">
-          <div class="search-bar">
+          <div class="search-bar" data-tour="carpeta-search">
             <input type="text" placeholder="Buscar en tu colección..."
                    [(ngModel)]="collectionSearch" (keyup.enter)="onCollectionSearch()" />
             <button class="btn btn-primary btn-sm" (click)="onCollectionSearch()">
               <app-icon name="search" [size]="14"></app-icon> <span>Buscar</span>
             </button>
           </div>
-          <button class="btn btn-sm" [class.btn-primary]="onlySelling()" (click)="toggleOnlySelling()">
+          <button class="btn btn-sm" data-tour="carpeta-filter-selling" [class.btn-primary]="onlySelling()" (click)="toggleOnlySelling()">
             <app-icon name="tag" [size]="14"></app-icon> Solo en venta
           </button>
-          <button class="btn btn-sm" (click)="showBulkImport.update(v => !v)" [disabled]="!hasPermission('edit_collection')">
+          <button class="btn btn-sm" data-tour="carpeta-bulk-import" (click)="showBulkImport.update(v => !v)" [disabled]="!hasPermission('edit_collection')">
             <app-icon name="upload" [size]="14"></app-icon> Importar masivo
           </button>
           @if (dirtyEntries.size > 0 && (hasPermission('edit_collection') || hasPermission('edit_market') || hasPermission('remove_from_market'))) {
@@ -249,7 +344,7 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
           </div>
         }
 
-        <div class="collection-grid">
+        <div class="collection-grid" data-tour="carpeta-grid">
           @for (entry of collectionEntries(); track entry.id) {
             <div class="collection-card">
               <div class="card-image" (click)="previewCard.set(entry.card_data)">
@@ -262,61 +357,24 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
                 <div class="eye-overlay"><app-icon name="eye" [size]="18"></app-icon></div>
                 @if (entry.is_foil) { <div class="foil-badge">✨ FOIL</div> }
               </div>
-              <div class="card-body">
+              <div class="card-body-compact" (click)="openQuickEdit(entry)">
                 <h4>{{ entry.card_data.name }}</h4>
                 <span class="card-meta">{{ typeLabel(entry.card_data.card_type) }} · {{ entry.card_data.card_number }}</span>
-                <div class="inline-fields">
-                  <div class="field">
-                    <label>Tengo</label>
-                    <input type="number" [value]="entry.quantity" min="0"
-                      [disabled]="!hasPermission('edit_collection')"
-                      (input)="onFieldChange(entry, 'quantity', $any($event.target).valueAsNumber)" />
-                  </div>
-                  <div class="field">
-                    <label>Precio</label>
-                    <input type="number" [value]="entry.price ?? ''" min="0" placeholder="—"
-                      [disabled]="!hasPermission('edit_market')"
-                      (input)="onFieldChange(entry, 'price', priceFromInput($any($event.target).value))" />
-                  </div>
-                  <div class="field">
-                    <label>En venta</label>
-                    <input type="number" [value]="entry.selling_quantity" min="0" [max]="entry.quantity"
-                      [disabled]="!hasPermission('edit_market') && !hasPermission('remove_from_market')"
-                      (input)="onFieldChange(entry, 'selling_quantity', $any($event.target).valueAsNumber)" />
-                  </div>
-                </div>
-                <div class="tcg-ref-row">
-                  <app-tcg-price [cardName]="entry.card_data.name || ''" [compact]="true"></app-tcg-price>
-                </div>
-                <div class="inline-fields">
-                  <div class="field">
-                    <label>Idioma</label>
-                    <select [value]="entry.language" [disabled]="!hasPermission('edit_collection')"
-                      (change)="onFieldChange(entry, 'language', $any($event.target).value)">
-                      <option value="EN">EN</option>
-                      <option value="ZH">中文</option>
-                    </select>
-                  </div>
-                  <label class="foil-toggle">
-                    <input type="checkbox" [checked]="entry.is_foil"
-                      [disabled]="!hasPermission('edit_collection')"
-                      (change)="onFieldChange(entry, 'is_foil', $any($event.target).checked)" />
-                    ✨ Foil
-                  </label>
-                </div>
-                <div class="field full">
-                  <label>Notas</label>
-                  <input type="text" [value]="entry.notes" maxlength="200" placeholder="—"
-                    [disabled]="!hasPermission('edit_collection')"
-                    (input)="onFieldChange(entry, 'notes', $any($event.target).value)" />
-                </div>
-                <div class="card-action-row">
-                  @if (dirtyEntries.has(entry.id) && (hasPermission('edit_collection') || hasPermission('edit_market') || hasPermission('remove_from_market'))) {
-                    <button class="btn btn-xs btn-primary" (click)="saveEntry(entry)">💾 Guardar</button>
+                <div class="card-badges-row">
+                  <span class="qty-badge" [class.zero]="entry.quantity === 0">
+                    <app-icon name="check-circle" [size]="12"></app-icon> {{ entry.quantity }}
+                  </span>
+                  @if (entry.selling_quantity > 0) {
+                    <span class="sale-badge"><app-icon name="tag" [size]="12"></app-icon> {{ entry.selling_quantity }}</span>
+                  } @else if (entry.quantity > 0 && hasPermission('edit_market')) {
+                    <button class="sell-quick-btn" (click)="quickSell(entry, $event)" title="Poner a la venta">
+                      <app-icon name="tag" [size]="12"></app-icon> Vender
+                    </button>
                   }
-                  <button class="btn btn-xs btn-danger" (click)="removeFromCollection(entry)" [disabled]="!hasPermission('delete_collection')">
-                    <app-icon name="trash-2" [size]="14"></app-icon>
-                  </button>
+                  @if (dirtyEntries.has(entry.id)) {
+                    <span class="dirty-badge" title="Cambios sin guardar"></span>
+                  }
+                  <span class="edit-badge"><app-icon name="edit" [size]="12"></app-icon> Editar</span>
                 </div>
               </div>
             </div>
@@ -339,13 +397,13 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
     @if (activeTab() === 'codex' && canUseWorkspaceContent()) {
       <div class="tab-content">
         <div class="tab-toolbar">
-          <div class="search-bar">
+          <div class="search-bar" data-tour="codex-search">
             <input type="text" placeholder="Buscar cartas..."
                    [(ngModel)]="codexSearch" (keyup.enter)="onCodexSearch()" />
             <button class="btn btn-primary btn-sm" (click)="onCodexSearch()">Buscar</button>
           </div>
         </div>
-        <div class="filter-row">
+        <div class="filter-row" data-tour="codex-filters">
           <select [(ngModel)]="selectedSet" (change)="onCodexFilter()">
             <option value="">Todos los sets</option>
             @for (s of sets(); track s.id) { <option [value]="s.code">{{ s.name }} ({{ s.code }})</option> }
@@ -384,7 +442,7 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
 
         @if (codexLoading()) { <div class="loading">Cargando...</div> }
 
-        <div class="card-grid">
+        <div class="card-grid" data-tour="codex-grid">
           @for (card of codexCards(); track card.id) {
             <div class="card-item" (click)="selectCodexCard(card)">
               <div class="card-image">
@@ -407,6 +465,10 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
                 <button class="btn-icon btn-add" (click)="quickAddToCollection(card, $event)" title="Añadir a colección"
                         [disabled]="!hasPermission('edit_collection')">
                   <app-icon name="plus" [size]="14"></app-icon>
+                </button>
+                <button class="btn-icon btn-sell" (click)="sellFromCodex(card, $event)" title="Vender"
+                        [disabled]="!hasPermission('edit_market')">
+                  <app-icon name="tag" [size]="14"></app-icon>
                 </button>
                 <button class="btn-icon btn-heart" [class.active]="isInWishlist(card.id)"
                   [disabled]="workspaceMode()"
@@ -434,13 +496,13 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
     @if (activeTab() === 'wishlist' && canUseWorkspaceContent()) {
       <div class="tab-content">
         <div class="tab-toolbar">
-          <div class="search-bar">
+          <div class="search-bar" data-tour="wishlist-search">
             <input type="text" placeholder="Buscar en wishlist..."
                    [(ngModel)]="wishlistSearch" (keyup.enter)="onWishlistSearch()" />
             <button class="btn btn-primary btn-sm" (click)="onWishlistSearch()">Buscar</button>
           </div>
           @if (wishlistEntries().length > 0) {
-            <div class="share-row">
+            <div class="share-row" data-tour="wishlist-share-row">
               <input type="text"
                      class="share-message-input"
                      placeholder="Mensaje en la imagen (opcional)"
@@ -479,10 +541,10 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
           </div>
         }
 
-        <div class="wishlist-grid">
+        <div class="wishlist-grid" data-tour="wishlist-grid">
           @for (entry of wishlistEntries(); track entry.id) {
             <div class="wishlist-card" [class.is-share-selected]="isWishlistShareSelected(entry.id)">
-              <label class="share-check" title="Incluir en la imagen para compartir" (click)="$event.stopPropagation()">
+              <label class="share-check" data-tour="wishlist-share-check" title="Incluir en la imagen para compartir" (click)="$event.stopPropagation()">
                 <input type="checkbox"
                        [checked]="isWishlistShareSelected(entry.id)"
                        (change)="toggleWishlistShare(entry.id, $any($event.target).checked)" />
@@ -531,9 +593,9 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
     <!-- ═══ TAB: MERCADO ═══ -->
     @if (activeTab() === 'mercado' && canUseWorkspaceContent()) {
       <div class="tab-content">
-        <div class="mercado-toolbar">
+        <div class="mercado-toolbar" data-tour="mercado-toolbar">
           @if (!workspaceMode()) {
-            <button class="btn btn-sm" (click)="showStoreConfig.update(v => !v)">
+            <button class="btn btn-sm" data-tour="mercado-config" (click)="showStoreConfig.update(v => !v)">
               <app-icon name="settings" [size]="14"></app-icon> {{ showStoreConfig() ? 'Cerrar' : 'Configurar' }} tienda
             </button>
             @if (binderProfile()?.is_store_public && binderProfile()?.share_token) {
@@ -644,7 +706,7 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
           </div>
         }
 
-        <div #mercadoExport class="collection-grid">
+        <div #mercadoExport class="collection-grid" data-tour="mercado-grid">
           @for (entry of mercadoEntries(); track entry.id) {
             <div class="collection-card">
               <div class="card-image" (click)="previewCard.set(entry.card_data)">
@@ -656,75 +718,109 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
                 }
                 @if (entry.is_foil) { <div class="foil-badge">✨ FOIL</div> }
               </div>
-              <div class="card-body">
+              <!-- Inputs de foto viven fuera del body compacto: sus IDs son globales por entry.id -->
+              <input type="file" accept="image/*" capture="environment"
+                     [id]="'rb-photo-input-' + entry.id + '-1'"
+                    [disabled]="!hasPermission('edit_market')"
+                     (change)="onPhotoSelected(entry, $event, 1)" hidden />
+              <input type="file" accept="image/*" capture="environment"
+                     [id]="'rb-photo-input-' + entry.id + '-2'"
+                    [disabled]="!hasPermission('edit_market')"
+                     (change)="onPhotoSelected(entry, $event, 2)" hidden />
+              <div class="card-body-compact" (click)="openMercadoQuickEdit(entry)">
                 <h4>{{ entry.card_data.name }}</h4>
                 <span class="card-meta">{{ entry.card_data.card_number }} · {{ entry.language }}</span>
-                <div class="inline-fields">
-                  <div class="field">
-                    <label>Precio</label>
-                    <input type="number" [value]="entry.price ?? ''" min="0" placeholder="—"
-                      [disabled]="!hasPermission('edit_market')"
-                      (input)="onMercadoFieldChange(entry, 'price', priceFromInput($any($event.target).value))" />
-                  </div>
-                  <div class="field">
-                    <label>En venta</label>
-                    <input type="number" [value]="entry.selling_quantity" min="0" [max]="entry.quantity"
-                      [disabled]="!hasPermission('edit_market') && !hasPermission('remove_from_market')"
-                      (input)="onMercadoFieldChange(entry, 'selling_quantity', $any($event.target).valueAsNumber)" />
-                  </div>
-                </div>
-                <div class="tcg-ref-row">
-                  <span class="tcg-ref-label">Ref. TCG:</span>
-                  <app-tcg-price [cardName]="entry.card_data.name || ''" [compact]="true"></app-tcg-price>
-                </div>
-                <div class="card-photo-row">
-                  <!-- Slot 1 -->
-                  <input type="file" accept="image/*" capture="environment"
-                         [id]="'rb-photo-input-' + entry.id + '-1'"
-                        [disabled]="!hasPermission('edit_market')"
-                         (change)="onPhotoSelected(entry, $event, 1)" hidden />
-                  @if (entry.photo_url) {
-                    <button class="btn btn-xs btn-photo" (click)="openPhotoModal(entry.photo_url, $event)" title="Ver foto 1">
-                      <img class="photo-thumb" [src]="entry.photo_url" alt="Foto 1" /> 📸 1
-                    </button>
-                    <button class="btn btn-xs btn-photo-action" (click)="triggerPhotoUpload(entry, $event, 1)"
-                          [disabled]="uploadingPhotoFor() === entry.id || !hasPermission('edit_market')" title="Reemplazar foto 1">
-                      {{ uploadingPhotoFor() === entry.id && uploadingPhotoSlot() === 1 ? '⏳' : '🔄' }}
-                    </button>
-                    <button class="btn btn-xs btn-danger" (click)="removePhoto(entry, $event, 1)" title="Quitar"
-                      [disabled]="!hasPermission('edit_market')">✕</button>
-                  } @else {
-                    <button class="btn btn-xs btn-photo btn-photo-empty" (click)="triggerPhotoUpload(entry, $event, 1)"
-                            [disabled]="uploadingPhotoFor() === entry.id || !hasPermission('edit_market')" title="Subir foto real">
-                      {{ uploadingPhotoFor() === entry.id && uploadingPhotoSlot() === 1 ? '⏳ Subiendo...' : '📷 Foto 1' }}
-                    </button>
-                  }
-                  <!-- Slot 2 -->
-                  <input type="file" accept="image/*" capture="environment"
-                         [id]="'rb-photo-input-' + entry.id + '-2'"
-                        [disabled]="!hasPermission('edit_market')"
-                         (change)="onPhotoSelected(entry, $event, 2)" hidden />
-                  @if (entry.photo_url_2) {
-                    <button class="btn btn-xs btn-photo" (click)="openPhotoModal(entry.photo_url_2, $event)" title="Ver foto 2">
-                      <img class="photo-thumb" [src]="entry.photo_url_2" alt="Foto 2" /> 📸 2
-                    </button>
-                    <button class="btn btn-xs btn-photo-action" (click)="triggerPhotoUpload(entry, $event, 2)"
-                          [disabled]="uploadingPhotoFor() === entry.id || !hasPermission('edit_market')" title="Reemplazar foto 2">
-                      {{ uploadingPhotoFor() === entry.id && uploadingPhotoSlot() === 2 ? '⏳' : '🔄' }}
-                    </button>
-                    <button class="btn btn-xs btn-danger" (click)="removePhoto(entry, $event, 2)" title="Quitar"
-                      [disabled]="!hasPermission('edit_market')">✕</button>
-                  } @else if (entry.photo_url) {
-                    <button class="btn btn-xs btn-photo btn-photo-empty" (click)="triggerPhotoUpload(entry, $event, 2)"
-                            [disabled]="uploadingPhotoFor() === entry.id || !hasPermission('edit_market')" title="Subir 2ª foto">
-                      {{ uploadingPhotoFor() === entry.id && uploadingPhotoSlot() === 2 ? '⏳ Subiendo...' : '➕ Foto 2' }}
-                    </button>
-                  }
+                <div class="card-badges-row">
+                  <span class="sale-badge"><app-icon name="tag" [size]="12"></app-icon> {{ entry.selling_quantity }}</span>
+                  @if (entry.photo_url) { <span class="qty-badge"><app-icon name="camera" [size]="12"></app-icon> Foto</span> }
+                  @if (mercadoDirty.has(entry.id)) { <span class="dirty-badge" title="Cambios sin guardar"></span> }
+                  <span class="edit-badge"><app-icon name="edit" [size]="12"></app-icon> Editar</span>
                 </div>
               </div>
             </div>
           }
         </div>
+
+        <!-- ═══ QUICK EDIT: Mercado ═══ -->
+        @if (quickEditMercadoEntry(); as qe) {
+          <div class="modal-overlay" (click)="closeMercadoQuickEdit()">
+            <div class="modal quick-edit-modal" (click)="$event.stopPropagation()">
+              <button class="close-btn" (click)="closeMercadoQuickEdit()">✕</button>
+              <div class="quick-edit-header">
+                @if (cardImageUrl(qe.card_data) && !isCardImageBroken(qe.card_data)) {
+                  <img [src]="cardImageUrl(qe.card_data)" [alt]="qe.card_data.name" class="quick-edit-thumb" />
+                }
+                <div>
+                  <h3>{{ qe.card_data.name }}</h3>
+                  <span class="quick-edit-meta">{{ qe.card_data.card_number }} · {{ qe.language }}</span>
+                </div>
+              </div>
+              <div class="quick-edit-body">
+                <div class="inline-fields">
+                  <div class="field">
+                    <label>Precio</label>
+                    <input type="number" [value]="qe.price ?? ''" min="0" placeholder="—"
+                      [disabled]="!hasPermission('edit_market')"
+                      (input)="onMercadoFieldChange(qe, 'price', priceFromInput($any($event.target).value))" />
+                  </div>
+                  <div class="field">
+                    <label>En venta</label>
+                    <input type="number" [value]="qe.selling_quantity" min="0" [max]="qe.quantity"
+                      [disabled]="!hasPermission('edit_market') && !hasPermission('remove_from_market')"
+                      (input)="onMercadoFieldChange(qe, 'selling_quantity', $any($event.target).valueAsNumber)" />
+                  </div>
+                </div>
+                <div class="tcg-ref-row">
+                  <span class="tcg-ref-label">Ref. TCG:</span>
+                  <app-tcg-price [cardName]="qe.card_data.name || ''" [compact]="true"></app-tcg-price>
+                </div>
+                <div class="card-photo-row">
+                  <!-- Slot 1 -->
+                  @if (qe.photo_url) {
+                    <button class="btn btn-xs btn-photo" (click)="openPhotoModal(qe.photo_url, $event)" title="Ver foto 1">
+                      <img class="photo-thumb" [src]="qe.photo_url" alt="Foto 1" /> 📸 1
+                    </button>
+                    <button class="btn btn-xs btn-photo-action" (click)="triggerPhotoUpload(qe, $event, 1)"
+                          [disabled]="uploadingPhotoFor() === qe.id || !hasPermission('edit_market')" title="Reemplazar foto 1">
+                      {{ uploadingPhotoFor() === qe.id && uploadingPhotoSlot() === 1 ? '⏳' : '🔄' }}
+                    </button>
+                    <button class="btn btn-xs btn-danger" (click)="removePhoto(qe, $event, 1)" title="Quitar"
+                      [disabled]="!hasPermission('edit_market')">✕</button>
+                  } @else {
+                    <button class="btn btn-xs btn-photo btn-photo-empty" (click)="triggerPhotoUpload(qe, $event, 1)"
+                            [disabled]="uploadingPhotoFor() === qe.id || !hasPermission('edit_market')" title="Subir foto real">
+                      {{ uploadingPhotoFor() === qe.id && uploadingPhotoSlot() === 1 ? '⏳ Subiendo...' : '📷 Foto 1' }}
+                    </button>
+                  }
+                  <!-- Slot 2 -->
+                  @if (qe.photo_url_2) {
+                    <button class="btn btn-xs btn-photo" (click)="openPhotoModal(qe.photo_url_2, $event)" title="Ver foto 2">
+                      <img class="photo-thumb" [src]="qe.photo_url_2" alt="Foto 2" /> 📸 2
+                    </button>
+                    <button class="btn btn-xs btn-photo-action" (click)="triggerPhotoUpload(qe, $event, 2)"
+                          [disabled]="uploadingPhotoFor() === qe.id || !hasPermission('edit_market')" title="Reemplazar foto 2">
+                      {{ uploadingPhotoFor() === qe.id && uploadingPhotoSlot() === 2 ? '⏳' : '🔄' }}
+                    </button>
+                    <button class="btn btn-xs btn-danger" (click)="removePhoto(qe, $event, 2)" title="Quitar"
+                      [disabled]="!hasPermission('edit_market')">✕</button>
+                  } @else if (qe.photo_url) {
+                    <button class="btn btn-xs btn-photo btn-photo-empty" (click)="triggerPhotoUpload(qe, $event, 2)"
+                            [disabled]="uploadingPhotoFor() === qe.id || !hasPermission('edit_market')" title="Subir 2ª foto">
+                      {{ uploadingPhotoFor() === qe.id && uploadingPhotoSlot() === 2 ? '⏳ Subiendo...' : '➕ Foto 2' }}
+                    </button>
+                  }
+                </div>
+                @if (mercadoDirty.has(qe.id) && (hasPermission('edit_market') || hasPermission('remove_from_market'))) {
+                  <div class="card-action-row">
+                    <button class="btn btn-sm btn-primary" (click)="saveMercadoChanges()" [disabled]="batchSaving()">
+                      {{ batchSaving() ? 'Guardando...' : '💾 Guardar cambios' }}
+                    </button>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        }
 
         @if (mercadoHasMore()) {
           <div #mercadoSentinel class="infinite-sentinel" aria-hidden="true"></div>
@@ -738,127 +834,140 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
       </div>
     }
 
-    <!-- ═══ TAB: PEDIDOS (Pendientes) ═══ -->
+    <!-- ═══ TAB: GESTIÓN DE PEDIDOS (unifica Pedidos + Historial) ═══ -->
     @if (activeTab() === 'pedidos' && canUseWorkspaceContent()) {
       <div class="tab-content">
         <div class="orders-toolbar">
-          <button class="btn btn-sm" (click)="loadPendingOrders()">🔄 Recargar</button>
+          <div class="orders-pills" data-tour="pedidos-pills">
+            @if (!workspaceMode() || hasPermission('view_orders')) {
+              <button class="pill" [class.active]="ordersPill() === 'pendientes'" (click)="ordersPill.set('pendientes')">
+                Pendientes
+                @if (pendingOrders().length > 0) { <span class="pill-count">{{ pendingOrders().length }}</span> }
+              </button>
+            }
+            @if (!workspaceMode() || hasPermission('view_history')) {
+              <button class="pill" [class.active]="ordersPill() === 'todos'" (click)="ordersPill.set('todos')">Todos</button>
+              <button class="pill" [class.active]="ordersPill() === 'completados'" (click)="ordersPill.set('completados')">Completados</button>
+              <button class="pill" [class.active]="ordersPill() === 'cancelados'" (click)="ordersPill.set('cancelados')">Cancelados</button>
+            }
+          </div>
+          <button class="btn btn-sm" (click)="loadPendingOrders(); loadHistoryOrders()">🔄 Recargar</button>
         </div>
 
-        @if (ordersLoading()) {
+        @if (ordersLoading() || historyLoading()) {
           <div class="loading">Cargando pedidos...</div>
         }
 
-        @if (!ordersLoading() && pendingOrders().length === 0) {
+        @if (!ordersLoading() && !historyLoading() && ordersForPill().length === 0) {
           <div class="empty-state">
-            <p>No tienes pedidos pendientes.</p>
+            <p>No hay pedidos para este filtro.</p>
           </div>
         }
 
-        <div class="orders-grid">
-          @for (o of pendingOrders(); track o.id) {
-            <div class="order-card">
-              <div class="order-head">
-                <h4>Pedido #{{ o.id }}</h4>
-                <span class="order-status pending">{{ orderStatusLabel(o.status) }}</span>
-              </div>
-              <p class="order-meta">Comprador: <strong>{{ o.buyer_name || o.buyer_username || 'Anónimo' }}</strong></p>
-              <p class="order-meta">WhatsApp: <strong>{{ o.buyer_whatsapp || '—' }}</strong></p>
-              <p class="order-meta">Creado: {{ o.created_at | date:'short' }}</p>
-              @if (o.total_estimated != null) {
-                <p class="order-meta">Total estimado: <strong>\${{ o.total_estimated | number:'1.0-0':'es-CL' }}</strong></p>
-              }
-              @if (o.buyer_note) {
-                <p class="order-note">📝 {{ o.buyer_note }}</p>
-              }
-              <div class="order-items">
-                @for (it of o.items; track it.id) {
-                  <div class="order-item-row">
-                    <span>{{ it.quantity }}x {{ it.card_name || it.card_data?.name || ('Carta #' + it.card) }}</span>
-                    <span>
-                      @if (it.line_total != null) {
-                        \${{ it.line_total | number:'1.0-0':'es-CL' }}
-                      } @else {
-                        —
+        @if (ordersForPill().length > 0) {
+          <div class="orders-table-wrap" data-tour="pedidos-table">
+            <table class="orders-table">
+              <thead>
+                <tr>
+                  <th>Pedido</th><th>Comprador</th><th>Fecha</th><th>Artículos</th><th>Total</th><th>Estado</th><th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (o of ordersForPill(); track o.id) {
+                  <tr (click)="orderDetail.set(o)">
+                    <td>#{{ o.id }}</td>
+                    <td>{{ o.buyer_name || o.buyer_username || 'Anónimo' }}</td>
+                    <td>{{ o.created_at | date:'short' }}</td>
+                    <td>{{ o.items.length }}</td>
+                    <td>{{ o.total_estimated != null ? ('\$' + (o.total_estimated | number:'1.0-0':'es-CL')) : '—' }}</td>
+                    <td>
+                      <span class="order-status" [class.pending]="o.status === 'pending'"
+                            [class.accepted]="o.status === 'accepted'" [class.cancelled]="o.status === 'cancelled'">
+                        {{ orderStatusLabel(o.status) }}
+                      </span>
+                    </td>
+                    <td class="orders-table-actions">
+                      @if (o.status === 'pending') {
+                        <button class="btn-icon btn-accept" (click)="acceptOrder(o); $event.stopPropagation()"
+                                [disabled]="!hasPermission('accept_orders')" title="Aceptar">
+                          <app-icon name="check" [size]="14"></app-icon>
+                        </button>
+                        <button class="btn-icon btn-reject" (click)="cancelOrder(o); $event.stopPropagation()"
+                                [disabled]="!hasPermission('reject_orders')" title="Cancelar">
+                          <app-icon name="x" [size]="14"></app-icon>
+                        </button>
                       }
-                    </span>
-                  </div>
+                    </td>
+                  </tr>
                 }
-              </div>
-              <div class="order-actions">
-                <button class="btn btn-sm btn-primary" (click)="acceptOrder(o)" [disabled]="!hasPermission('accept_orders')">✅ Aceptar</button>
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+
+      <!-- ═══ MODAL: Detalle de pedido ═══ -->
+      @if (orderDetail(); as o) {
+        <div class="modal-overlay" (click)="orderDetail.set(null)">
+          <div class="modal quick-edit-modal" (click)="$event.stopPropagation()">
+            <button class="close-btn" (click)="orderDetail.set(null)">✕</button>
+            <div class="order-detail-head">
+              <h3>Pedido #{{ o.id }}</h3>
+              <span class="order-status" [class.pending]="o.status === 'pending'"
+                    [class.accepted]="o.status === 'accepted'" [class.cancelled]="o.status === 'cancelled'">
+                {{ orderStatusLabel(o.status) }}
+              </span>
+            </div>
+            <p class="order-meta">Comprador: <strong>{{ o.buyer_name || o.buyer_username || 'Anónimo' }}</strong></p>
+            @if (o.buyer_whatsapp) { <p class="order-meta">WhatsApp: <strong>{{ o.buyer_whatsapp }}</strong></p> }
+            <p class="order-meta">Creado: {{ o.created_at | date:'short' }}</p>
+            @if (o.responded_at) { <p class="order-meta">Cierre: {{ o.responded_at | date:'short' }}</p> }
+            @if (o.responded_by_username) { <p class="order-meta">Gestionado por: <strong>{{ o.responded_by_username }}</strong></p> }
+            @if (o.total_estimated != null) { <p class="order-meta">Total estimado: <strong>\${{ o.total_estimated | number:'1.0-0':'es-CL' }}</strong></p> }
+            @if (o.buyer_note) { <p class="order-note">📝 {{ o.buyer_note }}</p> }
+            @if (o.seller_note) { <p class="order-note">Nota vendedor: {{ o.seller_note }}</p> }
+            <div class="order-items">
+              @for (it of o.items; track it.id) {
+                <div class="order-item-row">
+                  <span>{{ it.quantity }}x {{ it.card_name || it.card_data?.name || ('Carta #' + it.card) }}</span>
+                  <span>
+                    @if (it.line_total != null) { \${{ it.line_total | number:'1.0-0':'es-CL' }} } @else { — }
+                  </span>
+                </div>
+              }
+            </div>
+            @if (o.status === 'pending') {
+              <div class="card-action-row">
+                <button class="btn btn-sm btn-primary" (click)="acceptOrder(o); orderDetail.set(null)" [disabled]="!hasPermission('accept_orders')">✅ Aceptar</button>
                 <button class="btn btn-sm btn-danger" (click)="cancelOrder(o)" [disabled]="!hasPermission('reject_orders')">❌ Cancelar</button>
               </div>
-            </div>
-          }
-        </div>
-      </div>
-    }
-
-    <!-- ═══ TAB: HISTORIAL (Aceptados/Cancelados) ═══ -->
-    @if (activeTab() === 'historial' && canUseWorkspaceContent()) {
-      <div class="tab-content">
-        <div class="orders-toolbar">
-          <select [value]="historyStatusFilter()" (change)="onHistoryFilterChange($any($event.target).value)">
-            <option value="">Todos</option>
-            <option value="accepted">Aceptados</option>
-            <option value="cancelled">Cancelados</option>
-          </select>
-          <button class="btn btn-sm" (click)="loadHistoryOrders()">🔄 Recargar</button>
-        </div>
-
-        @if (historyLoading()) {
-          <div class="loading">Cargando historial...</div>
-        }
-
-        @if (!historyLoading() && historyOrders().length === 0) {
-          <div class="empty-state">
-            <p>No hay pedidos en historial para este filtro.</p>
+            }
           </div>
-        }
-
-        <div class="orders-grid history-grid">
-          @for (o of historyOrders(); track o.id) {
-            <div class="order-card">
-              <div class="order-head">
-                <h4>Pedido #{{ o.id }}</h4>
-                <span class="order-status" [class.accepted]="o.status === 'accepted'" [class.cancelled]="o.status === 'cancelled'">
-                  {{ orderStatusLabel(o.status) }}
-                </span>
-              </div>
-              <p class="order-meta">Comprador: <strong>{{ o.buyer_name || o.buyer_username || 'Anónimo' }}</strong></p>
-              <p class="order-meta">Creado: {{ o.created_at | date:'short' }}</p>
-              <p class="order-meta">Cierre: {{ o.responded_at ? (o.responded_at | date:'short') : '—' }}</p>
-              @if (o.responded_by_username) {
-                <p class="order-meta">Gestionado por: <strong>{{ o.responded_by_username }}</strong></p>
-              }
-              @if (o.total_estimated != null) {
-                <p class="order-meta">Total estimado: <strong>\${{ o.total_estimated | number:'1.0-0':'es-CL' }}</strong></p>
-              }
-              @if (o.buyer_note) {
-                <p class="order-note">📝 {{ o.buyer_note }}</p>
-              }
-              @if (o.seller_note) {
-                <p class="order-note">Nota vendedor: {{ o.seller_note }}</p>
-              }
-              <div class="order-items">
-                @for (it of o.items; track it.id) {
-                  <div class="order-item-row">
-                    <span>{{ it.quantity }}x {{ it.card_name || it.card_data?.name || ('Carta #' + it.card) }}</span>
-                    <span>
-                      @if (it.line_total != null) {
-                        \${{ it.line_total | number:'1.0-0':'es-CL' }}
-                      } @else {
-                        —
-                      }
-                    </span>
-                  </div>
-                }
-              </div>
-            </div>
-          }
         </div>
-      </div>
+      }
+
+      <!-- ═══ MODAL: Motivo de cancelación ═══ -->
+      @if (cancelOrderTarget(); as co) {
+        <div class="modal-overlay" (click)="closeCancelOrderModal()">
+          <div class="modal quick-edit-modal" (click)="$event.stopPropagation()">
+            <button class="close-btn" (click)="closeCancelOrderModal()">✕</button>
+            <h3 class="cancel-modal-title">Cancelar pedido #{{ co.id }}</h3>
+            <p class="quick-edit-meta">Indica el motivo de la cancelación; el comprador lo verá en su pedido.</p>
+            <div class="field full">
+              <label>Motivo</label>
+              <textarea rows="3" [(ngModel)]="cancelOrderReason" maxlength="300"
+                        placeholder="Ej: Sin stock disponible"></textarea>
+            </div>
+            <div class="card-action-row">
+              <button class="btn btn-sm" (click)="closeCancelOrderModal()">Volver</button>
+              <button class="btn btn-sm btn-danger" (click)="confirmCancelOrder()"
+                      [disabled]="!cancelOrderReason.trim() || cancelOrderSubmitting()">
+                {{ cancelOrderSubmitting() ? 'Cancelando...' : '❌ Confirmar cancelación' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
     }
 
     @if (activeTab() === 'stats' && canUseWorkspaceContent()) {
@@ -879,7 +988,38 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
               <div class="stat-big">{{ stats()!.set_completeness.length }}</div>
               <div class="stat-desc">Sets tocados</div>
             </div>
+            @if (stats()!.total_value != null) {
+              <div class="stat-card-s stat-card-value">
+                <div class="stat-big">\${{ stats()!.total_value | number:'1.0-0':'es-CL' }}</div>
+                <div class="stat-desc">Valor estimado de la colección</div>
+              </div>
+            }
           </div>
+
+          @if (stats()!.by_rarity.length) {
+            <h3 class="stats-heading">Distribución por Rareza</h3>
+            <div class="donut-section">
+              <svg viewBox="0 0 120 120" class="donut-chart">
+                <circle cx="60" cy="60" r="45" fill="none" stroke="var(--ui-bg-soft)" stroke-width="18" />
+                @for (seg of donutSegments(stats()!.by_rarity); track seg.key) {
+                  <circle cx="60" cy="60" r="45" fill="none" [attr.stroke]="seg.color" stroke-width="18"
+                          [attr.stroke-dasharray]="seg.dashArray" [attr.stroke-dashoffset]="seg.dashOffset"
+                          transform="rotate(-90 60 60)" />
+                }
+                <text x="60" y="57" text-anchor="middle" class="donut-total-num">{{ stats()!.unique_cards }}</text>
+                <text x="60" y="73" text-anchor="middle" class="donut-total-label">cartas</text>
+              </svg>
+              <div class="donut-legend">
+                @for (seg of donutSegments(stats()!.by_rarity); track seg.key) {
+                  <div class="donut-legend-item">
+                    <span class="donut-dot" [style.background]="seg.color"></span>
+                    <span>{{ rarityLabel(seg.key) }}</span>
+                    <strong>{{ seg.count }}</strong>
+                  </div>
+                }
+              </div>
+            </div>
+          }
 
           @if (stats()!.set_completeness.length) {
             <h3 class="stats-heading">Completitud por Set</h3>
@@ -908,18 +1048,6 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
             </div>
           }
 
-          @if (stats()!.by_rarity.length) {
-            <h3 class="stats-heading">Por Rareza</h3>
-            <div class="stats-dist">
-              @for (r of stats()!.by_rarity; track r.key) {
-                <div class="dist-row">
-                  <span class="dist-label">{{ rarityLabel(r.key) }}</span>
-                  <span class="dist-count">{{ r.count }}</span>
-                </div>
-              }
-            </div>
-          }
-
           @if (stats()!.by_color.length) {
             <h3 class="stats-heading">Por Color</h3>
             <div class="stats-dist">
@@ -939,7 +1067,7 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
 
     @if (activeTab() === 'permisos' && canUseWorkspaceContent() && canManagePermissions()) {
       <div class="tab-content">
-        <div class="permissions-panel">
+        <div class="permissions-panel" data-tour="permisos-panel">
           <h3>Gestionar colaboradores</h3>
           <p class="hint">Asigna permisos por acción. No se usan roles fijos.</p>
 
@@ -954,17 +1082,28 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
             </button>
           </div>
 
-          <div class="permissions-grid">
-            @for (key of permissionKeys; track key) {
-              <label class="perm-check">
-                <input type="checkbox" [checked]="newCollaboratorPerms()[key]" (change)="toggleNewCollaboratorPerm(key, $any($event.target).checked)" />
-                <span>{{ permissionLabel(key) }}</span>
-              </label>
-            }
+          <div class="role-select-row" data-tour="permisos-role">
+            <label>Rol</label>
+            <select [value]="newCollaboratorRole()" (change)="onNewCollaboratorRoleChange($any($event.target).value)">
+              <option value="lector">Lector</option>
+              <option value="gestor_mercado">Gestor de Mercado</option>
+              <option value="administrador">Administrador</option>
+              <option value="personalizado">Personalizado</option>
+            </select>
           </div>
+          @if (newCollaboratorRole() === 'personalizado') {
+            <div class="permissions-grid">
+              @for (key of permissionKeys; track key) {
+                <label class="perm-check">
+                  <input type="checkbox" [checked]="newCollaboratorPerms()[key]" (change)="toggleNewCollaboratorPerm(key, $any($event.target).checked)" />
+                  <span>{{ permissionLabel(key) }}</span>
+                </label>
+              }
+            </div>
+          }
         </div>
 
-        <div class="permissions-list">
+        <div class="permissions-list" data-tour="permisos-list">
           @if (workspacePermissionsLoading()) {
             <div class="loading">Cargando permisos...</div>
           }
@@ -980,15 +1119,26 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
                   <button class="btn btn-xs btn-danger" (click)="removeCollaboratorPermissions(row)" [disabled]="permissionsSaving()">Quitar acceso</button>
                 </div>
               </div>
-              <div class="permissions-grid">
-                @for (key of permissionKeys; track key) {
-                  <label class="perm-check">
-                    <input type="checkbox" [checked]="collaboratorPermValue(row, key)"
-                           (change)="toggleCollaboratorPerm(row.id, key, $any($event.target).checked)" />
-                    <span>{{ permissionLabel(key) }}</span>
-                  </label>
-                }
+              <div class="role-select-row">
+                <label>Rol</label>
+                <select [value]="collaboratorRoleFor(row)" (change)="onCollaboratorRoleChange(row, $any($event.target).value)">
+                  <option value="lector">Lector</option>
+                  <option value="gestor_mercado">Gestor de Mercado</option>
+                  <option value="administrador">Administrador</option>
+                  <option value="personalizado">Personalizado</option>
+                </select>
               </div>
+              @if (collaboratorRoleFor(row) === 'personalizado') {
+                <div class="permissions-grid">
+                  @for (key of permissionKeys; track key) {
+                    <label class="perm-check">
+                      <input type="checkbox" [checked]="collaboratorPermValue(row, key)"
+                             (change)="toggleCollaboratorPerm(row.id, key, $any($event.target).checked)" />
+                      <span>{{ permissionLabel(key) }}</span>
+                    </label>
+                  }
+                </div>
+              }
             </div>
           }
         </div>
@@ -1048,6 +1198,79 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
       </div>
     }
 
+    <!-- ═══ QUICK EDIT: Carpeta (accesible desde Carpeta y Colección) ═══ -->
+    @if (quickEditEntry(); as qe) {
+      <div class="modal-overlay" (click)="closeQuickEdit()">
+        <div class="modal quick-edit-modal" (click)="$event.stopPropagation()">
+          <button class="close-btn" (click)="closeQuickEdit()">✕</button>
+          <div class="quick-edit-header">
+            @if (cardImageUrl(qe.card_data) && !isCardImageBroken(qe.card_data)) {
+              <img [src]="cardImageUrl(qe.card_data)" [alt]="qe.card_data.name" class="quick-edit-thumb" />
+            }
+            <div>
+              <h3>{{ qe.card_data.name }}</h3>
+              <span class="quick-edit-meta">{{ typeLabel(qe.card_data.card_type) }} · {{ qe.card_data.card_number }}</span>
+            </div>
+          </div>
+          <div class="quick-edit-body">
+            <div class="inline-fields">
+              <div class="field">
+                <label>Tengo</label>
+                <input type="number" [value]="qe.quantity" min="0"
+                  [disabled]="!hasPermission('edit_collection')"
+                  (input)="onFieldChange(qe, 'quantity', $any($event.target).valueAsNumber)" />
+              </div>
+              <div class="field">
+                <label>Precio</label>
+                <input type="number" [value]="qe.price ?? ''" min="0" placeholder="—"
+                  [disabled]="!hasPermission('edit_market')"
+                  (input)="onFieldChange(qe, 'price', priceFromInput($any($event.target).value))" />
+              </div>
+              <div class="field">
+                <label>En venta</label>
+                <input type="number" [value]="qe.selling_quantity" min="0" [max]="qe.quantity"
+                  [disabled]="!hasPermission('edit_market') && !hasPermission('remove_from_market')"
+                  (input)="onFieldChange(qe, 'selling_quantity', $any($event.target).valueAsNumber)" />
+              </div>
+            </div>
+            <div class="tcg-ref-row">
+              <app-tcg-price [cardName]="qe.card_data.name || ''" [compact]="true"></app-tcg-price>
+            </div>
+            <div class="inline-fields">
+              <div class="field">
+                <label>Idioma</label>
+                <select [value]="qe.language" [disabled]="!hasPermission('edit_collection')"
+                  (change)="onFieldChange(qe, 'language', $any($event.target).value)">
+                  <option value="EN">EN</option>
+                  <option value="ZH">中文</option>
+                </select>
+              </div>
+              <label class="foil-toggle">
+                <input type="checkbox" [checked]="qe.is_foil"
+                  [disabled]="!hasPermission('edit_collection')"
+                  (change)="onFieldChange(qe, 'is_foil', $any($event.target).checked)" />
+                ✨ Foil
+              </label>
+            </div>
+            <div class="field full">
+              <label>Notas</label>
+              <input type="text" [value]="qe.notes" maxlength="200" placeholder="—"
+                [disabled]="!hasPermission('edit_collection')"
+                (input)="onFieldChange(qe, 'notes', $any($event.target).value)" />
+            </div>
+            <div class="card-action-row">
+              @if (dirtyEntries.has(qe.id) && (hasPermission('edit_collection') || hasPermission('edit_market') || hasPermission('remove_from_market'))) {
+                <button class="btn btn-sm btn-primary" (click)="saveEntry(qe)">💾 Guardar</button>
+              }
+              <button class="btn btn-sm btn-danger" (click)="removeFromCollection(qe); closeQuickEdit()" [disabled]="!hasPermission('delete_collection')">
+                <app-icon name="trash-2" [size]="14"></app-icon> Quitar de la carpeta
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
     <!-- ═══ MODAL: Foto real en grande ═══ -->
     @if (viewPhotoUrl(); as purl) {
       <div class="modal-overlay" (click)="closePhotoModal()">
@@ -1057,44 +1280,74 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
         </div>
       </div>
     }
+
+    <!-- ═══ MODAL: Guía ═══ -->
+    <app-guide-modal [isOpen]="showGuide()" [completedTours]="completedTours()"
+                      (close)="showGuide.set(false)" (startTour)="showGuide.set(false)"
+                      (startCardTour)="onStartCardTour($event)"></app-guide-modal>
+
+    <app-tour-overlay></app-tour-overlay>
   </div>
   `,
   styles: [`
-    :host { display: block; min-height: 100vh; background: #0f0f23; color: #c8c8da; }
+    :host { display: block; min-height: 100vh; background: var(--ui-bg-soft); color: var(--ui-text-secondary); }
     .carpeta-container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
     @media (max-width: 600px) { .carpeta-container { padding: 1rem 0.65rem 2rem; } }
 
-    .carpeta-header {
-      display: flex; align-items: center; gap: 1.2rem;
+    .carpeta-header-layout {
+      display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
       padding: 1.2rem; margin-bottom: 1.5rem;
-      background: linear-gradient(135deg, #16213e, #1a1a2e);
-      border: 1px solid #2a3a4a; border-radius: 12px;
+      background: linear-gradient(135deg, var(--ui-surface-elevated), #1a1a2e);
+      border: 1px solid var(--ui-border); border-radius: 12px;
+    }
+    .carpeta-profile-card { display: flex; align-items: center; gap: 1.2rem; flex: 1; min-width: 220px; }
+    .guide-trigger-btn {
+      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+      background: transparent; border: 1px solid var(--ui-border); color: var(--ui-text-muted);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+    .guide-trigger-btn:hover { color: var(--ui-accent); border-color: var(--ui-accent); }
+    .collection-stats-banner { display: flex; gap: .8rem; flex-wrap: wrap; }
+    .stat-item {
+      display: flex; flex-direction: column; align-items: center; gap: .15rem;
+      padding: .5rem .9rem; border-radius: 10px; background: var(--ui-bg-soft); border: 1px solid var(--ui-border); min-width: 84px;
+    }
+    .stat-item .stat-num { font-size: 1.3rem; font-weight: 700; color: var(--ui-text); }
+    .stat-item .stat-title { display: inline-flex; align-items: center; gap: .25rem; font-size: .72rem; color: var(--ui-text-muted); }
+    .stat-item.owned .stat-num { color: #4fc3f7; }
+    .stat-item.wishlist .stat-num { color: var(--ui-accent); }
+    .stat-item.selling .stat-num { color: #f5c518; }
+    @media (max-width: 600px) {
+      .carpeta-header-layout { padding: 1rem; }
+      .collection-stats-banner { width: 100%; justify-content: space-between; }
+      .stat-item { flex: 1; min-width: 0; }
     }
     .binder-avatar-wrap {
       position: relative; width: 72px; height: 72px;
     }
     .binder-avatar {
       width: 72px; height: 72px; border-radius: 12px;
-      border: 2px solid #e94560; object-fit: cover; display: block;
+      border: 2px solid var(--ui-accent); object-fit: cover; display: block;
     }
     .binder-avatar-placeholder {
       width: 72px; height: 72px; border-radius: 12px;
-      background: #0f0f23; border: 2px solid #e94560;
+      background: var(--ui-bg-soft); border: 2px solid var(--ui-accent);
       display: flex; align-items: center; justify-content: center;
       font-size: 2rem;
     }
     .avatar-edit-btn {
       position: absolute; bottom: -6px; right: -6px;
       width: 26px; height: 26px; border-radius: 50%;
-      border: 1px solid #e94560; background: #16213e; color: #e94560;
+      border: 1px solid var(--ui-accent); background: var(--ui-surface-elevated); color: var(--ui-accent);
       cursor: pointer; font-size: .75rem;
       display: flex; align-items: center; justify-content: center;
     }
-    .avatar-edit-btn:hover { background: #e94560; color: #fff; }
-    .binder-info h1 { margin: 0; font-size: 1.6rem; color: #fff;
-      background: linear-gradient(90deg, #e94560, #fff); -webkit-background-clip: text;
+    .avatar-edit-btn:hover { background: var(--ui-accent); color: var(--ui-text); }
+    .binder-info h1 { margin: 0; font-size: 1.6rem; color: var(--ui-text);
+      background: linear-gradient(90deg, var(--ui-accent), var(--ui-text)); -webkit-background-clip: text;
       -webkit-text-fill-color: transparent; background-clip: text; }
-    .binder-user { margin: .25rem 0 0; color: #9ba3b4; font-size: .95rem; }
+    .binder-user { margin: .25rem 0 0; color: var(--ui-text-muted); font-size: .95rem; }
 
     .workspace-panel {
       display: grid;
@@ -1103,18 +1356,18 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
       align-items: start;
       margin-bottom: 1rem;
       padding: .8rem;
-      border: 1px solid #2a3a4a;
+      border: 1px solid var(--ui-border);
       border-radius: 10px;
       background: rgba(22, 33, 62, 0.45);
     }
     .workspace-field { display: flex; flex-direction: column; gap: .3rem; }
-    .workspace-field label { color: #9ba3b4; font-size: .8rem; }
+    .workspace-field label { color: var(--ui-text-muted); font-size: .8rem; }
     .workspace-field select {
       padding: .45rem .6rem;
-      border: 1px solid #2a3a4a;
+      border: 1px solid var(--ui-border);
       border-radius: 6px;
-      background: #0f0f23;
-      color: #fff;
+      background: var(--ui-bg-soft);
+      color: var(--ui-text);
     }
     .workspace-perms { display: flex; flex-wrap: wrap; gap: .35rem; }
     .perm-chip {
@@ -1123,7 +1376,7 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
       border-radius: 999px;
       padding: .2rem .55rem;
       font-size: .76rem;
-      border: 1px solid #2a3a4a;
+      border: 1px solid var(--ui-border);
       color: #dbe7ff;
       background: #1a2b48;
     }
@@ -1133,22 +1386,41 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
 
     .tabs {
       display: flex; gap: .5rem; flex-wrap: wrap;
-      border-bottom: 2px solid #2a3a4a; margin-bottom: 1.5rem;
+      border-bottom: 2px solid var(--ui-border); margin-bottom: 1.5rem;
     }
     .tab {
-      padding: .7rem 1.2rem; background: transparent; color: #9ba3b4;
+      padding: .7rem 1.2rem; background: transparent; color: var(--ui-text-muted);
       border: none; border-bottom: 3px solid transparent;
       font-weight: 600; cursor: pointer; transition: all .15s;
       display: inline-flex; align-items: center; gap: .4rem;
     }
-    .tab:hover { color: #fff; }
-    .tab.active { color: #e94560; border-bottom-color: #e94560; }
+    .tab:hover { color: var(--ui-text); }
+    .tab.active { color: var(--ui-accent); border-bottom-color: var(--ui-accent); }
+    .tab.tab-link { color: var(--ui-text-muted); }
+    .tab.tab-link:hover { color: var(--ui-accent); }
+
+    .tab-group { position: relative; }
+    .tab-group-btn { border: none; background: transparent; }
+    .tab-dropdown {
+      position: absolute; top: calc(100% + 6px); left: 0; z-index: 50;
+      display: flex; flex-direction: column; min-width: 190px;
+      background: var(--ui-surface-elevated); border: 1px solid var(--ui-border); border-radius: 10px;
+      padding: .35rem; box-shadow: 0 12px 28px rgba(0,0,0,.45);
+    }
+    .tab-dropdown-item {
+      display: flex; align-items: center; gap: .5rem;
+      padding: .55rem .7rem; border-radius: 6px; border: none;
+      background: transparent; color: var(--ui-text-secondary); font-weight: 600; font-size: .88rem;
+      cursor: pointer; text-align: left; transition: background .12s, color .12s;
+    }
+    .tab-dropdown-item:hover { background: #1a2b48; color: var(--ui-text); }
+    .tab-dropdown-item.active { color: var(--ui-accent); background: color-mix(in srgb, var(--ui-accent) 10%, transparent); }
 
     .tab-toolbar { display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
     .share-row { display: inline-flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
     .share-message-input {
       padding: .35rem .6rem; border-radius: 6px;
-      border: 1px solid #2a3a4a; background: #0f0f23; color: #fff;
+      border: 1px solid var(--ui-border); background: var(--ui-bg-soft); color: var(--ui-text);
       font-size: .85rem; min-width: 220px;
     }
     .share-message-input::placeholder { color: #6b7a8a; }
@@ -1166,44 +1438,44 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
     }
     .search-bar { display: flex; gap: .4rem; flex: 1; min-width: 240px; }
     .search-bar input {
-      flex: 1; padding: .55rem .8rem; background: #0f0f23;
-      border: 1px solid #2a3a4a; border-radius: 6px; color: #c8c8da;
+      flex: 1; padding: .55rem .8rem; background: var(--ui-bg-soft);
+      border: 1px solid var(--ui-border); border-radius: 6px; color: var(--ui-text-secondary);
     }
-    .search-bar input:focus { outline: none; border-color: #e94560; }
+    .search-bar input:focus { outline: none; border-color: var(--ui-accent); }
 
     .filter-row { display: flex; gap: .6rem; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
     .filter-row select {
-      padding: .5rem .7rem; background: #0f0f23; color: #c8c8da;
-      border: 1px solid #2a3a4a; border-radius: 6px; cursor: pointer;
+      padding: .5rem .7rem; background: var(--ui-bg-soft); color: var(--ui-text-secondary);
+      border: 1px solid var(--ui-border); border-radius: 6px; cursor: pointer;
     }
-    .filter-row select:focus { outline: none; border-color: #e94560; }
+    .filter-row select:focus { outline: none; border-color: var(--ui-accent); }
 
     .color-chips { display: flex; gap: .35rem; flex-wrap: wrap; }
     .chip {
       padding: .35rem .7rem; border-radius: 999px; cursor: pointer;
-      border: 1px solid var(--c, #2a3a4a); background: transparent; color: #c8c8da;
+      border: 1px solid var(--c, var(--ui-border)); background: transparent; color: var(--ui-text-secondary);
       font-size: .8rem; font-weight: 600; transition: all .15s;
     }
-    .chip:hover, .chip.active { background: var(--c, #e94560); color: #fff; }
+    .chip:hover, .chip.active { background: var(--c, var(--ui-accent)); color: var(--ui-text); }
 
-    .results-count { color: #9ba3b4; font-size: .9rem; margin: .5rem 0 1rem; }
-    .loading { color: #9ba3b4; padding: 2rem; text-align: center; }
-    .empty-state { padding: 3rem 1rem; text-align: center; color: #9ba3b4;
-      background: #16213e; border: 1px dashed #2a3a4a; border-radius: 12px; }
-    .error { color: #e94560; padding: 1rem; }
+    .results-count { color: var(--ui-text-muted); font-size: .9rem; margin: .5rem 0 1rem; }
+    .loading { color: var(--ui-text-muted); padding: 2rem; text-align: center; }
+    .empty-state { padding: 3rem 1rem; text-align: center; color: var(--ui-text-muted);
+      background: var(--ui-surface-elevated); border: 1px dashed var(--ui-border); border-radius: 12px; }
+    .error { color: var(--ui-accent); padding: 1rem; }
 
     /* Botones */
-    .btn { padding: .5rem .9rem; border: 1px solid #2a3a4a; background: transparent;
-      color: #c8c8da; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all .15s; }
+    .btn { padding: .5rem .9rem; border: 1px solid var(--ui-border); background: transparent;
+      color: var(--ui-text-secondary); border-radius: 6px; cursor: pointer; font-weight: 600; transition: all .15s; }
     .btn:hover:not(:disabled) { background: #1e2d3d; }
     .btn:disabled { opacity: .5; cursor: not-allowed; }
     .btn-sm { padding: .4rem .75rem; font-size: .85rem; }
     .btn-xs { padding: .25rem .55rem; font-size: .78rem; }
-    .btn-primary { background: #e94560; border-color: #e94560; color: #fff; }
+    .btn-primary { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-text); }
     .btn-primary:hover:not(:disabled) { background: #d63950; border-color: #d63950; }
-    .btn-danger { background: transparent; border-color: #e94560; color: #e94560; }
-    .btn-danger:hover:not(:disabled) { background: #e94560; color: #fff; }
-    .btn-heart-lg.active { background: #e94560; color: #fff; border-color: #e94560; }
+    .btn-danger { background: transparent; border-color: var(--ui-accent); color: var(--ui-accent); }
+    .btn-danger:hover:not(:disabled) { background: var(--ui-accent); color: var(--ui-text); }
+    .btn-heart-lg.active { background: var(--ui-accent); color: var(--ui-text); border-color: var(--ui-accent); }
 
     .orders-toolbar {
       display: flex;
@@ -1214,8 +1486,8 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
       flex-wrap: wrap;
     }
     .orders-toolbar select {
-      background: #16213e;
-      border: 1px solid #2a3a4a;
+      background: var(--ui-surface-elevated);
+      border: 1px solid var(--ui-border);
       color: #e7edf8;
       border-radius: 8px;
       padding: .45rem .6rem;
@@ -1227,7 +1499,7 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
     }
     .order-card {
       background: rgba(22, 33, 62, 0.6);
-      border: 1px solid #2a3a4a;
+      border: 1px solid var(--ui-border);
       border-radius: 12px;
       padding: .8rem;
       display: flex;
@@ -1242,14 +1514,14 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
     }
     .order-head h4 {
       margin: 0;
-      color: #fff;
+      color: var(--ui-text);
       font-size: .98rem;
     }
     .order-status {
       font-size: .75rem;
       border-radius: 999px;
       padding: .18rem .55rem;
-      border: 1px solid #2a3a4a;
+      border: 1px solid var(--ui-border);
       color: #c8d4ea;
     }
     .order-status.pending {
@@ -1267,6 +1539,41 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
       color: #ffd0d0;
       background: rgba(217, 95, 95, 0.15);
     }
+    .orders-pills { display: flex; gap: .4rem; flex-wrap: wrap; }
+    .pill {
+      display: inline-flex; align-items: center; gap: .35rem;
+      padding: .4rem .8rem; border-radius: 999px; border: 1px solid var(--ui-border);
+      background: transparent; color: var(--ui-text-muted); font-weight: 600; font-size: .82rem; cursor: pointer;
+      transition: all .12s;
+    }
+    .pill:hover { color: var(--ui-text); border-color: #4a5a72; }
+    .pill.active { background: var(--ui-accent); border-color: var(--ui-accent); color: var(--ui-text); }
+    .pill-count {
+      background: rgba(255,255,255,.2); border-radius: 999px; padding: 0 .4rem; font-size: .72rem;
+    }
+    .orders-table-wrap { overflow-x: auto; border: 1px solid var(--ui-border); border-radius: 10px; }
+    .orders-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    .orders-table th {
+      text-align: left; padding: .6rem .75rem; color: var(--ui-text-muted); font-size: .72rem;
+      text-transform: uppercase; border-bottom: 1px solid var(--ui-border); background: rgba(22,33,62,.6);
+      white-space: nowrap;
+    }
+    .orders-table td { padding: .6rem .75rem; color: var(--ui-text-secondary); border-bottom: 1px solid #232d3f; white-space: nowrap; }
+    .orders-table tbody tr { cursor: pointer; transition: background .12s; }
+    .orders-table tbody tr:hover { background: rgba(255,255,255,.03); }
+    .orders-table tbody tr:last-child td { border-bottom: none; }
+    .orders-table-actions { display: flex; gap: .35rem; }
+    .btn-icon.btn-accept, .btn-icon.btn-reject {
+      width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--ui-border);
+      background: var(--ui-bg-soft); color: var(--ui-text-secondary); display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+    .btn-icon.btn-accept:hover:not(:disabled) { background: #1d5a3a; border-color: #5abf90; color: #b9f5d8; }
+    .btn-icon.btn-reject:hover:not(:disabled) { background: #5a1d1d; border-color: #d95f5f; color: #ffd0d0; }
+    .btn-icon:disabled { opacity: .4; cursor: not-allowed; }
+    .order-detail-head { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-bottom: .6rem; padding-right: 1.6rem; }
+    .order-detail-head h3 { margin: 0; color: var(--ui-text); }
+
     .order-meta {
       margin: 0;
       color: #c7cfdd;
@@ -1284,7 +1591,7 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
     }
     .order-items {
       margin-top: .25rem;
-      border-top: 1px dashed #2a3a4a;
+      border-top: 1px dashed var(--ui-border);
       padding-top: .35rem;
       display: flex;
       flex-direction: column;
@@ -1322,11 +1629,11 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
         gap: .6rem;
       }
       .card-grid {
-        grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
-        gap: .5rem;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: .6rem;
       }
-      .card-item .card-info { padding: .4rem; }
-      .card-item .card-info h4 { font-size: .68rem; }
+      .card-item .card-info { padding: .5rem; }
+      .card-item .card-info h4 { font-size: .82rem; }
       .card-item .card-info .card-type { display: none; }
       .wishlist-card .share-check {
         width: 22px; height: 22px; top: 4px; left: 4px; font-size: .7rem;
@@ -1335,34 +1642,34 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
 
     @media (max-width: 360px) {
       .card-grid {
-        grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
       }
     }
 
     .collection-card, .wishlist-card {
-      background: #16213e; border: 1px solid #2a3a4a; border-radius: 10px;
+      background: var(--ui-surface-elevated); border: 1px solid var(--ui-border); border-radius: 10px;
       overflow: hidden; display: flex; flex-direction: column;
       position: relative;
     }
     .wishlist-card.is-share-selected {
-      border-color: #e94560;
-      box-shadow: 0 0 0 2px rgba(233,69,96,.35);
+      border-color: var(--ui-accent);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-accent) 35%, transparent);
     }
     .wishlist-card .share-check {
       position: absolute; top: 8px; left: 8px; z-index: 5;
       width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
-      background: rgba(0,0,0,.65); color: #fff; border-radius: 6px;
+      background: rgba(0,0,0,.65); color: var(--ui-text); border-radius: 6px;
       cursor: pointer; font-size: .85rem;
       border: 1px solid rgba(255,255,255,.18);
     }
     .wishlist-card .share-check input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
     .wishlist-card .share-check i { pointer-events: none; opacity: .75; }
     .wishlist-card.is-share-selected .share-check {
-      background: #e94560; border-color: #e94560;
+      background: var(--ui-accent); border-color: var(--ui-accent);
     }
     .wishlist-card.is-share-selected .share-check i { opacity: 1; }
     .collection-card .card-image, .wishlist-card .card-image, .card-item .card-image {
-      position: relative; aspect-ratio: 5/7; background: #0f0f23; overflow: hidden; cursor: pointer;
+      position: relative; aspect-ratio: 5/7; background: var(--ui-bg-soft); overflow: hidden; cursor: pointer;
     }
     .card-image img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .2s; }
     .card-image:hover img { transform: scale(1.04); }
@@ -1378,28 +1685,67 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
     }
     .eye-overlay {
       position: absolute; top: 8px; right: 8px;
-      background: rgba(0,0,0,.65); color: #fff; padding: .3rem .5rem;
+      background: rgba(0,0,0,.65); color: var(--ui-text); padding: .3rem .5rem;
       border-radius: 6px; font-size: .85rem; opacity: 0; transition: opacity .15s;
     }
     .card-image:hover .eye-overlay { opacity: 1; }
     .foil-badge {
       position: absolute; bottom: 8px; left: 8px;
-      background: linear-gradient(135deg, #4fc3f7, #e94560);
-      color: #fff; padding: .2rem .5rem; border-radius: 4px;
+      background: linear-gradient(135deg, #4fc3f7, var(--ui-accent));
+      color: var(--ui-text); padding: .2rem .5rem; border-radius: 4px;
       font-size: .7rem; font-weight: 700;
     }
     .owned-badge {
       position: absolute; top: 8px; left: 8px;
-      background: #2a8a8a; color: #fff; padding: .25rem .5rem;
+      background: #2a8a8a; color: var(--ui-text); padding: .25rem .5rem;
       border-radius: 6px; font-size: .8rem; font-weight: 700;
     }
 
-    .card-body, .card-info { padding: .65rem .75rem .8rem; }
-    .card-body h4, .card-info h4 {
-      margin: 0 0 .25rem; font-size: .95rem; color: #fff;
+    .card-body, .card-info, .card-body-compact { padding: .65rem .75rem .8rem; }
+    .card-body h4, .card-info h4, .card-body-compact h4 {
+      margin: 0 0 .25rem; font-size: .95rem; color: var(--ui-text);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .card-meta, .card-type { color: #9ba3b4; font-size: .78rem; }
+    .card-meta, .card-type { color: var(--ui-text-muted); font-size: .78rem; }
+
+    /* Quick edit: tarjeta compacta con badges */
+    .card-body-compact { cursor: pointer; transition: background .12s; }
+    .card-body-compact:hover { background: rgba(255,255,255,.03); }
+    .card-badges-row { display: flex; gap: .35rem; flex-wrap: wrap; align-items: center; margin-top: .5rem; }
+    .qty-badge, .sale-badge, .edit-badge {
+      display: inline-flex; align-items: center; gap: .25rem;
+      padding: .2rem .45rem; border-radius: 999px; font-size: .72rem; font-weight: 700;
+      border: 1px solid var(--ui-border); background: var(--ui-bg-soft); color: var(--ui-text-secondary);
+    }
+    .qty-badge { color: #4fc3f7; border-color: rgba(79,195,247,.4); }
+    .qty-badge.zero { color: #6b7280; }
+    .sale-badge { color: #f5c518; border-color: rgba(245,197,24,.4); }
+    .sell-quick-btn {
+      display: inline-flex; align-items: center; gap: .25rem; cursor: pointer;
+      padding: .2rem .45rem; border-radius: 999px; font-size: .72rem; font-weight: 700;
+      border: 1px solid var(--ui-accent); background: transparent; color: var(--ui-accent);
+      transition: background .12s, color .12s;
+    }
+    .sell-quick-btn:hover { background: var(--ui-accent); color: #000; }
+    .edit-badge { margin-left: auto; color: var(--ui-text-muted); font-weight: 600; opacity: 0; transition: opacity .12s; }
+    .card-body-compact:hover .edit-badge { opacity: 1; }
+    .dirty-badge {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--ui-accent);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-accent) 25%, transparent);
+    }
+    @media (max-width: 700px) { .edit-badge { opacity: 1; } }
+
+    /* Quick edit: modal */
+    .quick-edit-modal {
+      background: var(--ui-surface-elevated); border: 1px solid var(--ui-border);
+      border-radius: var(--ui-radius-lg, 14px); max-width: 420px; width: 100%; max-height: 90vh;
+      overflow-y: auto; position: relative; padding: 1.2rem;
+    }
+    .quick-edit-header { display: flex; gap: .8rem; align-items: center; margin-bottom: .8rem; padding-right: 1.6rem; }
+    .quick-edit-thumb { width: 56px; height: 78px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
+    .quick-edit-header h3 { margin: 0 0 .2rem; color: var(--ui-text); font-size: 1.05rem; }
+    .quick-edit-meta { color: var(--ui-text-muted); font-size: .8rem; }
+    .quick-edit-body .card-action-row { justify-content: space-between; margin-top: 1rem; }
 
     .inline-fields { display: flex; gap: .5rem; align-items: flex-end; margin-top: .6rem; flex-wrap: wrap; }
 
@@ -1408,38 +1754,40 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
       background: #1e2235; color: #e5e7eb; border: 1px solid #374151; border-radius: 6px;
       font-size: .72rem; cursor: pointer; }
     .btn-photo:hover:not(:disabled) { background: #2a3553; }
-    .btn-photo-empty { border-style: dashed; color: #9ba3b4; }
+    .btn-photo-empty { border-style: dashed; color: var(--ui-text-muted); }
     .photo-thumb { width: 22px; height: 22px; object-fit: cover; border-radius: 3px; }
     .btn-photo-action { padding: .25rem .45rem; background: #1e2235; color: #e5e7eb;
       border: 1px solid #374151; border-radius: 6px; font-size: .72rem; cursor: pointer; }
     .btn-danger { background: #4a1d27 !important; border-color: #7f1d1d !important; color: #fecaca !important; }
-    .modal-photo { background: #0f0f23; padding: .6rem; border-radius: 10px; max-width: 92vw; max-height: 92vh; }
+    .modal-photo { background: var(--ui-bg-soft); padding: .6rem; border-radius: 10px; max-width: 92vw; max-height: 92vh; }
     .full-photo { display: block; max-width: 88vw; max-height: 80vh; object-fit: contain; border-radius: 6px; }
     .field { display: flex; flex-direction: column; gap: .15rem; min-width: 60px; flex: 1; }
     .field.full { flex-basis: 100%; margin-top: .4rem; }
-    .field label { color: #9ba3b4; font-size: .72rem; text-transform: uppercase; }
-    .field input, .field select {
-      padding: .35rem .5rem; background: #0f0f23; color: #c8c8da;
-      border: 1px solid #2a3a4a; border-radius: 5px; font-size: .85rem; width: 100%;
+    .field label { color: var(--ui-text-muted); font-size: .72rem; text-transform: uppercase; }
+    .field input, .field select, .field textarea {
+      padding: .35rem .5rem; background: var(--ui-bg-soft); color: var(--ui-text-secondary);
+      border: 1px solid var(--ui-border); border-radius: 5px; font-size: .85rem; width: 100%;
     }
-    .field input:focus, .field select:focus { outline: none; border-color: #e94560; }
+    .field textarea { resize: vertical; font-family: inherit; }
+    .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--ui-accent); }
+    .cancel-modal-title { margin: 0 0 .3rem; color: var(--ui-text); font-size: 1.05rem; padding-right: 1.6rem; }
     .foil-toggle {
       display: inline-flex; align-items: center; gap: .35rem;
-      font-size: .8rem; color: #c8c8da; cursor: pointer; padding-bottom: .35rem;
+      font-size: .8rem; color: var(--ui-text-secondary); cursor: pointer; padding-bottom: .35rem;
     }
     .card-action-row { display: flex; gap: .35rem; margin-top: .6rem; justify-content: flex-end; align-items: center; }
 
     .tcg-ref-row {
       display: flex; align-items: center; gap: .4rem; margin-top: .5rem; flex-wrap: wrap;
     }
-    .tcg-ref-label { font-size: .72rem; color: #9ba3b4; text-transform: uppercase; }
+    .tcg-ref-label { font-size: .72rem; color: var(--ui-text-muted); text-transform: uppercase; }
 
     /* Codex card */
     .card-item {
-      background: #16213e; border: 1px solid #2a3a4a; border-radius: 10px;
+      background: var(--ui-surface-elevated); border: 1px solid var(--ui-border); border-radius: 10px;
       overflow: hidden; cursor: pointer; position: relative; transition: all .15s;
     }
-    .card-item:hover { border-color: #e94560; transform: translateY(-2px); }
+    .card-item:hover { border-color: var(--ui-accent); transform: translateY(-2px); }
     .card-overlay-actions {
       position: absolute; bottom: 78px; right: 8px;
       display: flex; flex-direction: column; gap: .3rem; opacity: 0; transition: opacity .15s;
@@ -1447,19 +1795,20 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
     .card-item:hover .card-overlay-actions { opacity: 1; }
     .btn-icon {
       width: 32px; height: 32px; border-radius: 50%;
-      border: 1px solid #2a3a4a; background: rgba(15,15,35,.9); color: #fff;
+      border: 1px solid var(--ui-border); background: rgba(15,15,35,.9); color: var(--ui-text);
       display: flex; align-items: center; justify-content: center; cursor: pointer;
     }
     .btn-icon.btn-add:hover { background: #2a8a8a; border-color: #2a8a8a; }
-    .btn-icon.btn-heart { color: #9ba3b4; }
-    .btn-icon.btn-heart.active, .btn-icon.btn-heart:hover { color: #e94560; border-color: #e94560; }
+    .btn-icon.btn-sell:hover { background: var(--ui-accent); border-color: var(--ui-accent); }
+    .btn-icon.btn-heart { color: var(--ui-text-muted); }
+    .btn-icon.btn-heart.active, .btn-icon.btn-heart:hover { color: var(--ui-accent); border-color: var(--ui-accent); }
 
     /* Wishlist qty */
     .wishlist-qty { display: flex; align-items: center; gap: .4rem; margin-top: .5rem; }
-    .wishlist-qty label { font-size: .8rem; color: #9ba3b4; }
+    .wishlist-qty label { font-size: .8rem; color: var(--ui-text-muted); }
     .wishlist-qty input {
-      width: 60px; padding: .3rem .4rem; background: #0f0f23; color: #c8c8da;
-      border: 1px solid #2a3a4a; border-radius: 5px;
+      width: 60px; padding: .3rem .4rem; background: var(--ui-bg-soft); color: var(--ui-text-secondary);
+      border: 1px solid var(--ui-border); border-radius: 5px;
     }
     .card-actions { padding: .4rem .75rem .75rem; display: flex; justify-content: flex-end; }
 
@@ -1476,46 +1825,64 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
       margin-bottom: 1.5rem;
     }
     .stat-card-s {
-      background: linear-gradient(135deg, #16213e, #1a1a2e);
-      border: 1px solid #2a3a4a; border-radius: 12px;
+      background: linear-gradient(135deg, var(--ui-surface-elevated), #1a1a2e);
+      border: 1px solid var(--ui-border); border-radius: 12px;
       padding: 1.5rem; text-align: center;
     }
-    .stat-big { font-size: 2.4rem; font-weight: 800; color: #e94560; }
-    .stat-desc { color: #9ba3b4; font-size: .9rem; margin-top: .3rem; }
-    .stats-heading { color: #fff; margin: 1.5rem 0 .8rem; font-size: 1.1rem; border-left: 3px solid #e94560; padding-left: .6rem; }
+    .stat-big { font-size: 2.4rem; font-weight: 800; color: var(--ui-accent); }
+    .stat-desc { color: var(--ui-text-muted); font-size: .9rem; margin-top: .3rem; }
+    .stat-card-value {
+      background: linear-gradient(135deg, color-mix(in srgb, var(--ui-accent) 18%, var(--ui-surface-elevated)), var(--ui-surface-elevated));
+      border-color: var(--ui-accent);
+    }
+    .stats-heading { color: var(--ui-text); margin: 1.5rem 0 .8rem; font-size: 1.1rem; border-left: 3px solid var(--ui-accent); padding-left: .6rem; }
+    .donut-section {
+      display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;
+      background: var(--ui-surface-elevated); border: 1px solid var(--ui-border); border-radius: 12px;
+      padding: 1.2rem; margin-bottom: 1.5rem;
+    }
+    .donut-chart { width: 160px; height: 160px; flex-shrink: 0; }
+    .donut-total-num { fill: var(--ui-text); font-size: 20px; font-weight: 800; }
+    .donut-total-label { fill: var(--ui-text-muted); font-size: 9px; text-transform: uppercase; }
+    .donut-legend { display: grid; gap: .5rem; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); flex: 1; min-width: 200px; }
+    .donut-legend-item {
+      display: flex; align-items: center; gap: .45rem; color: var(--ui-text-secondary); font-size: .85rem;
+    }
+    .donut-legend-item strong { margin-left: auto; color: var(--ui-text); }
+    .donut-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
     .completeness-grid { display: grid; gap: .7rem; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
     .completeness-item {
-      background: #16213e; border: 1px solid #2a3a4a; border-radius: 8px; padding: .7rem .9rem;
+      background: var(--ui-surface-elevated); border: 1px solid var(--ui-border); border-radius: 8px; padding: .7rem .9rem;
       display: flex; flex-direction: column; gap: .35rem;
     }
-    .completeness-label { color: #fff; font-weight: 600; }
-    .completeness-label small { color: #9ba3b4; font-weight: 400; }
+    .completeness-label { color: var(--ui-text); font-weight: 600; }
+    .completeness-label small { color: var(--ui-text-muted); font-weight: 400; }
     .completeness-bar-wrap {
-      width: 100%; height: 8px; background: #0f0f23; border-radius: 4px; overflow: hidden;
+      width: 100%; height: 8px; background: var(--ui-bg-soft); border-radius: 4px; overflow: hidden;
     }
     .completeness-bar {
       height: 100%; background: linear-gradient(90deg, #2a8a8a, #4fc3f7);
       border-radius: 4px; transition: width .3s;
     }
-    .completeness-pct { color: #9ba3b4; font-size: .82rem; }
+    .completeness-pct { color: var(--ui-text-muted); font-size: .82rem; }
     .stats-dist {
       display: grid; gap: .35rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     }
     .dist-row {
       display: flex; justify-content: space-between; align-items: center;
-      background: #16213e; border: 1px solid #2a3a4a; border-radius: 6px;
+      background: var(--ui-surface-elevated); border: 1px solid var(--ui-border); border-radius: 6px;
       padding: .5rem .8rem;
     }
-    .dist-label { color: #c8c8da; }
-    .dist-count { color: #e94560; font-weight: 700; }
+    .dist-label { color: var(--ui-text-secondary); }
+    .dist-count { color: var(--ui-accent); font-weight: 700; }
 
     /* Modal */
     .modal-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,.85);
+      position: fixed; inset: 0; background: var(--ui-overlay, rgba(9,13,20,.85)); backdrop-filter: blur(4px);
       display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem;
     }
     .modal-detail {
-      background: #16213e; border: 1px solid #2a3a4a; border-radius: 14px;
+      background: var(--ui-surface-elevated); border: 1px solid var(--ui-border); border-radius: 14px;
       max-width: 760px; width: 100%; max-height: 90vh; overflow-y: auto;
       display: grid; grid-template-columns: 1fr 1.2fr; gap: 0; position: relative;
     }
@@ -1531,106 +1898,106 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
     }
     .modal-detail .detail-image { width: 100%; height: auto; border-radius: 14px 0 0 14px; display: block; }
     .modal-detail .detail-info { padding: 1.4rem; display: flex; flex-direction: column; gap: .8rem; }
-    .modal-detail h2 { margin: 0; color: #fff; }
+    .modal-detail h2 { margin: 0; color: var(--ui-text); }
     .detail-meta { display: flex; gap: .4rem; flex-wrap: wrap; }
     .badge {
       padding: .25rem .55rem; border-radius: 6px; font-size: .8rem;
-      border: 1px solid #2a3a4a; background: #0f0f23;
+      border: 1px solid var(--ui-border); background: var(--ui-bg-soft);
     }
     .badge.rarity { background: #c89b3c30; border-color: #c89b3c; color: #c89b3c; }
     .badge.color { background: color-mix(in srgb, var(--c) 15%, transparent); border-color: var(--c); color: var(--c); }
-    .detail-stats { display: flex; gap: 1rem; flex-wrap: wrap; color: #c8c8da; font-size: .9rem; }
-    .detail-ability { background: #0f0f23; border-radius: 8px; padding: .75rem 1rem; border-left: 3px solid #e94560; }
+    .detail-stats { display: flex; gap: 1rem; flex-wrap: wrap; color: var(--ui-text-secondary); font-size: .9rem; }
+    .detail-ability { background: var(--ui-bg-soft); border-radius: 8px; padding: .75rem 1rem; border-left: 3px solid var(--ui-accent); }
     .detail-ability h4 { margin: 0 0 .35rem; color: #4fc3f7; font-size: .85rem; }
-    .detail-ability p { margin: 0; color: #c8c8da; font-size: .9rem; white-space: pre-wrap; }
-    .detail-edition { color: #9ba3b4; font-size: .85rem; margin: 0; }
+    .detail-ability p { margin: 0; color: var(--ui-text-secondary); font-size: .9rem; white-space: pre-wrap; }
+    .detail-edition { color: var(--ui-text-muted); font-size: .85rem; margin: 0; }
     .btn-tcg {
       display: inline-flex; align-items: center; gap: .4rem;
       margin-top: .8rem; padding: .55rem 1rem; border-radius: 8px;
       background: linear-gradient(135deg, #1a6bc4, #0d4a8e); border: 1px solid #2980d9;
-      color: #fff; font-weight: 700; font-size: .9rem; text-decoration: none;
+      color: var(--ui-text); font-weight: 700; font-size: .9rem; text-decoration: none;
       transition: background .2s, transform .15s;
     }
     .btn-tcg:hover { background: linear-gradient(135deg, #2980d9, #1a6bc4); transform: translateY(-1px); }
     .detail-actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: auto; }
     .close-btn {
       position: absolute; top: .5rem; right: .5rem;
-      background: rgba(15,15,35,.85); border: 1px solid #2a3a4a; color: #fff;
+      background: rgba(15,15,35,.85); border: 1px solid var(--ui-border); color: var(--ui-text);
       width: 32px; height: 32px; border-radius: 50%; cursor: pointer; z-index: 2;
     }
-    .close-btn:hover { background: #e94560; border-color: #e94560; }
+    .close-btn:hover { background: var(--ui-accent); border-color: var(--ui-accent); }
 
     /* Bulk import */
     .bulk-import-panel {
-      background: #16213e; border: 1px solid #2a3a4a; border-radius: 10px;
+      background: var(--ui-surface-elevated); border: 1px solid var(--ui-border); border-radius: 10px;
       padding: 1rem; margin-bottom: 1rem;
     }
-    .bulk-import-panel h4 { margin: 0 0 .4rem; color: #fff; }
-    .bulk-import-panel .hint { color: #9ba3b4; font-size: .82rem; margin: 0 0 .6rem; }
-    .bulk-import-panel .hint code { background: #0f0f23; padding: .1rem .35rem; border-radius: 3px; }
+    .bulk-import-panel h4 { margin: 0 0 .4rem; color: var(--ui-text); }
+    .bulk-import-panel .hint { color: var(--ui-text-muted); font-size: .82rem; margin: 0 0 .6rem; }
+    .bulk-import-panel .hint code { background: var(--ui-bg-soft); padding: .1rem .35rem; border-radius: 3px; }
     .bulk-import-panel textarea {
-      width: 100%; background: #0f0f23; color: #c8c8da;
-      border: 1px solid #2a3a4a; border-radius: 6px; padding: .6rem;
+      width: 100%; background: var(--ui-bg-soft); color: var(--ui-text-secondary);
+      border: 1px solid var(--ui-border); border-radius: 6px; padding: .6rem;
       font-family: monospace; font-size: .85rem;
     }
     .bulk-mode { display: flex; gap: 1rem; margin: .6rem 0; }
-    .bulk-mode label { color: #c8c8da; font-size: .9rem; display: inline-flex; gap: .35rem; align-items: center; }
+    .bulk-mode label { color: var(--ui-text-secondary); font-size: .9rem; display: inline-flex; gap: .35rem; align-items: center; }
     .bulk-actions { display: flex; gap: .5rem; }
-    .bulk-result { margin-top: .8rem; padding: .6rem .8rem; background: #0f0f23;
+    .bulk-result { margin-top: .8rem; padding: .6rem .8rem; background: var(--ui-bg-soft);
       border-left: 3px solid #2a8a8a; border-radius: 6px; }
-    .bulk-result p { margin: 0 0 .5rem; color: #c8c8da; font-size: .9rem; }
+    .bulk-result p { margin: 0 0 .5rem; color: var(--ui-text-secondary); font-size: .9rem; }
     .bulk-result details { margin-top: .35rem; }
     .bulk-result summary { cursor: pointer; color: #4fc3f7; font-size: .85rem; }
     .bulk-result pre {
-      background: #16213e; color: #9ba3b4; padding: .5rem;
+      background: var(--ui-surface-elevated); color: var(--ui-text-muted); padding: .5rem;
       border-radius: 5px; font-size: .8rem; max-height: 200px; overflow: auto;
     }
 
     /* Mercado */
     .mercado-toolbar { display: flex; gap: .6rem; flex-wrap: wrap; margin-bottom: 1rem; }
     .store-config-panel {
-      background: #16213e; border: 1px solid #2a3a4a; border-radius: 10px;
+      background: var(--ui-surface-elevated); border: 1px solid var(--ui-border); border-radius: 10px;
       padding: 1rem; margin-bottom: 1rem;
     }
-    .store-config-panel h4 { margin: 0 0 .8rem; color: #fff; }
+    .store-config-panel h4 { margin: 0 0 .8rem; color: var(--ui-text); }
     .form-grid {
       display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: .7rem;
     }
     .form-grid label {
-      display: flex; flex-direction: column; gap: .25rem; color: #9ba3b4; font-size: .82rem;
+      display: flex; flex-direction: column; gap: .25rem; color: var(--ui-text-muted); font-size: .82rem;
     }
     .form-grid label.full { grid-column: 1 / -1; }
     .form-grid label.check-row {
       flex-direction: row; align-items: center; gap: .55rem;
-      color: #c8c8da; font-size: .9rem; cursor: pointer;
+      color: var(--ui-text-secondary); font-size: .9rem; cursor: pointer;
     }
     .form-grid label.check-row input[type="checkbox"] {
-      width: 18px; height: 18px; accent-color: #e94560; flex-shrink: 0; margin: 0;
+      width: 18px; height: 18px; accent-color: var(--ui-accent); flex-shrink: 0; margin: 0;
     }
     .form-grid input[type="text"],
     .form-grid input[type="email"],
     .form-grid input[type="number"],
     .form-grid textarea,
     .form-grid select {
-      padding: .45rem .6rem; background: #0f0f23; color: #c8c8da;
-      border: 1px solid #2a3a4a; border-radius: 5px; font-size: .9rem;
+      padding: .45rem .6rem; background: var(--ui-bg-soft); color: var(--ui-text-secondary);
+      border: 1px solid var(--ui-border); border-radius: 5px; font-size: .9rem;
     }
     .form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus {
-      outline: none; border-color: #e94560;
+      outline: none; border-color: var(--ui-accent);
     }
-    .token-row { display: flex; gap: .6rem; align-items: center; color: #9ba3b4; font-size: .85rem; flex-wrap: wrap; }
-    .token-row code { background: #0f0f23; padding: .25rem .5rem; border-radius: 4px; color: #4fc3f7; }
+    .token-row { display: flex; gap: .6rem; align-items: center; color: var(--ui-text-muted); font-size: .85rem; flex-wrap: wrap; }
+    .token-row code { background: var(--ui-bg-soft); padding: .25rem .5rem; border-radius: 4px; color: #4fc3f7; }
 
     .permissions-panel {
-      background: #16213e;
-      border: 1px solid #2a3a4a;
+      background: var(--ui-surface-elevated);
+      border: 1px solid var(--ui-border);
       border-radius: 10px;
       padding: .9rem;
       margin-bottom: 1rem;
     }
-    .permissions-panel h3 { margin: 0 0 .35rem; color: #fff; }
-    .permissions-panel .hint { margin: 0 0 .7rem; color: #9ba3b4; font-size: .84rem; }
+    .permissions-panel h3 { margin: 0 0 .35rem; color: var(--ui-text); }
+    .permissions-panel .hint { margin: 0 0 .7rem; color: var(--ui-text-muted); font-size: .84rem; }
     .permissions-create-row {
       display: flex;
       gap: .5rem;
@@ -1643,9 +2010,15 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
       min-width: 240px;
       padding: .45rem .6rem;
       border-radius: 6px;
-      border: 1px solid #2a3a4a;
-      background: #0f0f23;
-      color: #fff;
+      border: 1px solid var(--ui-border);
+      background: var(--ui-bg-soft);
+      color: var(--ui-text);
+    }
+    .role-select-row { display: flex; align-items: center; gap: .5rem; margin-bottom: .6rem; }
+    .role-select-row label { color: var(--ui-text-muted); font-size: .82rem; }
+    .role-select-row select {
+      padding: .4rem .6rem; border-radius: 6px; border: 1px solid var(--ui-border);
+      background: var(--ui-bg-soft); color: var(--ui-text); font-size: .85rem;
     }
     .permissions-grid {
       display: grid;
@@ -1664,7 +2037,7 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
       gap: .8rem;
     }
     .permission-row-card {
-      border: 1px solid #2a3a4a;
+      border: 1px solid var(--ui-border);
       border-radius: 10px;
       padding: .75rem;
       background: rgba(22, 33, 62, 0.45);
@@ -1690,9 +2063,9 @@ const FULL_STORE_PERMISSIONS: RiftboundStorePermissionFlags = {
       min-height: 44px;
       padding: .65rem .95rem;
       border-radius: 999px;
-      border: 1px solid #e94560;
-      background: linear-gradient(135deg, #e94560, #c89b3c);
-      color: #fff;
+      border: 1px solid var(--ui-accent);
+      background: linear-gradient(135deg, var(--ui-accent), #c89b3c);
+      color: var(--ui-text);
       font-weight: 800;
       font-size: .86rem;
       box-shadow: 0 10px 24px rgba(0,0,0,.35);
@@ -1708,6 +2081,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private queryParamSub?: Subscription;
   private readonly cdr = inject(ChangeDetectorRef);
 
   readonly COLORS = [
@@ -1802,12 +2176,49 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   historyLoading = signal(false);
   historyStatusFilter = signal<'' | RiftboundStoreOrderStatus>('');
 
+  // Gestión de pedidos (unificada: Pedidos + Historial)
+  ordersPill = signal<'pendientes' | 'todos' | 'completados' | 'cancelados'>('pendientes');
+  orderDetail = signal<RiftboundStoreOrder | null>(null);
+
+  ordersForPill = computed<RiftboundStoreOrder[]>(() => {
+    const pill = this.ordersPill();
+    if (pill === 'pendientes') return this.pendingOrders();
+    if (pill === 'completados') return this.historyOrders().filter(o => o.status === 'accepted');
+    if (pill === 'cancelados') return this.historyOrders().filter(o => o.status === 'cancelled');
+    return [...this.pendingOrders(), ...this.historyOrders().filter(o => o.status !== 'pending')];
+  });
+
   // Permisos colaboradores
   workspacePermissionsLoading = signal(false);
   permissionsSaving = signal(false);
   collaboratorPermissions = signal<RiftboundStoreCollaboratorPermission[]>([]);
   collaboratorDirty = new Map<number, Partial<RiftboundStorePermissionFlags>>();
   newCollaboratorUser = '';
+  newCollaboratorRole = signal<CollaboratorRole>('personalizado');
+
+  onNewCollaboratorRoleChange(role: CollaboratorRole) {
+    this.newCollaboratorRole.set(role);
+    if (role === 'personalizado') return;
+    const active = new Set<keyof RiftboundStorePermissionFlags>(ROLE_PRESETS[role]);
+    const next = {} as RiftboundStorePermissionFlags;
+    for (const key of this.permissionKeys) next[key] = active.has(key);
+    this.newCollaboratorPerms.set(next);
+  }
+
+  collaboratorRoleFor(row: RiftboundStoreCollaboratorPermission): CollaboratorRole {
+    const effective: Partial<RiftboundStorePermissionFlags> = {};
+    for (const key of this.permissionKeys) effective[key] = this.collaboratorPermValue(row, key);
+    return detectCollaboratorRole(effective, this.permissionKeys);
+  }
+
+  onCollaboratorRoleChange(row: RiftboundStoreCollaboratorPermission, role: CollaboratorRole) {
+    if (role === 'personalizado') return;
+    const active = new Set<keyof RiftboundStorePermissionFlags>(ROLE_PRESETS[role]);
+    for (const key of this.permissionKeys) {
+      this.toggleCollaboratorPerm(row.id, key, active.has(key));
+    }
+  }
+
   newCollaboratorPerms = signal<RiftboundStorePermissionFlags>({
     view_collection: true,
     edit_collection: true,
@@ -1845,6 +2256,80 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   private wishlistIds = new Set<number>();
   private wishlistHydratingCardIds = new Set<number>();
   private wishlistHydratedCards = signal<Map<number, RiftboundCard>>(new Map<number, RiftboundCard>());
+
+  // Guía interactiva
+  showGuide = signal(false);
+  completedTours = signal<Set<string>>(new Set());
+  private readonly tourService = inject(TourService);
+
+  onStartCardTour(tourId: string) {
+    const steps = TOUR_STEPS[tourId];
+    if (!steps) return;
+    const targetTab = tourId as Tab;
+    this.switchTab(targetTab);
+    setTimeout(() => {
+      this.tourService.start(tourId, steps, () => this.markTourComplete(tourId));
+    }, 150);
+  }
+
+  private markTourComplete(tourId: string) {
+    this.rb.completeTour(tourId).subscribe({
+      next: (res) => this.completedTours.set(new Set(res.completed)),
+      error: () => this.completedTours.update(s => new Set([...s, tourId])),
+    });
+  }
+
+  // Navegación agrupada (dropdowns)
+  openNavGroup = signal<'coleccion' | 'admin' | null>(null);
+
+  toggleNavGroup(group: 'coleccion' | 'admin', ev: Event) {
+    ev.stopPropagation();
+    this.openNavGroup.update(curr => (curr === group ? null : group));
+  }
+
+  closeNavGroup() {
+    this.openNavGroup.set(null);
+  }
+
+  isTabInGroup(group: 'coleccion' | 'admin'): boolean {
+    const t = this.activeTab();
+    if (group === 'coleccion') return t === 'carpeta' || t === 'codex' || t === 'wishlist';
+    return t === 'pedidos' || t === 'stats' || t === 'permisos';
+  }
+
+  showAdminNavGroup(): boolean {
+    return !this.workspaceMode()
+      || this.hasPermission('view_orders')
+      || this.hasPermission('view_history')
+      || this.canManagePermissions();
+  }
+
+  @HostListener('document:click')
+  onDocumentClickCloseNav() {
+    if (this.openNavGroup() !== null) this.closeNavGroup();
+  }
+
+  // Quick edit (Carpeta)
+  quickEditEntry = signal<RiftboundCollectionEntry | null>(null);
+
+  openQuickEdit(entry: RiftboundCollectionEntry) {
+    this.quickEditEntry.set(entry);
+  }
+
+  closeQuickEdit() {
+    this.quickEditEntry.set(null);
+  }
+
+  // Quick edit (Mercado)
+  quickEditMercadoEntry = signal<RiftboundCollectionEntry | null>(null);
+
+  openMercadoQuickEdit(entry: RiftboundCollectionEntry) {
+    this.quickEditMercadoEntry.set(entry);
+  }
+
+  closeMercadoQuickEdit() {
+    this.quickEditMercadoEntry.set(null);
+  }
 
   // Preview
   previewCard = signal<RiftboundCardLite | null>(null);
@@ -1933,6 +2418,14 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
   @HostListener('window:resize')
   onWindowResize() { this.tryInfiniteScrollFallback(); }
 
+  goToCollaborate() {
+    this.router.navigate(['/riftbound/colaborar']);
+  }
+
+  goToMyFolder() {
+    this.router.navigate(['/riftbound/carpeta']);
+  }
+
   ngOnInit() {
     if (!this.auth.isAuthenticated()) {
       this.router.navigate(['/login'], { queryParams: { returnUrl: '/riftbound/carpeta' } });
@@ -1947,6 +2440,18 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
       this.loadIds();
       this.loadCollection();
       this.loadBinderProfile();
+      this.rb.getTourProgress().subscribe({
+        next: (res) => this.completedTours.set(new Set(res.completed)),
+        error: () => {},
+      });
+
+      const validTabs: Tab[] = ['carpeta', 'codex', 'wishlist', 'mercado', 'pedidos', 'stats', 'permisos'];
+      this.queryParamSub = this.route.queryParamMap.subscribe(params => {
+        const requestedTab = params.get('tab');
+        if (requestedTab && (validTabs as string[]).includes(requestedTab) && requestedTab !== this.activeTab()) {
+          this.switchTab(requestedTab as Tab);
+        }
+      });
     }
 
     this.rb.listSets().subscribe(s => {
@@ -1972,6 +2477,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     this.wishlistObserver?.disconnect();
     this.mercadoObserver?.disconnect();
     this.detachContentScrollListener();
+    this.queryParamSub?.unsubscribe();
   }
 
   canUseWorkspaceContent(): boolean {
@@ -2206,12 +2712,8 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
         return;
       }
     }
-    if (t === 'pedidos' && !this.hasPermission('view_orders')) {
-      alert('No tienes permiso para ver pedidos pendientes.');
-      return;
-    }
-    if (t === 'historial' && !this.hasPermission('view_history')) {
-      alert('No tienes permiso para ver historial de pedidos.');
+    if (t === 'pedidos' && !this.hasPermission('view_orders') && !this.hasPermission('view_history')) {
+      alert('No tienes permiso para ver pedidos de esta tienda.');
       return;
     }
     if (t === 'permisos' && !this.canManagePermissions()) {
@@ -2227,8 +2729,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     if (t === 'codex' && this.codexCards().length === 0) this.loadCodex();
     if (t === 'wishlist') this.loadWishlist();
     if (t === 'mercado') { this.loadMercado(); }
-    if (t === 'pedidos') this.loadPendingOrders();
-    if (t === 'historial') this.loadHistoryOrders();
+    if (t === 'pedidos') { this.loadPendingOrders(); this.loadHistoryOrders(); }
     if (t === 'stats') this.loadStats();
     if (t === 'permisos') this.loadWorkspacePermissions();
     queueMicrotask(() => {
@@ -2492,6 +2993,49 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     });
   }
 
+  /** Desde Colección: agrega (si hace falta) y marca la carta para venta, luego abre el quick-edit para fijar precio. */
+  sellFromCodex(card: RiftboundCardLite | RiftboundCard, ev?: MouseEvent) {
+    ev?.stopPropagation();
+    if (!this.hasPermission('edit_market')) {
+      alert('No tienes permiso para editar el mercado de esta tienda.');
+      return;
+    }
+    const qty = this.collectionIds[card.id] || 1;
+    this.rb.upsertCollection(
+      { card: card.id, quantity: qty, selling_quantity: qty },
+      { store_profile_id: this.currentStoreProfileId() },
+    ).subscribe({
+      next: (res) => {
+        if ((res as any).deleted) return;
+        const updated = res as RiftboundCollectionEntry;
+        this.collectionIds[updated.card] = updated.quantity;
+        this.collectionEntries.update(arr => {
+          const idx = arr.findIndex(e => e.id === updated.id);
+          if (idx < 0) return arr;
+          const copy = [...arr];
+          copy[idx] = updated;
+          return copy;
+        });
+        this.quickEditEntry.set(updated);
+        this.cdr.markForCheck();
+      },
+      error: (err) => alert(err?.error?.detail || 'No se pudo preparar la carta para venta.'),
+    });
+  }
+
+  /** Desde Carpeta: pone toda la cantidad poseída en venta y abre el quick-edit para fijar precio. */
+  quickSell(entry: RiftboundCollectionEntry, ev: Event) {
+    ev.stopPropagation();
+    if (!this.hasPermission('edit_market')) {
+      alert('No tienes permiso para editar el mercado de esta tienda.');
+      return;
+    }
+    if (entry.quantity <= 0) return;
+    entry.selling_quantity = entry.quantity;
+    this.onFieldChange(entry, 'selling_quantity', entry.quantity);
+    this.openQuickEdit(entry);
+  }
+
   toggleWishlist(cardId: number, ev?: MouseEvent) {
     ev?.stopPropagation();
     if (this.workspaceMode()) return;
@@ -2661,7 +3205,8 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     this.rb.acceptStoreOrder(order.id).subscribe({
       next: () => {
         this.pendingOrders.update(arr => arr.filter(o => o.id !== order.id));
-        if (this.activeTab() === 'historial') this.loadHistoryOrders();
+        this.orderDetail.set(null);
+        if (this.activeTab() === 'pedidos') this.loadHistoryOrders();
         this.cdr.markForCheck();
       },
       error: (err) => {
@@ -2670,24 +3215,44 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
     });
   }
 
+  cancelOrderTarget = signal<RiftboundStoreOrder | null>(null);
+  cancelOrderReason = '';
+  cancelOrderSubmitting = signal(false);
+
   cancelOrder(order: RiftboundStoreOrder) {
     if (!this.hasPermission('reject_orders')) {
       alert('No tienes permiso para rechazar pedidos en esta tienda.');
       return;
     }
-    const reason = prompt(`Motivo de cancelación para pedido #${order.id}:`, '')?.trim() || '';
-    if (!reason) {
-      alert('Debes indicar un motivo para cancelar el pedido.');
-      return;
-    }
+    this.cancelOrderReason = '';
+    this.cancelOrderTarget.set(order);
+  }
+
+  closeCancelOrderModal() {
+    if (this.cancelOrderSubmitting()) return;
+    this.cancelOrderTarget.set(null);
+    this.cancelOrderReason = '';
+  }
+
+  confirmCancelOrder() {
+    const order = this.cancelOrderTarget();
+    const reason = this.cancelOrderReason.trim();
+    if (!order || !reason) return;
+    this.cancelOrderSubmitting.set(true);
     this.rb.cancelStoreOrder(order.id, reason).subscribe({
       next: () => {
         this.pendingOrders.update(arr => arr.filter(o => o.id !== order.id));
-        if (this.activeTab() === 'historial') this.loadHistoryOrders();
+        this.orderDetail.set(null);
+        this.cancelOrderSubmitting.set(false);
+        this.cancelOrderTarget.set(null);
+        this.cancelOrderReason = '';
+        if (this.activeTab() === 'pedidos') this.loadHistoryOrders();
         this.cdr.markForCheck();
       },
       error: (err) => {
+        this.cancelOrderSubmitting.set(false);
         alert(err?.error?.detail || 'No se pudo cancelar el pedido.');
+        this.cdr.markForCheck();
       },
     });
   }
@@ -2804,6 +3369,32 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
       common: 'Common', uncommon: 'Uncommon', rare: 'Rare',
       epic: 'Epic', legendary: 'Legendary', champion: 'Champion', promo: 'Promo',
     } as Record<string, string>)[r || ''] || (r || '');
+  }
+  private readonly RARITY_COLORS: Record<string, string> = {
+    common: '#8896a8',
+    uncommon: '#5abf90',
+    rare: '#4fc3f7',
+    epic: '#9b6ad8',
+    legendary: '#f5c518',
+    champion: '#e94560',
+    promo: '#c89b3c',
+  };
+  rarityColor(key: string): string {
+    return this.RARITY_COLORS[key] || '#8896a8';
+  }
+  private readonly DONUT_RADIUS = 45;
+  donutSegments(rows: { key: string; count: number }[]): Array<{ key: string; count: number; color: string; dashArray: string; dashOffset: string }> {
+    const total = rows.reduce((sum, r) => sum + r.count, 0);
+    if (total === 0) return [];
+    const circumference = 2 * Math.PI * this.DONUT_RADIUS;
+    let cumulative = 0;
+    return rows.map(r => {
+      const length = (r.count / total) * circumference;
+      const dashArray = `${length} ${circumference - length}`;
+      const dashOffset = `${-cumulative}`;
+      cumulative += length;
+      return { key: r.key, count: r.count, color: this.rarityColor(r.key), dashArray, dashOffset };
+    });
   }
   colorLabel(c: string): string {
     return this.COLORS.find(x => x.code === c)?.label || c;
@@ -3113,7 +3704,7 @@ export class RiftboundCarpetaComponent implements OnInit, AfterViewInit, OnDestr
       const jsPDF = jspdfMod.jsPDF || jspdfMod.default;
       const node = document.querySelector('.collection-grid') as HTMLElement | null;
       if (!node) return;
-      const canvas = await html2canvas(node, { backgroundColor: '#0f0f23', scale: 2 });
+      const canvas = await html2canvas(node, { backgroundColor: '#121215', scale: 2 });
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();

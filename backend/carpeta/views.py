@@ -3,17 +3,23 @@ import uuid
 
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes, parser_classes
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Q, Count, Sum, F
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from backend.cdn_image_upload import upload_image_to_cdn, CdnImageUploadError
+from users.models import Notification
 
-from .models import BinderProfile, CollectionEntry, WishlistEntry, StoreOrder, StoreOrderItem
+from .models import (
+    BinderProfile, CollectionEntry, WishlistEntry, StoreOrder, StoreOrderItem,
+    CarpetaTourProgress, MylStorePermission,
+)
 from .serializers import (
     BinderProfileSerializer,
     PublicBinderProfileSerializer,
@@ -23,6 +29,7 @@ from .serializers import (
     WishlistEntryWriteSerializer,
     StoreOrderSerializer,
     StoreOrderCreateSerializer,
+    MylStorePermissionSerializer,
 )
 
 
@@ -86,6 +93,265 @@ def regenerate_share_token(request):
     return Response({"share_token": str(profile.share_token)})
 
 
+# ── Colaboración / permisos de tienda ("Carpetas Compartidas") ──────────
+
+OWNER_PERMISSIONS = {
+    "view_collection": True,
+    "edit_collection": True,
+    "delete_collection": True,
+    "edit_market": True,
+    "remove_from_market": True,
+    "view_orders": True,
+    "view_history": True,
+    "accept_orders": True,
+    "reject_orders": True,
+    "manage_permissions": True,
+}
+
+PERMISSION_FIELD_MAP = {
+    "view_collection": "can_view_collection",
+    "edit_collection": "can_edit_collection",
+    "delete_collection": "can_delete_collection",
+    "edit_market": "can_edit_market",
+    "remove_from_market": "can_remove_from_market",
+    "view_orders": "can_view_orders",
+    "view_history": "can_view_history",
+    "accept_orders": "can_accept_orders",
+    "reject_orders": "can_reject_orders",
+    "manage_permissions": "can_manage_permissions",
+}
+
+COLLECTION_FIELDS = {"quantity", "condition", "language", "is_foil", "notes"}
+MARKET_FIELDS = {"price", "selling_quantity", "photo_url", "photo_url_2"}
+
+
+def _get_or_create_profile_for_user(user):
+    profile, _ = BinderProfile.objects.get_or_create(user=user)
+    return profile
+
+
+def _permissions_payload_for_user(profile, user):
+    if profile.user_id == user.id:
+        return dict(OWNER_PERMISSIONS)
+    perm = MylStorePermission.objects.filter(store_profile=profile, user=user).first()
+    if not perm:
+        return None
+    return perm.permissions_dict()
+
+
+def _can_permissions(perm_payload, key):
+    return bool((perm_payload or {}).get(key))
+
+
+def _store_profile_id_from_request(request):
+    raw = request.query_params.get("store_profile_id")
+    if raw in (None, ""):
+        body = request.data if hasattr(request, "data") else None
+        raw = body.get("store_profile_id") if hasattr(body, "get") else None
+    if raw in (None, ""):
+        return None
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        raise PermissionDenied("store_profile_id invalido")
+    if value <= 0:
+        raise PermissionDenied("store_profile_id invalido")
+    return value
+
+
+def _resolve_workspace(request, required_permission=None):
+    requested_profile_id = _store_profile_id_from_request(request)
+
+    if requested_profile_id is None:
+        profile = _get_or_create_profile_for_user(request.user)
+    else:
+        profile = BinderProfile.objects.filter(pk=requested_profile_id).select_related("user").first()
+        if not profile:
+            raise PermissionDenied("Tienda no encontrada")
+
+    permissions_payload = _permissions_payload_for_user(profile, request.user)
+    if permissions_payload is None:
+        raise PermissionDenied("No tienes acceso a esta tienda")
+
+    if required_permission and not _can_permissions(permissions_payload, required_permission):
+        raise PermissionDenied("No tienes permiso para esta accion")
+
+    is_owner = profile.user_id == request.user.id
+    return profile, permissions_payload, is_owner
+
+
+def _is_store_permission_manager(profile, user):
+    if profile.user_id == user.id:
+        return True
+    perm = MylStorePermission.objects.filter(store_profile=profile, user=user).first()
+    return bool(perm and perm.can_manage_permissions)
+
+
+def _permission_values_from_payload(payload):
+    source = payload.get("permissions") if isinstance(payload.get("permissions"), dict) else payload
+    values = {}
+    for short_key, model_field in PERMISSION_FIELD_MAP.items():
+        if short_key in source:
+            values[model_field] = bool(source.get(short_key))
+        elif model_field in source:
+            values[model_field] = bool(source.get(model_field))
+    return values
+
+
+def _workspace_payload(profile, request, permissions_payload, is_owner):
+    profile_data = BinderProfileSerializer(profile, context={"request": request}).data
+    return {
+        "store_profile_id": profile.id,
+        "is_owner": bool(is_owner),
+        "owner_username": profile.user.username,
+        "permissions": permissions_payload,
+        "profile": profile_data,
+    }
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def myl_workspaces(request):
+    own_profile = _get_or_create_profile_for_user(request.user)
+    results = [
+        _workspace_payload(own_profile, request, dict(OWNER_PERMISSIONS), is_owner=True)
+    ]
+
+    collaborator_qs = (
+        MylStorePermission.objects
+        .filter(user=request.user)
+        .select_related("store_profile", "store_profile__user")
+    )
+    seen = {own_profile.id}
+    for perm in collaborator_qs:
+        profile = perm.store_profile
+        if profile.id in seen:
+            continue
+        permissions_payload = perm.permissions_dict()
+        if not any(permissions_payload.values()):
+            continue
+        seen.add(profile.id)
+        results.append(_workspace_payload(profile, request, permissions_payload, is_owner=False))
+
+    results.sort(key=lambda row: (0 if row["is_owner"] else 1, row["owner_username"].lower()))
+    return Response({"results": results})
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def myl_workspace_permissions(request, profile_id):
+    profile = get_object_or_404(BinderProfile.objects.select_related("user"), pk=profile_id)
+    if not _is_store_permission_manager(profile, request.user):
+        raise PermissionDenied("No puedes administrar permisos de esta tienda")
+
+    perms = (
+        MylStorePermission.objects
+        .filter(store_profile=profile)
+        .exclude(user=profile.user)
+        .select_related("user", "granted_by")
+    )
+    data = MylStorePermissionSerializer(perms, many=True, context={"request": request}).data
+    return Response({"store_profile_id": profile.id, "results": data})
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def myl_workspace_permission_upsert(request, profile_id):
+    profile = get_object_or_404(BinderProfile.objects.select_related("user"), pk=profile_id)
+    if not _is_store_permission_manager(profile, request.user):
+        raise PermissionDenied("No puedes administrar permisos de esta tienda")
+
+    payload = request.data or {}
+    user_identifier = (payload.get("username") or payload.get("email") or payload.get("user") or "").strip()
+    if not user_identifier:
+        return Response({"detail": "Debes indicar username o email"}, status=status.HTTP_400_BAD_REQUEST)
+
+    user_model = get_user_model()
+    target_user = user_model.objects.filter(username__iexact=user_identifier).first()
+    if target_user is None and "@" in user_identifier:
+        target_user = user_model.objects.filter(email__iexact=user_identifier).first()
+    if target_user is None:
+        return Response({"detail": "Usuario no encontrado"}, status=status.HTTP_404_NOT_FOUND)
+    if target_user.id == profile.user_id:
+        return Response({"detail": "No puedes asignar permisos al propietario"}, status=status.HTTP_400_BAD_REQUEST)
+
+    values = _permission_values_from_payload(payload)
+    if not values:
+        return Response({"detail": "No se enviaron permisos a actualizar"}, status=status.HTTP_400_BAD_REQUEST)
+
+    is_owner = profile.user_id == request.user.id
+    if (not is_owner) and values.get("can_manage_permissions"):
+        raise PermissionDenied("Solo el propietario puede delegar la gestion de permisos")
+
+    perm, created = MylStorePermission.objects.get_or_create(
+        store_profile=profile,
+        user=target_user,
+        defaults={"granted_by": request.user},
+    )
+    for field_name, field_value in values.items():
+        setattr(perm, field_name, field_value)
+
+    has_any_permission = any(bool(getattr(perm, field)) for field in PERMISSION_FIELD_MAP.values())
+    if not has_any_permission:
+        perm.delete()
+        return Response({"deleted": True})
+
+    perm.granted_by = request.user
+    perm.save()
+    data = MylStorePermissionSerializer(perm, context={"request": request}).data
+    return Response(data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+@api_view(["PATCH"])
+@permission_classes([permissions.IsAuthenticated])
+def myl_workspace_permission_update(request, profile_id, permission_id):
+    profile = get_object_or_404(BinderProfile.objects.select_related("user"), pk=profile_id)
+    if not _is_store_permission_manager(profile, request.user):
+        raise PermissionDenied("No puedes administrar permisos de esta tienda")
+
+    perm = get_object_or_404(
+        MylStorePermission.objects.select_related("user", "granted_by"),
+        pk=permission_id,
+        store_profile=profile,
+    )
+    if perm.user_id == profile.user_id:
+        return Response({"detail": "No puedes editar permisos del propietario"}, status=status.HTTP_400_BAD_REQUEST)
+
+    values = _permission_values_from_payload(request.data or {})
+    if not values:
+        return Response({"detail": "No se enviaron permisos a actualizar"}, status=status.HTTP_400_BAD_REQUEST)
+
+    is_owner = profile.user_id == request.user.id
+    if (not is_owner) and values.get("can_manage_permissions"):
+        raise PermissionDenied("Solo el propietario puede delegar la gestion de permisos")
+
+    for field_name, field_value in values.items():
+        setattr(perm, field_name, field_value)
+
+    has_any_permission = any(bool(getattr(perm, field)) for field in PERMISSION_FIELD_MAP.values())
+    if not has_any_permission:
+        perm.delete()
+        return Response({"deleted": True})
+
+    perm.granted_by = request.user
+    perm.save()
+    return Response(MylStorePermissionSerializer(perm, context={"request": request}).data)
+
+
+@api_view(["DELETE"])
+@permission_classes([permissions.IsAuthenticated])
+def myl_workspace_permission_delete(request, profile_id, permission_id):
+    profile = get_object_or_404(BinderProfile.objects.select_related("user"), pk=profile_id)
+    if not _is_store_permission_manager(profile, request.user):
+        raise PermissionDenied("No puedes administrar permisos de esta tienda")
+
+    perm = get_object_or_404(MylStorePermission, pk=permission_id, store_profile=profile)
+    if perm.user_id == profile.user_id:
+        return Response({"detail": "No puedes eliminar permisos del propietario"}, status=status.HTTP_400_BAD_REQUEST)
+    perm.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 # ── Collection ───────────────────────────────────────────
 
 class MyCollectionListView(generics.ListAPIView):
@@ -94,7 +360,8 @@ class MyCollectionListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        qs = CollectionEntry.objects.filter(user=self.request.user).select_related(
+        profile, _, _ = _resolve_workspace(self.request, required_permission="view_collection")
+        qs = CollectionEntry.objects.filter(user=profile.user).select_related(
             "card__edition", "card__rarity", "card__race", "card__card_type"
         )
         search = self.request.query_params.get("search")
@@ -130,6 +397,47 @@ def _apply_collection_fields(entry, data):
         entry.selling_quantity = entry.quantity
 
 
+def _ensure_market_permission_for_selling_change(permissions_payload, old_selling, new_selling):
+    old_value = int(old_selling or 0)
+    new_value = int(new_selling or 0)
+    if old_value > 0 and new_value == 0:
+        if not (_can_permissions(permissions_payload, "remove_from_market") or _can_permissions(permissions_payload, "edit_market")):
+            raise PermissionDenied("No tienes permiso para quitar cartas de la venta")
+        return
+    if old_value != new_value and not _can_permissions(permissions_payload, "edit_market"):
+        raise PermissionDenied("No tienes permiso para editar ventas/precios")
+
+
+def _enforce_entry_permissions(data, permissions_payload, entry=None, created=False):
+    requested_fields = set(data.keys())
+    requested_fields.discard("card")
+    requested_fields.discard("store_profile_id")
+    requested_fields.discard("file")
+    requested_fields.discard("slot")
+
+    if requested_fields & COLLECTION_FIELDS:
+        if not _can_permissions(permissions_payload, "edit_collection"):
+            raise PermissionDenied("No tienes permiso para editar la carpeta")
+
+    if requested_fields & MARKET_FIELDS:
+        if "selling_quantity" in requested_fields:
+            old_selling = entry.selling_quantity if entry is not None else 0
+            try:
+                new_selling = int(data.get("selling_quantity") or 0)
+            except (TypeError, ValueError):
+                new_selling = old_selling
+            _ensure_market_permission_for_selling_change(permissions_payload, old_selling, new_selling)
+
+            if (requested_fields & MARKET_FIELDS) - {"selling_quantity"} and not _can_permissions(permissions_payload, "edit_market"):
+                raise PermissionDenied("No tienes permiso para editar ventas/precios")
+        else:
+            if not _can_permissions(permissions_payload, "edit_market"):
+                raise PermissionDenied("No tienes permiso para editar ventas/precios")
+
+    if created and not _can_permissions(permissions_payload, "edit_collection"):
+        raise PermissionDenied("No tienes permiso para agregar cartas a la carpeta")
+
+
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
 @parser_classes([JSONParser, MultiPartParser, FormParser])
@@ -138,6 +446,8 @@ def collection_upsert(request):
     card_id = data.get("card")
     if not card_id:
         return Response({"detail": "card es requerido."}, status=status.HTTP_400_BAD_REQUEST)
+
+    profile, permissions_payload, _ = _resolve_workspace(request, required_permission="view_collection")
 
     file_obj = request.FILES.get("file")
     if file_obj is not None:
@@ -149,14 +459,18 @@ def collection_upsert(request):
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         data[target_field] = uploaded_url
 
-    entry, created = CollectionEntry.objects.get_or_create(
-        user=request.user, card_id=card_id,
-        defaults={"quantity": int(data.get("quantity", 1) or 1)},
-    )
+    entry = CollectionEntry.objects.filter(user=profile.user, card_id=card_id).first()
+    created = entry is None
     if created:
-        _apply_collection_fields(entry, data)
+        _enforce_entry_permissions(data, permissions_payload, entry=None, created=True)
+        entry = CollectionEntry.objects.create(
+            user=profile.user, card_id=card_id,
+            quantity=int(data.get("quantity", 1) or 1),
+        )
     else:
-        _apply_collection_fields(entry, data)
+        _enforce_entry_permissions(data, permissions_payload, entry=entry, created=False)
+
+    _apply_collection_fields(entry, data)
     entry.save()
 
     entry = CollectionEntry.objects.select_related(
@@ -168,7 +482,8 @@ def collection_upsert(request):
 @api_view(["DELETE"])
 @permission_classes([permissions.IsAuthenticated])
 def collection_delete(request, card_id):
-    deleted, _ = CollectionEntry.objects.filter(user=request.user, card_id=card_id).delete()
+    profile, permissions_payload, _ = _resolve_workspace(request, required_permission="delete_collection")
+    deleted, _ = CollectionEntry.objects.filter(user=profile.user, card_id=card_id).delete()
     if deleted:
         return Response(status=status.HTTP_204_NO_CONTENT)
     return Response({"detail": "Entrada no encontrada."}, status=status.HTTP_404_NOT_FOUND)
@@ -258,15 +573,23 @@ def collection_batch_upsert(request):
     if not items:
         return Response({"detail": "Se esperaba una lista de cambios."}, status=status.HTTP_400_BAD_REQUEST)
 
+    profile, permissions_payload, _ = _resolve_workspace(request, required_permission="view_collection")
+
     updated = 0
     for item in items:
         card_id = item.get("card")
         if not card_id:
             continue
-        entry, created = CollectionEntry.objects.get_or_create(
-            user=request.user, card_id=card_id,
-            defaults={"quantity": int(item.get("quantity", 1) or 1)},
-        )
+        entry = CollectionEntry.objects.filter(user=profile.user, card_id=card_id).first()
+        created = entry is None
+        if created:
+            _enforce_entry_permissions(item, permissions_payload, entry=None, created=True)
+            entry = CollectionEntry.objects.create(
+                user=profile.user, card_id=card_id,
+                quantity=int(item.get("quantity", 1) or 1),
+            )
+        else:
+            _enforce_entry_permissions(item, permissions_payload, entry=entry, created=False)
         _apply_collection_fields(entry, item)
         entry.save()
         updated += 1
@@ -636,6 +959,18 @@ def _create_store_order(profile, buyer_user, payload):
             order.total_estimated = total_estimated
             order.save(update_fields=["total_estimated"])
 
+    total_items = sum(requested_by_entry.values())
+    buyer_label = order.buyer_name or (buyer_user.username if buyer_user is not None else "Comprador")
+    try:
+        Notification.objects.create(
+            user=profile.user,
+            notif_type="general",
+            message=f"Nuevo pedido MYL de {buyer_label} ({total_items} cartas)",
+            link="/carpeta?tab=pedidos",
+        )
+    except Exception:
+        pass
+
     return (
         StoreOrder.objects.select_related("store_profile", "store_profile__user", "buyer_user")
         .prefetch_related("items", "items__card")
@@ -669,21 +1004,41 @@ class MyStoreOrderListView(generics.ListAPIView):
     serializer_class = StoreOrderSerializer
 
     def get_queryset(self):
+        profile, permissions_payload, _ = _resolve_workspace(self.request)
         qs = (
-            StoreOrder.objects.filter(store_profile__user=self.request.user)
+            StoreOrder.objects.filter(store_profile=profile)
             .select_related("store_profile", "store_profile__user", "buyer_user")
             .prefetch_related("items", "items__card")
         )
         status_filter = (self.request.query_params.get("status") or "").strip().lower()
-        if status_filter == "history":
-            return qs.filter(status__in=[StoreOrder.STATUS_ACCEPTED, StoreOrder.STATUS_CANCELLED])
         allowed = {
             StoreOrder.STATUS_PENDING,
             StoreOrder.STATUS_ACCEPTED,
             StoreOrder.STATUS_CANCELLED,
         }
+
+        def _can_view_status(status_value):
+            if status_value == StoreOrder.STATUS_PENDING:
+                return _can_permissions(permissions_payload, "view_orders")
+            return _can_permissions(permissions_payload, "view_history")
+
+        if status_filter == "history":
+            if not _can_permissions(permissions_payload, "view_history"):
+                raise PermissionDenied("No tienes permiso para ver el historial de pedidos")
+            return qs.filter(status__in=[StoreOrder.STATUS_ACCEPTED, StoreOrder.STATUS_CANCELLED])
         if status_filter in allowed:
+            if not _can_view_status(status_filter):
+                raise PermissionDenied("No tienes permiso para ver ese estado de pedidos")
             qs = qs.filter(status=status_filter)
+        else:
+            status_q = Q()
+            if _can_permissions(permissions_payload, "view_orders"):
+                status_q |= Q(status=StoreOrder.STATUS_PENDING)
+            if _can_permissions(permissions_payload, "view_history"):
+                status_q |= Q(status__in=[StoreOrder.STATUS_ACCEPTED, StoreOrder.STATUS_CANCELLED])
+            if not status_q:
+                raise PermissionDenied("No tienes permiso para ver pedidos de esta tienda")
+            qs = qs.filter(status_q)
         return qs
 
 
@@ -720,9 +1075,13 @@ class MyPurchaseOrderListView(generics.ListAPIView):
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
 def my_order_assignments(request):
+    profile, permissions_payload, _ = _resolve_workspace(request)
+    if not _can_permissions(permissions_payload, "view_orders"):
+        raise PermissionDenied("No tienes permiso para ver pedidos pendientes")
+
     rows = (
         StoreOrderItem.objects.filter(
-            order__store_profile__user=request.user,
+            order__store_profile=profile,
             order__status=StoreOrder.STATUS_PENDING,
             collection_entry__isnull=False,
         )
@@ -742,16 +1101,24 @@ def _update_order_status(request, order_id, new_status):
     if new_status not in {StoreOrder.STATUS_ACCEPTED, StoreOrder.STATUS_CANCELLED}:
         return Response({"detail": "Estado invalido."}, status=status.HTTP_400_BAD_REQUEST)
 
+    required_permission = "accept_orders" if new_status == StoreOrder.STATUS_ACCEPTED else "reject_orders"
+
     with transaction.atomic():
         try:
             order = (
                 StoreOrder.objects.select_for_update()
                 .select_related("store_profile", "store_profile__user", "buyer_user")
                 .prefetch_related("items")
-                .get(pk=order_id, store_profile__user=request.user)
+                .get(pk=order_id)
             )
         except StoreOrder.DoesNotExist:
             return Response({"detail": "Pedido no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+        permissions_payload = _permissions_payload_for_user(order.store_profile, request.user)
+        if permissions_payload is None:
+            return Response({"detail": "Pedido no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        if not _can_permissions(permissions_payload, required_permission):
+            return Response({"detail": "No tienes permiso para gestionar este pedido."}, status=status.HTTP_403_FORBIDDEN)
 
         if order.status != StoreOrder.STATUS_PENDING:
             return Response({"detail": "Solo puedes gestionar pedidos pendientes."}, status=status.HTTP_400_BAD_REQUEST)
@@ -764,7 +1131,7 @@ def _update_order_status(request, order_id, new_status):
                 e.id: e
                 for e in CollectionEntry.objects.select_for_update().filter(
                     id__in=entry_ids,
-                    user=request.user,
+                    user_id=order.store_profile.user_id,
                 )
             }
 
@@ -791,6 +1158,18 @@ def _update_order_status(request, order_id, new_status):
         order.responded_at = timezone.now()
         order.seller_note = str((request.data or {}).get("seller_note") or "").strip()[:800]
         order.save(update_fields=["status", "responded_at", "seller_note", "updated_at"])
+
+    try:
+        if order.buyer_user_id:
+            msg = "Tu pedido MYL fue aceptado." if new_status == StoreOrder.STATUS_ACCEPTED else "Tu pedido MYL fue cancelado."
+            Notification.objects.create(
+                user=order.buyer_user,
+                notif_type="general",
+                message=msg,
+                link=f"/mis-compras?game=myl&store={order.store_profile.share_token}",
+            )
+    except Exception:
+        pass
 
     payload = (
         StoreOrder.objects.select_related("store_profile", "store_profile__user", "buyer_user")
@@ -879,3 +1258,23 @@ def collection_stats(request):
         "by_type": by_type,
         "edition_completeness": edition_completeness,
     })
+
+
+# ── Guía interactiva (tours) ─────────────────────────────
+
+@api_view(["GET", "POST"])
+@permission_classes([permissions.IsAuthenticated])
+def carpeta_tours(request):
+    """GET: tours completados por el usuario. POST {tour_id}: marca uno como completado."""
+    if request.method == "POST":
+        tour_id = str((request.data or {}).get("tour_id") or "").strip()[:64]
+        if not tour_id:
+            return Response({"detail": "tour_id requerido"}, status=status.HTTP_400_BAD_REQUEST)
+        CarpetaTourProgress.objects.get_or_create(user=request.user, tour_id=tour_id)
+
+    completed = list(
+        CarpetaTourProgress.objects
+        .filter(user=request.user)
+        .values_list("tour_id", flat=True)
+    )
+    return Response({"completed": completed})

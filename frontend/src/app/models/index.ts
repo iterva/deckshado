@@ -190,6 +190,49 @@ export interface BinderProfile {
   accepts_trades: boolean;
 }
 
+export interface MylStorePermissionFlags {
+  view_collection: boolean;
+  edit_collection: boolean;
+  delete_collection: boolean;
+  edit_market: boolean;
+  remove_from_market: boolean;
+  view_orders: boolean;
+  view_history: boolean;
+  accept_orders: boolean;
+  reject_orders: boolean;
+  manage_permissions: boolean;
+}
+
+export interface MylWorkspace {
+  store_profile_id: number;
+  is_owner: boolean;
+  owner_username: string;
+  permissions: MylStorePermissionFlags;
+  profile: BinderProfile;
+}
+
+export interface MylStoreCollaboratorPermission {
+  id: number;
+  store_profile: number;
+  user_id: number;
+  username: string;
+  granted_by?: number | null;
+  granted_by_username?: string;
+  permissions: MylStorePermissionFlags;
+  can_view_collection: boolean;
+  can_edit_collection: boolean;
+  can_delete_collection: boolean;
+  can_edit_market: boolean;
+  can_remove_from_market: boolean;
+  can_view_orders: boolean;
+  can_view_history: boolean;
+  can_accept_orders: boolean;
+  can_reject_orders: boolean;
+  can_manage_permissions: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface PublicBinderProfile {
   username: string;
   store_slug: string;

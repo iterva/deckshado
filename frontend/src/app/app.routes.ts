@@ -35,6 +35,12 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/carpeta/carpeta.component').then(m => m.CarpetaComponent)
   },
   {
+    path: 'carpeta/colaborar',
+    title: 'Carpetas compartidas MYL | ShadowForge',
+    data: { workspaceMode: true },
+    loadComponent: () => import('./pages/carpeta/carpeta.component').then(m => m.CarpetaComponent)
+  },
+  {
     path: 'mis-compras',
     title: 'Mis pedidos | ShadowForge',
     data: { description: 'Historial de compras que hiciste en tiendas de otros jugadores, en Riftbound y Mitos y Leyendas.' },

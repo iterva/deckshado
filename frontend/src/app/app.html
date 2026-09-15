@@ -120,9 +120,9 @@
                 <app-icon name="library" [size]="12"></app-icon> Cartas
               </span>
               @for (c of searchResults.cards; track c.id) {
-                <button class="sr-item" (click)="goToResult('card', c.id)">
+                <button class="sr-item" (click)="goToResult('card', c)">
                   <span class="sr-name">{{ c.name }}</span>
-                  <small class="sr-edition">{{ c.edition__title }}</small>
+                  <small class="sr-edition">{{ c.edition__title || c.set__name }}</small>
                 </button>
               }
             </div>
@@ -133,7 +133,7 @@
                 <app-icon name="layers" [size]="12"></app-icon> Mazos
               </span>
               @for (d of searchResults.decks; track d.id) {
-                <button class="sr-item" (click)="goToResult('deck', d.id)">
+                <button class="sr-item" (click)="goToResult('deck', d)">
                   <span class="sr-name">{{ d.name }}</span>
                   <small class="sr-owner">{{ d.owner__username }}</small>
                 </button>

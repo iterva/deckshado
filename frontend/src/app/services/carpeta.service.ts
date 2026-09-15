@@ -12,6 +12,9 @@ import {
   StoreOrderCreatePayload,
   StoreOrderAssignedSummary,
   PaginatedResponse,
+  MylWorkspace,
+  MylStoreCollaboratorPermission,
+  MylStorePermissionFlags,
 } from '../models';
 
 export interface PublicStoreResponse extends PaginatedResponse<CollectionEntry> {
@@ -46,6 +49,11 @@ export class CarpetaService {
 
   constructor(private http: HttpClient) {}
 
+  private addStoreProfileIdToParams(params: HttpParams, storeProfileId?: number): HttpParams {
+    if (storeProfileId) return params.set('store_profile_id', String(storeProfileId));
+    return params;
+  }
+
   // ── Binder Profile ──
   getBinderProfile(): Observable<BinderProfile> {
     return this.http.get<BinderProfile>(`${this.apiUrl}/profile/`);
@@ -66,30 +74,37 @@ export class CarpetaService {
   }
 
   // ── Collection ──
-  getCollection(page?: number, search?: string, selling?: boolean): Observable<PaginatedResponse<CollectionEntry>> {
+  getCollection(page?: number, search?: string, selling?: boolean, storeProfileId?: number): Observable<PaginatedResponse<CollectionEntry>> {
     let params = new HttpParams();
     if (page) params = params.set('page', page.toString());
     if (search) params = params.set('search', search);
     if (selling) params = params.set('selling', '1');
+    params = this.addStoreProfileIdToParams(params, storeProfileId);
     return this.http.get<PaginatedResponse<CollectionEntry>>(`${this.apiUrl}/collection/`, { params });
   }
 
-  upsertCollection(data: Partial<CollectionEntry> & { card: number }): Observable<CollectionEntry> {
-    return this.http.post<CollectionEntry>(`${this.apiUrl}/collection/upsert/`, data);
+  upsertCollection(data: Partial<CollectionEntry> & { card: number }, opts: { store_profile_id?: number } = {}): Observable<CollectionEntry> {
+    let params = new HttpParams();
+    params = this.addStoreProfileIdToParams(params, opts.store_profile_id);
+    return this.http.post<CollectionEntry>(`${this.apiUrl}/collection/upsert/`, data, { params });
   }
 
   /** Sube una foto real de la carta via backend y la asocia a la entrada (collection_upsert).
    *  `slot` indica en qué campo guardar (1 = photo_url, 2 = photo_url_2). Por defecto 1. */
-  uploadEntryPhoto(cardId: number, file: File, slot: 1 | 2 = 1): Observable<CollectionEntry> {
+  uploadEntryPhoto(cardId: number, file: File, slot: 1 | 2 = 1, storeProfileId?: number): Observable<CollectionEntry> {
     const fd = new FormData();
     fd.append('file', file);
     fd.append('card', String(cardId));
     fd.append('slot', String(slot));
-    return this.http.post<CollectionEntry>(`${this.apiUrl}/collection/upsert/`, fd);
+    let params = new HttpParams();
+    params = this.addStoreProfileIdToParams(params, storeProfileId);
+    return this.http.post<CollectionEntry>(`${this.apiUrl}/collection/upsert/`, fd, { params });
   }
 
-  removeFromCollection(cardId: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/collection/${cardId}/`);
+  removeFromCollection(cardId: number, storeProfileId?: number): Observable<void> {
+    let params = new HttpParams();
+    params = this.addStoreProfileIdToParams(params, storeProfileId);
+    return this.http.delete<void>(`${this.apiUrl}/collection/${cardId}/`, { params });
   }
 
   bulkImport(text: string, mode: 'add' | 'set' = 'add'): Observable<{
@@ -123,8 +138,10 @@ export class CarpetaService {
   }
 
   // ── Batch upsert ──
-  batchUpsertCollection(items: Array<Partial<CollectionEntry> & { card: number }>): Observable<{ updated: number }> {
-    return this.http.post<{ updated: number }>(`${this.apiUrl}/collection/batch-upsert/`, items);
+  batchUpsertCollection(items: Array<Partial<CollectionEntry> & { card: number }>, opts: { store_profile_id?: number } = {}): Observable<{ updated: number }> {
+    let params = new HttpParams();
+    params = this.addStoreProfileIdToParams(params, opts.store_profile_id);
+    return this.http.post<{ updated: number }>(`${this.apiUrl}/collection/batch-upsert/`, items, { params });
   }
 
   // ── Share token ──
@@ -171,11 +188,12 @@ export class CarpetaService {
     return this.http.post<StoreOrder>(`${this.apiUrl}/store/${tokenOrSlug}/orders/`, payload);
   }
 
-  listMyStoreOrders(opts: { status?: 'pending' | 'accepted' | 'cancelled' | 'history'; page?: number } = {})
+  listMyStoreOrders(opts: { status?: 'pending' | 'accepted' | 'cancelled' | 'history'; page?: number; store_profile_id?: number } = {})
     : Observable<PaginatedResponse<StoreOrder>> {
     let params = new HttpParams();
     if (opts.status) params = params.set('status', opts.status);
     if (opts.page) params = params.set('page', String(opts.page));
+    params = this.addStoreProfileIdToParams(params, opts.store_profile_id);
     return this.http.get<PaginatedResponse<StoreOrder>>(`${this.apiUrl}/orders/mine/`, { params });
   }
 
@@ -201,12 +219,60 @@ export class CarpetaService {
     });
   }
 
-  getMyOrderAssignedSummary(): Observable<StoreOrderAssignedSummary> {
-    return this.http.get<StoreOrderAssignedSummary>(`${this.apiUrl}/orders/mine/assigned-summary/`);
+  getMyOrderAssignedSummary(storeProfileId?: number): Observable<StoreOrderAssignedSummary> {
+    let params = new HttpParams();
+    params = this.addStoreProfileIdToParams(params, storeProfileId);
+    return this.http.get<StoreOrderAssignedSummary>(`${this.apiUrl}/orders/mine/assigned-summary/`, { params });
   }
 
   // ── Stats ──
   getCollectionStats(): Observable<any> {
     return this.http.get(`${this.apiUrl}/stats/`);
+  }
+
+  // ── Guía interactiva (tours) ──
+  getTours(): Observable<{ completed: string[] }> {
+    return this.http.get<{ completed: string[] }>(`${this.apiUrl}/tours/`);
+  }
+
+  completeTour(tourId: string): Observable<{ completed: string[] }> {
+    return this.http.post<{ completed: string[] }>(`${this.apiUrl}/tours/`, { tour_id: tourId });
+  }
+
+  // ── Colaboración / permisos ("Carpetas Compartidas") ──
+  listWorkspaces(): Observable<{ results: MylWorkspace[] }> {
+    return this.http.get<{ results: MylWorkspace[] }>(`${this.apiUrl}/workspaces/`);
+  }
+
+  listWorkspacePermissions(profileId: number): Observable<{ store_profile_id: number; results: MylStoreCollaboratorPermission[] }> {
+    return this.http.get<{ store_profile_id: number; results: MylStoreCollaboratorPermission[] }>(
+      `${this.apiUrl}/workspaces/${profileId}/permissions/`,
+    );
+  }
+
+  upsertWorkspacePermission(
+    profileId: number,
+    usernameOrEmail: string,
+    permissions: Partial<MylStorePermissionFlags>,
+  ): Observable<MylStoreCollaboratorPermission | { deleted: true }> {
+    return this.http.post<MylStoreCollaboratorPermission | { deleted: true }>(
+      `${this.apiUrl}/workspaces/${profileId}/permissions/upsert/`,
+      { user: usernameOrEmail, permissions },
+    );
+  }
+
+  updateWorkspacePermission(
+    profileId: number,
+    permissionId: number,
+    permissions: Partial<MylStorePermissionFlags>,
+  ): Observable<MylStoreCollaboratorPermission | { deleted: true }> {
+    return this.http.patch<MylStoreCollaboratorPermission | { deleted: true }>(
+      `${this.apiUrl}/workspaces/${profileId}/permissions/${permissionId}/`,
+      { permissions },
+    );
+  }
+
+  deleteWorkspacePermission(profileId: number, permissionId: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/workspaces/${profileId}/permissions/${permissionId}/delete/`);
   }
 }

@@ -33,8 +33,8 @@ import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.compo
           <div class="ban-grid">
             @for (e of banned(); track e.id) {
               <article class="ban-card">
-                @if (e.card_image) {
-                  <img [src]="e.card_image" [alt]="e.card_name" loading="lazy" />
+                @if (cardImageUrl(e); as imgUrl) {
+                  <img [src]="imgUrl" [alt]="e.card_name" loading="lazy" (error)="onCardImageError(e, $event)" />
                 } @else {
                   <div class="img-fallback">{{ e.card_number }}</div>
                 }
@@ -59,8 +59,8 @@ import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.compo
           <div class="ban-grid">
             @for (e of limited(); track e.id) {
               <article class="ban-card">
-                @if (e.card_image) {
-                  <img [src]="e.card_image" [alt]="e.card_name" loading="lazy" />
+                @if (cardImageUrl(e); as imgUrl) {
+                  <img [src]="imgUrl" [alt]="e.card_name" loading="lazy" (error)="onCardImageError(e, $event)" />
                 } @else {
                   <div class="img-fallback">{{ e.card_number }}</div>
                 }
@@ -140,6 +140,9 @@ export class RiftboundBanlistComponent implements OnInit {
   banned = computed(() => this.entries().filter(e => e.status === 'banned'));
   limited = computed(() => this.entries().filter(e => e.status !== 'banned'));
 
+  private brokenUrlsByEntry = new Map<number, Set<string>>();
+  private imageFallbackNonce = signal(0);
+
   ngOnInit() {
     this.rb.listBanlist('standard').subscribe({
       next: (r) => { this.entries.set(r.results); this.loading.set(false); },
@@ -149,5 +152,72 @@ export class RiftboundBanlistComponent implements OnInit {
 
   statusLabel(s: string) {
     return s === 'limited_1' ? 'Limitada a 1' : 'Limitada a 2';
+  }
+
+  private toHttps(url: string | null | undefined): string {
+    const value = (url || '').trim();
+    if (!value) return '';
+    return value.startsWith('http://') ? `https://${value.slice(7)}` : value;
+  }
+
+  private imageUrlVariants(url: string | null | undefined): string[] {
+    const raw = (url || '').trim();
+    if (!raw) return [];
+    const https = this.toHttps(raw);
+    return raw === https ? [raw] : [raw, https];
+  }
+
+  private cloudinaryFetchVariants(url: string | null | undefined): string[] {
+    const variants = this.imageUrlVariants(url);
+    if (!variants.length) return [];
+    return variants.map((candidate) =>
+      `https://res.cloudinary.com/daobfx9yb/image/fetch/f_auto,q_auto/${encodeURIComponent(candidate)}`
+    );
+  }
+
+  private candidateImageUrls(e: RiftboundBanlistEntry): string[] {
+    const candidates = [
+      ...this.imageUrlVariants(e.card_cdn_image_url),
+      ...this.cloudinaryFetchVariants(e.card_image_url),
+      ...this.cloudinaryFetchVariants(e.card_image_url_small),
+      ...this.cloudinaryFetchVariants(e.card_image),
+      ...this.imageUrlVariants(e.card_image_url),
+      ...this.imageUrlVariants(e.card_image_url_small),
+      ...this.imageUrlVariants(e.card_image),
+    ].filter(Boolean);
+
+    return Array.from(new Set(candidates));
+  }
+
+  cardImageUrl(e: RiftboundBanlistEntry): string {
+    this.imageFallbackNonce();
+    const broken = this.brokenUrlsByEntry.get(e.id);
+    for (const url of this.candidateImageUrls(e)) {
+      if (!broken?.has(url)) return url;
+    }
+    return '';
+  }
+
+  onCardImageError(e: RiftboundBanlistEntry, event: Event) {
+    const img = event.target as HTMLImageElement | null;
+    const failedUrls = [img?.currentSrc, img?.src]
+      .map((url) => (url || '').trim())
+      .filter(Boolean);
+    if (!failedUrls.length) return;
+
+    let broken = this.brokenUrlsByEntry.get(e.id);
+    if (!broken) {
+      broken = new Set<string>();
+      this.brokenUrlsByEntry.set(e.id, broken);
+    }
+
+    let changed = false;
+    for (const url of failedUrls) {
+      if (!broken.has(url)) {
+        broken.add(url);
+        changed = true;
+      }
+    }
+    if (changed) this.imageFallbackNonce.update((value) => value + 1);
   }
 }

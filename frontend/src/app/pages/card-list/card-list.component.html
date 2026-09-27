@@ -20,28 +20,29 @@
   <div class="filters-bar">
     <div class="search-wrap">
       <app-icon name="search" [size]="15"></app-icon>
-      <input #searchInput type="text" placeholder="Buscar por nombre... ( / para enfocar)"
+      <input #searchInput type="text" aria-label="Buscar cartas por nombre"
+        [placeholder]="isTouch ? 'Buscar carta…' : 'Buscar por nombre… ( / para enfocar)'"
         [(ngModel)]="search" (ngModelChange)="onSearchInput()" (keyup.enter)="onSearch()" />
     </div>
-    <select [(ngModel)]="selectedEdition" (change)="onFilterChange()">
+    <select aria-label="Filtrar por edición" [(ngModel)]="selectedEdition" (change)="onFilterChange()">
       <option value="">Todas las ediciones</option>
       @for (ed of editions; track ed.id) {
         <option [value]="ed.slug">{{ ed.title }}</option>
       }
     </select>
-    <select [(ngModel)]="selectedType" (change)="onFilterChange()">
+    <select aria-label="Filtrar por tipo" [(ngModel)]="selectedType" (change)="onFilterChange()">
       <option value="">Todos los tipos</option>
       @for (t of types; track t.id) {
         <option [value]="t.slug">{{ t.name }}</option>
       }
     </select>
-    <select [(ngModel)]="selectedRace" (change)="onFilterChange()">
+    <select aria-label="Filtrar por raza" [(ngModel)]="selectedRace" (change)="onFilterChange()">
       <option value="">Todas las razas</option>
       @for (r of races; track r.id) {
         <option [value]="r.slug">{{ r.name }}</option>
       }
     </select>
-    <select [(ngModel)]="selectedRarity" (change)="onFilterChange()">
+    <select aria-label="Filtrar por rareza" [(ngModel)]="selectedRarity" (change)="onFilterChange()">
       <option value="">Todas las frecuencias</option>
       @for (r of rarities; track r.id) {
         <option [value]="r.slug">{{ r.name }}</option>
@@ -113,6 +114,18 @@
           }
         </tbody>
       </table>
+    </div>
+  }
+
+  @if (!loading && loadError) {
+    <div class="empty-state" role="alert">
+      <p>No pudimos cargar las cartas.</p>
+      <button type="button" class="btn-secondary" (click)="reloadCards()">Reintentar</button>
+    </div>
+  } @else if (!loading && cards.length === 0) {
+    <div class="empty-state">
+      <p>No encontramos cartas{{ search ? ' para «' + search + '»' : '' }}.</p>
+      <button type="button" class="btn-secondary" (click)="clearFilters()">Limpiar filtros</button>
     </div>
   }
 

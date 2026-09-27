@@ -21,6 +21,20 @@ if TYPE_CHECKING:
     from .models import RiftboundDeck
 
 
+# Nombres visibles de cada zona (los mismos que RIFTBOUND_ZONE_LABELS del frontend).
+ZONE_LABELS = {
+    ZONE_MAIN: "Mazo principal",
+    ZONE_SIDE: "Sideboard",
+    ZONE_RUNE: "Runas",
+    ZONE_CHAMPION: "Champion Legend",
+    ZONE_BATTLEFIELD: "Battlefields",
+}
+
+
+def zone_label(zone: str) -> str:
+    return f"{ZONE_LABELS.get(zone, zone)} ({zone})"
+
+
 # Reglas exactas (zonas con tamaño fijo)
 RULES_EXACT = {
     ZONE_MAIN: 40,
@@ -69,7 +83,7 @@ def validate_riftbound_deck(deck: "RiftboundDeck") -> dict:
         actual = counts.get(zone, 0)
         if actual < minimum:
             errors.append(
-                f"Zona '{zone}' tiene {actual} cartas, se requieren al menos {minimum}."
+                f"{zone_label(zone)} tiene {actual} cartas, se requieren al menos {minimum}."
             )
 
     # Exactos obligatorios (runas, champion legend, battlefields)
@@ -77,7 +91,7 @@ def validate_riftbound_deck(deck: "RiftboundDeck") -> dict:
         actual = counts.get(zone, 0)
         if actual != expected:
             errors.append(
-                f"Zona '{zone}' tiene {actual} cartas, se requieren exactamente {expected}."
+                f"{zone_label(zone)} tiene {actual} cartas, se requieren exactamente {expected}."
             )
 
     # Battlefields deben ser distintos

@@ -5,14 +5,14 @@
     <a routerLink="/decks" class="back-link" [class.hidden-pres]="presentationMode">← Volver a mazos</a>
 
     <!-- ── Hero con portada ── -->
-    <div class="deck-hero" [class.with-cover]="deck.cover_card_detail?.image_url">
-      @if (deck.cover_card_detail?.image_url) {
-        <div class="hero-bg" [style.backgroundImage]="'url(' + (deck.cover_card_detail!.image_url | thumb:600) + ')'"></div>
+    <div class="deck-hero" [class.with-cover]="heroCoverCard?.image_url">
+      @if (heroCoverCard?.image_url) {
+        <div class="hero-bg" [style.backgroundImage]="'url(' + (heroCoverCard!.image_url | thumb:600) + ')'"></div>
       }
       <div class="hero-overlay"></div>
       <div class="hero-content">
-        @if (deck.cover_card_detail?.image_url) {
-          <img class="hero-cover" [src]="deck.cover_card_detail!.image_url | thumb:350" [alt]="deck.cover_card_detail!.name" />
+        @if (heroCoverCard?.image_url) {
+          <img class="hero-cover" [src]="heroCoverCard!.image_url | thumb:350" [alt]="heroCoverCard!.name" />
         } @else {
           <div class="hero-cover hero-cover-empty"><app-icon name="layers" [size]="32"></app-icon></div>
         }
@@ -249,11 +249,13 @@
               </div>
               <div class="bg-color-row" [class.disabled]="exportBackgroundMode !== 'color'">
                 <input type="color"
+                       aria-label="Color de fondo"
                        class="bg-color-picker"
                        [value]="exportBackgroundColor"
                        [disabled]="exportBackgroundMode !== 'color'"
                        (input)="onExportBackgroundColorInput($any($event.target).value)">
                 <input type="text"
+                       aria-label="Color de fondo (hexadecimal)"
                        class="bg-color-hex"
                        [value]="exportBackgroundColor"
                        [disabled]="exportBackgroundMode !== 'color'"
@@ -263,10 +265,12 @@
               <span class="bg-subtitle">Color de texto</span>
               <div class="bg-color-row">
                 <input type="color"
+                  aria-label="Color de texto"
                   class="bg-color-picker"
                   [value]="exportTextColor"
                   (input)="onExportTextColorInput($any($event.target).value)">
                 <input type="text"
+                  aria-label="Color de texto (hexadecimal)"
                   class="bg-color-hex"
                   [value]="exportTextColor"
                   placeholder="#c8d6e5"
@@ -316,11 +320,12 @@
                 </button>
               </div>
               <label class="opt-toggle">
-                <input type="checkbox" [checked]="exportShowNumbers" (change)="setExportShowNumbers($any($event.target).checked)">
+                <input type="checkbox" aria-label="Mostrar números (x2, x3)" [checked]="exportShowNumbers" (change)="setExportShowNumbers($any($event.target).checked)">
                 <span>Mostrar números (x2, x3)</span>
               </label>
               <label class="opt-toggle" [class.disabled]="!isPublicDeck">
                 <input type="checkbox"
+                       aria-label="Mostrar QR del mazo público"
                        [checked]="exportShowQr && isPublicDeck"
                        [disabled]="!isPublicDeck"
                        (change)="setExportShowQr($any($event.target).checked)">
@@ -841,7 +846,7 @@
             </ul>
           } @else if (socialTab === 'snapshots') {
             <div class="snapshot-create">
-              <input type="text" [(ngModel)]="snapshotLabel" placeholder="Nombre versión (opcional)" />
+              <input type="text" [(ngModel)]="snapshotLabel" maxlength="100" placeholder="Nombre versión (opcional)" />
               <button class="btn btn-sm btn-primary" (click)="createSnapshot()"><app-icon name="camera" [size]="14"></app-icon> Guardar versión</button>
             </div>
             @for (s of snapshots; track s.id) {
@@ -876,12 +881,12 @@
       </div>
     }
   } @else {
-    <p class="empty">Mazo no encontrado.</p>
+    <app-not-found heading="Mazo no encontrado" message="Este mazo no existe, fue eliminado o es privado." link="/decks" linkText="Volver a mazos" />
   }
 </div>
 
 <!-- Overlay exportando -->
-@if (exporting) {
+@if (exporting || encodingExport) {
   <div class="exporting-overlay">
     <div class="exporting-card">
       <div class="exporting-spinner"></div>
@@ -970,6 +975,9 @@
             <button class="hand-btn primary" (click)="drawHand()">Robar 8 cartas</button>
           } @else {
             <span class="hand-size-label">{{ handCards.length }} cartas</span>
+            @if (handPoolSize < handSize) {
+              <span class="hand-size-label" style="color: var(--ui-accent-text, #f59e0b)" role="status">Tu mazo tiene sólo {{ handPoolSize }} {{ handPoolSize === 1 ? 'carta' : 'cartas' }} para robar.</span>
+            }
             @if (handSize > 1) {
               <button class="hand-btn" (click)="mulligan()">Mulligan ({{ handSize - 1 }})</button>
             }

@@ -1,5 +1,7 @@
 import os
+from collections import defaultdict
 
+from django.db import transaction
 from rest_framework import serializers
 
 from .models import (
@@ -65,6 +67,10 @@ def _preferred_riftbound_image(cdn_url: str, image_url: str, image_url_small: st
         return image_url
     if _is_imagekit_url(image_url_small):
         return image_url_small
+
+    # A CDN copy on another provider (e.g. Cloudinary) still beats the upstream API.
+    if (cdn_url or "").strip():
+        return cdn_url.strip()
 
     # Fallback to upstream API URLs while migration finishes.
     return image_url or image_url_small or ""
@@ -147,6 +153,7 @@ class RiftboundBanlistEntrySerializer(serializers.ModelSerializer):
 
 class RiftboundDeckEntrySerializer(serializers.ModelSerializer):
     card_data = RiftboundCardLiteSerializer(source="card", read_only=True)
+    quantity = serializers.IntegerField(min_value=1, max_value=32767)
 
     class Meta:
         model = RiftboundDeckEntry
@@ -176,6 +183,47 @@ class RiftboundDeckSerializer(serializers.ModelSerializer):
         from .validation import validate_riftbound_deck
         return validate_riftbound_deck(obj)
 
+    # Cards the builder lets you play without the per-card copy limit.
+    UNLIMITED_COPY_CARD_NAMES = {"Spiderling"}
+
+    def validate(self, attrs):
+        """Hard limits the builder never allows, not even in a draft: zone sizes and
+        copies per card in a zone. Minimums, banlist and [Unique] stay informative
+        (see `validation.py`) so incomplete decks can still be saved."""
+        from .models import ZONE_BATTLEFIELD, ZONE_CHAMPION, ZONE_RUNE
+        from .validation import MAX_COPIES_DEFAULT, RULES, zone_label
+
+        attrs = super().validate(attrs)
+        entries = attrs.get("entries")
+        if entries is None:
+            return attrs
+
+        zone_totals = defaultdict(int)
+        per_zone_card = defaultdict(int)
+        names = {}
+        for e in entries:
+            zone_totals[e["zone"]] += e["quantity"]
+            per_zone_card[(e["zone"], e["card"].id)] += e["quantity"]
+            names[e["card"].id] = e["card"].name
+
+        errors = []
+        for zone, max_qty in RULES.items():
+            if zone_totals[zone] > max_qty:
+                errors.append(f"{zone_label(zone)}: {zone_totals[zone]} cartas (máximo {max_qty}).")
+
+        zone_copy_limits = {ZONE_BATTLEFIELD: 1, ZONE_CHAMPION: 1, ZONE_RUNE: RULES[ZONE_RUNE]}
+        for (zone, card_id), qty in per_zone_card.items():
+            if names[card_id] in self.UNLIMITED_COPY_CARD_NAMES:
+                continue
+            limit = zone_copy_limits.get(zone, MAX_COPIES_DEFAULT)
+            if qty > limit:
+                errors.append(f"'{names[card_id]}': {qty} copias en '{zone}' (máximo {limit}).")
+
+        if errors:
+            raise serializers.ValidationError({"entries": errors})
+        return attrs
+
+    @transaction.atomic
     def create(self, validated_data):
         entries = validated_data.pop("entries", [])
         deck = RiftboundDeck.objects.create(**validated_data)
@@ -183,6 +231,7 @@ class RiftboundDeckSerializer(serializers.ModelSerializer):
             RiftboundDeckEntry.objects.create(deck=deck, **e)
         return deck
 
+    @transaction.atomic
     def update(self, instance, validated_data):
         entries = validated_data.pop("entries", None)
         for k, v in validated_data.items():

@@ -4,12 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { Title, Meta } from '@angular/platform-browser';
 import { DatePipe } from '@angular/common';
 import { DeckService } from '../../services/deck.service';
+import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { CardService } from '../../services/card.service';
 import { AuthService } from '../../services/auth.service';
 import { Deck, Card, BanlistEntry } from '../../models';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
 import { RelativeTimePipe } from '../../pipes/relative-time.pipe';
 import { IconComponent } from '../../components/icon/icon.component';
+import { NotFoundComponent } from '../not-found/not-found.component';
 
 type ViewMode = 'grid' | 'list' | 'stats';
 type SocialTab = 'none' | 'comments' | 'snapshots' | 'changelog' | 'suggestions';
@@ -27,7 +29,7 @@ interface ExportDeckEntry {
 @Component({
   selector: 'app-deck-view',
   standalone: true,
-  imports: [RouterLink, FormsModule, ThumbnailPipe, DatePipe, RelativeTimePipe, IconComponent],
+  imports: [RouterLink, FormsModule, ThumbnailPipe, DatePipe, RelativeTimePipe, IconComponent, NotFoundComponent],
   templateUrl: './deck-view.component.html',
   styleUrl: './deck-view.component.scss',
 })
@@ -80,6 +82,8 @@ export class DeckViewComponent implements OnInit {
   previewAbility: string | null = null;
   exportOrientation: 'vertical' | 'horizontal' = 'horizontal';
   exporting = false;
+  /** PNG encoding after html2canvas (async via toBlob so the UI stays responsive). */
+  encodingExport = false;
   shareToast = false;
   @ViewChild('deckContent') deckContent!: ElementRef;
   private abilityCache = new Map<number, string>();
@@ -121,6 +125,7 @@ export class DeckViewComponent implements OnInit {
     private cdr: ChangeDetectorRef,
     private titleService: Title,
     private metaService: Meta,
+    private dialog: ConfirmDialogService,
   ) {}
 
   get isOwner(): boolean {
@@ -139,10 +144,21 @@ export class DeckViewComponent implements OnInit {
   }
 
   togglingVisibility = false;
-  toggleVisibility() {
+  async toggleVisibility() {
     if (!this.deck || this.togglingVisibility) return;
-    this.togglingVisibility = true;
     const newVal = !this.deck.is_public;
+    // Mismo aviso que el constructor al publicar un mazo incompleto.
+    const mainCards = (this.deck.entries ?? []).reduce((sum, e) => sum + e.quantity, 0);
+    if (newVal && mainCards < 50) {
+      const publish = await this.dialog.confirm(
+        'Mazo incompleto',
+        `Tu mazo tiene ${mainCards}/50 cartas. ¿Quieres publicarlo igual?`,
+        'Publicar igual',
+        false,
+      );
+      if (!publish) return;
+    }
+    this.togglingVisibility = true;
     this.deckService.updateDeck(this.deck.id, { is_public: newVal }).subscribe({
       next: (updated: any) => {
         if (this.deck) this.deck.is_public = updated.is_public ?? newVal;
@@ -156,10 +172,11 @@ export class DeckViewComponent implements OnInit {
     });
   }
 
-  deleteDeck() {
+  async deleteDeck() {
     if (!this.deck) return;
-    if (!confirm('¿Estás seguro de que quieres eliminar este mazo?')) return;
-    this.deckService.deleteDeck(this.deck.id).subscribe({
+    const deckId = this.deck.id;
+    if (!await this.dialog.confirm('Eliminar mazo', '¿Estás seguro de que quieres eliminar este mazo? Esta acción no se puede deshacer.', 'Eliminar')) return;
+    this.deckService.deleteDeck(deckId).subscribe({
       next: () => this.router.navigate(['/decks']),
       error: (err: any) => console.error('Error eliminando mazo:', err),
     });
@@ -352,10 +369,15 @@ export class DeckViewComponent implements OnInit {
     });
   }
 
-  restoreSnapshot(snapshotId: number) {
-    if (!confirm('¿Restaurar el mazo a esta versión? Se perderán los cambios actuales.')) return;
+  async restoreSnapshot(snapshotId: number) {
+    if (!await this.dialog.confirm('Restaurar versión', '¿Restaurar el mazo a esta versión? Se perderán los cambios actuales.', 'Restaurar')) return;
     this.deckService.restoreSnapshot(snapshotId).subscribe({
       next: () => window.location.reload(),
+      error: () => this.dialog.open({
+        title: 'No se pudo restaurar',
+        message: 'Ocurrió un error al restaurar esta versión. Inténtalo de nuevo.',
+        actions: [{ value: 'ok', label: 'Entendido', style: 'primary' }],
+      }),
     });
   }
 
@@ -426,7 +448,7 @@ export class DeckViewComponent implements OnInit {
       this.loadBanlist();
       this.loadComments();
       // SEO
-      this.titleService.setTitle(`${deck.name} — ShadowForge`);
+      this.titleService.setTitle(`${deck.name} | ShadowForge`);
       this.metaService.updateTag({ name: 'description', content: `Mazo ${deck.name} por ${deck.owner_username} — ${this.formatLabel} · ${deck.card_count} cartas` });
       this.ensureExportQr();
       // Load changelog + snapshots if owner
@@ -881,7 +903,18 @@ export class DeckViewComponent implements OnInit {
   async generateExportPreview() {
     const canvas = await this.renderExportCanvas();
     if (!canvas) return;
-    this.exportPreviewDataUrl = canvas.toDataURL('image/png');
+    // toBlob encodes off the main thread; toDataURL froze the page for seconds
+    // with the spinner stuck on screen (QA #2 B13).
+    this.encodingExport = true;
+    this.cdr.detectChanges();
+    const blob: Blob | null = await new Promise(res => canvas.toBlob(b => res(b), 'image/png'));
+    this.encodingExport = false;
+    if (!blob) {
+      this.cdr.detectChanges();
+      return;
+    }
+    if (this.exportPreviewDataUrl?.startsWith('blob:')) URL.revokeObjectURL(this.exportPreviewDataUrl);
+    this.exportPreviewDataUrl = URL.createObjectURL(blob);
     this.showExportOptionsModal = false;
     this.showExportPreviewModal = true;
     this.cdr.detectChanges();
@@ -1320,6 +1353,19 @@ export class DeckViewComponent implements OnInit {
   }
 
   /** Pool without the starting gold (it starts on the field, never drawn). */
+  /** Portada del hero: la elegida o, si no hay, la carta con más copias del mazo (QA #2 B9). */
+  get heroCoverCard(): Card | null {
+    if (this.deck?.cover_card_detail?.image_url) return this.deck.cover_card_detail;
+    const withImage = (this.deck?.entries ?? []).filter(e => e.card_detail?.image_url);
+    if (!withImage.length) return null;
+    return withImage.reduce((best, e) => (e.quantity > best.quantity ? e : best)).card_detail;
+  }
+
+  /** Cartas disponibles para robar (sin el oro inicial). */
+  get handPoolSize(): number {
+    return this.shufflePool.length;
+  }
+
   private get shufflePool(): Card[] {
     const sgId = this.deck?.starting_gold;
     if (!sgId) return this.cardPool;
@@ -1485,10 +1531,18 @@ export class DeckViewComponent implements OnInit {
   async exportImage() {
     const canvas = await this.renderExportCanvas();
     if (!canvas) return;
+    this.encodingExport = true;
+    this.cdr.detectChanges();
+    const blob: Blob | null = await new Promise(res => canvas.toBlob(b => res(b), 'image/png'));
+    this.encodingExport = false;
+    this.cdr.detectChanges();
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.download = `${this.deck?.name || 'mazo'}.png`;
-    link.href = canvas.toDataURL('image/png');
+    link.href = url;
     link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
   }
 
   private async renderExportCanvas(): Promise<HTMLCanvasElement | null> {
@@ -1539,6 +1593,8 @@ export class DeckViewComponent implements OnInit {
         const done = () => resolve();
         img.addEventListener('load', done, { once: true });
         img.addEventListener('error', done, { once: true });
+        // A single slow image must not keep the whole export waiting.
+        setTimeout(done, 4000);
         if (img.complete) resolve();
       });
     }));

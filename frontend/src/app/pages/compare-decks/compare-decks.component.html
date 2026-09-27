@@ -10,6 +10,7 @@
     <p class="loading">Cargando mazos…</p>
   } @else if (error) {
     <p class="error">{{ error }}</p>
+    <p><a routerLink="/decks" class="back-link">Elige los mazos a comparar desde Mazos</a></p>
   } @else {
     @if (hasFormatMismatch) {
       <div class="warning">

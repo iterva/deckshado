@@ -23,63 +23,63 @@
   <!-- Navigation Links -->
   <nav class="navbar-links" aria-label="Enlaces principales">
     @if (gameMode.isRiftbound()) {
-      <a routerLink="/riftbound/cards" routerLinkActive="active">
+      <a routerLink="/riftbound/cards" routerLinkActive="active" title="Cartas">
         <app-icon name="library" [size]="15"></app-icon>
         <span>Cartas</span>
       </a>
-      <a routerLink="/riftbound/decks" routerLinkActive="active">
+      <a routerLink="/riftbound/decks" routerLinkActive="active" title="Mazos">
         <app-icon name="layers" [size]="15"></app-icon>
         <span>Mazos</span>
       </a>
-      <a routerLink="/riftbound/builder" routerLinkActive="active">
+      <a routerLink="/riftbound/builder" routerLinkActive="active" title="Constructor">
         <app-icon name="hammer" [size]="15"></app-icon>
         <span>Constructor</span>
       </a>
-      <a routerLink="/riftbound/banlist" routerLinkActive="active">
+      <a routerLink="/riftbound/banlist" routerLinkActive="active" title="Banlist">
         <app-icon name="ban" [size]="15"></app-icon>
         <span>Banlist</span>
       </a>
-      <a routerLink="/riftbound/tiendas" routerLinkActive="active">
+      <a routerLink="/riftbound/tiendas" routerLinkActive="active" title="Mercado">
         <app-icon name="store" [size]="15"></app-icon>
         <span>Mercado</span>
       </a>
       @if (auth.isAuthenticated()) {
-        <a routerLink="/riftbound/carpeta" routerLinkActive="active">
+        <a routerLink="/riftbound/carpeta" routerLinkActive="active" title="Carpeta">
           <app-icon name="folder" [size]="15"></app-icon>
           <span>Carpeta</span>
         </a>
       }
     } @else {
-      <a routerLink="/cards" routerLinkActive="active">
+      <a routerLink="/cards" routerLinkActive="active" title="Cartas">
         <app-icon name="library" [size]="15"></app-icon>
         <span>Cartas</span>
       </a>
-      <a routerLink="/decks" routerLinkActive="active">
+      <a routerLink="/decks" routerLinkActive="active" title="Mazos">
         <app-icon name="layers" [size]="15"></app-icon>
         <span>Mazos</span>
       </a>
-      <a routerLink="/tiendas" routerLinkActive="active">
+      <a routerLink="/tiendas" routerLinkActive="active" title="Tiendas">
         <app-icon name="store" [size]="15"></app-icon>
         <span>Tiendas</span>
       </a>
-      <a routerLink="/banlist" routerLinkActive="active">
+      <a routerLink="/banlist" routerLinkActive="active" title="Banlist">
         <app-icon name="ban" [size]="15"></app-icon>
         <span>Banlist</span>
       </a>
-      <a routerLink="/wordle" routerLinkActive="active">
+      <a routerLink="/wordle" routerLinkActive="active" title="Wordle">
         <app-icon name="gamepad" [size]="15"></app-icon>
         <span>Wordle</span>
       </a>
-      <a routerLink="/team" routerLinkActive="active">
+      <a routerLink="/team" routerLinkActive="active" title="Equipos">
         <app-icon name="users" [size]="15"></app-icon>
         <span>Equipos</span>
       </a>
       @if (auth.isAuthenticated()) {
-        <a routerLink="/carpeta" routerLinkActive="active">
+        <a routerLink="/carpeta" routerLinkActive="active" title="Carpeta">
           <app-icon name="folder" [size]="15"></app-icon>
           <span>Carpeta</span>
         </a>
-        <a routerLink="/builder" routerLinkActive="active">
+        <a routerLink="/builder" routerLinkActive="active" title="Constructor">
           <app-icon name="hammer" [size]="15"></app-icon>
           <span>Constructor</span>
         </a>
@@ -88,11 +88,11 @@
   </nav>
 
   <!-- Global Quick Search Bar (Cmd+K) -->
-  <div class="cmd-search-bar" (click)="openSearch()">
+  <button type="button" class="cmd-search-bar" (click)="openSearch()" title="Buscar cartas, mazos..." aria-label="Buscar cartas y mazos">
     <app-icon name="search" [size]="15" class="search-lead-icon"></app-icon>
     <span class="search-placeholder">Buscar cartas, mazos...</span>
-    <kbd class="search-kbd">⌘K</kbd>
-  </div>
+    <kbd class="search-kbd">{{ searchShortcut }}</kbd>
+  </button>
 
   <!-- Search Popover/Modal -->
   @if (showSearch()) {
@@ -104,7 +104,10 @@
           type="text"
           [(ngModel)]="searchQuery"
           (input)="onSearch()"
-          placeholder="Buscar cartas, mazos, usuarios..."
+          (keydown.arrowdown)="focusSearchResult($event, 1)"
+          (keydown.enter)="openFirstSearchResult()"
+          placeholder="Buscar cartas, mazos..."
+          aria-label="Buscar cartas y mazos"
           autofocus
         />
         <button class="search-close-btn" (click)="closeSearch()" aria-label="Cerrar búsqueda">
@@ -120,7 +123,7 @@
                 <app-icon name="library" [size]="12"></app-icon> Cartas
               </span>
               @for (c of searchResults.cards; track c.id) {
-                <button class="sr-item" (click)="goToResult('card', c)">
+                <button class="sr-item" (click)="goToResult('card', c)" (keydown.arrowdown)="focusSearchResult($event, 1)" (keydown.arrowup)="focusSearchResult($event, -1)">
                   <span class="sr-name">{{ c.name }}</span>
                   <small class="sr-edition">{{ c.edition__title || c.set__name }}</small>
                 </button>
@@ -133,14 +136,14 @@
                 <app-icon name="layers" [size]="12"></app-icon> Mazos
               </span>
               @for (d of searchResults.decks; track d.id) {
-                <button class="sr-item" (click)="goToResult('deck', d)">
+                <button class="sr-item" (click)="goToResult('deck', d)" (keydown.arrowdown)="focusSearchResult($event, 1)" (keydown.arrowup)="focusSearchResult($event, -1)">
                   <span class="sr-name">{{ d.name }}</span>
                   <small class="sr-owner">{{ d.owner__username }}</small>
                 </button>
               }
             </div>
           }
-          @if (!searchResults.cards?.length && !searchResults.decks?.length && !searchResults.users?.length) {
+          @if (!searchResults.cards?.length && !searchResults.decks?.length) {
             <div class="sr-empty">Sin resultados</div>
           }
         </div>
@@ -238,7 +241,8 @@
       <app-icon name="refresh-cw" [size]="15" [class]="hardReloading() ? 'spin' : ''"></app-icon>
     </button>
 
-    <!-- Theme Toggle -->
+    <!-- Theme Toggle (Riftbound es solo oscuro por ahora) -->
+    @if (!gameMode.isRiftbound()) {
     <button
       class="theme-toggle"
       (click)="theme.toggle()"
@@ -247,6 +251,7 @@
     >
       <app-icon [name]="theme.isDark() ? 'sun' : 'moon'" [size]="16"></app-icon>
     </button>
+    }
 
     <!-- Game Mode Switcher (MYL Gold ↔ Riftbound Cyan) -->
     <button
@@ -439,10 +444,12 @@
         <app-icon name="refresh-cw" [size]="16"></app-icon>
         {{ hardReloading() ? 'Actualizando...' : 'Recargar sin caché' }}
       </button>
+      @if (!gameMode.isRiftbound()) {
       <button type="button" class="mm-pref" (click)="theme.toggle()">
         <app-icon [name]="theme.isDark() ? 'sun' : 'moon'" [size]="16"></app-icon>
         {{ theme.isDark() ? 'Modo claro' : 'Modo oscuro' }}
       </button>
+      }
       <button type="button" class="mm-pref" (click)="gameMode.toggle(); closeMobileMenu()">
         <app-icon [name]="gameMode.isRiftbound() ? 'swords' : 'sparkles'" [size]="16"></app-icon>
         {{ gameMode.isRiftbound() ? 'Mitos y Leyendas' : 'Riftbound' }}
@@ -464,3 +471,4 @@
 
 <app-ios-install-hint></app-ios-install-hint>
 <app-pwa-install-hint></app-pwa-install-hint>
+<app-confirm-dialog></app-confirm-dialog>

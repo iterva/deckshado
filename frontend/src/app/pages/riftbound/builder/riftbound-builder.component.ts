@@ -14,6 +14,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { RiftboundService } from '../../../services/riftbound.service';
+import { AuthService } from '../../../services/auth.service';
+import { ConfirmDialogService } from '../../../services/confirm-dialog.service';
 import {
   RiftboundCard, RiftboundCardLite, RiftboundDeck, RiftboundDeckEntry,
   RiftboundZone, RIFTBOUND_ZONE_RULES, RIFTBOUND_ZONE_LABELS, RiftboundColor,
@@ -104,27 +106,22 @@ function typeRank(t?: string): number {
 
         <div class="browser-filters">
           <div class="search-row">
-            <div class="search-modes" role="tablist" aria-label="Modo de búsqueda">
-              <button type="button" role="tab"
-                      [class.active]="searchMode === 'name'"
-                      (click)="setMode('name')"
-                      title="Buscar por nombre o número">Nombre</button>
-              <button type="button" role="tab"
-                      [class.active]="searchMode === 'ability'"
-                      (click)="setMode('ability')"
-                      title="Buscar dentro del texto de habilidad">Habilidad</button>
-              <button type="button" role="tab"
-                      [class.active]="searchMode === 'all'"
-                      (click)="setMode('all')"
-                      title="Buscar en nombre y habilidad">Todo</button>
-            </div>
             <div class="search-input-row">
-              <app-icon name="search" [size]="15" class="search-input-icon"></app-icon>
-              <input
+              <select class="search-mode-select" aria-label="Modo de búsqueda" title="Dónde buscar"
+                      [ngModel]="searchMode" (ngModelChange)="setMode($event)">
+                <option value="name">Nombre</option>
+                <option value="ability">Habilidad</option>
+                <option value="all">Todo</option>
+              </select>
+              <div class="search-field">
+                <app-icon name="search" [size]="15" class="search-input-icon"></app-icon>
+                <input
                 type="search"
+                aria-label="Buscar cartas"
                 [(ngModel)]="searchQuery"
                 (ngModelChange)="onSearchInput()"
                 [placeholder]="searchMode === 'ability' ? 'Buscar habilidad…' : (searchMode === 'all' ? 'Buscar nombre o habilidad…' : 'Buscar nombre o número…')" />
+              </div>
               <button class="search-btn" (click)="reload()" title="Buscar">
                 <app-icon name="search" [size]="14"></app-icon>
               </button>
@@ -183,7 +180,7 @@ function typeRank(t?: string): number {
                   <div class="filter-row">
                     <div class="multi-filter">
                       <label class="filter-label">Set</label>
-                      <select [(ngModel)]="setFilter" (ngModelChange)="page.set(1); reload()">
+                      <select aria-label="Filtrar por set" [(ngModel)]="setFilter" (ngModelChange)="page.set(1); reload()">
                         <option value="">Todos los sets</option>
                         @for (s of sets(); track s.code) {
                           <option [value]="s.code">{{ s.code }} — {{ s.name }}</option>
@@ -193,7 +190,7 @@ function typeRank(t?: string): number {
 
                     <div class="multi-filter">
                       <label class="filter-label">Rareza</label>
-                      <select [(ngModel)]="rarityFilter" (ngModelChange)="page.set(1); reload()">
+                      <select aria-label="Filtrar por rareza" [(ngModel)]="rarityFilter" (ngModelChange)="page.set(1); reload()">
                         <option value="">Todas</option>
                         <option value="common">Common</option>
                         <option value="uncommon">Uncommon</option>
@@ -212,7 +209,7 @@ function typeRank(t?: string): number {
                   <div class="filter-row stats-row">
                     <div class="multi-filter">
                       <label class="filter-label">Energía</label>
-                      <select [(ngModel)]="energyFilter" (ngModelChange)="page.set(1); reload()">
+                      <select aria-label="Filtrar por energía" [(ngModel)]="energyFilter" (ngModelChange)="page.set(1); reload()">
                         <option [ngValue]="null">Cualquiera</option>
                         @for (n of energyBins; track n) {
                           <option [ngValue]="n">{{ n }}</option>
@@ -221,7 +218,7 @@ function typeRank(t?: string): number {
                     </div>
                     <div class="multi-filter">
                       <label class="filter-label">Power</label>
-                      <select [(ngModel)]="powerFilter" (ngModelChange)="page.set(1); reload()">
+                      <select aria-label="Filtrar por poder" [(ngModel)]="powerFilter" (ngModelChange)="page.set(1); reload()">
                         <option [ngValue]="null">Cualquiera</option>
                         @for (n of statBins; track n) {
                           <option [ngValue]="n">{{ n }}</option>
@@ -230,7 +227,7 @@ function typeRank(t?: string): number {
                     </div>
                     <div class="multi-filter">
                       <label class="filter-label">Might</label>
-                      <select [(ngModel)]="mightFilter" (ngModelChange)="page.set(1); reload()">
+                      <select aria-label="Filtrar por fuerza" [(ngModel)]="mightFilter" (ngModelChange)="page.set(1); reload()">
                         <option [ngValue]="null">Cualquiera</option>
                         @for (n of statBins; track n) {
                           <option [ngValue]="n">{{ n }}</option>
@@ -394,7 +391,7 @@ function typeRank(t?: string): number {
       <div class="deck-panel" [class.mobile-visible]="showDeckPanel()" [class.mobile-hidden]="activeMobileTab() === 'browser'">
         <div class="deck-header">
           <div class="deck-header-info">
-            <h2>{{ deckId() ? 'Editar Mazo' : 'Nuevo Mazo' }}</h2>
+            <h1>{{ deckId() ? 'Editar Mazo' : 'Nuevo Mazo' }}</h1>
             <span class="legal-badge ok">Riftbound Standard</span>
           </div>
 
@@ -469,13 +466,13 @@ function typeRank(t?: string): number {
 
         <div class="deck-info-box">
           <div class="form-group floating">
-            <label>Nombre del mazo (Título)</label>
-            <input type="text" [(ngModel)]="deckName" placeholder="Mi mazo Riftbound" />
+            <label for="rb-deck-name">Nombre del mazo (Título)</label>
+            <input id="rb-deck-name" type="text" [(ngModel)]="deckName" placeholder="Ej: Jinx agresivo" />
           </div>
 
           <div class="form-group floating">
-            <label>Descripción (opcional)</label>
-            <textarea rows="3" [(ngModel)]="description" placeholder="Breve descripción (opcional)..."></textarea>
+            <label for="rb-deck-description">Descripción (opcional)</label>
+            <textarea id="rb-deck-description" rows="3" [(ngModel)]="description" placeholder="Breve descripción (opcional)..."></textarea>
           </div>
 
           <label class="checkbox-label">
@@ -553,7 +550,7 @@ function typeRank(t?: string): number {
                   <app-icon [name]="coverCardId() === e.card.id ? 'star-fill' : 'star'" [size]="14"></app-icon>
                 </button>
                 @if (cardImageUrl(e.card); as img) {
-                  <img [src]="img" [alt]="e.card.name" (error)="onCardImageError(e.card, $event)" />
+                  <img [src]="img" [alt]="e.card.name" loading="lazy" decoding="async" (error)="onCardImageError(e.card, $event)" />
                 } @else {
                   <div class="entry-img-fallback">{{ e.card.card_number }}</div>
                 }
@@ -631,7 +628,7 @@ function typeRank(t?: string): number {
                       <div class="dp-card">
                         <div class="dp-img-wrap">
                           @if (cardImageUrl(e.card); as img) {
-                            <img [src]="img" [alt]="e.card.name" (error)="onCardImageError(e.card, $event)" />
+                            <img [src]="img" [alt]="e.card.name" loading="lazy" decoding="async" (error)="onCardImageError(e.card, $event)" />
                           } @else {
                             <div class="dp-img-fallback">{{ e.card.card_number }}</div>
                           }
@@ -735,17 +732,18 @@ function typeRank(t?: string): number {
             </button>
           </div>
           <p class="muted" style="margin-bottom: 0.75rem;">Las cartas se filtrarán automáticamente por los colores del legend.</p>
-          <input type="search" [ngModel]="legendPickerSearch()" (ngModelChange)="legendPickerSearch.set($event)"
+          <input type="search" aria-label="Buscar legend" [ngModel]="legendPickerSearch()" (ngModelChange)="legendPickerSearch.set($event)"
                  placeholder="Buscar por nombre…" class="lp-search" style="width: 100%; padding: 0.5rem; margin-bottom: 1rem; background: rgba(18,18,23,0.8); border: 1px solid var(--ui-border); border-radius: 6px; color: #fff;" />
           <div class="lp-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.75rem; max-height: 60vh; overflow-y: auto;">
             @for (L of filteredLegends(); track L.id) {
               <button type="button" class="lp-card" (click)="chooseLegend(L)" style="background: rgba(24,24,27,0.7); border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.5rem; cursor: pointer; color: #fff; text-align: center;">
                 @if (cardImageUrl(L); as img) {
-                  <img [src]="img" [alt]="L.name" style="width: 100%; border-radius: 4px;" (error)="onCardImageError(L, $event)" />
+                  <img [src]="img" [alt]="L.name" loading="lazy" decoding="async" width="250" height="350" style="width: 100%; height: auto; aspect-ratio: 5 / 7; object-fit: cover; border-radius: 4px; background: rgba(255,255,255,0.06);" (error)="onCardImageError(L, $event)" />
                 } @else {
                   <div class="lp-img-fallback">{{ L.card_number }}</div>
                 }
                 <div class="lp-name" style="font-size: 0.78rem; font-weight: 600; margin-top: 0.25rem;">{{ L.name }}</div>
+                <div class="lp-code" style="font-size: 0.68rem; opacity: 0.7;">{{ L.card_number }}</div>
               </button>
             }
           </div>
@@ -763,13 +761,13 @@ function typeRank(t?: string): number {
               <app-icon name="x" [size]="18"></app-icon>
             </button>
           </div>
-          <input type="search" [ngModel]="championUnitPickerSearch()" (ngModelChange)="championUnitPickerSearch.set($event)"
+          <input type="search" aria-label="Buscar campeón" [ngModel]="championUnitPickerSearch()" (ngModelChange)="championUnitPickerSearch.set($event)"
                  placeholder="Buscar por nombre…" class="lp-search" style="width: 100%; padding: 0.5rem; margin-bottom: 1rem; background: rgba(18,18,23,0.8); border: 1px solid var(--ui-border); border-radius: 6px; color: #fff;" />
           <div class="lp-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.75rem; max-height: 60vh; overflow-y: auto;">
             @for (U of filteredChampionUnits(); track U.id) {
               <button type="button" class="lp-card" (click)="chooseChampionUnit(U)" style="background: rgba(24,24,27,0.7); border: 1px solid var(--ui-border); border-radius: 8px; padding: 0.5rem; cursor: pointer; color: #fff; text-align: center;">
                 @if (cardImageUrl(U); as img) {
-                  <img [src]="img" [alt]="U.name" style="width: 100%; border-radius: 4px;" (error)="onCardImageError(U, $event)" />
+                  <img [src]="img" [alt]="U.name" loading="lazy" decoding="async" style="width: 100%; border-radius: 4px;" (error)="onCardImageError(U, $event)" />
                 } @else {
                   <div class="lp-img-fallback">{{ U.card_number }}</div>
                 }
@@ -818,20 +816,17 @@ function typeRank(t?: string): number {
 
     .browser-filters { position: relative; display: flex; flex-direction: column; gap: 0.55rem; margin-bottom: 1rem; }
     .search-row { display: flex; flex-direction: column; gap: 0.5rem; }
-    .search-modes {
-      display: flex; background: rgba(18, 18, 23, 0.6); border: 1px solid var(--ui-border);
-      border-radius: 6px; padding: 2px; gap: 2px;
+    .search-input-row { display: flex; align-items: center; gap: 0.4rem; }
+    .search-mode-select {
+      flex-shrink: 0; padding: 0.5rem 0.6rem; background: rgba(18, 18, 23, 0.8);
+      border: 1px solid var(--ui-border); border-radius: 8px; color: var(--ui-text-secondary);
+      font-size: 0.8rem; font-weight: 600; font-family: inherit; outline: none; cursor: pointer;
     }
-    .search-modes button {
-      flex: 1; padding: 0.3rem 0.4rem; border: none; background: transparent;
-      color: var(--ui-text-muted); border-radius: 4px; font-size: 0.78rem; cursor: pointer;
-    }
-    .search-modes button.active { background: #06b6d4; color: #09090b; font-weight: 600; }
-
-    .search-input-row { position: relative; display: flex; align-items: center; gap: 0.4rem; }
-    .search-input-icon { position: absolute; left: 0.75rem; color: var(--ui-text-muted); }
+    .search-mode-select:focus { border-color: #06b6d4; }
+    .search-field { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; }
+    .search-input-icon { position: absolute; left: 0.75rem; color: var(--ui-text-muted); pointer-events: none; }
     .search-input-row input {
-      flex: 1; min-width: 0; padding: 0.5rem 0.75rem 0.5rem 2.2rem; background: rgba(18, 18, 23, 0.8);
+      flex: 1; min-width: 0; width: 100%; padding: 0.5rem 0.75rem 0.5rem 2.2rem; background: rgba(18, 18, 23, 0.8);
       border: 1px solid var(--ui-border); border-radius: 8px; color: #ffffff; font-size: 0.85rem; outline: none;
     }
     .search-input-row input:focus { border-color: #06b6d4; box-shadow: 0 0 10px rgba(6, 182, 212, 0.2); }
@@ -1047,7 +1042,7 @@ function typeRank(t?: string): number {
       padding-bottom: 0.85rem; border-bottom: 1px solid var(--ui-border); margin-bottom: 1rem;
     }
     .deck-header-info { display: flex; align-items: center; gap: 0.75rem; }
-    .deck-header-info h2 { font-size: 1.15rem; font-weight: 700; color: #ffffff; margin: 0; }
+    .deck-header-info h1, .deck-header-info h2 { font-size: 1.15rem; font-weight: 700; color: #ffffff; margin: 0; }
     .legal-badge {
       font-size: 0.72rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: 999px;
       background: rgba(6, 182, 212, 0.15); color: #06b6d4; border: 1px solid rgba(6, 182, 212, 0.3);
@@ -1313,6 +1308,8 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   private rb = inject(RiftboundService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private auth = inject(AuthService);
+  private dialog = inject(ConfirmDialogService);
 
   readonly zones: RiftboundZone[] = ['main', 'side', 'rune', 'champion', 'bg'];
   readonly rules = RIFTBOUND_ZONE_RULES;
@@ -1325,7 +1322,7 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   deckId = signal<number | null>(null);
   deckName = 'Nuevo mazo Riftbound';
   description = '';
-  isPublic = true;
+  isPublic = false;
   coverCardId = signal<number | null>(null);
   saving = signal(false);
   errors = signal<string[]>([]);
@@ -1504,9 +1501,11 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
       },
     });
     // Cargar todos los Champion Legends para el wizard
-    this.rb.listCards({ type: 'legend', lite: true, page: 1 }).subscribe({
+    // Una sola página grande (hay ~170 legends); el bucle solo pide más si el
+    // backend limita el tamaño (QA #2 M7).
+    const LEGEND_PAGE_SIZE = 250;
+    this.rb.listCards({ type: 'legend', lite: true, page: 1, pageSize: LEGEND_PAGE_SIZE }).subscribe({
       next: (resp) => {
-        // Cargar todas las páginas (hay ~66 legends)
         const all = (resp.results as RiftboundCardLite[]).slice();
         const total = resp.count;
         const fetchPage = (p: number) => {
@@ -1518,8 +1517,13 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
             }
             return;
           }
-          this.rb.listCards({ type: 'legend', lite: true, page: p }).subscribe({
-            next: (r) => { all.push(...(r.results as RiftboundCardLite[])); fetchPage(p + 1); },
+          this.rb.listCards({ type: 'legend', lite: true, page: p, pageSize: LEGEND_PAGE_SIZE }).subscribe({
+            next: (r) => {
+              const batch = r.results as RiftboundCardLite[];
+              if (!batch.length) { this.legendOptions.set(all); return; }
+              all.push(...batch);
+              fetchPage(p + 1);
+            },
           });
         };
         fetchPage(2);
@@ -2312,7 +2316,7 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
 
       this.deckName = draft.deckName ?? this.deckName;
       this.description = draft.description ?? '';
-      this.isPublic = draft.isPublic ?? true;
+      this.isPublic = draft.isPublic ?? false;
       this.coverCardId.set(draft.coverCardId ?? null);
       this.championUnitId.set(draft.championUnitId ?? null);
 
@@ -2354,7 +2358,7 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
     this.clearDraft();
     this.deckName = 'Nuevo mazo Riftbound';
     this.description = '';
-    this.isPublic = true;
+    this.isPublic = false;
     this.coverCardId.set(null);
     this.championUnitId.set(null);
     this.championUnitData.set(null);
@@ -2386,7 +2390,29 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   // ── Save ──
-  save() {
+  async save() {
+    if (!this.auth.isAuthenticated()) {
+      // Conservamos lo armado: el builder restaura el borrador al volver del login.
+      this.saveDraft();
+      this.errors.set(['Inicia sesión para guardar tu mazo. Tu borrador quedará guardado.']);
+      this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
+      return;
+    }
+    const badZones = this.zones.filter(z => !this.isZoneOk(z));
+    if (this.isPublic && badZones.length) {
+      const detail = badZones.map(z => `${this.labels[z]} ${this.zoneCount(z)}/${this.rules[z]}`).join(', ');
+      const choice = await this.dialog.open({
+        title: 'Mazo incompleto',
+        message: `Tu mazo aún no cumple las reglas (${detail}). ¿Quieres publicarlo igual o guardarlo como privado hasta completarlo?`,
+        actions: [
+          { value: 'back', label: 'Volver', style: 'secondary' },
+          { value: 'private', label: 'Guardar privado', style: 'secondary' },
+          { value: 'public', label: 'Publicar igual', style: 'primary' },
+        ],
+      });
+      if (choice === null || choice === 'back') return;
+      if (choice === 'private') this.isPublic = false;
+    }
     this.saving.set(true);
     this.errors.set([]);
     const flat: Partial<RiftboundDeckEntry>[] = [];
@@ -2418,7 +2444,13 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
       },
       error: (err) => {
         this.saving.set(false);
-        this.errors.set([err?.error?.detail || 'Error al guardar.']);
+        if (err?.status === 401) {
+          this.errors.set(['Tu sesión expiró. Inicia sesión nuevamente para guardar.']);
+        } else if (err?.status === 400 && Array.isArray(err?.error?.entries)) {
+          this.errors.set(err.error.entries);
+        } else {
+          this.errors.set([err?.error?.detail || 'Error al guardar.']);
+        }
       },
     });
   }

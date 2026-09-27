@@ -23,6 +23,7 @@ import {
 } from '../../models';
 
 import { IconComponent } from '../../components/icon/icon.component';
+import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 
 type Tab = 'carpeta' | 'codex' | 'wishlist' | 'mercado' | 'pedidos' | 'stats' | 'permisos';
 
@@ -104,6 +105,7 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly dialog = inject(ConfirmDialogService);
   private queryParamSub?: Subscription;
 
   @HostListener('document:click')
@@ -737,7 +739,7 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
       language: (pending.language ?? entry.language) as any,
       is_foil: pending.is_foil ?? entry.is_foil,
       notes: pending.notes ?? entry.notes,
-    }, { store_profile_id: this.wsId() }).subscribe(updated => {
+    }, { store_profile_id: this.wsId() }).subscribe({ next: updated => {
       const entries = this.collectionEntries();
       const idx = entries.findIndex(e => e.id === entry.id);
       if (idx >= 0) {
@@ -748,7 +750,7 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
       this.collectionIds[updated.card_detail.id] = updated.quantity;
       this.dirtyEntries.delete(entry.id);
       this.cdr.markForCheck();
-    });
+    }, error: err => this.showSaveError(err, 'No se pudieron guardar los cambios.') });
   }
 
   removeFromCollection(entry: CollectionEntry) {
@@ -904,20 +906,49 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.addQty = 1;
   }
 
+  /** Muestra el mensaje del backend (400 de validación) en vez de fallar en silencio. */
+  private showSaveError(err: any, fallback: string) {
+    const body = err?.error;
+    let message = fallback;
+    if (typeof body?.detail === 'string') {
+      message = body.detail;
+    } else if (body && typeof body === 'object') {
+      const first = Object.values(body)[0];
+      if (typeof first === 'string') message = first;
+      else if (Array.isArray(first) && typeof first[0] === 'string') message = first[0];
+    }
+    this.dialog.open({
+      title: 'No se pudo guardar',
+      message,
+      actions: [{ value: 'ok', label: 'Entendido', style: 'primary' }],
+    });
+  }
+
   addToCollection(card: Card) {
-    this.carpetaService.upsertCollection({ card: card.id, quantity: this.addQty }, { store_profile_id: this.wsId() }).subscribe(entry => {
-      this.collectionIds[card.id] = entry.quantity;
-      this.selectedCard.set(null);
-      this.cdr.markForCheck();
+    const qty = Math.floor(Number(this.addQty));
+    if (!Number.isFinite(qty) || qty < 1) {
+      this.showSaveError(null, 'La cantidad debe ser al menos 1.');
+      return;
+    }
+    this.carpetaService.upsertCollection({ card: card.id, quantity: qty }, { store_profile_id: this.wsId() }).subscribe({
+      next: entry => {
+        this.collectionIds[card.id] = entry.quantity;
+        this.selectedCard.set(null);
+        this.cdr.markForCheck();
+      },
+      error: err => this.showSaveError(err, 'No se pudo añadir la carta.'),
     });
   }
 
   quickAddToCollection(card: Card, event: MouseEvent) {
     event.stopPropagation();
     const newQty = (this.collectionIds[card.id] || 0) + 1;
-    this.carpetaService.upsertCollection({ card: card.id, quantity: newQty }, { store_profile_id: this.wsId() }).subscribe(entry => {
-      this.collectionIds[card.id] = entry.quantity;
-      this.cdr.markForCheck();
+    this.carpetaService.upsertCollection({ card: card.id, quantity: newQty }, { store_profile_id: this.wsId() }).subscribe({
+      next: entry => {
+        this.collectionIds[card.id] = entry.quantity;
+        this.cdr.markForCheck();
+      },
+      error: err => this.showSaveError(err, 'No se pudo añadir la carta.'),
     });
   }
 

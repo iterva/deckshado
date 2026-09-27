@@ -24,76 +24,43 @@
   <!-- ══════════════════════════════════════════════════════ -->
   <!-- LEFT PANEL (65%): Card Browser & Filter Drawer        -->
   <!-- ══════════════════════════════════════════════════════ -->
-  <div class="card-browser" #cardBrowser [class.mobile-hidden]="activeMobileTab === 'deck'">
+  <div class="card-browser" #cardBrowser [class.mobile-hidden]="activeMobileTab === 'deck'" [class.filters-modal-open]="filtersDrawerOpen">
     <div class="browser-head">
       <div class="browser-title-wrap">
         <h2>Cartas Disponibles</h2>
         <span class="format-badge">{{ formatName }}@if (pbEditionName) { · {{ pbEditionName }} }@if (selectedSubFormat === 'vcr') { · VCR }</span>
       </div>
-      <button
-        type="button"
-        class="filter-drawer-btn"
-        [class.active]="filtersDrawerOpen"
-        (click)="toggleFiltersDrawer()"
-        title="Filtros avanzados"
-        aria-label="Filtros avanzados"
-      >
-        <app-icon name="sliders-horizontal" [size]="16"></app-icon>
-        <span class="btn-text">Filtros</span>
-      </button>
-    </div>
-
-    <!-- Collapsible Filter Drawer -->
-    <div class="browser-filters" [class.drawer-open]="filtersDrawerOpen">
       @if (selectedFormat === 'imp') {
         <div class="season-select-wrap">
-          <select class="season-filter" [(ngModel)]="selectedSeason" (ngModelChange)="onSeasonChange()">
+          <select class="season-filter" aria-label="Temporada" [(ngModel)]="selectedSeason" (ngModelChange)="onSeasonChange()">
             @for (s of seasons; track s.id) {
               <option [value]="s.id">{{ s.label }}</option>
             }
           </select>
         </div>
       }
+    </div>
 
+    <div class="browser-filters">
       <div class="search-row">
-        <div class="search-modes" role="tablist" aria-label="Modo de búsqueda">
-          <button
-            type="button"
-            role="tab"
-            [class.active]="searchMode === 'name'"
-            [attr.aria-selected]="searchMode === 'name'"
-            (click)="setSearchMode('name')"
-            title="Buscar por nombre"
-          >
-            Nombre
-          </button>
-          <button
-            type="button"
-            role="tab"
-            [class.active]="searchMode === 'ability'"
-            [attr.aria-selected]="searchMode === 'ability'"
-            (click)="setSearchMode('ability')"
-            title="Buscar dentro del texto de la habilidad"
-          >
-            Habilidad
-          </button>
-          <button
-            type="button"
-            role="tab"
-            [class.active]="searchMode === 'all'"
-            [attr.aria-selected]="searchMode === 'all'"
-            (click)="setSearchMode('all')"
-            title="Buscar en nombre y habilidad"
-          >
-            Todo
-          </button>
-        </div>
+        <select
+          class="search-mode-select"
+          aria-label="Modo de búsqueda"
+          title="Dónde buscar"
+          [ngModel]="searchMode"
+          (ngModelChange)="setSearchMode($event)"
+        >
+          <option value="name">Nombre</option>
+          <option value="ability">Habilidad</option>
+          <option value="all">Todo</option>
+        </select>
 
         <div class="search-box">
           <app-icon name="search" [size]="15" class="search-input-icon"></app-icon>
           <input
             type="text"
             #searchInput
+            aria-label="Buscar cartas"
             [placeholder]="searchMode === 'ability' ? 'Buscar habilidad...' : (searchMode === 'all' ? 'Buscar nombre o habilidad...' : 'Buscar carta...')"
             [(ngModel)]="searchQuery"
             (ngModelChange)="onSearchInput()"
@@ -105,108 +72,94 @@
             </button>
           }
         </div>
-      </div>
 
-      <div class="type-chips" role="group" aria-label="Filtrar por tipo">
         <button
           type="button"
-          class="type-chip-btn"
-          [class.active]="selectedTypes.size === 0"
-          (click)="toggleType('')"
+          class="filter-drawer-btn"
+          [class.active]="filtersDrawerOpen"
+          [attr.aria-expanded]="filtersDrawerOpen"
+          (click)="toggleFiltersDrawer()"
+          aria-label="Mostrar filtros"
         >
-          Todos
+          <app-icon name="sliders-horizontal" [size]="16"></app-icon>
+          <span class="btn-text">Filtros</span>
+          @if (activeFilterCount > 0) { <span class="filter-badge">{{ activeFilterCount }}</span> }
         </button>
-        @for (t of types; track t.id) {
-          <button
-            type="button"
-            class="type-chip-btn"
-            [class.active]="selectedTypes.has(t.slug)"
-            (click)="toggleType(t.slug)"
-          >
-            {{ t.name }}
-          </button>
-        }
       </div>
 
-      <div class="filter-row">
-        <!-- Ediciones Multi-select -->
-        <div class="multi-filter" [class.open]="openFilter === 'edition'">
-          <button type="button" class="multi-trigger" [class.has-value]="selectedEditions.size > 0" (click)="toggleFilterPopover('edition', $event)">
-            <span>{{ filterLabel('edition') }}</span>
-            <app-icon name="chevron-down" [size]="14"></app-icon>
-          </button>
-          @if (openFilter === 'edition') {
-            <div class="multi-popover" (click)="$event.stopPropagation()">
-              <div class="multi-head">
-                <span>Ediciones</span>
+      @if (filtersDrawerOpen) {
+        <div class="filters-backdrop" (click)="filtersDrawerOpen = false"></div>
+        <div class="filters-panel" role="dialog" aria-label="Filtros de cartas">
+          <div class="filters-panel-head">
+            <h3>Filtros</h3>
+            <button type="button" class="close-btn" (click)="filtersDrawerOpen = false" aria-label="Cerrar filtros">
+              <app-icon name="x" [size]="16"></app-icon>
+            </button>
+          </div>
+
+          <div class="filters-panel-body">
+            <div class="filter-group">
+              <span class="filter-label">Tipo de carta</span>
+              <div class="type-chips" role="group" aria-label="Filtrar por tipo">
+                <button type="button" class="type-chip-btn" [class.active]="selectedTypes.size === 0" (click)="toggleType('')">Todos</button>
+                @for (t of types; track t.id) {
+                  <button type="button" class="type-chip-btn" [class.active]="selectedTypes.has(t.slug)" (click)="toggleType(t.slug)">{{ t.name }}</button>
+                }
+              </div>
+            </div>
+
+            <div class="filter-group">
+              <div class="filter-label-row">
+                <span class="filter-label">Ediciones</span>
                 @if (selectedEditions.size > 0) {
                   <button type="button" class="link-btn" (click)="clearMulti('edition')">Limpiar</button>
                 }
               </div>
-              <div class="multi-list">
+              <div class="check-list">
                 @for (ed of editions; track ed.id) {
-                  <label class="multi-item">
+                  <label class="check-item">
                     <input type="checkbox" [checked]="selectedEditions.has(ed.slug)" (change)="toggleMulti(selectedEditions, ed.slug)">
                     <span>{{ ed.title }}</span>
                   </label>
                 }
               </div>
             </div>
-          }
-        </div>
 
-        <!-- Rarezas Multi-select -->
-        <div class="multi-filter" [class.open]="openFilter === 'rarity'">
-          <button type="button" class="multi-trigger" [class.has-value]="selectedRarities.size > 0" (click)="toggleFilterPopover('rarity', $event)">
-            <span>{{ filterLabel('rarity') }}</span>
-            <app-icon name="chevron-down" [size]="14"></app-icon>
-          </button>
-          @if (openFilter === 'rarity') {
-            <div class="multi-popover" (click)="$event.stopPropagation()">
-              <div class="multi-head">
-                <span>Rarezas</span>
+            <div class="filter-group">
+              <div class="filter-label-row">
+                <span class="filter-label">Rarezas</span>
                 @if (selectedRarities.size > 0) {
                   <button type="button" class="link-btn" (click)="clearMulti('rarity')">Limpiar</button>
                 }
               </div>
-              <div class="multi-list">
+              <div class="type-chips">
                 @for (r of filteredRarities; track r.id) {
-                  <label class="multi-item">
-                    <input type="checkbox" [checked]="selectedRarities.has(r.slug)" (change)="toggleMulti(selectedRarities, r.slug)">
-                    <span>{{ r.name }}</span>
-                  </label>
+                  <button type="button" class="type-chip-btn" [class.active]="selectedRarities.has(r.slug)" (click)="toggleMulti(selectedRarities, r.slug)">{{ r.name }}</button>
                 }
               </div>
             </div>
-          }
-        </div>
 
-        <!-- Costes Multi-select -->
-        <div class="multi-filter" [class.open]="openFilter === 'cost'">
-          <button type="button" class="multi-trigger" [class.has-value]="selectedCosts.size > 0" (click)="toggleFilterPopover('cost', $event)">
-            <span>{{ filterLabel('cost') }}</span>
-            <app-icon name="chevron-down" [size]="14"></app-icon>
-          </button>
-          @if (openFilter === 'cost') {
-            <div class="multi-popover" (click)="$event.stopPropagation()">
-              <div class="multi-head">
-                <span>Costes</span>
+            <div class="filter-group">
+              <div class="filter-label-row">
+                <span class="filter-label">Coste</span>
                 @if (selectedCosts.size > 0) {
                   <button type="button" class="link-btn" (click)="clearMulti('cost')">Limpiar</button>
                 }
               </div>
-              <div class="multi-list cost-grid">
+              <div class="cost-chips">
                 @for (c of costOptions; track c) {
-                  <label class="multi-item cost-item" [class.checked]="selectedCosts.has(c)">
-                    <input type="checkbox" [checked]="selectedCosts.has(c)" (change)="toggleMulti(selectedCosts, c)">
-                    <span>{{ c }}</span>
-                  </label>
+                  <button type="button" class="type-chip-btn" [class.active]="selectedCosts.has(c)" (click)="toggleMulti(selectedCosts, c)">{{ c }}</button>
                 }
               </div>
             </div>
-          }
+          </div>
+
+          <div class="filters-panel-actions">
+            <button type="button" class="btn-clear-all" (click)="clearAllFilters()">Limpiar filtros</button>
+            <button type="button" class="btn-apply-all" (click)="filtersDrawerOpen = false">Aplicar</button>
+          </div>
         </div>
-      </div>
+      }
     </div>
 
     <!-- Skeleton Loading -->
@@ -387,14 +340,19 @@
       <div class="deck-header-info">
         <h2>{{ deckId ? 'Editar Mazo' : 'Nuevo Mazo' }}</h2>
         <div class="deck-ban-status">
-          @if (banlistViolations.length === 0 && formatViolations.length === 0) {
-            <span class="legal-badge ok" title="Mazo válido para torneo">
-              <app-icon name="shield-check" [size]="13"></app-icon> Formato Válido
+          @if (banlistViolations.length > 0 || formatViolations.length > 0) {
+            <span class="legal-badge danger" title="El mazo contiene cartas restringidas o fuera de formato">
+              <app-icon name="shield-alert" [size]="13"></app-icon>
+              Fuera de formato ({{ banlistViolations.length + formatViolations.length }})
+            </span>
+          } @else if (totalDeckCards < 50) {
+            <span class="legal-badge warn" title="El mazo principal necesita 50 cartas">
+              <app-icon name="shield-alert" [size]="13"></app-icon>
+              Incompleto ({{ totalDeckCards }}/50)
             </span>
           } @else {
-            <span class="legal-badge warn" title="El mazo contiene cartas restringidas o fuera de formato">
-              <app-icon name="shield-alert" [size]="13"></app-icon>
-              {{ banlistViolations.length + formatViolations.length }} Infracciones
+            <span class="legal-badge ok" title="Mazo válido para torneo">
+              <app-icon name="shield-check" [size]="13"></app-icon> Formato válido
             </span>
           }
         </div>
@@ -453,13 +411,13 @@
     <!-- Deck Metadata Form -->
     <div class="deck-info-box">
       <div class="form-group floating" [class.has-error]="fieldErrors.name">
-        <label>Nombre del mazo (Título)</label>
-        <input type="text" [(ngModel)]="deckName" placeholder="Mi mazo increíble" (input)="fieldErrors.name = false" (ngModelChange)="markDirty()" />
+        <label for="deck-name-input">Nombre del mazo (Título)</label>
+        <input id="deck-name-input" type="text" [(ngModel)]="deckName" placeholder="Ej: Dragones control" (input)="fieldErrors.name = false" (ngModelChange)="markDirty()" />
       </div>
 
       <div class="form-group floating">
-        <label>Descripción (opcional)</label>
-        <textarea rows="3" [(ngModel)]="deckDescription" placeholder="Breve descripción (opcional)..." (ngModelChange)="markDirty()"></textarea>
+        <label for="deck-description-input">Descripción (opcional)</label>
+        <textarea id="deck-description-input" rows="3" [(ngModel)]="deckDescription" placeholder="Breve descripción (opcional)..." (ngModelChange)="markDirty()"></textarea>
       </div>
 
       <div class="form-checkboxes">
@@ -565,7 +523,7 @@
       @if (deckCards.length === 0) {
         <div class="deck-empty-prompt">
           <app-icon name="hammer" [size]="28" class="empty-icon"></app-icon>
-          <p>Haz clic en <strong>+</strong> en cualquier carta del catálogo para armar tu mazo.</p>
+          <p>Pulsa <strong>M</strong> (mazo) o <strong>S</strong> (side) en una carta del catálogo para agregarla.</p>
         </div>
       }
 

@@ -3,7 +3,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
-from backend.cdn_image_upload import upload_image_to_cdn, CdnImageUploadError
+from backend.cdn_image_upload import upload_image_to_cdn, CdnImageUploadError, is_allowed_avatar_url
 from .models import Profile
 from .serializers import (
     RegisterSerializer,
@@ -63,7 +63,12 @@ def update_profile(request):
 @permission_classes([permissions.IsAuthenticated])
 @parser_classes([JSONParser, MultiPartParser, FormParser])
 def upload_avatar(request):
-    avatar_url = (request.data.get("avatar_url") or "").strip()
+    avatar_url = request.data.get("avatar_url") or ""
+    if not isinstance(avatar_url, str):
+        return Response({"detail": "URL de avatar inválida."}, status=status.HTTP_400_BAD_REQUEST)
+    avatar_url = avatar_url.strip()
+    if avatar_url and not is_allowed_avatar_url(avatar_url):
+        return Response({"detail": "URL de avatar no permitida."}, status=status.HTTP_400_BAD_REQUEST)
     file_obj = request.FILES.get("file")
 
     if not avatar_url and file_obj is not None:

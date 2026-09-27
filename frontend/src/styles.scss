@@ -15,6 +15,12 @@
   padding: 0;
 }
 
+body {
+  // <body> es el contenedor con scroll: reservar el hueco de la barra evita que el
+  // header se corra unos píxeles entre páginas cortas y largas.
+  scrollbar-gutter: stable;
+}
+
 html, body {
   height: 100%;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -74,6 +80,7 @@ html, body {
 
 // Light theme overrides
 body.light-theme {
+  // Rojo de marca oscurecido en modo claro: #e94560 daba 3,1–3,8:1; #ce1836 llega a 4,5:1 (QA #3 M1).
   background: #f0f2f5;
   color: #1a1a2e;
 
@@ -87,17 +94,24 @@ body.light-theme {
     color: #333 !important;
   }
   .navbar .logo-text { background: linear-gradient(90deg, #e94560, #c73652) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; }
-  .navbar-links a { color: #555 !important; &:hover, &.active { color: #e94560 !important; } }
+  .navbar-links a { color: #555 !important; &:hover, &.active { color: #ce1836 !important; } }
   .avatar-btn { border-color: #ccc !important; }
+  // Header icon buttons + quick search: solid light surface so icons keep >= 3:1 contrast (QA #2 A2)
+  .theme-toggle, .cache-reset-btn, .game-toggle, .notif-btn, .avatar-btn, .cmd-search-bar {
+    background: #fff !important;
+    border-color: #d4d4d8 !important;
+    color: #334155 !important;
+  }
+  .cmd-search-bar .search-lead-icon, .cmd-search-bar .search-placeholder { color: #475569 !important; }
   .avatar-icon { color: #777 !important; }
   .avatar-dropdown { background: #fff !important; border-color: #ddd !important; box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important; }
   .dropdown-item { color: #444 !important; &:hover { background: rgba(0,0,0,0.05) !important; color: #111 !important; } }
-  .theme-toggle { border-color: #ccc !important; color: #555 !important; &:hover { border-color: #e94560 !important; } }
-  .btn-logout, .btn-logout-mobile { color: #555 !important; border-color: #ccc !important; &:hover { border-color: #e94560 !important; color: #e94560 !important; } }
+  .theme-toggle { border-color: #ccc !important; color: #555 !important; &:hover { border-color: #ce1836 !important; } }
+  .btn-logout, .btn-logout-mobile { color: #555 !important; border-color: #ccc !important; &:hover { border-color: #ce1836 !important; color: #ce1836 !important; } }
   .content { background: #f0f2f5 !important; color: #1a1a2e !important; }
-  .footer { background: #e4e6eb !important; color: #888 !important; .disclaimer { color: #aaa !important; } }
+  .footer { background: #e4e6eb !important; color: #4b5563 !important; .disclaimer { color: #525c69 !important; } }
   .bottom-nav { background: linear-gradient(135deg, #e8e8f0 0%, #d8dce8 100%) !important; box-shadow: 0 -2px 8px rgba(0,0,0,0.08) !important;
-    a, button { color: #555 !important; &:hover, &.active { color: #e94560 !important; } }
+    a, button { color: #555 !important; &:hover, &.active { color: #ce1836 !important; } }
   }
 
   // ── Globals ──
@@ -106,8 +120,13 @@ body.light-theme {
   input, select, textarea { background: #fff !important; border-color: #ccc !important; color: #333 !important;
     &::placeholder { color: #999 !important; }
   }
-  .btn-secondary { background: #e8e8f0 !important; color: #333 !important; border-color: #ccc !important; &:hover { border-color: #e94560 !important; color: #e94560 !important; } }
-  .btn-login { background: #e94560 !important; color: #fff !important; }
+  .btn-secondary { background: #e8e8f0 !important; color: #333 !important; border-color: #ccc !important; &:hover { border-color: #ce1836 !important; color: #ce1836 !important; } }
+  .btn-login { background: #ce1836 !important; color: #fff !important; }
+  // Vista de mazo: botones sociales y selector de vista (antes texto ámbar sobre #111827, ~2.1:1)
+  .social-btn:not(.liked):not(.active) { background: #fff !important; border-color: #d4d4d8 !important; }
+  .seg-control { background: #fff !important; border-color: #d4d4d8 !important;
+    button:not(.active) { color: #475569 !important; &:hover { color: #0f172a !important; } }
+  }
   .form-group label { color: #555 !important; }
   .error-msg { color: #d32f2f !important; }
   label { color: #555 !important; }
@@ -116,7 +135,7 @@ body.light-theme {
   .hero { background: linear-gradient(135deg, #d8dce8 0%, #c8ccd8 100%) !important; }
   .hero-title { -webkit-text-fill-color: transparent !important; } // keep gradient
   .hero-subtitle { color: #666 !important; }
-  .hero .stat-value { color: #e94560 !important; -webkit-text-fill-color: initial !important; }
+  .hero .stat-value { color: #ce1836 !important; -webkit-text-fill-color: initial !important; }
   .hero .stat-label { color: #777 !important; }
   .feature-card { background: #fff !important; border-color: #ddd !important;
     h3 { color: #1a1a2e !important; }
@@ -137,8 +156,8 @@ body.light-theme {
   .tabs { border-color: #ddd !important; }
   .tabs button, .tabs .tab {
     border-color: #ccc !important; color: #666 !important;
-    &.active { background: #e94560 !important; border-color: #e94560 !important; color: #fff !important; border-bottom-color: #e94560 !important; }
-    &:hover:not(.active) { border-color: #e94560 !important; color: #e94560 !important; }
+    &.active { background: #ce1836 !important; border-color: #ce1836 !important; color: #fff !important; border-bottom-color: #ce1836 !important; }
+    &:hover:not(.active) { border-color: #ce1836 !important; color: #ce1836 !important; }
   }
   .deck-desc { color: #777 !important; }
   .deck-author, .deck-visibility { color: #888 !important; }
@@ -147,7 +166,7 @@ body.light-theme {
   }
   .card-count { background: #eee !important; color: #555 !important; }
   .filter-row select { background: #fff !important; }
-  .empty, .empty-state, .empty-text { color: #999 !important; }
+  .empty, .empty-state, .empty-text { color: #475569 !important; }
   .loading, .loading-text { color: #888 !important; }
   .results-count { color: #666 !important; }
 
@@ -158,6 +177,7 @@ body.light-theme {
   .deck-description-box { background: #fff !important; border-color: #ddd !important; color: #444 !important; }
   .back-link { color: #777 !important; }
   .deck-meta { color: #777 !important; }
+  .deck-author, .deck-desc, .deck-date { color: #475569 !important; }
   .stat-card, .cost-curve, .type-dist, .draw-prob, .type-group,
   .hand-simulator, .stats-summary { background: #fff !important; border-color: #ddd !important; color: #333 !important; }
   .type-header { background: #f0f0f5 !important; color: #333 !important; }
@@ -182,15 +202,16 @@ body.light-theme {
   .deck-panel { background: #fff !important; border-color: #ddd !important; color: #333 !important; }
   .mini-card {
     background: #fff !important; border-color: #ddd !important;
-    &:hover { background: #f5f5f8 !important; border-color: #e94560 !important; }
+    &:hover { background: #f5f5f8 !important; border-color: #ce1836 !important; }
     &.in-deck { background: rgba(255, 189, 57, 0.08) !important; border-color: #ffbd39 !important; }
     .mini-name { color: #333 !important; }
     .mini-type { color: #777 !important; }
     .mini-ability { color: #666 !important; }
   }
   .circle-btn { background: #f5f5f5 !important; border-color: #ccc !important; color: #555 !important; }
+  .search-mode-select { background: #fff !important; border-color: #ddd !important; color: #333 !important; }
   .search-modes { background: #f0f0f5 !important; border-color: #ddd !important;
-    button { color: #666 !important; &.active { background: #e94560 !important; color: #fff !important; } }
+    button { color: #666 !important; &.active { background: #ce1836 !important; color: #fff !important; } }
   }
   .multi-popover { background: #fff !important; border-color: #ddd !important; box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
     .multi-head { color: #777 !important; border-color: #eee !important; }
@@ -202,12 +223,12 @@ body.light-theme {
     &.has-value { background: rgba(255, 189, 57, 0.08) !important; color: #b88a00 !important; }
   }
   .type-chip-btn { background: #f0f0f5 !important; border-color: #ccc !important; color: #555 !important;
-    &:hover { border-color: #e94560 !important; color: #e94560 !important; }
+    &:hover { border-color: #ce1836 !important; color: #ce1836 !important; }
     &.active { background: #ffbd39 !important; border-color: #ffbd39 !important; color: #1a1a2e !important; }
   }
   .deck .type-chip { background: #eee !important; color: #555 !important; }
   .deck-entry { color: #333 !important; img { background: #eee !important; } }
-  .move-btn { color: #555 !important; &:hover { color: #e94560 !important; } }
+  .move-btn { color: #555 !important; &:hover { color: #ce1836 !important; } }
   .import-export-modal, .modal-content, .modal { background: #fff !important; border-color: #ddd !important; color: #333 !important; }
   .modal-content textarea { background: #f8f8fc !important; }
   .progress-summary { background: #f8f8fc !important; }
@@ -215,7 +236,7 @@ body.light-theme {
 
   // ── Card list ──
   .view-toggle { background: #eee !important;
-    button { color: #666 !important; &.active { background: #e94560 !important; color: #fff !important; } }
+    button { color: #666 !important; &.active { background: #ce1836 !important; color: #fff !important; } }
   }
   .card-image { background: #eee !important; }
   .card-detail { background: #fff !important; border-color: #ddd !important; color: #333 !important; }
@@ -233,11 +254,11 @@ body.light-theme {
   .card-meta { color: #777 !important; }
   .card-price { color: #b88a00 !important; }
   .btn-filter { background: #eee !important; border-color: #ccc !important; color: #555 !important;
-    &.active { background: #e94560 !important; color: #fff !important; }
+    &.active { background: #ce1836 !important; color: #fff !important; }
     &:hover { background: #ddd !important; }
   }
   .btn-heart-lg { background: #f0f0f5 !important; border-color: #ccc !important; color: #555 !important;
-    &.active { background: #fde8ec !important; border-color: #e94560 !important; color: #e94560 !important; }
+    &.active { background: #fde8ec !important; border-color: #ce1836 !important; color: #ce1836 !important; }
   }
   .inline-fields {
     label { color: #888 !important; }
@@ -270,8 +291,9 @@ body.light-theme {
   .info-row .value { color: #333 !important; }
 
   // ── Login / Register ──
-  .auth-card h2 { color: #1a1a2e !important; }
-  .auth-card .subtitle, .auth-card a { color: #777 !important; }
+  .auth-card h1, .auth-card h2 { color: #1a1a2e !important; }
+  .auth-card .subtitle, .auth-card a { color: #475569 !important; }
+  .auth-link, .toggle-classic { color: #475569 !important; }
 
   // ── Format select ──
   .format-card, .race-card { &:hover { background: #f5f5f8 !important; } }
@@ -321,7 +343,7 @@ body.light-theme {
   .notif-msg { color: #333 !important; }
   .notif-time { color: #999 !important; }
   .notif-empty { color: #999 !important; }
-  .notif-read-all { color: #e94560 !important; }
+  .notif-read-all { color: #ce1836 !important; }
 
   // ── Global search ──
   .search-wrapper { background: #fff !important; border-color: #ddd !important; box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important; }
@@ -330,14 +352,17 @@ body.light-theme {
   .sr-item { color: #333 !important; &:hover { background: #f5f5f8 !important; } }
 
   // ── Likes / Comments / Snapshots ──
-  .like-btn { color: #555 !important; &.liked { color: #e94560 !important; } }
-  .section-toggle { color: #555 !important; &:hover { color: #e94560 !important; } }
+  .like-btn { color: #555 !important; &.liked { color: #ce1836 !important; } }
+  .section-toggle { color: #555 !important; &:hover { color: #ce1836 !important; } }
   .comments-section { color: #333 !important; }
   .comment-item { background: #f8f8fc !important; border-color: #eee !important; }
   .comment-header { color: #555 !important; }
   .comment-text { color: #333 !important; }
   .snapshots-section { color: #333 !important; }
   .snapshot-item { background: #f8f8fc !important; border-color: #eee !important; color: #555 !important; }
+  .snapshot-item .snapshot-label { color: #1a1a2e !important; }
+  .snapshot-item time { color: #555 !important; }
+  .comment-item .comment-header strong { color: #92400e !important; }
 
   // ── Collection stats ──
   .stat-card-s { background: #fff !important; border-color: #ddd !important; color: #333 !important; }
@@ -370,6 +395,10 @@ input, select, textarea {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+}
+
+@media (max-width: 600px) {
+  .container { padding: 1rem 0.25rem; }
 }
 
 .btn {
@@ -647,10 +676,12 @@ body.light-theme {
   --ui-border-hover: #cbd5e1;
   --ui-text: #0f172a;
   --ui-text-secondary: #475569;
-  --ui-text-muted: #94a3b8;
+  --ui-text-muted: #5b6b82; // >= 4.5:1 on white and #f0f2f5
   --ui-accent: #d97706;
   --ui-accent-strong: #b45309;
   --ui-accent-glow: rgba(217, 119, 6, 0.12);
+  // Accent used as text color (links, highlights): >= 4.5:1 on light surfaces.
+  --ui-accent-text: #92400e;
   --ui-success: #059669;
   --ui-danger: #dc2626;
 }
@@ -784,6 +815,7 @@ textarea:focus {
   border-color: var(--ui-border) !important;
 }
 
+.auth-card h1,
 .auth-card h2,
 .profile-header .username,
 .card-header h1,
@@ -885,12 +917,12 @@ textarea:focus {
 .btn-back,
 .auth-link a,
 .seo-links a,
-.banlist-article a,
+.banlist-article a:not(.btn),
 .stores-page .btn,
 .section-toggle,
 .action-btn,
 .social-btn {
-  color: var(--ui-accent) !important;
+  color: var(--ui-accent-text, var(--ui-accent)) !important;
 }
 
 .builder-layout .card-browser,

@@ -27,6 +27,18 @@
   margin-bottom: 2rem;
 }
 
+.format-card,
+.race-card {
+  font: inherit;
+  color: inherit;
+  width: 100%;
+
+  &:focus-visible {
+    outline: 2px solid #c0a040;
+    outline-offset: 2px;
+  }
+}
+
 .format-card {
   display: flex;
   flex-direction: column;
@@ -47,7 +59,8 @@
     box-shadow: 0 4px 12px rgba(192, 160, 64, 0.2);
   }
 
-  &.disabled {
+  &.disabled,
+  &:disabled {
     opacity: 0.4;
     cursor: not-allowed;
   }

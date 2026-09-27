@@ -2988,44 +2988,8 @@
   100% { opacity: 0; }
 }
 
-// Like button
-.like-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-
-  &.liked {
-    color: #e94560 !important;
-    .bi-heart-fill { color: #e94560; }
-  }
-
-  .like-count {
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
-}
-
-// Section toggle
-.section-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: none;
-  border: 1px solid #333;
-  border-radius: 8px;
-  color: #ccc;
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-  font-family: inherit;
-  cursor: pointer;
-  margin-bottom: 0.8rem;
-  transition: border-color 0.2s;
-  &:hover { border-color: #e94560; }
-}
-
-// Snapshots
-.snapshots-section {
-  margin-top: 1.5rem;
+// Versiones (dentro del panel social)
+.social-panel-body {
 
   .snapshot-create {
     display: flex;
@@ -3041,7 +3005,9 @@
       color: #e0e0e0;
       font-size: 0.85rem;
       outline: none;
-      &:focus { border-color: #e94560; }
+      // El estilo global de inputs usa un borde casi invisible sobre este panel.
+      border-color: #3f3f46 !important;
+      &:focus { border-color: #e94560 !important; }
     }
   }
 
@@ -3053,13 +3019,13 @@
     border-bottom: 1px solid #2a2a4a;
     font-size: 0.85rem;
 
-    .snapshot-label { color: #e0e0e0; flex: 1; }
-    time { color: #888; font-size: 0.75rem; }
+    .snapshot-label { color: #e0e0e0; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+    time { color: #888; font-size: 0.75rem; white-space: nowrap; }
+    .btn-secondary { border-color: #444 !important; flex-shrink: 0; }
   }
 }
 
 // Comments
-.comments-section,
 .social-panel-body {
   .comment-form {
     display: flex;
@@ -3123,17 +3089,12 @@
       line-height: 1.4;
       margin: 0;
       word-break: break-word;
+      white-space: pre-line;
     }
   }
 }
 
-.comments-section {
-  margin-top: 1.5rem;
-  margin-bottom: 2rem;
-}
-
 @media (max-width: 600px) {
-  .comments-section,
   .social-panel-body {
     .comment-form {
       flex-direction: column;

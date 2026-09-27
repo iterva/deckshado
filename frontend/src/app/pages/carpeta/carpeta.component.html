@@ -220,7 +220,7 @@
         </div>
       }
 
-      <p class="results-count">{{ collectionTotal() }} cartas en tu colección</p>
+      <p class="results-count">{{ collectionTotal() }} {{ collectionTotal() === 1 ? 'carta' : 'cartas' }} en tu colección</p>
 
       @if (collectionLoading()) {
         <div class="loading">Cargando...</div>
@@ -228,7 +228,7 @@
 
       @if (!collectionLoading() && collectionEntries().length === 0) {
         <div class="empty-state">
-          <p>Tu carpeta está vacía. Ve a <strong>Colección</strong> para añadir cartas.</p>
+          <p>Tu carpeta está vacía. Ve a <button type="button" class="empty-link" (click)="switchTab('codex')">Colección</button> para añadir cartas.</p>
         </div>
       }
 

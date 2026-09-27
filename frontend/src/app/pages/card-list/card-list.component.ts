@@ -11,6 +11,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { CardService } from '../../services/card.service';
 import { Card, Edition, CardType, Race, Rarity } from '../../models';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
@@ -41,6 +42,9 @@ export class CardListComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly pageSize = 20;
   hasMore = false;
   loading = false;
+  loadError = false;
+  /** Pantallas táctiles: placeholder corto, sin la pista del atajo "/". */
+  readonly isTouch = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
   selectedCard: Card | null = null;
   viewMode: 'grid' | 'table' = 'grid';
 
@@ -55,6 +59,7 @@ export class CardListComponent implements OnInit, AfterViewInit, OnDestroy {
   private contentScrollEl: HTMLElement | null = null;
   private searchDebounceTimer: number | null = null;
   private readonly searchDebounceMs = 2000;
+  private cardsSub?: Subscription;
 
   constructor(private cardService: CardService, private cdr: ChangeDetectorRef, private titleService: Title, private route: ActivatedRoute) {}
 
@@ -76,7 +81,6 @@ export class CardListComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.titleService.setTitle('Colección de Cartas — ShadowForge');
     this.loadFilters();
     this.route.queryParamMap.subscribe(params => {
       const q = params.get('search') ?? '';
@@ -102,6 +106,7 @@ export class CardListComponent implements OnInit, AfterViewInit, OnDestroy {
     this.cardsObserver?.disconnect();
     this.detachContentScrollListener();
     this.clearSearchDebounce();
+    this.cardsSub?.unsubscribe();
   }
 
   loadFilters() {
@@ -112,8 +117,11 @@ export class CardListComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   loadCards(append = false) {
+    // Cancel the previous request so a stale response can't overwrite a newer search.
+    this.cardsSub?.unsubscribe();
     this.loading = true;
-    this.cardService.getCards({
+    this.loadError = false;
+    this.cardsSub = this.cardService.getCards({
       search: this.search || undefined,
       edition: this.selectedEdition || undefined,
       type: this.selectedType || undefined,
@@ -134,9 +142,21 @@ export class CardListComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: () => {
         this.loading = false;
+        this.loadError = true;
+        this.hasMore = false;
         this.cdr.detectChanges();
       },
     });
+  }
+
+  clearFilters() {
+    this.clearSearchDebounce();
+    this.search = '';
+    this.selectedEdition = '';
+    this.selectedType = '';
+    this.selectedRace = '';
+    this.selectedRarity = '';
+    this.reloadCards();
   }
 
   reloadCards() {

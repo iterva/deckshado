@@ -1,6 +1,7 @@
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from django.db import transaction
 from django.db.models import Q, Sum, Value, Count
 from django.db.models.functions import Coalesce
 from .models import Deck, DeckEntry, DeckLike, DeckSnapshot, DeckComment
@@ -177,19 +178,30 @@ def deck_entry_view(request, deck_id):
         return Response({"error": "Mazo no encontrado"}, status=status.HTTP_404_NOT_FOUND)
 
     card_id = request.data.get("card_id")
-    quantity = request.data.get("quantity", 1)
-
     if not card_id:
         return Response({"error": "card_id es requerido"}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        card_id = int(card_id)
+    except (TypeError, ValueError):
+        return Response({"error": "card_id debe ser un número"}, status=status.HTTP_400_BAD_REQUEST)
 
     if request.method == "POST":
-        entry, created = DeckEntry.objects.get_or_create(
-            deck=deck, card_id=card_id,
-            defaults={"quantity": quantity},
-        )
-        if not created:
-            entry.quantity = quantity
-            entry.save()
+        is_sideboard = request.data.get("is_sideboard", False)
+        if not isinstance(is_sideboard, bool):
+            return Response({"error": "is_sideboard debe ser booleano"}, status=status.HTTP_400_BAD_REQUEST)
+        # Rebuild the full entry list with the change applied and run it through
+        # the same validation as a full deck save (type, range, existence, rules).
+        entries = [
+            {"card": e.card_id, "quantity": e.quantity, "is_sideboard": e.is_sideboard}
+            for e in deck.entries.all()
+            if not (e.card_id == card_id and e.is_sideboard == is_sideboard)
+        ]
+        entries.append({"card": card_id, "quantity": request.data.get("quantity", 1), "is_sideboard": is_sideboard})
+        serializer = DeckCreateSerializer(deck, data={"entries": entries}, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        entry = deck.entries.get(card_id=card_id, is_sideboard=is_sideboard)
         return Response(DeckEntrySerializer(entry).data, status=status.HTTP_200_OK)
 
     elif request.method == "DELETE":
@@ -225,6 +237,13 @@ def deck_cover_view(request, deck_id):
         card_id = request.data.get("card_id")
         if not card_id:
             return Response({"error": "card_id requerido"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            card_id = int(card_id)
+        except (TypeError, ValueError):
+            return Response({"error": "card_id debe ser un número"}, status=status.HTTP_400_BAD_REQUEST)
+        # Fuera de rango, SQLite lanza OverflowError (500) al filtrar.
+        if not 0 < card_id <= 2_147_483_647:
+            return Response({"error": "La carta no está en el mazo"}, status=status.HTTP_400_BAD_REQUEST)
         # The card must be present in the deck
         if not deck.entries.filter(card_id=card_id).exists():
             return Response({"error": "La carta no está en el mazo"}, status=status.HTTP_400_BAD_REQUEST)
@@ -278,7 +297,10 @@ def deck_comments_view(request, deck_id):
     # POST — auth required
     if not request.user.is_authenticated:
         return Response({"error": "Debes iniciar sesión"}, status=status.HTTP_401_UNAUTHORIZED)
-    text = (request.data.get("text") or "").strip()
+    text = request.data.get("text") or ""
+    if not isinstance(text, str):
+        return Response({"error": "El comentario debe ser texto"}, status=status.HTTP_400_BAD_REQUEST)
+    text = text.strip()
     if not text:
         return Response({"error": "El comentario no puede estar vacío"}, status=status.HTTP_400_BAD_REQUEST)
     if len(text) > 1000:
@@ -328,7 +350,11 @@ def deck_snapshots_view(request, deck_id):
         return Response(DeckSnapshotSerializer(snaps, many=True).data)
 
     # POST — create snapshot
-    label = (request.data.get("label") or "").strip()
+    label = request.data.get("label") or ""
+    if not isinstance(label, str):
+        return Response({"error": "El nombre de la versión debe ser texto"}, status=status.HTTP_400_BAD_REQUEST)
+    # DeckSnapshot.label es max_length=100 y SQLite no aplica el límite.
+    label = label.strip()[:100]
     if not label:
         label = f"Versión {DeckSnapshot.objects.filter(deck=deck).count() + 1}"
     entries = list(deck.entries.values("card_id", "quantity", "is_sideboard"))
@@ -356,19 +382,33 @@ def restore_snapshot(request, snapshot_id):
     deck = snap.deck
     if deck.owner != request.user:
         return Response({"error": "No autorizado"}, status=status.HTTP_403_FORBIDDEN)
-    data = snap.snapshot_data
-    deck.name = data.get("name", deck.name)
-    deck.description = data.get("description", deck.description)
-    deck.format = data.get("format", deck.format)
-    deck.sub_format = data.get("sub_format", deck.sub_format)
-    deck.race = data.get("race", deck.race)
-    deck.starting_gold_id = data.get("starting_gold")
-    deck.save()
-    deck.entries.all().delete()
-    for e in data.get("entries", []):
-        DeckEntry.objects.create(deck=deck, card_id=e["card_id"], quantity=e["quantity"], is_sideboard=e.get("is_sideboard", False))
+    from cards.models import Card
     from .models import DeckChangeLog
-    DeckChangeLog.objects.create(deck=deck, summary=f"Restaurado desde snapshot: {snap.label}")
+
+    data = snap.snapshot_data
+    snap_entries = data.get("entries", [])
+    # Cartas borradas del catálogo después del snapshot: se omiten en vez de
+    # fallar a mitad de camino (antes dejaba el mazo sin entradas y un 500).
+    wanted_ids = {e["card_id"] for e in snap_entries}
+    starting_gold = data.get("starting_gold")
+    if starting_gold:
+        wanted_ids.add(starting_gold)
+    existing_ids = set(Card.objects.filter(id__in=wanted_ids).values_list("id", flat=True))
+
+    with transaction.atomic():
+        deck.name = data.get("name", deck.name)
+        deck.description = data.get("description", deck.description)
+        deck.format = data.get("format", deck.format)
+        deck.sub_format = data.get("sub_format", deck.sub_format)
+        deck.race = data.get("race", deck.race)
+        deck.starting_gold_id = starting_gold if starting_gold in existing_ids else None
+        deck.save()
+        deck.entries.all().delete()
+        for e in snap_entries:
+            if e["card_id"] not in existing_ids:
+                continue
+            DeckEntry.objects.create(deck=deck, card_id=e["card_id"], quantity=e["quantity"], is_sideboard=e.get("is_sideboard", False))
+        DeckChangeLog.objects.create(deck=deck, summary=f"Restaurado desde snapshot: {snap.label}")
     return Response({"detail": "Mazo restaurado"})
 
 
@@ -436,59 +476,88 @@ def import_deck(request):
     if not isinstance(payload, dict):
         return Response({"error": "JSON invalido"}, status=status.HTTP_400_BAD_REQUEST)
 
-    name = (payload.get("name") or "Mazo importado").strip()[:200]
-    description = (payload.get("description") or "")[:5000]
-    fmt = (payload.get("format") or "imp")[:20]
-    sub_format = (payload.get("sub_format") or "racial")[:20]
-    race = (payload.get("race") or "")[:50]
+    def _text(key, default, max_len):
+        value = payload.get(key) or default
+        return value.strip()[:max_len] if isinstance(value, str) else None
+
+    name = _text("name", "Mazo importado", 200)
+    description = _text("description", "", 5000)
+    fmt = _text("format", "imp", 20)
+    sub_format = _text("sub_format", "racial", 20)
+    race = _text("race", "", 50)
+    if None in (name, description, fmt, sub_format, race):
+        return Response({"error": "El archivo no tiene el formato de un mazo exportado"}, status=status.HTTP_400_BAD_REQUEST)
+    name = name or "Mazo importado"
     entries = payload.get("entries") or []
     sideboard = payload.get("sideboard") or []
 
-    if not isinstance(entries, list):
+    if not isinstance(entries, list) or not isinstance(sideboard, list):
         return Response({"error": "entries debe ser una lista"}, status=status.HTTP_400_BAD_REQUEST)
+    if not entries and not sideboard:
+        return Response({"error": "El archivo no contiene cartas. ¿Es un mazo exportado desde ShadowForge?"}, status=status.HTTP_400_BAD_REQUEST)
     if len(entries) + len(sideboard) > 200:
         return Response({"error": "Demasiadas cartas (max. 200)"}, status=status.HTTP_400_BAD_REQUEST)
 
+    def _clean(raw_list):
+        cleaned = []
+        for raw in raw_list:
+            if not isinstance(raw, dict):
+                return None
+            myl_id = raw.get("myl_id")
+            if myl_id is not None and not isinstance(myl_id, str):
+                myl_id = str(myl_id) if isinstance(myl_id, int) and not isinstance(myl_id, bool) else None
+            try:
+                qty = int(raw.get("quantity", 1) or 1)
+            except (TypeError, ValueError):
+                return None
+            cleaned.append((myl_id, max(1, min(qty, 10))))
+        return cleaned
+
+    main_items = _clean(entries)
+    side_items = _clean(sideboard)
+    if main_items is None or side_items is None:
+        return Response({"error": "El archivo tiene cartas con un formato inválido"}, status=status.HTTP_400_BAD_REQUEST)
+
     # Resolver myl_ids -> Card.id en una sola query
-    all_myl_ids = {e.get("myl_id") for e in (entries + sideboard) if e.get("myl_id")}
+    all_myl_ids = {myl_id for myl_id, _ in (main_items + side_items) if myl_id}
     cards_by_myl = {c.myl_id: c for c in Card.objects.filter(myl_id__in=all_myl_ids)}
 
-    missing = [e.get("myl_id") for e in (entries + sideboard) if e.get("myl_id") and e["myl_id"] not in cards_by_myl]
+    missing = [myl_id for myl_id, _ in (main_items + side_items) if myl_id and myl_id not in cards_by_myl]
+    if not any(myl_id in cards_by_myl for myl_id, _ in (main_items + side_items)):
+        return Response({
+            "error": f"No se encontró ninguna de las cartas del archivo ({len(missing)} faltantes). No se creó el mazo.",
+            "missing_myl_ids": missing,
+        }, status=status.HTTP_400_BAD_REQUEST)
 
     starting_gold_id = None
     sg_myl = payload.get("starting_gold")
-    if sg_myl and sg_myl in cards_by_myl:
+    if isinstance(sg_myl, str) and sg_myl in cards_by_myl:
         starting_gold_id = cards_by_myl[sg_myl].id
 
-    deck = Deck.objects.create(
-        owner=request.user,
-        name=name,
-        description=description,
-        format=fmt,
-        sub_format=sub_format,
-        race=race,
-        is_public=False,
-        starting_gold_id=starting_gold_id,
-    )
+    with transaction.atomic():
+        deck = Deck.objects.create(
+            owner=request.user,
+            name=name,
+            description=description,
+            format=fmt,
+            sub_format=sub_format,
+            race=race,
+            is_public=False,
+            starting_gold_id=starting_gold_id,
+        )
 
-    created_entries = 0
-    for raw in entries:
-        myl_id = raw.get("myl_id")
-        qty = max(1, min(int(raw.get("quantity", 1) or 1), 10))
-        card = cards_by_myl.get(myl_id)
-        if not card:
-            continue
-        DeckEntry.objects.create(deck=deck, card=card, quantity=qty, is_sideboard=False)
-        created_entries += 1
-
-    for raw in sideboard:
-        myl_id = raw.get("myl_id")
-        qty = max(1, min(int(raw.get("quantity", 1) or 1), 10))
-        card = cards_by_myl.get(myl_id)
-        if not card:
-            continue
-        DeckEntry.objects.create(deck=deck, card=card, quantity=qty, is_sideboard=True)
-        created_entries += 1
+        # Una misma carta repetida en el archivo se suma (DeckEntry es único por carta y zona).
+        quantities = {}
+        for items, is_sideboard in ((main_items, False), (side_items, True)):
+            for myl_id, qty in items:
+                card = cards_by_myl.get(myl_id)
+                if not card:
+                    continue
+                key = (card, is_sideboard)
+                quantities[key] = min(quantities.get(key, 0) + qty, 10)
+        for (card, is_sideboard), qty in quantities.items():
+            DeckEntry.objects.create(deck=deck, card=card, quantity=qty, is_sideboard=is_sideboard)
+        created_entries = len(quantities)
 
     return Response({
         "id": deck.id,

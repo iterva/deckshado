@@ -8,13 +8,13 @@
     } @else {
       <div class="format-grid">
         @for (f of formats; track f.id) {
-          <div class="format-card" [class.disabled]="!isEnabled(f.code)" (click)="selectFormat(f.code)">
+          <button type="button" class="format-card" [class.disabled]="!isEnabled(f.code)" [disabled]="!isEnabled(f.code)" [attr.aria-disabled]="!isEnabled(f.code)" (click)="selectFormat(f.code)">
             <span class="format-code">{{ f.code | uppercase }}</span>
             <span class="format-name">{{ f.name }}</span>
             @if (!isEnabled(f.code)) {
               <span class="coming-soon" [class.maintenance]="isMaintenance(f.code)">{{ getDisabledLabel(f.code) }}</span>
             }
-          </div>
+          </button>
         }
       </div>
     }
@@ -23,48 +23,50 @@
     <p class="subtitle">Elige el tipo de mazo</p>
 
     <div class="format-grid">
-      <div class="format-card" (click)="selectSubFormat('racial')">
+      <button type="button" class="format-card" (click)="selectSubFormat('racial')">
         <span class="format-code">Racial</span>
         <span class="format-name">Mazo racial clásico</span>
-      </div>
-      <div class="format-card" (click)="selectSubFormat('vcr')">
+      </button>
+      <button type="button" class="format-card" (click)="selectSubFormat('vcr')">
         <span class="format-code">VCR</span>
         <span class="format-name">Vasallo, Cortesano y Real</span>
-      </div>
+      </button>
     </div>
 
-    <button class="btn btn-secondary" (click)="backToFormats()">← Volver a formatos</button>
+    <button type="button" class="btn btn-secondary" (click)="backToFormats()">← Volver</button>
   } @else if (step === 'pb_edition') {
     <h1>{{ selectedFormatName }}</h1>
     <p class="subtitle">Elige la edición</p>
 
     <div class="format-grid">
       @for (e of (selectedFormat === 'pe' ? peEditions : pbEditions); track e.slug) {
-        <div class="format-card" (click)="selectPbEdition(e)">
+        <button type="button" class="format-card" (click)="selectPbEdition(e)">
           <span class="format-code">{{ e.name }}</span>
           <span class="format-name">{{ e.races.length }} razas</span>
-        </div>
+        </button>
       }
     </div>
 
-    <button class="btn btn-secondary" (click)="backToFormats()">← Volver a formatos</button>
+    <button type="button" class="btn btn-secondary" (click)="backToFormats()">← Volver</button>
   } @else {
     <h1>{{ selectedFormatName }}@if (selectedPbEdition) { · {{ selectedPbEdition.name }} }@if (selectedSubFormat === 'vcr') { · VCR }</h1>
     <p class="subtitle">Elige la raza de tu mazo</p>
 
     <div class="race-grid">
       @for (r of races; track r.slug) {
-        <div class="race-card" (click)="selectRace(r.slug)">
+        <button type="button" class="race-card" (click)="selectRace(r.slug)">
           <span class="race-name">{{ r.name }}</span>
           <span class="race-desc">{{ r.description }}</span>
-        </div>
+        </button>
       }
     </div>
 
-    <button class="btn btn-secondary" (click)="selectedFormat === 'imp' ? backToSubFormat() : ((selectedFormat === 'pb' || selectedFormat === 'pe') ? backToPbEdition() : backToFormats())">← Volver</button>
+    <button type="button" class="btn btn-secondary" (click)="selectedFormat === 'imp' ? backToSubFormat() : ((selectedFormat === 'pb' || selectedFormat === 'pe') ? backToPbEdition() : backToFormats())">← Volver</button>
   }
 
-  <div class="back-link">
-    <a routerLink="/decks" class="btn btn-secondary">← Volver a mis mazos</a>
-  </div>
+  @if (step === 'format') {
+    <div class="back-link">
+      <a routerLink="/decks" [queryParams]="{ tab: 'mine' }" class="btn btn-secondary">← Volver a mis mazos</a>
+    </div>
+  }
 </div>

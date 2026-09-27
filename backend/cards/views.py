@@ -4,6 +4,7 @@ from django.db.models import Q, Value, Case, When, BooleanField, TextField, Exis
 from django.db.models.functions import Concat, Lower, Coalesce
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
+import re
 import unicodedata
 from .models import Card, Edition, Format, Race, CardType, Rarity, BanlistEntry
 from .serializers import (
@@ -57,7 +58,8 @@ def _accent_insensitive(text: str) -> str:
     # Strip accents from search input first
     nfkd = unicodedata.normalize('NFKD', text.lower())
     stripped = ''.join(c for c in nfkd if not unicodedata.combining(c))
-    return ''.join(_ACCENT_MAP.get(c, c) for c in stripped)
+    # Escape each char before expanding accents: avoids 500 on ( [ ? \ and '.' matching everything
+    return ''.join(_ACCENT_MAP.get(c, re.escape(c)) for c in stripped)
 
 
 class CardPagination(PageNumberPagination):

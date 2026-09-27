@@ -5,8 +5,11 @@ guiones) para que todas las versiones de una misma carta tengan idéntico
 
 Estrategia por grupo (cartas con el mismo nombre normalizado):
   1. Para cada nombre distinto en el grupo, contar cuántas Cards lo usan.
-  2. Elegir como canónico el nombre con más cartas; en empate, el más corto;
-     en empate, el lexicográficamente menor (determinístico).
+  2. Elegir como canónico el nombre mejor escrito (con tildes y mayúsculas);
+     en empate, el que usan más cartas; luego el más corto y el
+     lexicográficamente menor (determinístico).
+     Antes se prefería la forma en minúsculas sin tildes, lo que dejó ~80 % de
+     las cartas MyL mal escritas (QA #2 A4; ver `fix_card_names`).
   3. Hacer trim() obligatorio (jamás se preserva espacio al final).
 
 Uso:
@@ -30,11 +33,11 @@ def norm(s: str) -> str:
     return s
 
 
-def lowercase_no_accent(s: str) -> str:
-    """Forma canónica preferida: lowercase, sin acentos, conservando guiones/puntuación."""
-    s = unicodedata.normalize("NFD", s)
-    s = "".join(c for c in s if unicodedata.category(c) != "Mn")
-    return s.lower().strip()
+def name_quality(s: str) -> tuple:
+    """Cuanto mayor, mejor escrito: tildes/ñ, mayúscula inicial, mayúsculas totales."""
+    s = s.strip()
+    accents = sum(1 for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) == "Mn")
+    return (accents, s[:1].isupper(), sum(1 for c in s if c.isupper()))
 
 
 class Command(BaseCommand):
@@ -72,20 +75,10 @@ class Command(BaseCommand):
             if len(variants) < 2:
                 continue
 
-            # Canonical = lowercase sin tildes, trimmed (forma preferida).
-            # Si entre las variantes ya existe una forma así, se prefiere esa.
-            # Si no, se construye a partir de la variante con más cartas.
-            preferred_existing = [v for v in variants if v == lowercase_no_accent(v)]
-            if preferred_existing:
-                canonical = sorted(
-                    preferred_existing,
-                    key=lambda v: (-variants[v], len(v), v)
-                )[0]
-            else:
-                # Ninguna variante está en forma preferida → construirla a partir
-                # de la más popular
-                source = sorted(variants.items(), key=lambda kv: (-kv[1], len(kv[0]), kv[0]))[0][0]
-                canonical = lowercase_no_accent(source)
+            canonical = sorted(
+                variants,
+                key=lambda v: (tuple(-x for x in name_quality(v)), -variants[v], len(v.strip()), v),
+            )[0].strip()
 
             to_rename = [(orig, variants[orig]) for orig in variants if orig != canonical]
             if to_rename:

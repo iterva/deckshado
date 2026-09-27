@@ -299,3 +299,9 @@
 }
 
 .feedback.success { color: #4ade80; }
+
+// Modo claro: "Elegir archivo" quedaba con texto gris muy tenue sobre blanco.
+:host-context(body.light-theme) .avatar-action-btn.secondary {
+  color: #334155;
+  border-color: #cbd5e1;
+}

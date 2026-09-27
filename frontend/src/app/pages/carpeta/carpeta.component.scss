@@ -476,6 +476,18 @@
   color: var(--ui-text-muted, #888);
 
   strong { color: #00d4ff; }
+
+  .empty-link {
+    background: none;
+    border: 0;
+    padding: 0;
+    min-height: 0;
+    font: inherit;
+    font-weight: 700;
+    color: #00d4ff;
+    text-decoration: underline;
+    cursor: pointer;
+  }
 }
 
 // ── Buttons ──
@@ -1394,7 +1406,9 @@
     display: flex; flex-wrap: wrap; gap: 0.6rem;
     align-items: center; margin-top: 0.5rem;
     label { font-size: 0.8rem; color: var(--ui-text-secondary, #ccc); cursor: pointer;
-      input { margin-right: 0.25rem; }
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      // El min-height global de 40px en inputs empujaba el texto a otra línea.
+      input { margin: 0; min-height: 0 !important; width: auto; }
     }
   }
   .import-result {
@@ -2159,6 +2173,8 @@
   display: flex; flex-direction: column; min-width: 190px;
   background: var(--ui-surface-elevated, #1e1e3a); border: 1px solid var(--ui-border, #333); border-radius: 10px;
   padding: 0.35rem; box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+  // --ui-surface-elevated es translúcido: sin blur se leía el buscador de atrás.
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
 }
 .tab-dropdown-item {
   display: flex; align-items: center; gap: 0.5rem;
@@ -2316,3 +2332,5 @@
 }
 
 
+
+:host-context(body.light-theme) .empty-state .empty-link { color: #0369a1; }

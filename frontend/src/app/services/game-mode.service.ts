@@ -86,5 +86,9 @@ export class GameModeService {
     localStorage.setItem(this.STORAGE_KEY, mode);
     document.body.classList.toggle('mode-riftbound', mode === 'riftbound');
     document.body.classList.toggle('mode-myl', mode === 'myl');
+    // Riftbound todavía no tiene estilos de modo claro (QA #2 M3): se fuerza
+    // oscuro mientras se está en ese modo y se restaura la preferencia al volver.
+    const prefersLight = localStorage.getItem('deckshado_theme') === 'light';
+    document.body.classList.toggle('light-theme', mode === 'myl' && prefersLight);
   }
 }

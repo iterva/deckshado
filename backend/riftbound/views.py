@@ -12,7 +12,7 @@ from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
-from backend.cdn_image_upload import upload_image_to_cdn, CdnImageUploadError
+from backend.cdn_image_upload import upload_image_to_cdn, CdnImageUploadError, is_allowed_avatar_url
 
 from .tcgplayer import get_tcg_price, get_tcg_prices_batch
 from .tcgmatch import get_tcgmatch_price
@@ -36,8 +36,27 @@ from .integrations.riftcodex import RiftcodexClient, map_card_type, map_card_rar
 from users.models import Notification
 
 
+MAX_QUANTITY = 9999
+MAX_PRICE = 99_999_999
+# SQLite revienta con OverflowError (500) al guardar o filtrar enteros sobre 2**63 - 1.
+_DB_INT_MAX = 2_147_483_647
+
+
+def _clamp_db_int(value: int) -> int:
+    return max(-_DB_INT_MAX, min(value, _DB_INT_MAX))
+
+
+class RiftboundCardPagination(PageNumberPagination):
+    """Acepta `page_size` (hasta 250, igual que el modo remoto) para pedir, p. ej.,
+    todos los legends en una sola request (QA #2 M7)."""
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 250
+
+
 class RiftboundCardViewSet(viewsets.ReadOnlyModelViewSet):
     """Catálogo público de cartas Riftbound, con filtros y búsqueda."""
+    pagination_class = RiftboundCardPagination
     queryset = (
         RiftboundCard.objects.filter(is_active=True).select_related("set").order_by("card_number")
     )
@@ -361,7 +380,7 @@ class RiftboundCardViewSet(viewsets.ReadOnlyModelViewSet):
             v = params.get(field)
             if v not in (None, ""):
                 try:
-                    qs = qs.filter(**{field: int(v)})
+                    qs = qs.filter(**{field: _clamp_db_int(int(v))})
                 except ValueError:
                     pass
 
@@ -529,7 +548,7 @@ def _rb_store_profile_id_from_request(request):
         value = int(raw)
     except (TypeError, ValueError):
         raise PermissionDenied("store_profile_id invalido")
-    if value <= 0:
+    if value <= 0 or value > _DB_INT_MAX:
         raise PermissionDenied("store_profile_id invalido")
     return value
 
@@ -659,7 +678,7 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
     def _apply_fields(self, entry, data):
         if "quantity" in data:
             try:
-                entry.quantity = max(0, int(data["quantity"]))
+                entry.quantity = min(MAX_QUANTITY, max(0, int(data["quantity"])))
             except (TypeError, ValueError):
                 pass
         if "price" in data:
@@ -668,12 +687,12 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
                 entry.price = None
             else:
                 try:
-                    entry.price = max(0, int(v))
+                    entry.price = min(MAX_PRICE, max(0, int(v)))
                 except (TypeError, ValueError):
                     pass
         if "selling_quantity" in data:
             try:
-                entry.selling_quantity = max(0, int(data["selling_quantity"]))
+                entry.selling_quantity = min(MAX_QUANTITY, max(0, int(data["selling_quantity"])))
             except (TypeError, ValueError):
                 pass
         if "condition" in data and data["condition"] in dict(RiftboundCollectionEntry.CONDITION_CHOICES):
@@ -696,9 +715,10 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
         if value in (None, ""):
             return None
         try:
-            return int(value)
+            number = int(value)
         except (TypeError, ValueError):
             return None
+        return number if 0 < number <= _DB_INT_MAX else None
 
     def _merge_duplicate_entry(self, entry, duplicate):
         """Consolida una posible entrada duplicada dentro de `entry` y elimina la otra."""
@@ -743,7 +763,7 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
                 if card_id:
                     try:
                         card = RiftboundCard.objects.get(pk=card_id)
-                    except RiftboundCard.DoesNotExist:
+                    except (RiftboundCard.DoesNotExist, ValueError, TypeError):
                         return Response({"detail": "carta no existe"}, status=404)
                 else:
                     card = entry.card
@@ -766,7 +786,7 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
                     return Response({"detail": "card requerido"}, status=400)
                 try:
                     card = RiftboundCard.objects.get(pk=card_id)
-                except RiftboundCard.DoesNotExist:
+                except (RiftboundCard.DoesNotExist, ValueError, TypeError):
                     return Response({"detail": "carta no existe"}, status=404)
 
                 is_foil = self._coerce_bool(data.get("is_foil", False))
@@ -796,6 +816,8 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
         items = request.data if isinstance(request.data, list) else []
         if not items:
             return Response({"detail": "Se esperaba lista"}, status=400)
+        if not all(isinstance(item, dict) for item in items):
+            return Response({"detail": "Cada cambio debe ser un objeto"}, status=400)
         updated = 0
         for item in items:
             entry_id = self._coerce_int(item.get("id") or item.get("entry_id"))
@@ -813,7 +835,7 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
                     if card_id:
                         try:
                             card = RiftboundCard.objects.get(pk=card_id)
-                        except RiftboundCard.DoesNotExist:
+                        except (RiftboundCard.DoesNotExist, ValueError, TypeError):
                             continue
                     else:
                         card = entry.card
@@ -835,7 +857,7 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
                         continue
                     try:
                         card = RiftboundCard.objects.get(pk=card_id)
-                    except RiftboundCard.DoesNotExist:
+                    except (RiftboundCard.DoesNotExist, ValueError, TypeError):
                         continue
                     is_foil = self._coerce_bool(item.get("is_foil", False))
                     entry, entry_created = RiftboundCollectionEntry.objects.get_or_create(
@@ -866,7 +888,10 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
         if not _rb_can_permissions(permissions_payload, "edit_collection"):
             return Response({"detail": "No tienes permiso para agregar cartas a la carpeta"}, status=403)
 
-        text = (request.data.get("text") or "").strip()
+        text = request.data.get("text") or ""
+        if not isinstance(text, str):
+            return Response({"detail": "text debe ser texto"}, status=400)
+        text = text.strip()
         mode = request.data.get("mode") or "add"
         if not text:
             return Response({"detail": "Sin texto"}, status=400)
@@ -882,7 +907,7 @@ class RiftboundCollectionViewSet(viewsets.ModelViewSet):
             if not m:
                 continue
             try:
-                qty = max(1, int(m.group(1) or 1))
+                qty = min(MAX_QUANTITY, max(1, int(m.group(1) or 1)))
             except ValueError:
                 qty = 1
             name = m.group(2).strip()
@@ -1028,7 +1053,7 @@ class RiftboundWishlistViewSet(viewsets.ModelViewSet):
             return Response({"detail": "card requerido"}, status=400)
         try:
             card = RiftboundCard.objects.get(pk=card_id)
-        except RiftboundCard.DoesNotExist:
+        except (RiftboundCard.DoesNotExist, ValueError, TypeError):
             return Response({"detail": "carta no existe"}, status=404)
 
         existing = RiftboundWishlistEntry.objects.filter(user=request.user, card=card).first()
@@ -1042,12 +1067,12 @@ class RiftboundWishlistViewSet(viewsets.ModelViewSet):
     def set_quantity(self, request):
         card_id = request.data.get("card")
         try:
-            qty = max(1, int(request.data.get("desired_quantity", 1)))
+            qty = min(99, max(1, int(request.data.get("desired_quantity", 1))))
         except (TypeError, ValueError):
             qty = 1
         try:
             entry = RiftboundWishlistEntry.objects.get(user=request.user, card_id=card_id)
-        except RiftboundWishlistEntry.DoesNotExist:
+        except (RiftboundWishlistEntry.DoesNotExist, ValueError, TypeError, OverflowError):
             return Response({"detail": "no existe"}, status=404)
         entry.desired_quantity = qty
         entry.save()
@@ -1083,7 +1108,12 @@ def riftbound_binder_profile_view(request):
 @permission_classes([IsAuthenticated])
 @parser_classes([JSONParser, MultiPartParser, FormParser])
 def riftbound_upload_binder_avatar(request):
-    avatar_url = (request.data.get("avatar_url") or "").strip()
+    avatar_url = request.data.get("avatar_url") or ""
+    if not isinstance(avatar_url, str):
+        return Response({"detail": "URL de avatar inválida."}, status=status.HTTP_400_BAD_REQUEST)
+    avatar_url = avatar_url.strip()
+    if avatar_url and not is_allowed_avatar_url(avatar_url):
+        return Response({"detail": "URL de avatar no permitida."}, status=status.HTTP_400_BAD_REQUEST)
     file_obj = request.FILES.get("file")
 
     if not avatar_url and file_obj is not None:
@@ -1351,7 +1381,7 @@ def _rb_filter_store_qs(qs, params):
                 value = int(chunk)
             except ValueError:
                 continue
-            if value > 0:
+            if 0 < value <= _DB_INT_MAX:
                 entry_ids.append(value)
         entry_ids = list(dict.fromkeys(entry_ids))
         if entry_ids:
@@ -1375,7 +1405,7 @@ def _rb_filter_store_qs(qs, params):
         v = params.get(field)
         if v not in (None, ""):
             try:
-                qs = qs.filter(**{f"card__{field}": int(v)})
+                qs = qs.filter(**{f"card__{field}": _clamp_db_int(int(v))})
             except ValueError:
                 pass
     colors = (params.get("colors") or "").strip()
@@ -1397,13 +1427,13 @@ def _rb_filter_store_qs(qs, params):
     pmin = params.get("price_min")
     if pmin:
         try:
-            qs = qs.filter(price__gte=int(pmin))
+            qs = qs.filter(price__gte=_clamp_db_int(int(pmin)))
         except ValueError:
             pass
     pmax = params.get("price_max")
     if pmax:
         try:
-            qs = qs.filter(price__lte=int(pmax))
+            qs = qs.filter(price__lte=_clamp_db_int(int(pmax)))
         except ValueError:
             pass
     if params.get("only_priced") == "1":
@@ -1519,6 +1549,8 @@ def _rb_create_store_order(profile, buyer_user, payload):
     for row in items:
         entry_id = int(row["entry_id"])
         qty = int(row["quantity"])
+        if entry_id > _DB_INT_MAX:
+            raise ValueError("Alguna carta del pedido ya no está disponible.")
         requested_by_entry[entry_id] = requested_by_entry.get(entry_id, 0) + qty
 
     entry_ids = list(requested_by_entry.keys())

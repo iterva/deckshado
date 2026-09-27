@@ -1,5 +1,5 @@
-import { Component, HostListener, signal, OnInit, ViewChild, ElementRef } from '@angular/core';
-import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
+import { Component, HostListener, signal, OnInit, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
+import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd, NavigationStart } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
@@ -10,6 +10,7 @@ import { NotificationService } from './services/notification.service';
 import { IosInstallHintComponent } from './components/ios-install-hint/ios-install-hint.component';
 import { PwaInstallHintComponent } from './components/pwa-install-hint/pwa-install-hint.component';
 import { IconComponent } from './components/icon/icon.component';
+import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dialog.component';
 import { ThumbnailPipe } from './pipes/thumbnail.pipe';
 import { environment } from '../environments/environment';
 
@@ -26,6 +27,7 @@ import { environment } from '../environments/environment';
     PwaInstallHintComponent,
     ThumbnailPipe,
     IconComponent,
+    ConfirmDialogComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
@@ -38,6 +40,8 @@ export class App implements OnInit {
   showSearch = signal(false);
   showMobileMenu = signal(false);
   readonly appVersion = environment.appVersion;
+  readonly searchShortcut = typeof navigator !== 'undefined'
+    && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? '⌘K' : 'Ctrl K';
   hardReloading = signal(false);
   searchQuery = '';
   searchResults: any = null;
@@ -49,6 +53,7 @@ export class App implements OnInit {
     public notifs: NotificationService,
     private router: Router,
     private http: HttpClient,
+    private cdr: ChangeDetectorRef,
   ) {
     sessionStorage.removeItem('chunk_reload');
   }
@@ -58,13 +63,47 @@ export class App implements OnInit {
       this.notifs.load();
     }
 
+    this.lastPath = this.pathOf(this.router.url);
     this.router.events.subscribe((event) => {
+      if (event instanceof NavigationStart) {
+        this.onNavigationStartScroll(event);
+      }
+      if (event instanceof NavigationEnd) {
+        this.onNavigationEndScroll(event);
+      }
       if (event instanceof NavigationEnd && !this.canUseGlobalSearch()) {
         this.showSearch.set(false);
         this.searchResults = null;
         this.searchQuery = '';
       }
     });
+  }
+
+  // En esta app el que hace scroll es <body> (html/body con overflow-x: hidden), no
+  // window, así que la restauración de scroll del router no sirve. Se resetea a mano
+  // solo cuando cambia la ruta: cambios de query params (p. ej. ?card= al abrir el
+  // preview de una carta) no deben mover la página.
+  private scrollByPath = new Map<string, number>();
+  private lastPath = '';
+  private restoreScrollOnEnd = false;
+
+  private pathOf(url: string): string {
+    return url.split(/[?#]/)[0];
+  }
+
+  private onNavigationStartScroll(event: NavigationStart) {
+    this.scrollByPath.set(this.lastPath, document.body.scrollTop);
+    this.restoreScrollOnEnd = event.navigationTrigger === 'popstate';
+  }
+
+  private onNavigationEndScroll(event: NavigationEnd) {
+    const path = this.pathOf(event.urlAfterRedirects);
+    if (path === this.lastPath) return;
+    this.lastPath = path;
+    if (event.urlAfterRedirects.includes('#')) return;
+    const target = this.restoreScrollOnEnd ? (this.scrollByPath.get(path) ?? 0) : 0;
+    document.body.scrollTop = target;
+    document.documentElement.scrollTop = target;
   }
 
   canUseGlobalSearch(): boolean {
@@ -103,7 +142,7 @@ export class App implements OnInit {
     this.searchResults = null;
     this.searchQuery = '';
     if (this.showSearch()) {
-      setTimeout(() => this.globalSearchInput?.nativeElement?.focus(), 50);
+      this.focusSearchInput();
     }
   }
 
@@ -111,7 +150,13 @@ export class App implements OnInit {
     this.showSearch.set(true);
     this.searchResults = null;
     this.searchQuery = '';
-    setTimeout(() => this.globalSearchInput?.nativeElement?.focus(), 50);
+    this.focusSearchInput();
+  }
+
+  /** Renderiza el input y lo enfoca en el mismo tick, para no perder las primeras teclas. */
+  private focusSearchInput() {
+    this.cdr.detectChanges();
+    this.globalSearchInput?.nativeElement?.focus();
   }
 
   closeSearch() {
@@ -135,6 +180,26 @@ export class App implements OnInit {
     this.http.get(`${environment.apiUrl}/search/`, { params: { q, game } }).subscribe((res: any) => {
       this.searchResults = res;
     });
+  }
+
+  /** ↑/↓ entre el input y los resultados del buscador global. */
+  focusSearchResult(event: Event, step: 1 | -1) {
+    event.preventDefault();
+    const items = Array.from(document.querySelectorAll<HTMLElement>('.search-results .sr-item'));
+    const current = items.indexOf(document.activeElement as HTMLElement);
+    const next = current + step;
+    if (next < 0) {
+      this.globalSearchInput?.nativeElement?.focus();
+    } else if (next < items.length) {
+      items[next].focus();
+    }
+  }
+
+  openFirstSearchResult() {
+    const first = this.searchResults?.cards?.[0];
+    if (first) { this.goToResult('card', first); return; }
+    const deck = this.searchResults?.decks?.[0];
+    if (deck) this.goToResult('deck', deck);
   }
 
   goToResult(type: string, item: any) {

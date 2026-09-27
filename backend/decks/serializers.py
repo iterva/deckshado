@@ -1,4 +1,10 @@
+import re
+import unicodedata
+from collections import defaultdict
+
+from django.db import transaction
 from rest_framework import serializers
+from cards.models import BanlistEntry, Format
 from .models import Deck, DeckEntry, DeckChangeLog, DeckLike, DeckSnapshot, DeckComment
 from cards.serializers import CardListSerializer
 
@@ -18,8 +24,24 @@ ESC_EDITION_SLUGS = {
 }
 
 
+# Hard limits mirrored from the Angular builder (deck-builder.component.ts).
+MAIN_DECK_MAX = 50
+SIDEBOARD_MAX = 15
+DEFAULT_MAX_COPIES = 3
+SUB_FORMATS = {"racial", "vcr", ""}
+RACE_SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+
+
+def _normalize_card_name(name):
+    """Same normalization as `normalizeName` in the deck builder."""
+    name = re.sub(r"\(v\d+\)", "", name or "", flags=re.IGNORECASE)
+    name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode().lower()
+    return re.sub(r"[^a-z0-9]+", " ", name).strip()
+
+
 class DeckEntrySerializer(serializers.ModelSerializer):
     card_detail = CardListSerializer(source="card", read_only=True)
+    quantity = serializers.IntegerField(min_value=1, max_value=32767)
 
     class Meta:
         model = DeckEntry
@@ -106,6 +128,21 @@ class DeckCreateSerializer(serializers.ModelSerializer):
         model = Deck
         fields = ["id", "name", "description", "is_public", "shared_with_team", "format", "sub_format", "race", "pb_edition", "starting_gold", "cover_card", "entries"]
 
+    def validate_format(self, value):
+        if not Format.objects.filter(code=value).exists():
+            raise serializers.ValidationError(f"Formato desconocido: '{value}'.")
+        return value
+
+    def validate_sub_format(self, value):
+        if value not in SUB_FORMATS:
+            raise serializers.ValidationError("Sub-formato inválido (racial o vcr).")
+        return value
+
+    def validate_race(self, value):
+        if value and not RACE_SLUG_RE.match(value):
+            raise serializers.ValidationError("Raza inválida.")
+        return value
+
     def validate(self, attrs):
         attrs = super().validate(attrs)
 
@@ -135,7 +172,64 @@ class DeckCreateSerializer(serializers.ModelSerializer):
                 )
             })
 
+        sub_format = attrs.get("sub_format")
+        if sub_format is None and self.instance is not None:
+            sub_format = self.instance.sub_format
+        rule_errors = self._deck_rule_errors(entries_data, current_fmt, sub_format)
+        if rule_errors:
+            raise serializers.ValidationError({"entries": rule_errors})
+
         return attrs
+
+    def _deck_rule_errors(self, entries_data, deck_format, sub_format):
+        """Hard limits that are never valid, not even in a draft. An incomplete
+        deck (<50 cards) is still allowed. Race restrictions are enforced only in
+        the builder: they depend on per-card race/ability heuristics that change
+        with the data and would block editing legacy decks."""
+        errors = []
+        main_total = sum(e["quantity"] for e in entries_data if not e.get("is_sideboard"))
+        side_total = sum(e["quantity"] for e in entries_data if e.get("is_sideboard"))
+        if main_total > MAIN_DECK_MAX:
+            errors.append(f"El mazo principal tiene {main_total} cartas (máximo {MAIN_DECK_MAX}).")
+        if side_total > SIDEBOARD_MAX:
+            errors.append(f"El sidedeck tiene {side_total} cartas (máximo {SIDEBOARD_MAX}).")
+
+        bans = BanlistEntry.objects.filter(format_code=deck_format)
+        if sub_format:
+            bans = bans.filter(sub_format=sub_format)
+        ban_by_card_id, ban_by_name = {}, {}
+        for ban in bans:
+            ban_by_name[_normalize_card_name(ban.card_name)] = ban.max_copies
+            if ban.card_id:
+                ban_by_card_id[ban.card_id] = ban.max_copies
+
+        # Copies are counted per normalized name (main + side, all versions) and the
+        # limit is the strictest one among the versions present, like the builder.
+        copies = defaultdict(int)
+        limits = {}
+        names = {}
+        for entry in entries_data:
+            card = entry.get("card")
+            if card is None:
+                continue
+            key = _normalize_card_name(card.name)
+            copies[key] += entry["quantity"]
+            names.setdefault(key, card.name)
+            if card.id in ban_by_card_id:
+                limit = ban_by_card_id[card.id]
+            elif key in ban_by_name:
+                limit = ban_by_name[key]
+            else:
+                limit = 1 if (card.ability or "").startswith("Única") else DEFAULT_MAX_COPIES
+            limits[key] = min(limits.get(key, limit), limit)
+
+        for key, qty in copies.items():
+            limit = limits[key]
+            if limit == 0:
+                errors.append(f"'{names[key]}' está prohibida en este formato.")
+            elif qty > limit:
+                errors.append(f"'{names[key]}': {qty} copias (máximo {limit}).")
+        return errors
 
     def _card_matches_deck_format(self, card, deck_format):
         edition = getattr(card, "edition", None)
@@ -150,6 +244,7 @@ class DeckCreateSerializer(serializers.ModelSerializer):
             return True
         return card_format == deck_format
 
+    @transaction.atomic
     def create(self, validated_data):
         entries_data = validated_data.pop("entries", [])
         deck = Deck.objects.create(**validated_data)
@@ -157,6 +252,7 @@ class DeckCreateSerializer(serializers.ModelSerializer):
             DeckEntry.objects.create(deck=deck, **entry)
         return deck
 
+    @transaction.atomic
     def update(self, instance, validated_data):
         entries_data = validated_data.pop("entries", None)
 

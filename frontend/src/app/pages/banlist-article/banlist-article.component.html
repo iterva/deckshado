@@ -6,7 +6,7 @@
     </p>
     <h1>Banlist Mitos y Leyendas {{ edition().month }} {{ edition().year }}: cartas baneadas y restringidas</h1>
     <p class="article-meta">
-      Publicado el <time [attr.datetime]="edition().publishedDate">{{ edition().publishedDate }}</time>
+      Publicado el <time [attr.datetime]="edition().publishedDate">{{ edition().publishedDate | date:"d 'de' MMMM 'de' y" }}</time>
       · Por <strong>ShadowForge</strong>
       @if (edition().current) { · <span class="badge-current">Vigente</span> }
     </p>

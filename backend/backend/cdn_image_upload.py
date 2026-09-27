@@ -205,3 +205,23 @@ def upload_image_to_cdn(file_obj: BinaryIO, *, folder: str) -> str:
         except CloudinaryUploadError as exc:
             raise CdnImageUploadError(str(exc)) from exc
     raise CdnImageUploadError(f"CDN_PROVIDER no soportado para subida de imagenes: {provider}")
+
+
+# Hosts aceptados cuando un avatar llega como URL (el que se sube como archivo lo
+# devuelve nuestra propia CDN). Los avatares se muestran a otros usuarios, así que una
+# URL arbitraria permitiría registrar la IP de quien los vea.
+_AVATAR_URL_HOSTS = ("res.cloudinary.com", "ik.imagekit.io")
+_AVATAR_URL_HOST_SUFFIXES = (".googleusercontent.com",)
+
+
+def is_allowed_avatar_url(url: str) -> bool:
+    from urllib.parse import urlparse
+
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return False
+    host = (parsed.hostname or "").lower()
+    if parsed.scheme != "https" or not host:
+        return False
+    return host in _AVATAR_URL_HOSTS or host.endswith(_AVATAR_URL_HOST_SUFFIXES)

@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { DOCUMENT } from '@angular/common';
+import { DatePipe, DOCUMENT } from '@angular/common';
 import { Title, Meta } from '@angular/platform-browser';
 import { CardService } from '../../services/card.service';
 import { BanlistEntry } from '../../models';
@@ -21,7 +21,7 @@ interface FormatBanlist {
 @Component({
   selector: 'app-banlist-article',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, DatePipe],
   templateUrl: './banlist-article.component.html',
   styleUrl: './banlist-article.component.scss',
 })

@@ -12,12 +12,12 @@
   <div class="filters-bar">
     <div class="search-wrap">
       <app-icon name="search" [size]="15"></app-icon>
-      <input type="text" placeholder="Buscar por nombre o ciudad..." [(ngModel)]="search" (keyup.enter)="apply()" class="search-input" />
+      <input type="text" aria-label="Buscar tiendas por nombre o ciudad" placeholder="Buscar por nombre o ciudad..." [(ngModel)]="search" (keyup.enter)="apply()" class="search-input" />
     </div>
-    <select [(ngModel)]="country" (change)="apply()">
+    <select aria-label="Filtrar por país" [(ngModel)]="country" (change)="apply()">
       @for (c of countries; track c.code) { <option [value]="c.code">{{ c.name }}</option> }
     </select>
-    <select [(ngModel)]="ordering" (change)="apply()">
+    <select aria-label="Ordenar tiendas" [(ngModel)]="ordering" (change)="apply()">
       <option value="-last_active">Más activas</option>
       <option value="-selling_count">Más cartas en venta</option>
       <option value="user__username">Nombre A→Z</option>
@@ -46,9 +46,9 @@
         <div class="store-card-header">
           <div class="store-avatar">
             @if (s.binder_avatar_url) {
-              <img [src]="s.binder_avatar_url" [alt]="s.username" />
+              <img [src]="s.binder_avatar_url" [alt]="s.username" loading="lazy" decoding="async" referrerpolicy="no-referrer" (error)="$any($event.target).hidden = true" />
             } @else if (s.user_avatar_url) {
-              <img [src]="s.user_avatar_url" [alt]="s.username" />
+              <img [src]="s.user_avatar_url" [alt]="s.username" loading="lazy" decoding="async" referrerpolicy="no-referrer" (error)="$any($event.target).hidden = true" />
             } @else {
               <div class="avatar-placeholder">
                 <app-icon name="store" [size]="20"></app-icon>

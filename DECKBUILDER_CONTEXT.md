@@ -33,7 +33,7 @@ Cita textual de `backend/riftbound/models.py` (líneas 1-6):
 
 ### 1.2 Reglas de construcción
 
-**Importante**: casi toda la validación de reglas de MyL vive en el **frontend**. El backend solo valida coherencia formato-edición al crear/editar el mazo; no revalida tamaño, copias, banlist ni raza.
+**Importante**: casi toda la validación de reglas de MyL vive en el **frontend**. El backend valida coherencia formato-edición y los límites duros (50/15 cartas, copias máximas, banlist, cantidad ≥ 1) al crear/editar el mazo; la restricción racial sigue solo en el cliente.
 
 - **Tamaño del mazo principal: 50 cartas** (límite duro en `addCard()`, L1071).
 - **Sideboard: máx. 15 cartas** (`addToSide()`, L1130).
@@ -173,8 +173,8 @@ Vía `DefaultRouter` (`backend/riftbound/urls.py:25-33`), prefijo `/api/riftboun
 
 ---
 
-## 4. Riesgo identificado (no accionado)
+## 4. Validación server-side (QA 2026-09-16)
 
-El deckbuilder de **MyL** no revalida en el servidor los límites de 50/15 cartas, copias máximas, banlist ni restricción racial al guardar — toda esa lógica vive en el cliente (`deck-builder.component.ts`). Un mazo creado directamente contra `POST /api/decks/my/` (sin pasar por la UI) podría violar cualquiera de esas reglas; solo se valida coherencia de formato/edición (`decks/serializers.py:109-151`).
-
-Riftbound sí ofrece un validador de servidor (`riftbound/validation.py`), pero el frontend lo usa solo de forma informativa y no bloquea el guardado de mazos "ilegales".
+- **MyL** (`decks/serializers.py`, `DeckCreateSerializer._deck_rule_errors`): al crear/editar vía API se rechazan (400) mazos con más de 50 cartas en main o 15 en side, más copias que las permitidas (3, o 1 si es "Única"; sumando main + side y versiones con el mismo nombre; la banlist del formato/sub-formato manda), cartas prohibidas y cantidades < 1. Un mazo incompleto (<50) se sigue aceptando. La restricción racial **no** se replica: depende de heurísticas por raza/habilidad y bloquearía la edición de mazos antiguos.
+- **Riftbound** (`riftbound/serializers.py`, `RiftboundDeckSerializer.validate`): se rechazan zonas por sobre su tamaño (main 40, side 10, runas 12, champion 1, battlefields 3) y copias por carta en una zona (3; 1 en champion/battlefield; runas hasta 12; Spiderling exenta). Mínimos, banlist y [Unique] siguen siendo informativos (`validation.py`).
+- Pendiente: el endpoint `POST /api/decks/my/<id>/entries/` (`deck_entry_view`) aún no valida estos límites; hoy no lo usa ningún componente.

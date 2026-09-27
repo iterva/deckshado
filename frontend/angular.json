@@ -35,7 +35,7 @@
           },
           "configurations": {
             "production": {
-              "allowedCommonJsDependencies": ["html2canvas", "canvg", "raf", "rgbcolor", "core-js", "qrcode"],
+              "allowedCommonJsDependencies": ["html2canvas", "canvg", "raf", "rgbcolor", "core-js", "qrcode", "dijkstrajs"],
               "serviceWorker": "ngsw-config.json",
               "fileReplacements": [
                 {

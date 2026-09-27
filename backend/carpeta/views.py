@@ -3,7 +3,7 @@ import uuid
 
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes, parser_classes
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
@@ -13,7 +13,7 @@ from django.db.models import Q, Count, Sum, F
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from backend.cdn_image_upload import upload_image_to_cdn, CdnImageUploadError
+from backend.cdn_image_upload import upload_image_to_cdn, CdnImageUploadError, is_allowed_avatar_url
 from users.models import Notification
 
 from .models import (
@@ -64,7 +64,12 @@ def binder_profile_view(request):
 @permission_classes([permissions.IsAuthenticated])
 @parser_classes([JSONParser, MultiPartParser, FormParser])
 def upload_binder_avatar(request):
-    avatar_url = (request.data.get("avatar_url") or "").strip()
+    avatar_url = request.data.get("avatar_url") or ""
+    if not isinstance(avatar_url, str):
+        return Response({"detail": "URL de avatar inválida."}, status=status.HTTP_400_BAD_REQUEST)
+    avatar_url = avatar_url.strip()
+    if avatar_url and not is_allowed_avatar_url(avatar_url):
+        return Response({"detail": "URL de avatar no permitida."}, status=status.HTTP_400_BAD_REQUEST)
     file_obj = request.FILES.get("file")
 
     if not avatar_url and file_obj is not None:
@@ -373,26 +378,67 @@ class MyCollectionListView(generics.ListAPIView):
         return qs
 
 
+WISHLIST_MAX_DESIRED = 99
+_CONDITION_CODES = {code for code, _ in CollectionEntry._meta.get_field("condition").choices}
+_LANGUAGE_CODES = {code for code, _ in CollectionEntry._meta.get_field("language").choices}
+
+
+MAX_QUANTITY = 9999
+MAX_PRICE = 99_999_999
+# Tope por defecto: SQLite revienta con OverflowError (500) sobre 2**63 - 1.
+_DB_INT_MAX = 2_147_483_647
+
+
+def _parse_int(value, field, min_value=None, max_value=_DB_INT_MAX):
+    """Convierte a entero o responde 400 (nunca 500) si no es numérico o está fuera de rango."""
+    if isinstance(value, bool):
+        raise ValidationError({field: "Debe ser un número entero."})
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        raise ValidationError({field: "Debe ser un número entero."})
+    if min_value is not None and number < min_value:
+        raise ValidationError({field: f"Debe ser mayor o igual a {min_value}."})
+    if max_value is not None and number > max_value:
+        raise ValidationError({field: f"Debe ser menor o igual a {max_value}."})
+    return number
+
+
+def _resolve_card_id(value):
+    """Valida el id de carta del body: 400 si no es numérico, 404 si la carta no existe."""
+    from cards.models import Card
+
+    card_id = _parse_int(value, "card", min_value=1)
+    if not Card.objects.filter(pk=card_id).exists():
+        raise Http404("La carta no existe.")
+    return card_id
+
+
 def _apply_collection_fields(entry, data):
     """Aplica los campos editables a una entrada (sin guardar)."""
     if "quantity" in data:
-        entry.quantity = max(1, int(data["quantity"]))
+        entry.quantity = max(1, _parse_int(data["quantity"] or 1, "quantity", min_value=0, max_value=MAX_QUANTITY))
     if "price" in data:
-        entry.price = data["price"] if data["price"] not in ("", None) else None
+        price = data["price"]
+        entry.price = _parse_int(price, "price", min_value=0, max_value=MAX_PRICE) if price not in ("", None) else None
     if "selling_quantity" in data:
-        entry.selling_quantity = max(0, int(data["selling_quantity"]))
+        entry.selling_quantity = max(0, _parse_int(data["selling_quantity"] or 0, "selling_quantity", max_value=MAX_QUANTITY))
     if "condition" in data:
+        if data["condition"] not in _CONDITION_CODES:
+            raise ValidationError({"condition": "Condición inválida."})
         entry.condition = data["condition"]
     if "language" in data:
+        if data["language"] not in _LANGUAGE_CODES:
+            raise ValidationError({"language": "Idioma inválido."})
         entry.language = data["language"]
     if "is_foil" in data:
         entry.is_foil = bool(data["is_foil"])
     if "notes" in data:
-        entry.notes = (data["notes"] or "")[:200]
+        entry.notes = str(data["notes"] or "")[:200]
     if "photo_url" in data:
-        entry.photo_url = (data["photo_url"] or "")[:500]
+        entry.photo_url = str(data["photo_url"] or "")[:500]
     if "photo_url_2" in data:
-        entry.photo_url_2 = (data["photo_url_2"] or "")[:500]
+        entry.photo_url_2 = str(data["photo_url_2"] or "")[:500]
     if entry.selling_quantity > entry.quantity:
         entry.selling_quantity = entry.quantity
 
@@ -446,6 +492,7 @@ def collection_upsert(request):
     card_id = data.get("card")
     if not card_id:
         return Response({"detail": "card es requerido."}, status=status.HTTP_400_BAD_REQUEST)
+    card_id = _resolve_card_id(card_id)
 
     profile, permissions_payload, _ = _resolve_workspace(request, required_permission="view_collection")
 
@@ -463,9 +510,10 @@ def collection_upsert(request):
     created = entry is None
     if created:
         _enforce_entry_permissions(data, permissions_payload, entry=None, created=True)
-        entry = CollectionEntry.objects.create(
+        # Se valida todo antes de guardar: un campo inválido no deja una entrada a medias.
+        entry = CollectionEntry(
             user=profile.user, card_id=card_id,
-            quantity=int(data.get("quantity", 1) or 1),
+            quantity=max(1, _parse_int(data.get("quantity", 1) or 1, "quantity", min_value=0, max_value=MAX_QUANTITY)),
         )
     else:
         _enforce_entry_permissions(data, permissions_payload, entry=entry, created=False)
@@ -512,15 +560,17 @@ def wishlist_toggle(request):
     card_id = request.data.get("card")
     if not card_id:
         return Response({"detail": "card es requerido."}, status=status.HTTP_400_BAD_REQUEST)
+    card_id = _resolve_card_id(card_id)
 
     existing = WishlistEntry.objects.filter(user=request.user, card_id=card_id).first()
     if existing:
         existing.delete()
         return Response({"wishlisted": False}, status=status.HTTP_200_OK)
 
+    desired = _parse_int(request.data.get("desired_quantity", 1) or 1, "desired_quantity")
     entry = WishlistEntry.objects.create(
         user=request.user, card_id=card_id,
-        desired_quantity=int(request.data.get("desired_quantity", 1) or 1),
+        desired_quantity=min(max(1, desired), WISHLIST_MAX_DESIRED),
     )
     entry = WishlistEntry.objects.select_related(
         "card__edition", "card__rarity", "card__race", "card__card_type"
@@ -541,7 +591,8 @@ def wishlist_update(request, card_id):
 
     desired = request.data.get("desired_quantity")
     if desired is not None:
-        entry.desired_quantity = max(1, int(desired))
+        desired = _parse_int(desired, "desired_quantity")
+        entry.desired_quantity = min(max(1, desired), WISHLIST_MAX_DESIRED)
         entry.save()
 
     entry = WishlistEntry.objects.select_related(
@@ -575,24 +626,30 @@ def collection_batch_upsert(request):
 
     profile, permissions_payload, _ = _resolve_workspace(request, required_permission="view_collection")
 
+    if not all(isinstance(item, dict) for item in items):
+        return Response({"detail": "Cada cambio debe ser un objeto."}, status=status.HTTP_400_BAD_REQUEST)
+
     updated = 0
-    for item in items:
-        card_id = item.get("card")
-        if not card_id:
-            continue
-        entry = CollectionEntry.objects.filter(user=profile.user, card_id=card_id).first()
-        created = entry is None
-        if created:
-            _enforce_entry_permissions(item, permissions_payload, entry=None, created=True)
-            entry = CollectionEntry.objects.create(
-                user=profile.user, card_id=card_id,
-                quantity=int(item.get("quantity", 1) or 1),
-            )
-        else:
-            _enforce_entry_permissions(item, permissions_payload, entry=entry, created=False)
-        _apply_collection_fields(entry, item)
-        entry.save()
-        updated += 1
+    # Todo o nada: un item inválido (o sin permiso) no deja la mitad de los cambios aplicados.
+    with transaction.atomic():
+        for item in items:
+            card_id = item.get("card")
+            if not card_id:
+                continue
+            card_id = _resolve_card_id(card_id)
+            entry = CollectionEntry.objects.filter(user=profile.user, card_id=card_id).first()
+            created = entry is None
+            if created:
+                _enforce_entry_permissions(item, permissions_payload, entry=None, created=True)
+                entry = CollectionEntry(
+                    user=profile.user, card_id=card_id,
+                    quantity=max(1, _parse_int(item.get("quantity", 1) or 1, "quantity", min_value=0, max_value=MAX_QUANTITY)),
+                )
+            else:
+                _enforce_entry_permissions(item, permissions_payload, entry=entry, created=False)
+            _apply_collection_fields(entry, item)
+            entry.save()
+            updated += 1
     return Response({"updated": updated})
 
 
@@ -610,7 +667,10 @@ def collection_bulk_import(request):
     """
     from cards.models import Card
 
-    text = (request.data.get("text") or "").strip()
+    text = request.data.get("text") or ""
+    if not isinstance(text, str):
+        return Response({"detail": "text debe ser texto."}, status=status.HTTP_400_BAD_REQUEST)
+    text = text.strip()
     mode = request.data.get("mode") or "add"
     if not text:
         return Response({"detail": "Sin texto."}, status=status.HTTP_400_BAD_REQUEST)
@@ -629,6 +689,10 @@ def collection_bulk_import(request):
         qty = int(m.group(1) or 1)
         name = m.group(2).strip()
         if not name:
+            continue
+        if qty > MAX_QUANTITY:
+            not_found += 1
+            not_found_lines.append(line)
             continue
         matches = list(
             Card.objects.filter(name__iexact=name).values_list("id", "name")
@@ -689,7 +753,7 @@ def _filter_store_qs(qs, params):
                 value = int(chunk)
             except ValueError:
                 continue
-            if value > 0:
+            if 0 < value <= _DB_INT_MAX:
                 entry_ids.append(value)
         entry_ids = list(dict.fromkeys(entry_ids))
         if entry_ids:
@@ -741,13 +805,13 @@ def _filter_store_qs(qs, params):
     pmin = params.get("price_min")
     if pmin:
         try:
-            qs = qs.filter(price__gte=int(pmin))
+            qs = qs.filter(price__gte=max(-_DB_INT_MAX, min(int(pmin), _DB_INT_MAX)))
         except ValueError:
             pass
     pmax = params.get("price_max")
     if pmax:
         try:
-            qs = qs.filter(price__lte=int(pmax))
+            qs = qs.filter(price__lte=max(-_DB_INT_MAX, min(int(pmax), _DB_INT_MAX)))
         except ValueError:
             pass
     if params.get("only_priced") == "1":

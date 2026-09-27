@@ -14,6 +14,7 @@ import {
 } from '../../../models/riftbound';
 import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.component';
 import { IconComponent } from '../../../components/icon/icon.component';
+import { NotFoundComponent } from '../../not-found/not-found.component';
 
 type ViewMode = 'grid' | 'list' | 'stats';
 type Orientation = 'vertical' | 'horizontal';
@@ -26,6 +27,7 @@ type CardImageLike = {
   cdn_image_url?: string | null;
   image_url?: string | null;
   image_url_small?: string | null;
+  name?: string | null;
 };
 
 const COLOR_HEX: Record<RiftboundColor, string> = {
@@ -57,7 +59,7 @@ function typeRank(t?: string): number {
 @Component({
   selector: 'app-riftbound-deck-view',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TcgPriceComponent, IconComponent],
+  imports: [CommonModule, FormsModule, RouterLink, TcgPriceComponent, IconComponent, NotFoundComponent],
   template: `
     @if (loading()) {
       <p class="loading">Cargando mazo…</p>
@@ -66,15 +68,16 @@ function typeRank(t?: string): number {
         <a routerLink="/riftbound/decks" class="back-link">← Volver a mazos</a>
 
         <!-- Hero -->
-        <div class="deck-hero" [class.with-cover]="!!cardImageUrl(d.cover_card_data)">
-          @if (cardImageUrl(d.cover_card_data); as img) {
+        @let heroCard = exportCoverCardData();
+        <div class="deck-hero" [class.with-cover]="!!cardImageUrl(heroCard)">
+          @if (cardImageUrl(heroCard); as img) {
             <div class="hero-bg" [style.background-image]="'url(' + img + ')'"></div>
           }
           <div class="hero-overlay"></div>
           <div class="hero-content">
-            @if (cardImageUrl(d.cover_card_data); as img) {
-              <img class="hero-cover" [src]="img" [alt]="d.cover_card_data?.name || ''"
-                   (error)="onCardImageError(d.cover_card_data, $event)" />
+            @if (cardImageUrl(heroCard); as img) {
+              <img class="hero-cover" [src]="img" [alt]="heroCard?.name || ''"
+                   (error)="onCardImageError(heroCard, $event)" />
             } @else {
               <div class="hero-cover hero-cover-empty"><app-icon name="swords" [size]="28"></app-icon></div>
             }
@@ -940,7 +943,7 @@ function typeRank(t?: string): number {
         </div>
       }
     } @else {
-      <p class="loading">Mazo no encontrado.</p>
+      <app-not-found heading="Mazo no encontrado" message="Este mazo no existe, fue eliminado o es privado." link="/riftbound/decks" linkText="Volver a mazos" />
     }
   `,
   styles: [`
@@ -2477,7 +2480,7 @@ export class RiftboundDeckViewComponent implements OnInit {
         this.deck.set(d);
         this.loading.set(false);
         // SEO
-        this.titleSvc.setTitle(`${d.name} — Riftbound · ShadowForge`);
+        this.titleSvc.setTitle(`${d.name} · Riftbound | ShadowForge`);
         this.metaSvc.updateTag({
           name: 'description',
           content: `Mazo Riftbound «${d.name}» por ${d.owner_username} · ${this.totalCards()} cartas`,

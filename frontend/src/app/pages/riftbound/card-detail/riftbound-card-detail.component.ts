@@ -1,6 +1,7 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { NotFoundComponent } from '../../not-found/not-found.component';
 import { RiftboundService } from '../../../services/riftbound.service';
 import { RiftboundCard } from '../../../models/riftbound';
 import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.component';
@@ -8,7 +9,7 @@ import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.compo
 @Component({
   selector: 'app-riftbound-card-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, TcgPriceComponent],
+  imports: [CommonModule, RouterLink, TcgPriceComponent, NotFoundComponent],
   template: `
     @if (card(); as c) {
       <article class="rb-card-detail">
@@ -45,7 +46,7 @@ import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.compo
     } @else if (loading()) {
       <p>Cargando…</p>
     } @else {
-      <p>Carta no encontrada.</p>
+      <app-not-found heading="Carta no encontrada" message="No encontramos esta carta de Riftbound." link="/riftbound/cards" linkText="Ver cartas" />
     }
   `,
   styles: [`

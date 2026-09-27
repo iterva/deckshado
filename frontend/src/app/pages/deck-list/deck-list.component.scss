@@ -5,9 +5,9 @@
 .myl-page-title {
   font-size: 1.6rem;
   margin-bottom: 1rem;
-  color: #f2f6ff !important;
+  color: var(--ui-text) !important;
   background: none !important;
-  -webkit-text-fill-color: #f2f6ff !important;
+  -webkit-text-fill-color: currentColor !important;
   -webkit-background-clip: border-box !important;
   background-clip: border-box !important;
 }
@@ -83,6 +83,7 @@
 
   input {
     flex: 1;
+    min-width: 0;
     padding: 0.6rem 2.4rem 0.6rem 2.2rem;
     border: 1px solid var(--ui-border);
     border-radius: 8px;
@@ -601,7 +602,7 @@
   }
 
   .filter-row {
-    select { flex: 1 1 calc(50% - 0.25rem); min-width: 0; }
+    select { flex: 1 1 calc(50% - 0.25rem); min-width: 0; padding-left: 0.6rem; padding-right: 0.4rem; }
     .sort-select { margin-left: 0; flex-basis: 100%; }
     .btn-clear-filters { flex-basis: 100%; justify-content: center; }
   }

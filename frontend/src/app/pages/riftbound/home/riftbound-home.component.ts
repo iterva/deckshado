@@ -12,7 +12,7 @@ import { RiftboundService } from '../../../services/riftbound.service';
     <div class="hero">
       <div class="hero-content">
         <h1 class="hero-title">
-          <span class="icon">✨</span> ShadowForge <span class="sep">—</span> <span class="rb">Riftbound</span>
+          <span class="icon">✨</span> ShadowForge<span class="sep">&nbsp;—&nbsp;</span><span class="rb">Riftbound</span>
         </h1>
         <p class="hero-subtitle">Construye, comparte y descubre mazos del TCG de League of Legends</p>
         <div class="hero-stats">
@@ -248,7 +248,7 @@ export class RiftboundHomeComponent implements OnInit {
   totalDecks = signal<number | null>(null);
 
   ngOnInit() {
-    this.titleSvc.setTitle('ShadowForge — Riftbound | Constructor de mazos LoL TCG');
+    this.titleSvc.setTitle('Riftbound — Constructor de mazos LoL TCG | ShadowForge');
     this.rb.listCards({ page: 1, lite: true }).subscribe({
       next: (r) => this.totalCards.set(r.count),
       error: () => this.totalCards.set(0),

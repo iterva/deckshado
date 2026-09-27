@@ -525,3 +525,20 @@
   from { transform: translateY(12px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+// Light theme: amber/red chip text needs a darker tone to stay readable.
+:host-context(body.light-theme) .card-stat {
+  &.cost { color: #92400e !important; }
+  &.dmg { color: #b91c1c !important; }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 3rem 1rem;
+  text-align: center;
+
+  button { padding: 0.5rem 1.1rem; }
+}

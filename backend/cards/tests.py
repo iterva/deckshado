@@ -99,6 +99,20 @@ class CardListSearchTests(APITestCase):
         names = [c["name"] for c in results]
         self.assertIn("Samurai del Norte", names)
 
+    def test_search_with_regex_special_chars_does_not_500(self):
+        url = reverse("card-list")
+        for q in ["(", "[", "?", "\\", "a**", "Dragón ("]:
+            resp = self.client.get(url, {"search": q})
+            self.assertEqual(resp.status_code, 200, q)
+            resp = self.client.get(url, {"ability_search": q})
+            self.assertEqual(resp.status_code, 200, q)
+
+    def test_search_dot_is_literal(self):
+        url = reverse("card-list")
+        resp = self.client.get(url, {"search": "."})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["count"], 0)
+
 
 class CardImageCdnPriorityTests(TestCase):
     def test_imagekit_url_has_priority_over_cloudinary_and_legacy_url(self):

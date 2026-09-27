@@ -487,7 +487,8 @@ export class RiftboundDecksComponent implements OnInit {
   /** URL de portada, probando candidatos alternativos si la preferida no existe (404 en el CDN). */
   coverUrl(deck: RiftboundDeck): string {
     this.coverAttemptBump();
-    const c = deck.cover_card_data;
+    // Sin portada elegida: la Champion Legend (igual que la vista del mazo).
+    const c = deck.cover_card_data ?? deck.entries?.find(e => e.zone === 'champion')?.card_data;
     if (!c) return '';
     const candidates = Array.from(new Set([c.image, c.image_url, c.cdn_image_url, c.image_url_small].filter((u): u is string => !!u)));
     const attempt = this.coverAttempt.get(deck.id) ?? 0;

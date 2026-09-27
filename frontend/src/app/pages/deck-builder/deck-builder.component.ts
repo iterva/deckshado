@@ -11,10 +11,11 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Subject } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { CardService } from '../../services/card.service';
 import { DeckService } from '../../services/deck.service';
+import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { AuthService } from '../../services/auth.service';
 import { Card, Edition, CardType, DeckEntry, BanlistEntry, Rarity } from '../../models';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
@@ -61,7 +62,8 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
   deckId: number | null = null;
   deckName = '';
   deckDescription = '';
-  deckIsPublic = true;
+  // Privado por defecto: se ofrece publicar al guardar (QA #2 B7).
+  deckIsPublic = false;
   sharedWithTeam = false;
   deckCards: DeckCard[] = [];
   sideCards: DeckCard[] = [];
@@ -110,6 +112,7 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
   hasUnsavedChanges = false;
   lastAutosavedAt: Date | null = null;
   private autosaveTimer: any = null;
+  private cardsSub?: Subscription;
   private readonly AUTOSAVE_KEY_PREFIX = 'deckshado_autosave_';
 
   /** Popover de atajos de teclado (#4 helper). */
@@ -245,6 +248,7 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef,
+    private dialog: ConfirmDialogService,
   ) {}
 
   ngOnInit() {
@@ -460,12 +464,15 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.cardsSub?.unsubscribe();
     this.builderCardsObserver?.disconnect();
     this.detachBrowserScrollListener();
     this.detachContentScrollListener();
   }
 
   loadCards(append = false) {
+    // Cancel the previous request so a stale response can't overwrite a newer search.
+    this.cardsSub?.unsubscribe();
     this.loading = true;
     // Si hay restricción PB/PE por edición, fusionamos con la selección del usuario.
     let editionParam = this.selectedEdition || '';
@@ -475,7 +482,7 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
       const inScope = userSelected.filter(s => this.pbEditionScope.includes(s));
       editionParam = (inScope.length > 0 ? inScope : this.pbEditionScope).join(',');
     }
-    this.cardService.getCards({
+    this.cardsSub = this.cardService.getCards({
       search: this.search || undefined,
       ability_search: this.abilitySearch || undefined,
       edition: editionParam || undefined,
@@ -567,6 +574,19 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
     this.onFilterChange();
   }
 
+  /** Cantidad de filtros activos del panel "Filtros" (para el badge del botón). */
+  get activeFilterCount(): number {
+    return this.selectedTypes.size + this.selectedEditions.size + this.selectedRarities.size + this.selectedCosts.size;
+  }
+
+  clearAllFilters() {
+    this.selectedTypes.clear(); this.selectedType = '';
+    this.selectedEditions.clear(); this.selectedEdition = '';
+    this.selectedRarities.clear(); this.selectedRarity = '';
+    this.selectedCosts.clear(); this.selectedCost = '';
+    this.onFilterChange();
+  }
+
   clearMulti(which: 'edition' | 'rarity' | 'cost') {
     if (which === 'edition') { this.selectedEditions.clear(); this.selectedEdition = ''; }
     if (which === 'rarity') { this.selectedRarities.clear(); this.selectedRarity = ''; }
@@ -613,6 +633,7 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
   @HostListener('document:keydown.escape')
   onEscape() {
     if (this.showShortcutsHelp) { this.showShortcutsHelp = false; return; }
+    if (this.filtersDrawerOpen) { this.filtersDrawerOpen = false; return; }
     if (this.openFilter) { this.openFilter = null; return; }
     if (this.expandedCardId !== null) { this.collapseSelector(); return; }
     if (this.showExportModal) { this.closeExportModal(); return; }
@@ -1451,7 +1472,7 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
   closeDeckPreview() { this.showDeckPreview.set(false); }
 
-  saveDeck() {
+  async saveDeck() {
     this.fieldErrors = {};
     const errors: string[] = [];
 
@@ -1472,6 +1493,20 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.formatViolations.length > 0) {
       this.showToast('Hay cartas fuera de formato. Usa "Limpiar fuera de formato" antes de guardar.', 'error');
       return;
+    }
+
+    if (this.deckIsPublic && this.totalDeckCards < 50) {
+      const choice = await this.dialog.open({
+        title: 'Mazo incompleto',
+        message: `Tu mazo tiene ${this.totalDeckCards}/50 cartas. ¿Quieres publicarlo igual o guardarlo como privado hasta completarlo?`,
+        actions: [
+          { value: 'back', label: 'Volver', style: 'secondary' },
+          { value: 'private', label: 'Guardar privado', style: 'secondary' },
+          { value: 'public', label: 'Publicar igual', style: 'primary' },
+        ],
+      });
+      if (choice === null || choice === 'back') return;
+      if (choice === 'private') this.deckIsPublic = false;
     }
 
     this.saving = true;
@@ -1509,7 +1544,12 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (deck) => {
         this.saving = false;
         this.clearDraft();
-        this.showToast('¡Mazo guardado exitosamente!', 'success');
+        this.showToast(
+          this.deckIsPublic
+            ? '¡Mazo guardado y publicado!'
+            : `Mazo guardado como privado (${this.totalDeckCards}/50 cartas)`,
+          'success',
+        );
         setTimeout(() => this.router.navigate(['/decks', deck.id]), 1200);
       },
       error: (err) => {
@@ -1833,8 +1873,9 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /** Botón visible para descartar el borrador local. */
-  discardDraft() {
-    if (!confirm('¿Descartar el borrador guardado y empezar de cero?')) return;
+  async discardDraft() {
+    const ok = await this.dialog.confirm('Descartar borrador', '¿Descartar el borrador guardado y empezar de cero?', 'Descartar');
+    if (!ok) return;
     this.clearDraft();
     this.deckName = '';
     this.deckDescription = '';
@@ -1861,9 +1902,9 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // ====== #10 CanDeactivate ======
-  canDeactivate(): boolean {
+  canDeactivate(): boolean | Promise<boolean> {
     if (!this.hasUnsavedChanges) return true;
-    return confirm('Hay cambios sin guardar en tu mazo. ¿Salir de todas formas?');
+    return this.dialog.confirm('Cambios sin guardar', 'Hay cambios sin guardar en tu mazo. ¿Salir de todas formas?', 'Salir sin guardar');
   }
 
   @HostListener('window:beforeunload', ['$event'])

@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { RiftboundService } from '../../../services/riftbound.service';
 import { RiftboundCard, RiftboundCardLite, RiftboundColor } from '../../../models/riftbound';
 import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.component';
@@ -66,7 +67,7 @@ const RARITIES = [
         <div class="search-row">
           <div class="search-input-wrap">
             <app-icon name="search" [size]="15"></app-icon>
-            <input type="search"
+            <input type="search" aria-label="Buscar cartas"
                    [(ngModel)]="searchQuery"
                    (ngModelChange)="onSearchInput()"
                    [placeholder]="searchMode === 'ability' ? 'Buscar en texto de habilidad…' : (searchMode === 'all' ? 'Buscar nombre o habilidad…' : 'Buscar por nombre o número…')" />
@@ -108,7 +109,7 @@ const RARITIES = [
         <!-- Selects row -->
         <div class="filter-row">
           <div class="filter-group">
-            <select [(ngModel)]="setFilter" (ngModelChange)="reset()">
+            <select aria-label="Filtrar por set" [(ngModel)]="setFilter" (ngModelChange)="reset()">
               <option value="">Todos los sets</option>
               @for (s of sets(); track s.code) {
                 <option [value]="s.code">{{ s.code }} — {{ s.name }}</option>
@@ -117,7 +118,7 @@ const RARITIES = [
           </div>
 
           <div class="filter-group">
-            <select [(ngModel)]="energyFilter" (ngModelChange)="reset()">
+            <select aria-label="Filtrar por energía" [(ngModel)]="energyFilter" (ngModelChange)="reset()">
               <option [ngValue]="null">Cualquier energía</option>
               @for (n of [0,1,2,3,4,5,6,7,8]; track n) {
                 <option [ngValue]="n">Energía: {{ n }}</option>
@@ -126,7 +127,7 @@ const RARITIES = [
           </div>
 
           <div class="filter-group">
-            <select [(ngModel)]="rarityFilter" (ngModelChange)="reset()">
+            <select aria-label="Filtrar por rareza" [(ngModel)]="rarityFilter" (ngModelChange)="reset()">
               <option value="">Todas las rarezas</option>
               @for (r of rarities; track r.code) {
                 <option [value]="r.code">{{ r.label }}</option>
@@ -932,6 +933,7 @@ export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy
   totalPages = computed(() => Math.max(1, Math.ceil(this.totalCount() / this.pageSize)));
   private cardsSentinelRef?: ElementRef<HTMLElement>;
   private cardsObserver?: IntersectionObserver;
+  private cardsSub?: Subscription;
   private contentScrollEl: HTMLElement | null = null;
 
   @ViewChild('cardsSentinel')
@@ -1040,6 +1042,7 @@ export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy
 
   ngOnDestroy() {
     this.cardsObserver?.disconnect();
+    this.cardsSub?.unsubscribe();
     this.detachContentScrollListener();
     if (this.searchTimer) clearTimeout(this.searchTimer);
     document.body.style.overflow = '';
@@ -1093,8 +1096,10 @@ export class RiftboundCardsComponent implements OnInit, AfterViewInit, OnDestroy
   }
 
   private fetchCardsPage(append = false) {
+    // Cancel the previous request so a stale response can't overwrite a newer search.
+    this.cardsSub?.unsubscribe();
     this.loading.set(true);
-    this.rb.listCards({
+    this.cardsSub = this.rb.listCards({
       search: this.searchQuery || undefined,
       searchMode: this.searchMode,
       type: this.typeFilter || undefined,

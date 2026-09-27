@@ -182,6 +182,12 @@
         text-decoration: none;
         &:hover { text-decoration: underline; }
       }
+
+      // Móvil: el link ocupa toda la fila para que el área táctil llegue a ~44 px (QA #3 M5).
+      @media (max-width: 768px) {
+        li:has(> a) { padding: 0; }
+        a { display: block; padding: 0.6rem 0; }
+      }
     }
 
     .empty, .loading {
@@ -248,5 +254,57 @@
     border-top: 1px solid #2a2a4a;
     color: #888;
     font-size: 0.9rem;
+  }
+}
+
+// Light theme: the article is styled with fixed dark-theme colors above.
+:host-context(body.light-theme) .banlist-article {
+  color: #334155;
+
+  .breadcrumb,
+  .article-header .article-meta,
+  .edition-nav .nav-label,
+  .format-section .fmt-desc,
+  .format-section .status-h .count,
+  .format-section .empty,
+  .format-section .loading,
+  .article-footer,
+  .summary .stat-box .lbl,
+  .faq details p { color: #475569; }
+
+  a,
+  strong,
+  .breadcrumb a { color: #92400e; }
+
+  .article-header .lead { color: #334155; }
+
+  .article-header .badge-current { color: #166534; }
+
+  h2 { color: #0f172a; }
+
+  .edition-nav a {
+    color: #92400e;
+    background: rgba(180, 83, 9, 0.08);
+    border-color: rgba(180, 83, 9, 0.4);
+  }
+
+  .summary .stat-box,
+  .format-section,
+  .faq details {
+    background: #ffffff;
+    border-color: #e2e8f0;
+  }
+
+  .summary .stat-box .num { color: #92400e; }
+  .format-section .card-list li { border-bottom-color: #e2e8f0; }
+  .format-section .badge.banned { color: #be123c; }
+  .format-section .badge.limited { color: #92400e; }
+  .faq details summary { color: #0f172a; }
+
+  .cta {
+    background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%);
+    border-color: #fcd34d;
+
+    .cta-actions .btn-secondary { color: #92400e; border-color: #92400e; }
   }
 }

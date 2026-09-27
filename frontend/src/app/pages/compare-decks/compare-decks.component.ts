@@ -78,7 +78,7 @@ export class CompareDecksComponent implements OnInit {
     const source = (this.route.snapshot.queryParamMap.get('source') ?? 'mine') as 'mine' | 'public' | 'team';
     const ids = idsParam.split(',').map(s => parseInt(s, 10)).filter(n => !isNaN(n));
     if (ids.length < 2) {
-      this.error = 'Necesitas al menos 2 mazos para comparar.';
+      this.error = 'Necesitas al menos 2 mazos para comparar. En Mazos, activa «Comparar» y elige 2 o 3.';
       this.loading = false;
       this.cdr.detectChanges();
       return;

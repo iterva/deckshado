@@ -16,6 +16,7 @@
   max-width: 420px;
   box-sizing: border-box;
 
+  h1,
   h2 {
     font-size: 1.6rem;
     color: #fff;
@@ -157,7 +158,7 @@
     padding: 1.5rem 1rem;
     border-radius: 12px;
 
-    h2 { font-size: 1.35rem; }
+    h1, h2 { font-size: 1.35rem; }
     .auth-subtitle { font-size: 0.85rem; margin-bottom: 1rem; }
     .auth-hint { font-size: 0.75rem; }
     .register-perks {

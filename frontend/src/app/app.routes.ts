@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { unsavedChangesGuard } from './guards/unsaved-changes.guard';
 import { gameModeHomeGuard } from './guards/game-mode-home.guard';
+import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -84,7 +85,7 @@ export const routes: Routes = [
   },
   {
     path: 'team',
-    title: 'Equipo ShadowForge',
+    title: 'Mi equipo | ShadowForge',
     data: { description: 'Conoce al equipo detrás de ShadowForge, la herramienta para jugadores de Mitos y Leyendas.' },
     loadComponent: () => import('./pages/team/team.component').then(m => m.TeamComponent)
   },
@@ -92,12 +93,14 @@ export const routes: Routes = [
     path: 'profile',
     title: 'Mi perfil | ShadowForge',
     data: { description: 'Tu perfil de jugador en ShadowForge: mazos, colección y estadísticas.' },
+    canActivate: [authGuard],
     loadComponent: () => import('./pages/profile/profile.component').then(m => m.ProfileComponent)
   },
   {
     path: 'profile/edit',
     title: 'Editar perfil | ShadowForge',
     data: { description: 'Edita tu perfil de ShadowForge.' },
+    canActivate: [authGuard],
     loadComponent: () => import('./pages/profile-edit/profile-edit.component').then(m => m.ProfileEditComponent)
   },
   {
@@ -220,5 +223,9 @@ export const routes: Routes = [
     title: 'Banlist Riftbound | ShadowForge',
     loadComponent: () => import('./pages/riftbound/banlist/riftbound-banlist.component').then(m => m.RiftboundBanlistComponent),
   },
-  { path: '**', redirectTo: '' },
+  {
+    path: '**',
+    title: 'Página no encontrada | ShadowForge',
+    loadComponent: () => import('./pages/not-found/not-found.component').then(m => m.NotFoundComponent),
+  },
 ];

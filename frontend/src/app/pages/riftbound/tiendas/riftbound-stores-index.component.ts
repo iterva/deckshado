@@ -27,10 +27,10 @@ import { IconComponent } from '../../../components/icon/icon.component';
     <div class="filters-bar">
       <div class="search-wrap">
         <app-icon name="search" [size]="15"></app-icon>
-        <input type="text" placeholder="Buscar por usuario o ciudad..."
+        <input type="text" aria-label="Buscar tiendas por usuario o ciudad" placeholder="Buscar por usuario o ciudad..."
                [(ngModel)]="search" (keyup.enter)="reload()" class="search-input" />
       </div>
-      <select [(ngModel)]="country" (change)="reload()">
+      <select aria-label="Filtrar por país" [(ngModel)]="country" (change)="reload()">
         <option value="">Todos los países</option>
         <option value="CL">Chile</option>
         <option value="AR">Argentina</option>
@@ -46,7 +46,7 @@ import { IconComponent } from '../../../components/icon/icon.component';
         <option value="US">USA</option>
         <option value="OT">Otro</option>
       </select>
-      <select [(ngModel)]="ordering" (change)="reload()">
+      <select aria-label="Ordenar tiendas" [(ngModel)]="ordering" (change)="reload()">
         <option value="-last_active">Más activas</option>
         <option value="-selling_count">Más cartas en venta</option>
         <option value="user__username">Nombre A-Z</option>
@@ -74,7 +74,7 @@ import { IconComponent } from '../../../components/icon/icon.component';
           <div class="store-card-header">
             <div class="store-avatar">
               @if (s.binder_avatar_url || s.user_avatar_url) {
-                <img [src]="s.binder_avatar_url || s.user_avatar_url" [alt]="s.display_name || s.username" />
+                <img [src]="s.binder_avatar_url || s.user_avatar_url" [alt]="s.display_name || s.username" loading="lazy" decoding="async" referrerpolicy="no-referrer" (error)="$any($event.target).hidden = true" />
               } @else {
                 <div class="avatar-placeholder">
                   <app-icon name="store" [size]="20"></app-icon>

@@ -1,9 +1,10 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { NgTemplateOutlet } from '@angular/common';
 import { Title } from '@angular/platform-browser';
 import { DeckService } from '../../services/deck.service';
+import { ConfirmDialogService } from '../../services/confirm-dialog.service';
 import { AuthService } from '../../services/auth.service';
 import { Deck, Card } from '../../models';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
@@ -143,10 +144,16 @@ export class DeckListComponent implements OnInit {
     private cdr: ChangeDetectorRef,
     private router: Router,
     private titleService: Title,
+    private route: ActivatedRoute,
+    private dialog: ConfirmDialogService,
   ) {}
 
   ngOnInit() {
-    this.titleService.setTitle('Mazos â€” ShadowForge');
+    this.titleService.setTitle('Mazos públicos | ShadowForge');
+    const tab = this.route.snapshot.queryParamMap.get('tab');
+    if ((tab === 'mine' || tab === 'team') && this.auth.isAuthenticated()) {
+      this.activeTab = tab;
+    }
     this.loadPublicDecks();
     if (this.auth.isAuthenticated()) {
       this.loadMyDecks();
@@ -260,8 +267,8 @@ export class DeckListComponent implements OnInit {
   }
 
   // ── Actions ──
-  deleteDeck(id: number) {
-    if (confirm('¿Estás seguro de eliminar este mazo?')) {
+  async deleteDeck(id: number) {
+    if (await this.dialog.confirm('Eliminar mazo', '¿Estás seguro de eliminar este mazo? Esta acción no se puede deshacer.', 'Eliminar')) {
       this.deckService.deleteDeck(id).subscribe(() => this.loadMyDecks());
     }
   }

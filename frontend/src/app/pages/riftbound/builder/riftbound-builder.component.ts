@@ -797,24 +797,26 @@ function typeRank(t?: string): number {
       background: rgba(6, 182, 212, 0.15); border-color: #06b6d4; color: #06b6d4; font-weight: 600;
     }
 
+    /* Mismo reparto que el constructor MYL: panel del mazo acotado y el
+       catálogo se queda con el resto para que quepan más columnas. */
     .builder-layout {
-      display: grid; grid-template-columns: 65% 35%; gap: 1.25rem;
-      height: calc(100vh - 60px); max-width: 1700px; margin: 0 auto;
-      padding: 1rem 1.5rem; overflow: hidden; box-sizing: border-box;
+      display: grid; grid-template-columns: minmax(0, 1fr) clamp(320px, 30vw, 460px); gap: 1rem;
+      height: calc(100vh - 60px); max-width: 1800px; margin: 0 auto;
+      padding: 0.75rem 1rem; overflow: hidden; box-sizing: border-box;
     }
 
     .card-browser, .deck-panel {
       display: flex; flex-direction: column; height: 100%; min-height: 0;
       background: rgba(24, 24, 27, 0.45); border: 1px solid var(--ui-border);
-      border-radius: 12px; padding: 1.2rem; overflow-y: auto; box-sizing: border-box;
+      border-radius: 12px; padding: 0.9rem 1rem; overflow-y: auto; box-sizing: border-box;
       backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     }
 
-    .browser-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; }
+    .browser-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; }
     .browser-title-wrap h2 { font-size: 1.05rem; font-weight: 700; color: #ffffff; margin: 0; }
     .format-badge { font-size: 0.75rem; color: #06b6d4; font-weight: 500; }
 
-    .browser-filters { position: relative; display: flex; flex-direction: column; gap: 0.55rem; margin-bottom: 1rem; }
+    .browser-filters { position: relative; display: flex; flex-direction: column; gap: 0.55rem; margin-bottom: 0.75rem; }
     .search-row { display: flex; flex-direction: column; gap: 0.5rem; }
     .search-input-row { display: flex; align-items: center; gap: 0.4rem; }
     .search-mode-select {
@@ -897,8 +899,8 @@ function typeRank(t?: string): number {
     .clear-colors { background: none; border: none; color: #06b6d4; font-size: 0.75rem; cursor: pointer; }
 
     .available-cards {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(133px, 1fr));
-      gap: 0.6rem; align-content: start; flex: 1; overflow-y: auto;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+      gap: 0.5rem; align-content: start; flex: 1; overflow-y: auto;
     }
     /* Sin overflow:hidden aquí a propósito: en un grid-item, overflow != visible
        fuerza su "automatic minimum size" a 0 en el eje de bloque, y la fila del

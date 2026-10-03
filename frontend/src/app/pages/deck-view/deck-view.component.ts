@@ -80,6 +80,7 @@ export class DeckViewComponent implements OnInit {
   groupedSideEntries: { type: string; total: number; entries: any[] }[] = [];
   previewCard: Card | null = null;
   previewAbility: string | null = null;
+  previewAbilityLoading = false;
   exportOrientation: 'vertical' | 'horizontal' = 'horizontal';
   exporting = false;
   /** PNG encoding after html2canvas (async via toBlob so the UI stays responsive). */
@@ -471,12 +472,20 @@ export class DeckViewComponent implements OnInit {
           if (this.abilityCache.has(cid)) {
             this.previewAbility = this.abilityCache.get(cid) || null;
           } else {
-            this.cardService.getCard(cid).subscribe(detail => {
-              this.abilityCache.set(cid, detail.ability || '');
-              if (this.previewCard?.id === cid) {
-                this.previewAbility = detail.ability || null;
+            this.previewAbilityLoading = true;
+            this.cardService.getCard(cid).subscribe({
+              next: detail => {
+                this.abilityCache.set(cid, detail.ability || '');
+                if (this.previewCard?.id === cid) {
+                  this.previewAbility = detail.ability || null;
+                  this.previewAbilityLoading = false;
+                  this.cdr.detectChanges();
+                }
+              },
+              error: () => {
+                this.previewAbilityLoading = false;
                 this.cdr.detectChanges();
-              }
+              },
             });
           }
         }
@@ -682,17 +691,26 @@ export class DeckViewComponent implements OnInit {
     });
     if (this.abilityCache.has(card.id)) {
       this.previewAbility = this.abilityCache.get(card.id) || null;
+      this.previewAbilityLoading = false;
       this.cdr.detectChanges();
     } else {
       this.previewAbility = null;
+      this.previewAbilityLoading = true;
       this.cdr.detectChanges();
-      this.cardService.getCard(card.id).subscribe(detail => {
-        const ability = detail.ability || null;
-        this.abilityCache.set(card.id, ability || '');
-        if (this.previewCard?.id === card.id) {
-          this.previewAbility = ability;
+      this.cardService.getCard(card.id).subscribe({
+        next: detail => {
+          const ability = detail.ability || null;
+          this.abilityCache.set(card.id, ability || '');
+          if (this.previewCard?.id === card.id) {
+            this.previewAbility = ability;
+            this.previewAbilityLoading = false;
+            this.cdr.detectChanges();
+          }
+        },
+        error: () => {
+          this.previewAbilityLoading = false;
           this.cdr.detectChanges();
-        }
+        },
       });
     }
   }

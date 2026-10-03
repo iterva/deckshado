@@ -532,13 +532,13 @@
         @for (entry of deck.entries; track entry.id) {
           <div class="card-stack" [class.qty-2]="entry.quantity === 2" [class.qty-3]="entry.quantity >= 3">
             @if (entry.quantity >= 3) {
-              <img class="stack-shadow s3" [src]="entry.card_detail.image_url | thumb:80" aria-hidden="true" loading="lazy" fetchpriority="low" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
+              <img class="stack-shadow s3" [src]="entry.card_detail.image_url | thumb:200" aria-hidden="true" loading="lazy" fetchpriority="low" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
             }
             @if (entry.quantity >= 2) {
-              <img class="stack-shadow s2" [src]="entry.card_detail.image_url | thumb:80" aria-hidden="true" loading="lazy" fetchpriority="low" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
+              <img class="stack-shadow s2" [src]="entry.card_detail.image_url | thumb:200" aria-hidden="true" loading="lazy" fetchpriority="low" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
             }
             <div class="img-wrapper" [class.is-banned]="getBanStatus(entry.card_detail)?.status === 'banned'" [class.is-limited]="getBanStatus(entry.card_detail) && getBanStatus(entry.card_detail)?.status !== 'banned'">
-              <img class="stack-top" [src]="entry.card_detail.image_url | thumb:250" [alt]="entry.card_detail.name" loading="lazy" decoding="async" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
+              <img class="stack-top" [src]="entry.card_detail.image_url | thumb:400" [alt]="entry.card_detail.name" loading="lazy" decoding="async" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
               <button type="button" class="icon-overlay eye-icon" (click)="showPreview(entry.card_detail, $event)" aria-label="Ver detalle">
                 <app-icon name="eye" [size]="16"></app-icon>
               </button>
@@ -593,7 +593,7 @@
                     <td class="col-qty">{{ entry.quantity }}</td>
                     <td class="col-name">
                       <span class="list-card-link">
-                        <img class="list-thumb" [src]="entry.card_detail.image_url | thumb:60" [alt]="entry.card_detail.name" loading="lazy" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
+                        <img class="list-thumb" [src]="entry.card_detail.image_url | thumb:120" [alt]="entry.card_detail.name" loading="lazy" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
                         <span class="list-name">{{ entry.card_detail.name }}</span>
                       </span>
                       @if (getBanStatus(entry.card_detail); as ban) {
@@ -716,13 +716,13 @@
           @for (entry of deck.sideboard_entries; track entry.id) {
             <div class="card-stack" [class.qty-2]="entry.quantity === 2" [class.qty-3]="entry.quantity >= 3">
               @if (entry.quantity >= 3) {
-                <img class="stack-shadow s3" [src]="entry.card_detail.image_url | thumb:80" aria-hidden="true" loading="lazy" fetchpriority="low" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
+                <img class="stack-shadow s3" [src]="entry.card_detail.image_url | thumb:200" aria-hidden="true" loading="lazy" fetchpriority="low" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
               }
               @if (entry.quantity >= 2) {
-                <img class="stack-shadow s2" [src]="entry.card_detail.image_url | thumb:80" aria-hidden="true" loading="lazy" fetchpriority="low" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
+                <img class="stack-shadow s2" [src]="entry.card_detail.image_url | thumb:200" aria-hidden="true" loading="lazy" fetchpriority="low" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
               }
               <div class="img-wrapper" [class.is-banned]="getBanStatus(entry.card_detail)?.status === 'banned'" [class.is-limited]="getBanStatus(entry.card_detail) && getBanStatus(entry.card_detail)?.status !== 'banned'">
-                <img class="stack-top" [src]="entry.card_detail.image_url | thumb:250" [alt]="entry.card_detail.name" loading="lazy" decoding="async" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
+                <img class="stack-top" [src]="entry.card_detail.image_url | thumb:400" [alt]="entry.card_detail.name" loading="lazy" decoding="async" (error)="handleDeckImageError($event, entry.card_detail.image_url)">
                 <button type="button" class="icon-overlay eye-icon" (click)="showPreview(entry.card_detail, $event)" aria-label="Ver detalle">
                   <app-icon name="eye" [size]="16"></app-icon>
                 </button>
@@ -761,7 +761,7 @@
                       <td class="col-qty">{{ entry.quantity }}</td>
                       <td class="col-name">
                         <span class="list-card-link">
-                          <img class="list-thumb" [src]="entry.card_detail.image_url | thumb:60" [alt]="entry.card_detail.name" loading="lazy">
+                          <img class="list-thumb" [src]="entry.card_detail.image_url | thumb:120" [alt]="entry.card_detail.name" loading="lazy">
                           <span class="list-name">{{ entry.card_detail.name }}</span>
                         </span>
                       </td>
@@ -868,7 +868,7 @@
                 @for (s of suggestions; track $index) {
                   <div class="suggestion-card">
                     @if (s.image_url) {
-                      <img [src]="s.image_url | thumb:150" [alt]="s.name" loading="lazy">
+                      <img [src]="s.image_url | thumb:300" [alt]="s.name" loading="lazy">
                     }
                     <span class="suggestion-name">{{ s.name }}</span>
                     @if (s.reason) { <span class="suggestion-reason">{{ s.reason }}</span> }
@@ -896,64 +896,51 @@
 }
 
 @if (previewCard) {
-  <div class="preview-overlay" (click)="hidePreview()">
-    <div class="preview-panel" (click)="$event.stopPropagation()">
-      <button class="preview-close" (click)="hidePreview()" aria-label="Cerrar"><app-icon name="x" [size]="18"></app-icon></button>
-      <h3 class="preview-title">{{ previewCard.name }}</h3>
-      <hr>
-      <div class="preview-body">
-        <img [src]="previewCard.image_url" [alt]="previewCard.name" (error)="handleDeckImageError($event, previewCard.image_url)">
-        <div class="preview-stats">
-          <div class="stat-row">
-            <span class="stat-label">Tipo</span>
-            <span class="stat-badge">{{ previewCard.type_name }}</span>
+  <!-- Mismo diseño que el detalle de carta del constructor -->
+  <div class="cp-overlay" (click)="hidePreview()">
+    <div class="cp-panel" role="dialog" aria-modal="true" [attr.aria-label]="previewCard.name" (click)="$event.stopPropagation()">
+      <button class="cp-close" (click)="hidePreview()" aria-label="Cerrar"><app-icon name="x" [size]="18"></app-icon></button>
+
+      <div class="cp-layout">
+        <div class="cp-art-col">
+          <img class="cp-card-img" [src]="previewCard.image_url" [alt]="previewCard.name" (error)="handleDeckImageError($event, previewCard.image_url)">
+        </div>
+
+        <div class="cp-info-col">
+          <h3 class="cp-title">{{ previewCard.name }}</h3>
+
+          <div class="cp-badges">
+            @if (previewCard.type_name) { <span class="cp-badge">{{ previewCard.type_name }}</span> }
+            @if (previewCard.race_name) { <span class="cp-badge">{{ previewCard.race_name }}</span> }
+            @if (previewCard.rarity_name) { <span class="cp-badge rarity">{{ previewCard.rarity_name }}</span> }
           </div>
-          @if (previewCard.cost !== null) {
-            <div class="stat-row">
-              <span class="stat-label">Coste</span>
-              <span class="stat-value">{{ previewCard.cost }}</span>
-            </div>
-          }
-          @if (previewCard.damage !== null) {
-            <div class="stat-row">
-              <span class="stat-label">Daño</span>
-              <span class="stat-value">{{ previewCard.damage }}</span>
-            </div>
-          }
-          @if (previewCard.edition_title) {
-            <div class="stat-row">
-              <span class="stat-label">Expansión</span>
-              <span class="stat-value">{{ previewCard.edition_title }}</span>
-            </div>
-          }
-          @if (previewCard.rarity_name) {
-            <div class="stat-row">
-              <span class="stat-label">Rareza</span>
-              <span class="stat-badge rarity">{{ previewCard.rarity_name }}</span>
-            </div>
-          }
-          @if (previewCard.race_name) {
-            <div class="stat-row">
-              <span class="stat-label">Raza</span>
-              <span class="stat-value">{{ previewCard.race_name }}</span>
-            </div>
-          }
-          @if (previewAbility) {
-            <div class="stat-section">
-              <span class="stat-label">Habilidad</span>
-              <p class="stat-ability">{{ previewAbility }}</p>
-            </div>
-          } @else if (previewAbility === null && previewCard) {
-            <div class="stat-section">
-              <span class="stat-label">Habilidad</span>
-              <p class="stat-ability loading">Cargando...</p>
-            </div>
-          }
-          <div class="stat-section">
-            <a class="btn btn-sm btn-secondary" routerLink="/cards" [queryParams]="{ search: previewCard.name }" (click)="hidePreview()">
-              <app-icon name="search" [size]="14"></app-icon> Ver en buscador
-            </a>
+
+          <div class="cp-stats">
+            @if (previewCard.cost !== null) {
+              <div class="cp-stat"><span class="cp-stat-label">Coste</span><span class="cp-stat-val">{{ previewCard.cost }}</span></div>
+            }
+            @if (previewCard.damage !== null) {
+              <div class="cp-stat"><span class="cp-stat-label">Fuerza</span><span class="cp-stat-val">{{ previewCard.damage }}</span></div>
+            }
+            @if (previewCard.edition_title) {
+              <div class="cp-stat"><span class="cp-stat-label">Edición</span><span class="cp-stat-val ed">{{ previewCard.edition_title }}</span></div>
+            }
           </div>
+
+          <div class="cp-ability">
+            <span class="cp-ability-title">Habilidad</span>
+            @if (previewAbility) {
+              <p class="cp-ability-text">{{ previewAbility }}</p>
+            } @else if (previewAbilityLoading) {
+              <p class="cp-ability-text muted">Cargando habilidad...</p>
+            } @else {
+              <p class="cp-ability-text muted">Sin habilidad especial.</p>
+            }
+          </div>
+
+          <a class="cp-search-btn" routerLink="/cards" [queryParams]="{ search: previewCard.name }" (click)="hidePreview()">
+            <app-icon name="search" [size]="15"></app-icon> Ver en buscador
+          </a>
         </div>
       </div>
     </div>
@@ -989,7 +976,7 @@
             <div class="hand-field">
               <span class="field-label">En campo (oro inicial):</span>
               <div class="hand-card is-starting-gold" (click)="showPreview(startingGoldCard, $event)">
-                <img [src]="startingGoldCard.image_url | thumb:250" [alt]="startingGoldCard.name" loading="lazy">
+                <img [src]="startingGoldCard.image_url | thumb:400" [alt]="startingGoldCard.name" loading="lazy">
                 <span class="hand-gold-badge" title="Oro inicial"><app-icon name="star-fill" [size]="12"></app-icon></span>
                 <span class="hand-card-name">{{ startingGoldCard.name }}</span>
               </div>
@@ -999,7 +986,7 @@
           <div class="hand-cards">
             @for (card of handCards; track $index) {
               <div class="hand-card" (click)="showPreview(card, $event)">
-                <img [src]="card.image_url | thumb:250" [alt]="card.name" loading="lazy">
+                <img [src]="card.image_url | thumb:400" [alt]="card.name" loading="lazy">
                 <span class="hand-card-name">{{ card.name }}</span>
               </div>
             }

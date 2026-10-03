@@ -182,12 +182,12 @@ class Command(BaseCommand):
         for i, c in enumerate(pending, 1):
             path = source_dir / c["image_file"]
             try:
-                if not path.exists():
-                    # Sin copia local (p. ej. en el servidor): bajarla del blog.
-                    resp = requests.get(BLOG_UPLOADS + c["image_file"], timeout=60)
-                    resp.raise_for_status()
-                    path.write_bytes(resp.content)
-                url = upload_file(str(path), public_id=f"{CDN_FOLDER}/{c['key']}", overwrite=True)
+                if path.exists():
+                    url = upload_file(str(path), public_id=f"{CDN_FOLDER}/{c['key']}", overwrite=True)
+                else:
+                    # Sin copia local (p. ej. PythonAnywhere, que bloquea blog.myl.cl):
+                    # ImageKit descarga la imagen desde el blog por su cuenta.
+                    url = self._imagekit_upload_from_url(BLOG_UPLOADS + c["image_file"], c["key"])
             except Exception as exc:  # noqa: BLE001 - seguir con el resto y guardar progreso
                 self.stderr.write(f"  [{i}/{len(pending)}] ERROR {c['key']}: {exc}")
                 errors += 1
@@ -201,6 +201,30 @@ class Command(BaseCommand):
             )
         if errors:
             self.stderr.write(self.style.WARNING(f"{errors} imágenes no se pudieron subir."))
+
+    def _imagekit_upload_from_url(self, source_url: str, key: str) -> str:
+        from cdn_uploader import _collect_imagekit_accounts  # ya en sys.path vía _load_upload_file
+
+        last_error = None
+        for private_key, _endpoint in _collect_imagekit_accounts():
+            resp = requests.post(
+                "https://upload.imagekit.io/api/v1/files/upload",
+                auth=(private_key, ""),
+                data={
+                    "file": source_url,
+                    "fileName": f"{key}.png",
+                    "folder": f"/{CDN_FOLDER}",
+                    "useUniqueFileName": "false",
+                    "overwriteFile": "true",
+                },
+                timeout=120,
+            )
+            if resp.status_code < 300 and resp.json().get("url"):
+                return resp.json()["url"]
+            last_error = f"ImageKit {resp.status_code}: {resp.text[:200]}"
+            if "upload limit exceeded" not in resp.text.lower():
+                break
+        raise RuntimeError(last_error)
 
     def _resolve_rarity(self, slug: str):
         for candidate in RARITY_ALIASES.get(slug, [slug]):

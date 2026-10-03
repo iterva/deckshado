@@ -2348,3 +2348,98 @@
 
 
 :host-context(body.light-theme) .empty-state .empty-link { color: #0369a1; }
+
+// ── Wishlist: tarjetas verticales con la carta grande (mismo estilo que Riftbound) ──
+// Va al final para pisar las reglas compartidas con .collection-card (fila horizontal).
+.wishlist-grid {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+
+  .wishlist-card {
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+    overflow: hidden;
+
+    .card-image {
+      width: 100%;
+
+      img {
+        width: 100%;
+        aspect-ratio: 0.71;
+        object-fit: cover;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .eye-overlay { border-radius: 10px 10px 0 0; font-size: 2rem; }
+    }
+
+    .card-info {
+      flex: 1;
+      min-width: 0;
+      padding: 0.75rem 0.8rem 0.4rem;
+
+      h4 {
+        margin: 0 0 0.2rem;
+        font-size: 1rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .card-meta {
+        display: block;
+        font-size: 0.8rem;
+        color: var(--ui-text-muted, #888);
+        margin-bottom: 0.6rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    .wishlist-qty {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      label { font-size: 0.85rem; color: var(--ui-text-muted, #888); }
+
+      input {
+        width: 60px;
+        padding: 0.35rem 0.5rem;
+        border-radius: 6px;
+        border: 1px solid var(--ui-border, #333);
+        background: var(--ui-bg, #0f0f23);
+        color: var(--ui-text, #fff);
+        font-size: 0.95rem;
+
+        &:focus { outline: none; border-color: var(--ui-accent, #ffbd39); }
+      }
+    }
+
+    .card-actions {
+      padding: 0 0.8rem 0.8rem;
+
+      .btn {
+        width: 100%;
+        justify-content: center;
+        padding: 0.45rem;
+        font-size: 0.85rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .card-image { width: 100%; }
+      .card-info { padding: 0.55rem 0.6rem 0.3rem; }
+      .card-info h4 { font-size: 0.85rem; }
+      .card-info .card-meta { font-size: 0.7rem; }
+      .card-actions { padding: 0 0.6rem 0.6rem; }
+    }
+  }
+}

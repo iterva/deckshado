@@ -582,8 +582,9 @@
               </div>
             </div>
             <div class="card-actions">
-              <button class="btn btn-xs btn-danger" (click)="removeFromWishlist(entry)" title="Quitar de wishlist">
-                💔
+              <button class="btn btn-xs btn-danger" (click)="removeFromWishlist(entry)" title="Quitar de wishlist"
+                [attr.aria-label]="'Quitar ' + entry.card_detail.name + ' de la wishlist'">
+                💔 Quitar
               </button>
             </div>
           </div>

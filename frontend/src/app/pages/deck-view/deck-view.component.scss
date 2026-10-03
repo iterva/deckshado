@@ -2217,12 +2217,18 @@
   border: 1px solid #2a2a4a;
   border-radius: 12px;
   padding: 1.5rem;
-  max-width: 600px;
-  width: 92vw;
-  max-height: 90vh;
+  max-width: 900px;
+  width: 94vw;
+  max-height: 92vh;
   overflow-y: auto;
+  overscroll-behavior: contain;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
   animation: slideUp 0.2s ease;
+
+  @media (max-width: 600px) {
+    padding: 1rem;
+    max-height: 94vh;
+  }
 
   hr {
     border: none;
@@ -2271,20 +2277,30 @@
 
 .preview-body {
   display: flex;
-  gap: 1.5rem;
+  gap: 1.75rem;
 
-  @media (max-width: 520px) {
+  @media (max-width: 600px) {
     flex-direction: column;
     align-items: center;
+    gap: 1rem;
   }
 
+  // Mismo tamaño que el detalle del constructor.
   > img {
-    width: 220px;
+    width: clamp(260px, 36vw, 360px);
     height: auto;
-    border-radius: 8px;
+    border-radius: 10px;
     border: 2px solid #2a2a4a;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
     flex-shrink: 0;
     align-self: flex-start;
+
+    @media (max-width: 600px) {
+      width: min(78vw, 340px);
+      max-height: 55vh;
+      object-fit: contain;
+      align-self: center;
+    }
   }
 }
 

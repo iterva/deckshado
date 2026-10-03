@@ -1226,7 +1226,7 @@ function typeRank(t?: string): number {
       border: 1px solid var(--ui-border); border-radius: 16px; box-shadow: 0 24px 48px rgba(0, 0, 0, 0.8);
       padding: 1.5rem; overflow-y: auto;
     }
-    .preview-panel { width: min(94vw, 820px); background: #1a1c23; }
+    .preview-panel { width: min(94vw, 900px); background: #1a1c23; }
     .preview-panel .preview-layout {
       display: flex; flex-direction: row; gap: 1.5rem; align-items: flex-start;
     }
@@ -1235,7 +1235,7 @@ function typeRank(t?: string): number {
     }
     .preview-art-col { flex: 0 0 42%; display: flex; }
     @media (max-width: 768px) {
-      .preview-art-col { flex: 0 0 auto; width: 100%; }
+      .preview-art-col { flex: 0 0 auto; width: min(78vw, 340px); align-self: center; }
     }
     .preview-card-img {
       width: 100%; height: auto; max-height: 65vh; border-radius: 10px;
@@ -1243,7 +1243,7 @@ function typeRank(t?: string): number {
       border: 1px solid var(--ui-border); display: block; margin: auto;
     }
     @media (max-width: 768px) {
-      .preview-card-img { max-height: 40vh; }
+      .preview-card-img { max-height: 55vh; }
     }
     .preview-info-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.5rem; }
     .preview-title { font-size: 1.2rem; font-weight: 700; color: #ffffff; margin: 0; }

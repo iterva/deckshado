@@ -618,7 +618,7 @@ interface RiftboundCartItem {
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.85);
       display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
     .modal { background: #16213e; border: 1px solid #2a3a4a; border-radius: 14px;
-      max-width: 720px; width: 100%; max-height: 90vh; overflow-y: auto;
+      max-width: 900px; width: 100%; max-height: 92vh; overflow-y: auto;
       display: grid; grid-template-columns: 1fr 1.2fr; position: relative; }
     @media (max-width: 640px) { .modal { grid-template-columns: 1fr; } }
     .detail-image { width: 100%; height: auto; border-radius: 14px 0 0 14px; }

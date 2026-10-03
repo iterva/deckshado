@@ -1883,7 +1883,7 @@ function detectCollaboratorRole(perms: Partial<RiftboundStorePermissionFlags>, a
     }
     .modal-detail {
       background: var(--ui-surface-elevated); border: 1px solid var(--ui-border); border-radius: 14px;
-      max-width: 760px; width: 100%; max-height: 90vh; overflow-y: auto;
+      max-width: 900px; width: 100%; max-height: 92vh; overflow-y: auto;
       display: grid; grid-template-columns: 1fr 1.2fr; gap: 0; position: relative;
     }
     @media (max-width: 640px) {

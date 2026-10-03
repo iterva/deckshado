@@ -690,9 +690,9 @@ const RARITIES = [
       background: #1a1c23;
       border: 1px solid var(--ui-border);
       border-radius: 20px;
-      max-width: 820px;
+      max-width: 900px;
       width: 100%;
-      max-height: 90vh;
+      max-height: 92vh;
       overflow-y: auto;
       box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
       animation: slideUp 0.2s ease;
@@ -749,9 +749,11 @@ const RARITIES = [
 
           @media (max-width: 768px) {
             flex: 0 0 auto;
+            width: min(78vw, 340px);
+            align-self: center;
 
             img {
-              max-height: 40vh;
+              max-height: 55vh;
             }
           }
         }

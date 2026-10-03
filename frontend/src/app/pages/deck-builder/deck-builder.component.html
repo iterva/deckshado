@@ -223,7 +223,7 @@
             (click)="onCardImageClick(card, $event)"
             (keydown.enter)="showPreview(card, $event)"
           >
-            <img [src]="card.image_url | thumb:150" [alt]="card.name" loading="lazy" decoding="async" />
+            <img [src]="card.image_url | thumb:400" [alt]="card.name" loading="lazy" decoding="async" />
             <button type="button" class="eye-btn" (click)="showPreview(card, $event)" title="Ver detalle">
               <app-icon name="eye" [size]="13"></app-icon>
             </button>
@@ -577,7 +577,7 @@
                 [class.has-violation]="hasViolation(dc.card)"
                 [title]="violationText(dc.card)"
               >
-                <img [src]="dc.card.image_url | thumb:100" [alt]="dc.card.name" loading="lazy" decoding="async" />
+                <img [src]="dc.card.image_url | thumb:200" [alt]="dc.card.name" loading="lazy" decoding="async" />
                 <div class="entry-info">
                   <div class="entry-name-row">
                     <span class="entry-name">{{ dc.card.name }}</span>
@@ -650,7 +650,7 @@
             <div class="deck-group-cards">
               @for (dc of g.cards; track dc.card.id) {
                 <div class="deck-entry side-entry" [class.has-violation]="hasViolation(dc.card)">
-                  <img [src]="dc.card.image_url | thumb:100" [alt]="dc.card.name" loading="lazy" decoding="async" />
+                  <img [src]="dc.card.image_url | thumb:200" [alt]="dc.card.name" loading="lazy" decoding="async" />
                   <div class="entry-info">
                     <span class="entry-name">{{ dc.card.name }}</span>
                     <span class="entry-type">{{ dc.card.type_name }}</span>
@@ -751,7 +751,7 @@
               @for (dc of g.cards; track dc.card.id) {
                 <div class="dp-card">
                   <div class="dp-img-wrap">
-                    <img [src]="dc.card.image_url | thumb:250" [alt]="dc.card.name" />
+                    <img [src]="dc.card.image_url | thumb:350" [alt]="dc.card.name" />
                     @if (dc.quantity > 1) {
                       <span class="dp-qty">×{{ dc.quantity }}</span>
                     }
@@ -772,7 +772,7 @@
               @for (dc of sideCards; track dc.card.id) {
                 <div class="dp-card">
                   <div class="dp-img-wrap">
-                    <img [src]="dc.card.image_url | thumb:250" [alt]="dc.card.name" />
+                    <img [src]="dc.card.image_url | thumb:350" [alt]="dc.card.name" />
                     @if (dc.quantity > 1) {
                       <span class="dp-qty">×{{ dc.quantity }}</span>
                     }

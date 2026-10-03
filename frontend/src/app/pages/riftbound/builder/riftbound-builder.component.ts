@@ -1645,10 +1645,29 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
         // primera pagina), asi que llamarlo tras cada fetch encadenaba cargas hasta
         // traer todo el catalogo sin que el usuario bajara el scroll. El fallback solo
         // debe correr en respuesta a un scroll real del usuario (ver onContentScroll).
-        setTimeout(() => this.setupCardsObserver());
+        setTimeout(() => {
+          this.setupCardsObserver();
+          // El observer solo avisa cuando el centinela ENTRA en vista. Si tras esta
+          // página sigue visible (pantallas grandes donde las cartas no llenan el
+          // panel) no hay cambio que reportar y la carga se detenía. Medimos la
+          // posición real: se sigue cargando solo mientras el centinela esté a la vista.
+          if (this.isSentinelInView()) this.loadMoreResults();
+        });
       },
       error: () => this.loading.set(false),
     });
+  }
+
+  private isSentinelInView(margin = 200): boolean {
+    const sentinel = this.cardsSentinelRef?.nativeElement;
+    // offsetParent null = oculto (p. ej. pestaña "Mazo" en móvil): no cargar.
+    if (!sentinel || sentinel.offsetParent === null) return false;
+    const rect = sentinel.getBoundingClientRect();
+    const panel = this.availableCardsRef?.nativeElement;
+    const bottom = panel && panel.scrollHeight > panel.clientHeight + 1
+      ? Math.min(panel.getBoundingClientRect().bottom, window.innerHeight)
+      : window.innerHeight;
+    return rect.top <= bottom + margin;
   }
 
   private setupCardsObserver() {

@@ -238,10 +238,6 @@
       border-radius: 8px;
       overflow: hidden;
 
-      @media (max-width: 960px) {
-        display: none;
-      }
-
       .zoom-btn {
         display: inline-flex;
         align-items: center;
@@ -535,12 +531,26 @@
     gap: 0.5rem;
     align-content: start;
 
-    // Lupa: cartas por fila elegidas por el usuario (solo escritorio; en móvil
-    // manda el @media de más abajo con 2 columnas).
-    @media (min-width: 961px) {
-      &.fixed-columns {
-        grid-template-columns: repeat(var(--card-columns), minmax(0, 1fr));
+    // Lupa: cartas por fila elegidas por el usuario. Más específico que el
+    // @media móvil de 2 columnas de más abajo, así que manda en ambos modos.
+    &.fixed-columns {
+      grid-template-columns: repeat(var(--card-columns), minmax(0, 1fr));
+    }
+
+    // Móvil con muchas cartas por fila: los selectores S/M de 40px no caben.
+    @media (max-width: 960px) {
+      &.fixed-columns { gap: 0.4rem; }
+
+      &.dense-selectors .mini-card .floating-selector:not(.expanded) {
+        height: 24px;
+        min-width: 24px;
+        width: 24px;
+
+        .fs-trigger { font-size: 0.68rem; }
       }
+
+      // 8+ por fila: sin selectores; se agrega desde el detalle (tocar la carta).
+      &.no-selectors .mini-card .floating-selector { display: none; }
     }
 
     &.skeleton-grid .mini-card.skeleton {

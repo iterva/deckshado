@@ -23,6 +23,7 @@ import {
 } from '../../../models/riftbound';
 import { TcgPriceComponent } from '../../../components/tcg-price/tcg-price.component';
 import { IconComponent } from '../../../components/icon/icon.component';
+import { CardZoom } from '../../../services/card-zoom';
 
 interface BuilderEntry {
   card: RiftboundCardLite;
@@ -134,12 +135,12 @@ function typeRank(t?: string): number {
               </button>
               <div class="zoom-controls" role="group" aria-label="Tamaño de las cartas">
                 <button type="button" class="zoom-btn" (click)="zoomCards(-1)"
-                        [disabled]="cardColumns() === CARD_COLUMN_LEVELS[0]"
+                        [disabled]="!cardZoom.canZoomOut()"
                         aria-label="Achicar cartas (más por fila)" title="Achicar cartas">
                   <app-icon name="zoom-out" [size]="15"></app-icon>
                 </button>
                 <button type="button" class="zoom-btn" (click)="zoomCards(1)"
-                        [disabled]="cardColumns() === CARD_COLUMN_LEVELS[CARD_COLUMN_LEVELS.length - 1]"
+                        [disabled]="!cardZoom.canZoomIn()"
                         aria-label="Agrandar cartas (menos por fila)" title="Agrandar cartas">
                   <app-icon name="zoom-in" [size]="15"></app-icon>
                 </button>
@@ -262,8 +263,10 @@ function typeRank(t?: string): number {
         }
 
         <div class="available-cards" #availableCardsEl
-             [class.fixed-columns]="cardColumns() !== null"
-             [style.--card-columns]="cardColumns()">
+             [class.fixed-columns]="cardZoom.columns() !== null"
+             [class.dense-selectors]="cardZoom.isMobile() && (cardZoom.columns() ?? 0) >= 4"
+             [class.no-selectors]="cardZoom.isMobile() && (cardZoom.columns() ?? 0) >= 8"
+             [style.--card-columns]="cardZoom.columns()">
           @for (card of displayedResults(); track card.id) {
             <div class="mini-card"
                  [class.in-deck]="getQuantityInDeck(card.id) > 0"
@@ -872,7 +875,6 @@ function typeRank(t?: string): number {
     .zoom-btn:hover:not(:disabled) { color: #06b6d4; background: rgba(6, 182, 212, 0.1); }
     .zoom-btn:focus-visible { outline: 2px solid #06b6d4; outline-offset: -2px; }
     .zoom-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-    @media (max-width: 960px) { .zoom-controls { display: none; } }
     .filters-toggle-btn.active { border-color: #06b6d4; color: #06b6d4; background: rgba(6, 182, 212, 0.1); }
     .filter-badge {
       position: absolute; top: -6px; right: -6px;
@@ -932,8 +934,15 @@ function typeRank(t?: string): number {
       display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
       gap: 0.5rem; align-content: start; flex: 1; overflow-y: auto;
     }
-    @media (min-width: 961px) {
-      .available-cards.fixed-columns { grid-template-columns: repeat(var(--card-columns), minmax(0, 1fr)); }
+    /* Lupa: más específico que el @media móvil, así que manda en ambos modos. */
+    .available-cards.fixed-columns { grid-template-columns: repeat(var(--card-columns), minmax(0, 1fr)); }
+    @media (max-width: 960px) {
+      .available-cards.fixed-columns { gap: 0.4rem; }
+      /* Muchas cartas por fila en móvil: selectores S/M chicos, y ocultos desde 8 por fila
+         (se agrega desde el detalle tocando la carta). */
+      .available-cards.dense-selectors .floating-selector:not(.expanded) { height: 24px; min-width: 24px; width: 24px; }
+      .available-cards.dense-selectors .floating-selector:not(.expanded) .fs-trigger { font-size: 0.68rem; }
+      .available-cards.no-selectors .floating-selector { display: none; }
     }
     /* Sin overflow:hidden aquí a propósito: en un grid-item, overflow != visible
        fuerza su "automatic minimum size" a 0 en el eje de bloque, y la fila del
@@ -1456,13 +1465,8 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   });
   loading = signal(false);
 
-  /**
-   * Lupa del catálogo: cartas por fila. Cada nivel agranda ~1,25x (9 / 1,25^n),
-   * de 9 (más chicas) a 4 (más grandes). null = columnas automáticas.
-   */
-  readonly CARD_COLUMN_LEVELS = [9, 7, 6, 5, 4];
-  private readonly CARD_COLUMNS_KEY = 'rbBuilder.cardColumns';
-  cardColumns = signal<number | null>(this.loadCardColumns());
+  /** Lupa del catálogo: cartas por fila (escritorio 9→4, móvil 10→1). */
+  readonly cardZoom = new CardZoom('rbBuilder.cardColumns');
 
   page = signal(1);
   totalCount = signal(0);
@@ -2107,38 +2111,15 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   }
   /** +1 agranda las cartas (menos por fila), -1 las achica (más por fila). */
   zoomCards(direction: 1 | -1) {
-    const levels = this.CARD_COLUMN_LEVELS; // de más columnas a menos
-    const fixed = this.cardColumns();
-    let next: number;
-    if (fixed !== null) {
-      const index = levels.indexOf(fixed) + direction;
-      next = levels[Math.min(Math.max(index, 0), levels.length - 1)];
-    } else {
-      // Desde automático (8, 10, ... columnas): primer nivel en la dirección pedida.
-      const current = this.currentAutoColumns();
-      next = direction === 1
-        ? levels.find(cols => cols < current) ?? levels[levels.length - 1]
-        : [...levels].reverse().find(cols => cols > current) ?? levels[0];
-    }
-    this.cardColumns.set(next);
-    try { localStorage.setItem(this.CARD_COLUMNS_KEY, String(next)); } catch {}
+    this.cardZoom.zoom(direction, () => this.currentAutoColumns());
     // Con cartas más chicas puede quedar espacio libre: seguir cargando si hace falta.
     setTimeout(() => { if (this.isSentinelInView()) this.loadMoreResults(); });
   }
 
   private currentAutoColumns(): number {
     const grid = this.availableCardsRef?.nativeElement;
-    if (!grid) return this.CARD_COLUMN_LEVELS[0];
+    if (!grid) return this.cardZoom.levels()[0];
     return getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length;
-  }
-
-  private loadCardColumns(): number | null {
-    try {
-      const saved = Number(localStorage.getItem(this.CARD_COLUMNS_KEY));
-      return this.CARD_COLUMN_LEVELS.includes(saved) ? saved : null;
-    } catch {
-      return null;
-    }
   }
 
   closePreview() {
@@ -2478,6 +2459,7 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   }
 
   ngOnDestroy() {
+    this.cardZoom.destroy();
     this.cardsObserver?.disconnect();
     this.detachContentScrollListener();
     if (this.hasDraftContent()) this.saveDraft();

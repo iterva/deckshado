@@ -91,7 +91,7 @@
             type="button"
             class="zoom-btn"
             (click)="zoomCards(-1)"
-            [disabled]="cardColumns() === CARD_COLUMN_LEVELS[0]"
+            [disabled]="!cardZoom.canZoomOut()"
             aria-label="Achicar cartas (más por fila)"
             title="Achicar cartas"
           >
@@ -101,7 +101,7 @@
             type="button"
             class="zoom-btn"
             (click)="zoomCards(1)"
-            [disabled]="cardColumns() === CARD_COLUMN_LEVELS[CARD_COLUMN_LEVELS.length - 1]"
+            [disabled]="!cardZoom.canZoomIn()"
             aria-label="Agrandar cartas (menos por fila)"
             title="Agrandar cartas"
           >
@@ -198,8 +198,10 @@
     <div
       class="available-cards"
       [class.is-loading]="loading"
-      [class.fixed-columns]="cardColumns() !== null"
-      [style.--card-columns]="cardColumns()"
+      [class.fixed-columns]="cardZoom.columns() !== null"
+      [class.dense-selectors]="cardZoom.isMobile() && (cardZoom.columns() ?? 0) >= 4"
+      [class.no-selectors]="cardZoom.isMobile() && (cardZoom.columns() ?? 0) >= 8"
+      [style.--card-columns]="cardZoom.columns()"
     >
       @for (card of availableCards; track card.id) {
         <div

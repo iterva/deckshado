@@ -1704,16 +1704,23 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
     });
   }
 
+  /**
+   * ¿Hace falta otra página para llenar la vista? Ojo: el centinela está FUERA del
+   * grid, y el grid scrollea por dentro, así que el centinela queda siempre pegado
+   * al borde inferior del panel: medir su posición daba "visible" para siempre y se
+   * traía todo el catálogo. Por eso se mira el scroll del propio grid.
+   */
   private isSentinelInView(margin = 200): boolean {
-    const sentinel = this.cardsSentinelRef?.nativeElement;
+    const grid = this.availableCardsRef?.nativeElement;
     // offsetParent null = oculto (p. ej. pestaña "Mazo" en móvil): no cargar.
-    if (!sentinel || sentinel.offsetParent === null) return false;
-    const rect = sentinel.getBoundingClientRect();
-    const panel = this.availableCardsRef?.nativeElement;
-    const bottom = panel && panel.scrollHeight > panel.clientHeight + 1
-      ? Math.min(panel.getBoundingClientRect().bottom, window.innerHeight)
-      : window.innerHeight;
-    return rect.top <= bottom + margin;
+    if (!grid || grid.offsetParent === null || !this.cardsSentinelRef) return false;
+    if (grid.scrollHeight > grid.clientHeight + 1) {
+      // El grid ya scrollea: cargar solo cerca del final de su scroll.
+      return grid.scrollTop + grid.clientHeight >= grid.scrollHeight - margin;
+    }
+    // Sin scroll propio: o las cartas aún no llenan el panel, o el layout es apilado
+    // (scrollea la página). En ambos casos basta con que su borde inferior se vea.
+    return grid.getBoundingClientRect().bottom <= window.innerHeight + margin;
   }
 
   private setupCardsObserver() {

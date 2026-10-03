@@ -187,7 +187,14 @@
           [class.flash-added]="recentlyAdded.has(card.id)"
           [title]="card.name"
         >
-          <div class="img-wrapper">
+          <div
+            class="img-wrapper"
+            role="button"
+            tabindex="0"
+            [attr.aria-label]="'Ver ' + card.name"
+            (click)="onCardImageClick(card, $event)"
+            (keydown.enter)="showPreview(card, $event)"
+          >
             <img [src]="card.image_url | thumb:150" [alt]="card.name" loading="lazy" decoding="async" />
             <button type="button" class="eye-btn" (click)="showPreview(card, $event)" title="Ver detalle">
               <app-icon name="eye" [size]="13"></app-icon>

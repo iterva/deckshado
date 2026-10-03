@@ -1456,7 +1456,16 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.allRarities;
   }
 
-  showPreview(card: Card, event: MouseEvent) {
+  /** Tocar la imagen abre el detalle; si fue un mantener presionado, ya se abrió. */
+  onCardImageClick(card: Card, event: MouseEvent) {
+    if (this.consumeHoldFlag()) {
+      event.stopPropagation();
+      return;
+    }
+    this.showPreview(card, event);
+  }
+
+  showPreview(card: Card, event: Event) {
     event.stopPropagation();
     this.previewCard.set(card);
     // Fetch ability if not cached

@@ -500,6 +500,10 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
         this.totalCards = res.count;
         this.hasMoreCards = !!res.next;
         this.loading = false;
+        // Re-armar tras cada página: si el centinela sigue visible (pantallas
+        // grandes donde las cartas no llenan el panel) el observer recién creado
+        // vuelve a disparar y sigue cargando hasta llenar o llegar al final.
+        this.infiniteLoadArmed = true;
         this.cdr.detectChanges();
         queueMicrotask(() => {
           this.setupBuilderCardsObserver();
@@ -520,10 +524,11 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loadCards();
   }
 
-  loadMoreCards() {
-    if (this.loading || !this.hasMoreCards) return;
+  loadMoreCards(): boolean {
+    if (this.loading || !this.hasMoreCards) return false;
     this.currentPage++;
     this.loadCards(true);
+    return true;
   }
 
   onSearch() {
@@ -770,8 +775,9 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
         for (const entry of entries) {
           if (entry.isIntersecting) {
             if (!this.infiniteLoadArmed) continue;
-            this.infiniteLoadArmed = false;
-            this.loadMoreCards();
+            // Solo desarmar si realmente arrancó una carga; si había una en curso
+            // (p. ej. la página 1 al montar) no se consume el disparo.
+            if (this.loadMoreCards()) this.infiniteLoadArmed = false;
             break;
           } else {
             this.infiniteLoadArmed = true;
@@ -835,8 +841,7 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
     if (!this.infiniteLoadArmed) return;
-    this.infiniteLoadArmed = false;
-    this.loadMoreCards();
+    if (this.loadMoreCards()) this.infiniteLoadArmed = false;
   }
 
   private isNearBuilderBottom(offset = 220): boolean {

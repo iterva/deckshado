@@ -157,10 +157,22 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   /** Temporadas del formato Imperio (rotación de ediciones). */
   seasons = [
+    {
+      id: 'drac',
+      label: 'Temporada Drácula: Rey Vampiro',
+      excludedEditions: [
+        'espiritu_samurai',
+        'bestiarium',
+        'toolkit_cenizas_de_fuego',
+        'toolkit_hielo_inmortal',
+        'secretos_arcanos',
+        'lootbox_2024',
+      ],
+    },
     { id: 'aydv', label: 'Temporada Ángeles y Demonios: Vigilantes', excludedEditions: ['espiritu_samurai'] },
     { id: 'kvm', label: 'Temporada Kaiju vs Mecha: Titanes', excludedEditions: ['aydv-mazo-guerreros'] },
   ];
-  selectedSeason = 'aydv';
+  selectedSeason = 'drac';
 
   private readonly escEditionSlugs = [
     'bushido', 'sol-naciente',

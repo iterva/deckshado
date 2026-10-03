@@ -85,6 +85,29 @@
           <span class="btn-text">Filtros</span>
           @if (activeFilterCount > 0) { <span class="filter-badge">{{ activeFilterCount }}</span> }
         </button>
+
+        <div class="zoom-controls" role="group" aria-label="Tamaño de las cartas">
+          <button
+            type="button"
+            class="zoom-btn"
+            (click)="zoomCards(-1)"
+            [disabled]="cardColumns() === CARD_COLUMN_LEVELS[0]"
+            aria-label="Achicar cartas (más por fila)"
+            title="Achicar cartas"
+          >
+            <app-icon name="zoom-out" [size]="16"></app-icon>
+          </button>
+          <button
+            type="button"
+            class="zoom-btn"
+            (click)="zoomCards(1)"
+            [disabled]="cardColumns() === CARD_COLUMN_LEVELS[CARD_COLUMN_LEVELS.length - 1]"
+            aria-label="Agrandar cartas (menos por fila)"
+            title="Agrandar cartas"
+          >
+            <app-icon name="zoom-in" [size]="16"></app-icon>
+          </button>
+        </div>
       </div>
 
       @if (filtersDrawerOpen) {
@@ -172,7 +195,12 @@
     }
 
     <!-- Cards Grid -->
-    <div class="available-cards" [class.is-loading]="loading">
+    <div
+      class="available-cards"
+      [class.is-loading]="loading"
+      [class.fixed-columns]="cardColumns() !== null"
+      [style.--card-columns]="cardColumns()"
+    >
       @for (card of availableCards; track card.id) {
         <div
           class="mini-card"

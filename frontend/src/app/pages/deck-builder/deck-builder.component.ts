@@ -219,6 +219,14 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
   selectedRace = '';
   raceName = '';
 
+  /**
+   * Lupa del catálogo: cartas por fila. Cada nivel agranda ~1,25x (9 / 1,25^n),
+   * de 9 (más chicas) a 4 (más grandes). null = columnas automáticas.
+   */
+  readonly CARD_COLUMN_LEVELS = [9, 7, 6, 5, 4];
+  private readonly CARD_COLUMNS_KEY = 'deckBuilder.cardColumns';
+  cardColumns = signal<number | null>(this.loadCardColumns());
+
   // Card preview popover
   previewCard = signal<Card | null>(null);
   previewAbility = signal<string | null>(null);
@@ -1454,6 +1462,42 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
       return this.allRarities.filter(r => this.vcrRaritySlugs.includes(r.slug));
     }
     return this.allRarities;
+  }
+
+  /** +1 agranda las cartas (menos por fila), -1 las achica (más por fila). */
+  zoomCards(direction: 1 | -1) {
+    const levels = this.CARD_COLUMN_LEVELS; // de más columnas a menos
+    const fixed = this.cardColumns();
+    let next: number;
+    if (fixed !== null) {
+      const index = levels.indexOf(fixed) + direction;
+      next = levels[Math.min(Math.max(index, 0), levels.length - 1)];
+    } else {
+      // Desde automático (8, 10, ... columnas): primer nivel en la dirección pedida.
+      const current = this.currentAutoColumns();
+      next = direction === 1
+        ? levels.find(cols => cols < current) ?? levels[levels.length - 1]
+        : [...levels].reverse().find(cols => cols > current) ?? levels[0];
+    }
+    this.cardColumns.set(next);
+    try { localStorage.setItem(this.CARD_COLUMNS_KEY, String(next)); } catch {}
+    // Con cartas más chicas puede quedar espacio libre: dejar que el scroll infinito siga.
+    setTimeout(() => this.tryBuilderInfiniteScrollFallback());
+  }
+
+  private currentAutoColumns(): number {
+    const grid = this.cardBrowserRef?.nativeElement.querySelector('.available-cards:not(.skeleton-grid)');
+    if (!grid) return this.CARD_COLUMN_LEVELS[0];
+    return getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length;
+  }
+
+  private loadCardColumns(): number | null {
+    try {
+      const saved = Number(localStorage.getItem(this.CARD_COLUMNS_KEY));
+      return this.CARD_COLUMN_LEVELS.includes(saved) ? saved : null;
+    } catch {
+      return null;
+    }
   }
 
   /** Tocar la imagen abre el detalle; si fue un mantener presionado, ya se abrió. */

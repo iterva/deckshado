@@ -1722,14 +1722,25 @@
 
 .preview-panel {
   position: relative;
-  width: min(92vw, 680px);
+  width: min(94vw, 900px);
+  max-height: 92vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: rgba(18, 18, 23, 0.98);
   border: 1px solid var(--ui-border);
   border-radius: 16px;
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.8);
   padding: 1.5rem;
 
+  @media (max-width: 600px) {
+    width: 100%;
+    max-height: 94vh;
+    padding: 1rem;
+    border-radius: 14px;
+  }
+
   .preview-close {
+    z-index: 2;
     position: absolute;
     top: 1rem;
     right: 1rem;
@@ -1753,20 +1764,26 @@
 
   .preview-layout {
     display: grid;
-    grid-template-columns: 220px 1fr;
-    gap: 1.5rem;
+    grid-template-columns: clamp(260px, 36vw, 360px) 1fr;
+    gap: 1.75rem;
     align-items: flex-start;
+
+    @media (max-width: 760px) {
+      grid-template-columns: minmax(200px, 42%) 1fr;
+      gap: 1.1rem;
+    }
 
     @media (max-width: 600px) {
       grid-template-columns: 1fr;
       justify-items: center;
+      gap: 1rem;
     }
 
     .preview-art-col {
       width: 100%;
 
       @media (max-width: 600px) {
-        max-width: 250px;
+        max-width: min(78vw, 340px);
       }
 
       .preview-card-img {
@@ -1779,7 +1796,7 @@
         box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
 
         @media (max-width: 600px) {
-          max-height: 45vh;
+          max-height: 55vh;
         }
       }
     }
@@ -1788,11 +1805,17 @@
       width: 100%;
 
       .preview-title {
-        font-size: 1.3rem;
+        font-size: 1.45rem;
         font-weight: 700;
         color: #ffffff;
         margin: 0 0 0.6rem;
-        padding-right: 2rem;
+        padding-right: 2.5rem;
+
+        @media (max-width: 600px) {
+          font-size: 1.2rem;
+          padding-right: 0;
+          text-align: center;
+        }
       }
 
       .preview-meta-badges {
@@ -1870,8 +1893,9 @@
         }
 
         .ability-text {
-          font-size: 0.82rem;
-          line-height: 1.4;
+          font-size: 0.9rem;
+          line-height: 1.5;
+          white-space: pre-line;
           color: var(--ui-text);
           margin: 0;
         }

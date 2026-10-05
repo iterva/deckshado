@@ -4,6 +4,7 @@ import {
   ElementRef,
   HostListener,
   Injector,
+  NgZone,
   OnDestroy,
   OnInit,
   ViewChild,
@@ -1357,6 +1358,7 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   private auth = inject(AuthService);
   private dialog = inject(ConfirmDialogService);
   private injector = inject(Injector);
+  private zone = inject(NgZone);
 
   readonly zones: RiftboundZone[] = ['main', 'side', 'rune', 'champion', 'bg'];
   readonly rules = RIFTBOUND_ZONE_RULES;
@@ -1481,6 +1483,7 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   private observedSentinel?: HTMLElement;
   private contentScrollEl: HTMLElement | null = null;
   @ViewChild('availableCardsEl') availableCardsRef?: ElementRef<HTMLElement>;
+  private gridResizeObserver?: ResizeObserver;
 
   @ViewChild('cardsSentinel')
   set cardsSentinelSetter(el: ElementRef<HTMLElement> | undefined) {
@@ -1586,6 +1589,25 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   ngAfterViewInit() {
     this.setupCardsObserver();
     this.attachContentScrollListener();
+    this.observeGridSize();
+  }
+
+  /**
+   * Re-chequea si faltan cartas cuando el grid aparece o cambia de tamaño (carga
+   * inicial, panel que se muestra tras elegir legend, resize, pestaña móvil). La
+   * verificación tras cada página no alcanza: en la primera el panel puede no estar
+   * visible todavía y nada volvía a mirar.
+   */
+  private observeGridSize() {
+    const grid = this.availableCardsRef?.nativeElement;
+    if (!grid || typeof ResizeObserver === 'undefined') return;
+    this.gridResizeObserver?.disconnect();
+    // ResizeObserver no está parcheado por zone.js: volver a la zona para que la
+    // carga dispare detección de cambios.
+    this.gridResizeObserver = new ResizeObserver(() => this.zone.run(() => {
+      if (!this.loading() && this.isSentinelInView()) this.loadMoreResults();
+    }));
+    this.gridResizeObserver.observe(grid);
   }
 
   loadFromDeck(deck: RiftboundDeck) {
@@ -2471,6 +2493,7 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
 
   ngOnDestroy() {
     this.cardZoom.destroy();
+    this.gridResizeObserver?.disconnect();
     this.cardsObserver?.disconnect();
     this.detachContentScrollListener();
     if (this.hasDraftContent()) this.saveDraft();

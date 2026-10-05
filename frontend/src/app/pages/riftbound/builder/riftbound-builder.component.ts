@@ -3,9 +3,11 @@ import {
   Component,
   ElementRef,
   HostListener,
+  Injector,
   OnDestroy,
   OnInit,
   ViewChild,
+  afterNextRender,
   computed,
   inject,
   signal,
@@ -1354,6 +1356,7 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   private router = inject(Router);
   private auth = inject(AuthService);
   private dialog = inject(ConfirmDialogService);
+  private injector = inject(Injector);
 
   readonly zones: RiftboundZone[] = ['main', 'side', 'rune', 'champion', 'bg'];
   readonly rules = RIFTBOUND_ZONE_RULES;
@@ -1691,14 +1694,15 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
         // primera pagina), asi que llamarlo tras cada fetch encadenaba cargas hasta
         // traer todo el catalogo sin que el usuario bajara el scroll. El fallback solo
         // debe correr en respuesta a un scroll real del usuario (ver onContentScroll).
-        setTimeout(() => {
+        // afterNextRender y no setTimeout: con eventCoalescing Angular pinta en el
+        // siguiente frame, así que un setTimeout(0) medía el DOM sin las cartas nuevas.
+        afterNextRender(() => {
           this.setupCardsObserver();
           // El observer solo avisa cuando el centinela ENTRA en vista. Si tras esta
-          // página sigue visible (pantallas grandes donde las cartas no llenan el
-          // panel) no hay cambio que reportar y la carga se detenía. Medimos la
-          // posición real: se sigue cargando solo mientras el centinela esté a la vista.
+          // página las cartas aún no llenan el panel no hay cambio que reportar y la
+          // carga se detenía: se sigue cargando mientras falte llenar la vista.
           if (this.isSentinelInView()) this.loadMoreResults();
-        });
+        }, { injector: this.injector });
       },
       error: () => this.loading.set(false),
     });
@@ -1713,7 +1717,7 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   private isSentinelInView(margin = 200): boolean {
     const grid = this.availableCardsRef?.nativeElement;
     // offsetParent null = oculto (p. ej. pestaña "Mazo" en móvil): no cargar.
-    if (!grid || grid.offsetParent === null || !this.cardsSentinelRef) return false;
+    if (!grid || grid.offsetParent === null || !this.hasMore()) return false;
     if (grid.scrollHeight > grid.clientHeight + 1) {
       // El grid ya scrollea: cargar solo cerca del final de su scroll.
       return grid.scrollTop + grid.clientHeight >= grid.scrollHeight - margin;
@@ -2120,7 +2124,7 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   zoomCards(direction: 1 | -1) {
     this.cardZoom.zoom(direction, () => this.currentAutoColumns());
     // Con cartas más chicas puede quedar espacio libre: seguir cargando si hace falta.
-    setTimeout(() => { if (this.isSentinelInView()) this.loadMoreResults(); });
+    afterNextRender(() => { if (this.isSentinelInView()) this.loadMoreResults(); }, { injector: this.injector });
   }
 
   private currentAutoColumns(): number {

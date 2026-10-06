@@ -839,6 +839,15 @@ function typeRank(t?: string): number {
     .browser-filters { position: relative; display: flex; flex-direction: column; gap: 0.55rem; margin-bottom: 0.75rem; }
     .search-row { display: flex; flex-direction: column; gap: 0.5rem; }
     .search-input-row { display: flex; align-items: center; gap: 0.4rem; }
+    /* Móvil: con modo + campo + buscar + filtros + lupa en una fila, el campo quedaba
+       de ~50px y el botón cian encima de su ícono (se veían "dos lupas"). El campo
+       pasa a su propia fila a todo el ancho y el botón se oculta: ya busca al escribir. */
+    @media (max-width: 600px) {
+      .search-input-row { flex-wrap: wrap; }
+      .search-input-row .search-mode-select { flex: 1 1 auto; }
+      .search-input-row .search-field { order: 10; flex: 1 1 100%; }
+      .search-input-row .search-btn { display: none; }
+    }
     .search-mode-select {
       flex-shrink: 0; padding: 0.5rem 0.6rem; background: rgba(18, 18, 23, 0.8);
       border: 1px solid var(--ui-border); border-radius: 8px; color: var(--ui-text-secondary);

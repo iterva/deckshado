@@ -58,6 +58,11 @@ export class DeckViewComponent implements OnInit {
   exportBackgroundMode: ExportBackgroundMode = 'default';
   exportBackgroundColor = '#181926';
   exportTextColor = '#c8d6e5';
+  private readonly DEFAULT_EXPORT_BG = '#181926';
+  private readonly DEFAULT_EXPORT_TEXT = '#c8d6e5';
+  /** Colores estándar para el fondo / texto de la imagen del mazo. */
+  readonly BG_SWATCHES = ['#181926', '#000000', '#0f172a', '#1a0e28', '#0a1e1a', '#2e0a0a', '#3a2a0a', '#ffffff'];
+  readonly TEXT_SWATCHES = ['#c8d6e5', '#ffffff', '#000000', '#ffbd39', '#4fc3f7'];
   exportQrDataUrl: string | null = null;
   exportLogoDataUrl: string | null = null;
   exportLogoName = '';
@@ -807,6 +812,25 @@ export class DeckViewComponent implements OnInit {
 
   setExportBackgroundMode(mode: ExportBackgroundMode) {
     this.exportBackgroundMode = mode;
+    this.persistExportOptions();
+  }
+
+  pickExportBackground(color: string) {
+    this.exportBackgroundMode = 'color';
+    this.exportBackgroundColor = color;
+    this.persistExportOptions();
+  }
+
+  pickExportText(color: string) {
+    this.exportTextColor = color;
+    this.persistExportOptions();
+  }
+
+  /** Vuelve al fondo por defecto (según raza) y los colores originales. */
+  resetExportColors() {
+    this.exportBackgroundMode = 'default';
+    this.exportBackgroundColor = this.DEFAULT_EXPORT_BG;
+    this.exportTextColor = this.DEFAULT_EXPORT_TEXT;
     this.persistExportOptions();
   }
 

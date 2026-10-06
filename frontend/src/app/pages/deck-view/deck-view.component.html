@@ -247,13 +247,24 @@
                   Color
                 </button>
               </div>
+              <!-- Colores estándar: no dependen del selector nativo del celular, que en
+                   Android aplica un rojo apenas se abre. -->
+              <div class="color-swatches" role="group" aria-label="Colores de fondo estándar">
+                @for (c of BG_SWATCHES; track c) {
+                  <button type="button" class="swatch"
+                          [style.background]="c"
+                          [class.active]="exportBackgroundMode === 'color' && exportBackgroundColor === c"
+                          [attr.aria-label]="'Fondo ' + c"
+                          (click)="pickExportBackground(c)"></button>
+                }
+              </div>
               <div class="bg-color-row" [class.disabled]="exportBackgroundMode !== 'color'">
                 <input type="color"
-                       aria-label="Color de fondo"
+                       aria-label="Color de fondo personalizado"
                        class="bg-color-picker"
                        [value]="exportBackgroundColor"
                        [disabled]="exportBackgroundMode !== 'color'"
-                       (input)="onExportBackgroundColorInput($any($event.target).value)">
+                       (change)="onExportBackgroundColorInput($any($event.target).value)">
                 <input type="text"
                        aria-label="Color de fondo (hexadecimal)"
                        class="bg-color-hex"
@@ -263,12 +274,21 @@
                        (change)="onExportBackgroundHexChange($any($event.target).value)">
               </div>
               <span class="bg-subtitle">Color de texto</span>
+              <div class="color-swatches" role="group" aria-label="Colores de texto estándar">
+                @for (c of TEXT_SWATCHES; track c) {
+                  <button type="button" class="swatch"
+                          [style.background]="c"
+                          [class.active]="exportTextColor === c"
+                          [attr.aria-label]="'Texto ' + c"
+                          (click)="pickExportText(c)"></button>
+                }
+              </div>
               <div class="bg-color-row">
                 <input type="color"
-                  aria-label="Color de texto"
+                  aria-label="Color de texto personalizado"
                   class="bg-color-picker"
                   [value]="exportTextColor"
-                  (input)="onExportTextColorInput($any($event.target).value)">
+                  (change)="onExportTextColorInput($any($event.target).value)">
                 <input type="text"
                   aria-label="Color de texto (hexadecimal)"
                   class="bg-color-hex"
@@ -276,6 +296,9 @@
                   placeholder="#c8d6e5"
                   (change)="onExportTextHexChange($any($event.target).value)">
               </div>
+              <button type="button" class="reset-colors-btn" (click)="resetExportColors()">
+                Restablecer colores estándar
+              </button>
             </div>
 
             <div class="export-opt-section">

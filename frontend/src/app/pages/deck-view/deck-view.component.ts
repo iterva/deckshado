@@ -429,7 +429,16 @@ export class DeckViewComponent implements OnInit {
         }
         if (typeof parsed.backgroundColor === 'string') {
           const normalizedBg = this.normalizeHexColor(parsed.backgroundColor);
-          if (normalizedBg) this.exportBackgroundColor = normalizedBg;
+          if (normalizedBg === '#ff0000') {
+            // Rojo puro = valor inicial del selector de color nativo de Android, que se
+            // guardaba solo al abrirlo (con (input)). Lo tratamos como accidental y
+            // volvemos al fondo por defecto para no seguir exportando imágenes rojas.
+            this.exportBackgroundMode = 'default';
+            this.exportBackgroundColor = this.DEFAULT_EXPORT_BG;
+            this.persistExportOptions();
+          } else if (normalizedBg) {
+            this.exportBackgroundColor = normalizedBg;
+          }
         }
         if (typeof parsed.textColor === 'string') {
           const normalizedText = this.normalizeHexColor(parsed.textColor);

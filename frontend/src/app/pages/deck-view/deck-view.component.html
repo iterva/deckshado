@@ -100,9 +100,10 @@
         }
       </div>
 
-      <div class="export-options-wrapper hide-mobile" (click)="$event.stopPropagation()">
-        <button class="action-btn" (click)="openExportOptionsModal($event)" [attr.aria-expanded]="showExportOptionsModal" title="Opciones de imagen">
-          <app-icon name="sliders" [size]="15"></app-icon><span>Imagen</span>
+      <!-- Visible también en móvil (con texto): antes quedaba escondido en el menú "⋮". -->
+      <div class="export-options-wrapper" (click)="$event.stopPropagation()">
+        <button class="action-btn" (click)="openExportOptionsModal($event)" [attr.aria-expanded]="showExportOptionsModal" title="Generar imagen del mazo">
+          <app-icon name="camera" [size]="15"></app-icon><span class="lbl">Imagen</span>
         </button>
       </div>
 
@@ -169,9 +170,6 @@
                 </button>
               </div>
             </div>
-            <button class="mobile-only-item" role="menuitem" (click)="openExportOptionsModal($event)">
-              <app-icon name="sliders" [size]="14"></app-icon> Opciones de imagen...
-            </button>
             <div class="more-divider mobile-only-item"></div>
             <button role="menuitem" (click)="exportText(); showMoreMenu = false">
               <app-icon name="file-text" [size]="14"></app-icon> Copiar como texto

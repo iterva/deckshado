@@ -1,0 +1,82 @@
+{% extends "cards/admin_base.html" %}
+{% block title %}Banlist Riftbound{% endblock %}
+{% block content %}
+<div class="panel">
+  <h1>Banlist Riftbound actual</h1>
+  <p class="muted">Entradas vigentes por formato. <a href="{% url 'riftbound-admin-banlist-new' %}?next={{ request.get_full_path|urlencode }}">Nueva entrada banlist</a></p>
+  <table>
+    <thead><tr><th>Formato</th><th>Código</th><th>Total</th><th>Prohibidas</th><th>Limitadas a 1</th><th>Limitadas a 2</th></tr></thead>
+    <tbody>
+      {% for g in groups %}
+        <tr>
+          <td><a href="?format_id={{ g.id }}">{{ g.name }}</a></td>
+          <td>{{ g.code }}</td>
+          <td>{{ g.total }}</td>
+          <td>{{ g.banned }}</td>
+          <td>{{ g.limited_1 }}</td>
+          <td>{{ g.limited_2 }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6">Sin formatos.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="panel">
+  <form method="get" class="grid">
+    <div>
+      <label for="q">Carta, número o nota</label>
+      <input id="q" name="q" value="{{ q }}" placeholder="Buscar...">
+    </div>
+    <div>
+      <label for="format_id">Formato</label>
+      <select id="format_id" name="format_id">
+        <option value="">Todos</option>
+        {% for g in groups %}<option value="{{ g.id }}" {% if g.id|stringformat:"s" == format_id %}selected{% endif %}>{{ g.code }} - {{ g.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="status">Estado</label>
+      <select id="status" name="status">
+        <option value="">Todos</option>
+        {% for value, label in status_choices %}<option value="{{ value }}" {% if value == status %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <button type="submit">Filtrar</button>
+      <a href="{% url 'riftbound-admin-banlist' %}">Limpiar</a>
+    </div>
+  </form>
+</div>
+
+<div class="panel">
+  <h2>Entradas ({{ total }})</h2>
+  <table>
+    <thead><tr><th>Carta</th><th>Número</th><th>Formato</th><th>Estado</th><th>Copias</th><th>Vigencia</th><th>Nota</th><th>Acción</th></tr></thead>
+    <tbody>
+      {% for b in entries %}
+        <tr>
+          <td>{{ b.card.name }}</td>
+          <td>{{ b.card.card_number|default:"-" }}</td>
+          <td>{{ b.format.code }}</td>
+          <td>{{ b.get_status_display }}</td>
+          <td>{{ b.max_copies }}</td>
+          <td>{{ b.effective_from|default:"-" }}</td>
+          <td>{{ b.note|default:"-" }}</td>
+          <td class="row-actions">
+            <a href="{% url 'riftbound-admin-banlist-edit' b.id %}?next={{ request.get_full_path|urlencode }}">Editar</a>
+            <form method="post" action="{% url 'riftbound-admin-banlist-delete' b.id %}" style="display:inline;" onsubmit="return confirm('¿Eliminar {{ b.card.name|escapejs }} de la banlist?');">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <button type="submit" class="danger" style="margin-top:0;padding:4px 8px;">Eliminar</button>
+            </form>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8">No hay entradas que coincidan con los filtros.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

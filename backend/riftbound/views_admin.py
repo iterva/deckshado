@@ -1358,11 +1358,11 @@ def riftbound_admin_card_edit(request, card_id: int):
 def riftbound_admin_banlist_new(request):
     form = RiftboundBanlistEntryForm(request.POST or None)
     next_url = _safe_next_url(request)
-    back_url = reverse("riftbound-admin-dashboard")
+    back_url = reverse("riftbound-admin-banlist")
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Entrada de banlist Riftbound creada correctamente.")
-        return _redirect_next_or_default(request, "riftbound-admin-dashboard")
+        return _redirect_next_or_default(request, "riftbound-admin-banlist")
     return render(
         request,
         "cards/admin_entity_form.html",
@@ -1376,11 +1376,11 @@ def riftbound_admin_banlist_edit(request, entry_id: int):
     entry = get_object_or_404(RiftboundBanlistEntry, pk=entry_id)
     form = RiftboundBanlistEntryForm(request.POST or None, instance=entry)
     next_url = _safe_next_url(request)
-    back_url = reverse("riftbound-admin-dashboard")
+    back_url = reverse("riftbound-admin-banlist")
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Entrada de banlist Riftbound actualizada correctamente.")
-        return _redirect_next_or_default(request, "riftbound-admin-dashboard")
+        return _redirect_next_or_default(request, "riftbound-admin-banlist")
     return render(
         request,
         "cards/admin_entity_form.html",
@@ -1395,7 +1395,50 @@ def riftbound_admin_banlist_delete(request, entry_id: int):
     card_name = entry.card.name
     entry.delete()
     messages.success(request, f"Entrada de banlist eliminada: {card_name}.")
-    return _redirect_next_or_default(request, "riftbound-admin-search")
+    return _redirect_next_or_default(request, "riftbound-admin-banlist")
+
+
+@riftbound_admin_owner_required
+@require_http_methods(["GET"])
+def riftbound_admin_banlist(request):
+    q = (request.GET.get("q") or "").strip()
+    format_id = (request.GET.get("format_id") or "").strip()
+    status = (request.GET.get("status") or "").strip()
+
+    entries = RiftboundBanlistEntry.objects.select_related("card", "format")
+    if q:
+        entries = entries.filter(
+            Q(card__name__icontains=q) | Q(card__card_number__icontains=q) | Q(note__icontains=q)
+        )
+    if format_id.isdigit():
+        entries = entries.filter(format_id=int(format_id))
+    if status:
+        entries = entries.filter(status=status)
+    entries = entries.order_by("format__code", "status", "card__name")
+
+    groups = (
+        RiftboundFormat.objects.annotate(
+            total=Count("banlist_entries"),
+            banned=Count("banlist_entries", filter=Q(banlist_entries__status=RiftboundBanlistEntry.BANNED)),
+            limited_1=Count("banlist_entries", filter=Q(banlist_entries__status=RiftboundBanlistEntry.LIMITED_1)),
+            limited_2=Count("banlist_entries", filter=Q(banlist_entries__status=RiftboundBanlistEntry.LIMITED_2)),
+        )
+        .order_by("code")
+    )
+
+    return render(
+        request,
+        "riftbound/admin_banlist.html",
+        {
+            "q": q,
+            "format_id": format_id,
+            "status": status,
+            "entries": entries,
+            "total": entries.count(),
+            "groups": groups,
+            "status_choices": RiftboundBanlistEntry.STATUS_CHOICES,
+        },
+    )
 
 
 @riftbound_admin_owner_required

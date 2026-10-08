@@ -78,6 +78,8 @@ export class TiendaComponent implements OnInit, AfterViewInit, OnDestroy {
   orderSubmitting = false;
   orderError = '';
   createdOrderId: number | null = null;
+  /** WhatsApp ya no se abre solo al crear el pedido: queda como botón opcional en el aviso. */
+  createdOrderWhatsAppUrl: string | null = null;
   private storeSentinelRef?: ElementRef<HTMLElement>;
   private storeObserver?: IntersectionObserver;
   private contentScrollEl: HTMLElement | null = null;
@@ -327,6 +329,7 @@ export class TiendaComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     this.saveCart();
     this.createdOrderId = null;
+    this.createdOrderWhatsAppUrl = null;
     this.orderError = '';
     this.cdr.detectChanges();
   }
@@ -478,14 +481,15 @@ export class TiendaComponent implements OnInit, AfterViewInit, OnDestroy {
 
         this.carpetaService.createPublicStoreOrder(this.token, payload).subscribe({
           next: (order) => {
-            this.createdOrderId = order.id;
+            // El texto se arma con el carrito, así que la URL se calcula antes de vaciarlo.
             const waUrl = this.buildWhatsAppOrderUrl(order.id);
             this.orderSubmitting = false;
             this.clearCart();
+            this.createdOrderId = order.id;
+            this.createdOrderWhatsAppUrl = waUrl;
             this.showCart = false;
             this.loadStore();
             this.cdr.detectChanges();
-            if (waUrl) window.location.href = waUrl;
           },
           error: (err) => {
             this.orderSubmitting = false;

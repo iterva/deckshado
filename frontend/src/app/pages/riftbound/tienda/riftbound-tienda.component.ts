@@ -124,6 +124,9 @@ interface RiftboundCartItem {
         <div class="order-success">
           ✅ Pedido #{{ createdOrderId }} creado correctamente. El vendedor ya lo ve en su carpeta.
           <a routerLink="/mis-compras" [queryParams]="{ game: 'riftbound', store: token }">Ver mis pedidos</a>
+          @if (createdOrderWhatsAppUrl) {
+            <a class="order-wa-link" [href]="createdOrderWhatsAppUrl" target="_blank" rel="noopener">Avisar también por WhatsApp</a>
+          }
         </div>
       }
 
@@ -771,6 +774,18 @@ interface RiftboundCartItem {
       color: #cbeeff;
       font-size: .9rem;
     }
+    .order-success .order-wa-link {
+      display: inline-flex;
+      align-items: center;
+      margin-left: .5rem;
+      padding: .3rem .7rem;
+      border-radius: 999px;
+      background: #25d366;
+      color: #06240f;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+    }
     .cart-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .6rem; }
     .cart-actions .btn-primary { flex: 1 1 100%; }
 
@@ -873,6 +888,8 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
   orderSubmitting = false;
   orderError = '';
   createdOrderId: number | null = null;
+  /** WhatsApp ya no se abre solo al crear el pedido: queda como botón opcional en el aviso. */
+  createdOrderWhatsAppUrl: string | null = null;
 
   // Tabs / wishlist
   activeTab = signal<'store' | 'wishlist'>('store');
@@ -1251,6 +1268,7 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
     this.cart.set(list);
     this.saveCart();
     this.createdOrderId = null;
+    this.createdOrderWhatsAppUrl = null;
     this.orderError = '';
     this.cdr.markForCheck();
   }
@@ -1396,13 +1414,13 @@ export class RiftboundTiendaComponent implements OnInit, AfterViewInit, OnDestro
         this.rb.createPublicStoreOrder(this.token, payload).subscribe({
           next: (order) => {
             this.createdOrderId = order.id;
-            const waUrl = this.buildWhatsAppOrderUrl(order.id);
+            // El texto se arma con el carrito, así que la URL se calcula antes de vaciarlo.
+            this.createdOrderWhatsAppUrl = this.buildWhatsAppOrderUrl(order.id);
             this.orderSubmitting = false;
             this.clearCart();
             this.showCart.set(false);
             this.reload();
             this.cdr.markForCheck();
-            if (waUrl) window.location.href = waUrl;
           },
           error: (err) => {
             this.orderSubmitting = false;

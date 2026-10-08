@@ -113,6 +113,9 @@
       <div class="order-created-banner">
         ✅ Pedido #{{ createdOrderId }} creado correctamente. El vendedor ya lo ve en su carpeta.
         <a routerLink="/mis-compras" [queryParams]="{ game: 'myl', store: token }">Ver mis pedidos ↗</a>
+        @if (createdOrderWhatsAppUrl) {
+          <a class="order-wa-link" [href]="createdOrderWhatsAppUrl" target="_blank" rel="noopener">Avisar también por WhatsApp</a>
+        }
       </div>
     }
 

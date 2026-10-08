@@ -2827,6 +2827,13 @@
       gap: 0;
     }
 
+    /* Botón "Imagen": mantiene su texto en móvil, así que no puede ser cuadrado. */
+    .export-options-wrapper .action-btn {
+      width: auto;
+      padding: 0 0.6rem;
+      gap: 0.35rem;
+    }
+
     .seg-control button {
       justify-content: center;
       padding: 0.35rem 0.55rem;

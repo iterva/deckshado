@@ -9,7 +9,7 @@
     <div class="metric"><div class="muted">Ediciones</div><div class="value">{{ edition_count }}</div></div>
     <div class="metric"><div class="muted">Ediciones activas</div><div class="value">{{ active_edition_count }}</div></div>
     <div class="metric"><div class="muted">Cartas</div><div class="value">{{ card_count }}</div></div>
-    <div class="metric"><div class="muted">Banlist</div><div class="value">{{ banlist_count }}</div></div>
+    <a class="metric" href="{% url 'cards-admin-banlist' %}" style="text-decoration:none;color:inherit;"><div class="muted">Banlist (ver / editar)</div><div class="value">{{ banlist_count }}</div></a>
   </div>
 </div>
 
@@ -18,7 +18,8 @@
   <a href="{% url 'cards-admin-season-new' %}">Nueva temporada</a> |
   <a href="{% url 'cards-admin-edition-new' %}">Nueva edición</a> |
   <a href="{% url 'cards-admin-card-new' %}">Nueva carta</a> |
-  <a href="{% url 'cards-admin-banlist-new' %}">Nueva entrada banlist</a>
+  <a href="{% url 'cards-admin-banlist-new' %}">Nueva entrada banlist</a> |
+  <a href="{% url 'cards-admin-banlist' %}">Ver banlist actual</a>
 </div>
 
 <div class="panel">

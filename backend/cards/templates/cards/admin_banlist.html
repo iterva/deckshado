@@ -1,0 +1,89 @@
+{% extends "cards/admin_base.html" %}
+{% block title %}Banlist MYL{% endblock %}
+{% block content %}
+<div class="panel">
+  <h1>Banlist actual</h1>
+  <p class="muted">Entradas vigentes por formato y sub-formato. <a href="{% url 'cards-admin-banlist-new' %}?next={{ request.get_full_path|urlencode }}">Nueva entrada banlist</a></p>
+  <table>
+    <thead><tr><th>Formato</th><th>Sub-formato</th><th>Total</th><th>Prohibidas</th><th>Limitadas a 1</th><th>Limitadas a 2</th><th>Sin carta enlazada</th></tr></thead>
+    <tbody>
+      {% for g in groups %}
+        <tr>
+          <td><a href="?format_code={{ g.format_code|urlencode }}">{{ g.format_code }}</a></td>
+          <td><a href="?format_code={{ g.format_code|urlencode }}&sub_format={{ g.sub_format|urlencode }}">{{ g.sub_format }}</a></td>
+          <td>{{ g.total }}</td>
+          <td>{{ g.banned }}</td>
+          <td>{{ g.limited_1 }}</td>
+          <td>{{ g.limited_2 }}</td>
+          <td>{{ g.unlinked }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7">Sin entradas de banlist.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="panel">
+  <form method="get" class="grid">
+    <div>
+      <label for="q">Nombre de carta</label>
+      <input id="q" name="q" value="{{ q }}" placeholder="Buscar...">
+    </div>
+    <div>
+      <label for="format_code">Formato</label>
+      <select id="format_code" name="format_code">
+        <option value="">Todos</option>
+        {% for code in format_codes %}<option value="{{ code }}" {% if code == format_code %}selected{% endif %}>{{ code }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="sub_format">Sub-formato</label>
+      <select id="sub_format" name="sub_format">
+        <option value="">Todos</option>
+        {% for sf in sub_formats %}<option value="{{ sf }}" {% if sf == sub_format %}selected{% endif %}>{{ sf }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="status">Estado</label>
+      <select id="status" name="status">
+        <option value="">Todos</option>
+        {% for value, label in status_choices %}<option value="{{ value }}" {% if value == status %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <button type="submit">Filtrar</button>
+      <a href="{% url 'cards-admin-banlist' %}">Limpiar</a>
+    </div>
+  </form>
+</div>
+
+<div class="panel">
+  <h2>Entradas ({{ total }})</h2>
+  <table>
+    <thead><tr><th>Carta</th><th>Carta enlazada</th><th>Formato</th><th>Sub-formato</th><th>Estado</th><th>Copias</th><th>Acción</th></tr></thead>
+    <tbody>
+      {% for b in entries %}
+        <tr>
+          <td>{{ b.card_name }}</td>
+          <td>{% if b.card %}{{ b.card.name }} <span class="muted">({{ b.card.edition.slug }})</span>{% else %}<span style="color:var(--danger);">Sin enlazar</span>{% endif %}</td>
+          <td>{{ b.format_code }}</td>
+          <td>{{ b.sub_format }}</td>
+          <td>{{ b.get_status_display }}</td>
+          <td>{{ b.max_copies }}</td>
+          <td class="row-actions">
+            <a href="{% url 'cards-admin-banlist-edit' b.id %}?next={{ request.get_full_path|urlencode }}">Editar</a>
+            <form method="post" action="{% url 'cards-admin-banlist-delete' b.id %}" style="display:inline;" onsubmit="return confirm('¿Eliminar {{ b.card_name|escapejs }} de la banlist?');">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <button type="submit" class="danger" style="margin-top:0;padding:4px 8px;">Eliminar</button>
+            </form>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7">No hay entradas que coincidan con los filtros.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

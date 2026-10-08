@@ -589,7 +589,7 @@ def cards_admin_banlist_new(request):
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Entrada de banlist creada correctamente.")
-        return _redirect_next_or_default(request, "cards-admin-dashboard")
+        return _redirect_next_or_default(request, "cards-admin-banlist")
     return render(request, "cards/admin_entity_form.html", {"title": "Nueva entrada banlist", "form": form, "next_url": next_url})
 
 
@@ -602,8 +602,66 @@ def cards_admin_banlist_edit(request, entry_id: int):
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Entrada de banlist actualizada correctamente.")
-        return _redirect_next_or_default(request, "cards-admin-dashboard")
+        return _redirect_next_or_default(request, "cards-admin-banlist")
     return render(request, "cards/admin_entity_form.html", {"title": f"Editar banlist: {entry.card_name}", "form": form, "next_url": next_url})
+
+
+@cards_admin_owner_required
+@require_http_methods(["POST"])
+def cards_admin_banlist_delete(request, entry_id: int):
+    entry = get_object_or_404(BanlistEntry, pk=entry_id)
+    card_name = entry.card_name
+    entry.delete()
+    messages.success(request, f"Entrada de banlist eliminada: {card_name}.")
+    return _redirect_next_or_default(request, "cards-admin-banlist")
+
+
+@cards_admin_owner_required
+@require_http_methods(["GET"])
+def cards_admin_banlist(request):
+    q = (request.GET.get("q") or "").strip()
+    format_code = (request.GET.get("format_code") or "").strip()
+    sub_format = (request.GET.get("sub_format") or "").strip()
+    status = (request.GET.get("status") or "").strip()
+
+    entries = BanlistEntry.objects.select_related("card", "card__edition")
+    if q:
+        entries = entries.filter(card_name__icontains=q)
+    if format_code:
+        entries = entries.filter(format_code=format_code)
+    if sub_format:
+        entries = entries.filter(sub_format=sub_format)
+    if status:
+        entries = entries.filter(status=status)
+
+    groups = (
+        BanlistEntry.objects.values("format_code", "sub_format")
+        .annotate(
+            total=Count("id"),
+            banned=Count("id", filter=Q(status=BanlistEntry.BANNED)),
+            limited_1=Count("id", filter=Q(status=BanlistEntry.LIMITED_1)),
+            limited_2=Count("id", filter=Q(status=BanlistEntry.LIMITED_2)),
+            unlinked=Count("id", filter=Q(card__isnull=True)),
+        )
+        .order_by("format_code", "sub_format")
+    )
+
+    return render(
+        request,
+        "cards/admin_banlist.html",
+        {
+            "q": q,
+            "format_code": format_code,
+            "sub_format": sub_format,
+            "status": status,
+            "entries": entries,
+            "total": entries.count(),
+            "groups": groups,
+            "format_codes": BanlistEntry.objects.order_by("format_code").values_list("format_code", flat=True).distinct(),
+            "sub_formats": BanlistEntry.objects.order_by("sub_format").values_list("sub_format", flat=True).distinct(),
+            "status_choices": BanlistEntry.STATUS_CHOICES,
+        },
+    )
 
 
 @cards_admin_owner_required

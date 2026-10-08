@@ -118,6 +118,9 @@ import { RiftboundService } from '../../../services/riftbound.service';
       .hero { padding: 2rem 1rem 1.75rem; }
       .hero-title { font-size: 1.8rem !important; }
       .hero-title .icon { font-size: 1.5rem !important; }
+      /* "ShadowForge — Riftbound" no tiene dónde cortar (nbsp) y se salía de pantalla. */
+      .hero-title .sep { display: none; }
+      .hero-title .rb { display: block; }
       .hero-subtitle { font-size: 0.95rem !important; margin-bottom: 1.25rem !important; }
       .hero-stats { gap: 1.5rem !important; }
       .hero-stats .stat-number { font-size: 1.4rem !important; }

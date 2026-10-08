@@ -3011,6 +3011,7 @@
         right: 4px;
         width: 22px;
         height: 22px;
+        min-height: 0; /* la regla global button { min-height: 40px } lo estiraba en un óvalo sobre la carta */
         border-radius: 50%;
       }
     }

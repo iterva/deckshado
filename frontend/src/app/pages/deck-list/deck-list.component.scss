@@ -611,6 +611,11 @@
 
   .deck-cover { height: 120px; }
 
+  /* A 320px dos filtros por fila cortaban "Formato: todos". */
+  @media (max-width: 359px) {
+    .filter-row select { flex-basis: 100%; }
+  }
+
   .deck-name { font-size: 1rem; }
 }
 // =====================================================

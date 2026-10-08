@@ -102,7 +102,13 @@ export class GoogleAuthService {
     // Re-renderizar al rotar/redimensionar para mantener el ancho correcto.
     if (typeof ResizeObserver !== 'undefined') {
       let lastWidth = width;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      // Debounce: re-rendering on every resize step while GSI is still drawing left two buttons.
       const ro = new ResizeObserver(() => {
+        clearTimeout(timer);
+        timer = setTimeout(rerender, 200);
+      });
+      const rerender = () => {
         const m = container.clientWidth || container.parentElement?.clientWidth || 0;
         const w = Math.max(220, Math.min(360, Math.floor(m) || 320));
         if (w !== lastWidth) {
@@ -118,7 +124,7 @@ export class GoogleAuthService {
             width: w,
           });
         }
-      });
+      };
       ro.observe(container.parentElement || container);
     }
   }

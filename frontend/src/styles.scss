@@ -715,6 +715,16 @@ textarea:focus {
   outline: none !important;
 }
 
+/* Buscadores con ícono: el contenedor ya dibuja la caja (y su foco con :focus-within);
+   sin esto, la regla de arriba pintaba una segunda caja dentro de la primera. */
+.search-wrap input,
+.search-input-wrap input,
+body.mode-riftbound .search-row .search-input-wrap input {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
 .btn,
 .btn-primary,
 .btn-secondary {

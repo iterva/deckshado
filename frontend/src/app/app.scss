@@ -950,3 +950,20 @@
   }
 }
 
+/* Teléfonos de 320px: logo + acciones no caben y el selector de juego quedaba fuera
+   de pantalla. Solo el ícono del logo; el nombre queda para lectores de pantalla. */
+@media (max-width: 359px) {
+  .navbar .navbar-brand .logo .logo-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .navbar .navbar-actions {
+    gap: 0.3rem;
+  }
+}
+

@@ -545,12 +545,26 @@
             [sellerName]="shareSellerName"
             contactLine="¿Tienes alguna? Escríbeme · ShadowForge"
             [items]="shareWishlistItems"
-            ctaLabel="📷 Imagen busco"
+            ctaLabel="Imagen busco"
             filenamePrefix="shadowforge-myl-wishlist"
             footerTagline="ShadowForge · Marketplace TCG">
           </app-share-image>
         </div>
       </div>
+
+      @if (wishlistEntries().length > 0) {
+        <div class="mercado-select-bar">
+          <label class="checkbox-inline">
+            <input type="checkbox" [checked]="wishlistSelected().size === wishlistEntries().length" (change)="toggleSelectAllWishlist()" />
+            Seleccionar todas
+          </label>
+          @if (wishlistSelected().size > 0) {
+            <span class="select-count">{{ wishlistSelected().size }} seleccionada{{ wishlistSelected().size > 1 ? 's' : '' }} para imagen</span>
+          } @else {
+            <span class="select-count">Marca cartas para elegir cuáles salen en la imagen</span>
+          }
+        </div>
+      }
 
       <p class="results-count">{{ wishlistTotal() }} cartas en tu wishlist</p>
 
@@ -566,7 +580,11 @@
 
       <div class="wishlist-grid" data-tour="wishlist-grid">
         @for (entry of wishlistEntries(); track entry.id) {
-          <div class="wishlist-card">
+          <div class="wishlist-card" [class.wishlist-selected]="wishlistSelected().has(entry.id)">
+            <label class="wishlist-check" (click)="$event.stopPropagation()">
+              <input type="checkbox" [checked]="wishlistSelected().has(entry.id)" (change)="toggleWishlistSelect(entry.id)"
+                [attr.aria-label]="'Incluir ' + entry.card_detail.name + ' en la imagen'" />
+            </label>
             <div class="card-image" (click)="previewCard.set(entry.card_detail)">
               <img [src]="entry.card_detail.image_url | thumb:350" [alt]="entry.card_detail.name" loading="lazy"
                 (error)="$any($event.target).src = entry.card_detail.image_url" />
@@ -733,7 +751,7 @@
             [sellerName]="shareSellerName"
             contactLine="Escríbeme para comprar · ShadowForge"
             [items]="shareMercadoItems"
-            ctaLabel="📷 Imagen vendo"
+            ctaLabel="Imagen vendo"
             filenamePrefix="shadowforge-myl-vendo"
             footerTagline="ShadowForge · Marketplace TCG">
           </app-share-image>

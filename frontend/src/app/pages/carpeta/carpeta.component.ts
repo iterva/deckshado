@@ -495,6 +495,8 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
   exportingPdf = signal(false);
   mercadoAllEntries = signal<CollectionEntry[]>([]);
   mercadoSelected = new Map<number, CollectionEntry>();
+  /** Wishlist: ids elegidos para la imagen "busco" (vacío = todas). */
+  wishlistSelected = signal<ReadonlySet<number>>(new Set());
 
   // ── Gestión de pedidos (unificada: Pedidos + Historial) ──
   pendingOrders = signal<StoreOrder[]>([]);
@@ -1087,6 +1089,7 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.carpetaService.toggleWishlist(entry.card_detail.id).subscribe(() => {
       this.wishlistEntries.set(this.wishlistEntries().filter(e => e.id !== entry.id));
       this.wishlistIds.delete(entry.card_detail.id);
+      if (this.wishlistSelected().has(entry.id)) this.toggleWishlistSelect(entry.id);
       this.wishlistTotal.update(t => t - 1);
       this.cdr.markForCheck();
     });
@@ -1511,7 +1514,11 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ── Share image (Wishlist + Mercado) ──
   get shareWishlistItems(): ShareImageItem[] {
-    return this.wishlistEntries().map(w => ({
+    const selected = this.wishlistSelected();
+    const source = selected.size > 0
+      ? this.wishlistEntries().filter(w => selected.has(w.id))
+      : this.wishlistEntries();
+    return source.map(w => ({
       name: w.card_detail?.name || '',
       image: w.card_detail?.image_url || '',
       quantity: w.desired_quantity || 1,
@@ -1531,6 +1538,22 @@ export class CarpetaComponent implements OnInit, AfterViewInit, OnDestroy {
       foil: !!e.is_foil,
       price: null,
     }));
+  }
+
+  toggleWishlistSelect(entryId: number) {
+    this.wishlistSelected.update(prev => {
+      const next = new Set(prev);
+      if (next.has(entryId)) next.delete(entryId);
+      else next.add(entryId);
+      return next;
+    });
+  }
+
+  toggleSelectAllWishlist() {
+    const entries = this.wishlistEntries();
+    this.wishlistSelected.set(
+      this.wishlistSelected().size === entries.length ? new Set() : new Set(entries.map(e => e.id)),
+    );
   }
 
   toggleMercadoSelect(entryId: number) {

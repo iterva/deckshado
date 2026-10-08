@@ -1292,6 +1292,35 @@
   }
 }
 
+.wishlist-card {
+  position: relative;
+
+  &.wishlist-selected {
+    border-color: #4fc3f7;
+    box-shadow: 0 0 0 2px rgba(79, 195, 247, 0.3);
+  }
+}
+
+// Checkbox flotante sobre la esquina de la carta (la wishlist usa tarjetas verticales).
+.wishlist-check {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 2;
+  display: flex;
+  padding: 4px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.65);
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #4fc3f7;
+    cursor: pointer;
+  }
+}
+
 .mercado-select-bar {
   display: flex;
   align-items: center;

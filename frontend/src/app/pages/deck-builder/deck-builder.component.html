@@ -249,21 +249,21 @@
             @if (getBanStatus(card); as ban) {
               @if (ban.status === 'banned') {
                 <span class="ban-badge banned" title="Prohibida">
-                  <app-icon name="ban" [size]="10"></app-icon>
+                  <app-icon name="ban" [size]="12"></app-icon>
                 </span>
               } @else if (ban.status === 'limited_1') {
                 <span class="ban-badge limited" title="Límite 1">
-                  <app-icon name="shield-alert" [size]="10"></app-icon> 1
+                  <app-icon name="shield-alert" [size]="12"></app-icon> 1
                 </span>
               } @else if (ban.status === 'limited_2') {
                 <span class="ban-badge limited" title="Límite 2">
-                  <app-icon name="shield-alert" [size]="10"></app-icon> 2
+                  <app-icon name="shield-alert" [size]="12"></app-icon> 2
                 </span>
               }
             }
             @if (!isCardAllowedByFormat(card)) {
               <span class="ban-badge off-format" title="Fuera de formato">
-                <app-icon name="alert-circle" [size]="10"></app-icon>
+                <app-icon name="alert-circle" [size]="12"></app-icon>
               </span>
             }
           </div>

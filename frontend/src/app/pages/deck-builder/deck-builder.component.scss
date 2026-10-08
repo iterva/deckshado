@@ -717,31 +717,35 @@
         position: absolute;
         top: 4px;
         left: 4px;
-        font-size: 0.6rem;
-        font-weight: 700;
-        padding: 2px 4px;
+        font-size: 0.75rem;
+        font-weight: 800;
+        line-height: 1;
+        padding: 3px 5px;
         border-radius: 4px;
         display: inline-flex;
         align-items: center;
-        gap: 2px;
+        gap: 3px;
         z-index: 3;
+        // Fondo opaco: con transparencia el arte de la carta (coste, raza) se
+        // mezclaba con el número y no se leía.
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 
         &.banned {
-          background: rgba(239, 68, 68, 0.25);
+          background: rgba(24, 12, 12, 0.92);
           color: #f87171;
-          border: 1px solid rgba(239, 68, 68, 0.5);
+          border: 1px solid rgba(239, 68, 68, 0.8);
         }
 
         &.limited {
-          background: rgba(245, 158, 11, 0.25);
+          background: rgba(24, 18, 8, 0.92);
           color: #fbbf24;
-          border: 1px solid rgba(245, 158, 11, 0.5);
+          border: 1px solid rgba(245, 158, 11, 0.85);
         }
 
         &.off-format {
-          background: rgba(161, 161, 170, 0.25);
+          background: rgba(18, 18, 20, 0.92);
           color: #d4d4d8;
-          border: 1px solid rgba(161, 161, 170, 0.5);
+          border: 1px solid rgba(161, 161, 170, 0.8);
         }
       }
 

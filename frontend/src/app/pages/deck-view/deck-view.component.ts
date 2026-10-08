@@ -1526,7 +1526,7 @@ export class DeckViewComponent implements OnInit {
 
   getExportImageUrl(url: string | null | undefined): string {
     const source = (url ?? '').trim();
-    const thumb = this.thumbPipe.transform(source, 350);
+    const thumb = this.thumbPipe.transform(source, 600);
     const candidate = (thumb || source || '').trim();
     if (!candidate) return this.deckImagePlaceholder;
 
@@ -1616,7 +1616,7 @@ export class DeckViewComponent implements OnInit {
         backgroundColor: this.exportBackgroundResolved,
         useCORS: true,
         allowTaint: true,
-        scale: 2,
+        scale: this.exportScale(targetWidth, el.scrollHeight),
         width: targetWidth,
         height: el.scrollHeight,
         windowWidth: viewportWidth,
@@ -1629,6 +1629,16 @@ export class DeckViewComponent implements OnInit {
       this.exporting = false;
       this.cdr.detectChanges();
     }
+  }
+
+  /**
+   * 3x para que el texto de las cartas se lea al hacer zoom, bajando si el mazo
+   * es muy largo: Safari iOS no dibuja canvas de más de ~16.7M píxeles.
+   */
+  private exportScale(width: number, height: number): number {
+    const maxPixels = 16_000_000;
+    const fit = Math.sqrt(maxPixels / Math.max(1, width * height));
+    return Math.max(2, Math.min(3, fit));
   }
 
   private nextRenderTick(): Promise<void> {

@@ -167,6 +167,8 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
         'toolkit_cenizas_de_fuego',
         'toolkit_hielo_inmortal',
         'secretos_arcanos',
+        'zodiaco',
+        'amenazakaiju',
         'lootbox_2024',
       ],
     },
@@ -729,6 +731,7 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onSeasonChange() {
+    this.filterEditions();
     this.reloadAvailableCards();
   }
 
@@ -745,7 +748,13 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
     } else if ((this.selectedFormat === 'pb' || this.selectedFormat === 'pe') && this.pbEditionScope.length > 0) {
       this.editions = this.allEditions.filter(e => this.pbEditionScope.includes(e.slug));
     } else {
-      this.editions = this.allEditions.filter(e => e.format_code === this.selectedFormat);
+      const excluded = this.getSeasonExclusions().split(',').filter(Boolean);
+      this.editions = this.allEditions.filter(e => e.format_code === this.selectedFormat && !excluded.includes(e.slug));
+      // Si la edición seleccionada quedó fuera de la temporada, quitarla del filtro.
+      if (excluded.length > 0) {
+        excluded.forEach(s => this.selectedEditions.delete(s));
+        this.selectedEdition = [...this.selectedEditions].join(',');
+      }
     }
   }
 

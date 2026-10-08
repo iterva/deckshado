@@ -509,6 +509,14 @@
     .browser-filters {
       .filter-drawer-btn .btn-text { display: none; }
 
+      /* En teléfonos el campo quedaba en ~50px entre el modo y los botones:
+         va en su propia fila arriba y el resto debajo. */
+      @media (max-width: 600px) {
+        .search-row { flex-wrap: wrap; }
+        .search-box { order: -1; flex-basis: 100%; }
+        .search-mode-select { flex: 1 1 auto; }
+      }
+
       .filters-panel {
         position: fixed;
         inset: 0;

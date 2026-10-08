@@ -123,8 +123,9 @@ export class AdminComponent implements OnInit, OnDestroy {
     }
   }
 
-  ngOnInit() {
-    const me = this.auth.user();
+  async ngOnInit() {
+    // Al abrir /admin directo (o recargar), /me todavía puede estar en camino.
+    const me = await this.auth.ensureUser();
     if (!me?.is_admin) {
       this.router.navigate(['/']);
       return;

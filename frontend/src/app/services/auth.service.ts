@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap } from 'rxjs';
+import { Observable, firstValueFrom, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthTokens, User } from '../models';
 
@@ -90,6 +90,15 @@ export class AuthService {
         }
       },
     });
+  }
+
+  /** Usuario actual; si la carga inicial de /me aún no termina, la espera (null sin sesión o si falla). */
+  ensureUser(): Promise<User | null> {
+    const current = this.currentUser();
+    if (current || !this.getToken()) return Promise.resolve(current);
+    return firstValueFrom(this.http.get<User>(`${this.apiUrl}/me/`).pipe(
+      tap(user => this.currentUser.set(user)),
+    )).catch(() => null);
   }
 
   logout(hardReload = false) {

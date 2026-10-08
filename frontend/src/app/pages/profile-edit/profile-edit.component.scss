@@ -250,12 +250,15 @@
   background: #0f1923;
   border: 1px solid #2a3a4a;
   border-radius: 10px;
+  /* Con un correo largo el botón "Desvincular" quedaba fuera de pantalla en teléfonos. */
+  flex-wrap: wrap;
 }
 
 .linked-info {
   display: flex;
   align-items: center;
   gap: 0.8rem;
+  min-width: 0;
 
   i {
     font-size: 1.5rem;
@@ -263,7 +266,7 @@
   }
 
   strong { color: #fff; display: block; }
-  .linked-email { font-size: 0.85rem; color: #ccc; margin: 0.15rem 0 0; }
+  .linked-email { font-size: 0.85rem; color: #ccc; margin: 0.15rem 0 0; overflow-wrap: anywhere; }
   .linked-email.muted { color: #666; font-style: italic; }
 }
 

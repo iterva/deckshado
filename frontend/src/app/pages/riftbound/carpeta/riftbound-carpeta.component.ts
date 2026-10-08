@@ -1438,7 +1438,8 @@ function detectCollaboratorRole(perms: Partial<RiftboundStorePermissionFlags>, a
     }
     .search-bar { display: flex; gap: .4rem; flex: 1; min-width: 240px; }
     .search-bar input {
-      flex: 1; padding: .55rem .8rem; background: var(--ui-bg-soft);
+      flex: 1; min-width: 0; /* sin esto el input no se encoge y empuja "Buscar" fuera de pantalla a 320px */
+      padding: .55rem .8rem; background: var(--ui-bg-soft);
       border: 1px solid var(--ui-border); border-radius: 6px; color: var(--ui-text-secondary);
     }
     .search-bar input:focus { outline: none; border-color: var(--ui-accent); }

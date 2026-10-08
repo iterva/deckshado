@@ -1073,6 +1073,15 @@ function typeRank(t?: string): number {
       border-radius: 6px; cursor: pointer;
     }
     .more-menu button:hover { background: #2a2a4a; color: #fff; }
+    /* En teléfonos el "⋮" puede quedar a la izquierda (la barra se parte en filas) y el
+       menú, alineado a su derecha, se abría fuera de pantalla: hoja fija sobre la barra inferior. */
+    @media (max-width: 768px) {
+      .more-menu-wrap .more-menu {
+        position: fixed; top: auto; left: .5rem; right: .5rem;
+        bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px)); z-index: 120;
+        min-width: 0; max-height: calc(100dvh - 8rem); overflow-y: auto;
+      }
+    }
 
     .orient-menu-wrap { position: relative; }
     .orient-menu {

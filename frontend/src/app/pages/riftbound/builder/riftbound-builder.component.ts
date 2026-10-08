@@ -1339,6 +1339,46 @@ function typeRank(t?: string): number {
       color: var(--ui-text-muted); cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
     }
 
+    /* Galería de "Previsualizar mazo" (se había perdido en el rediseño d2dc15b:
+       sin esto las cartas salían a su tamaño natural, 744px, en cualquier pantalla). */
+    .dp-section { margin-bottom: 1.75rem; }
+    .dp-section:last-child { margin-bottom: 0; }
+    .dp-section-title {
+      margin: 0 0 .65rem; color: var(--ui-accent, #06b6d4); font-size: 1rem;
+      font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+      display: flex; align-items: baseline; gap: .55rem;
+      border-bottom: 1px solid var(--ui-border); padding-bottom: .35rem;
+    }
+    .dp-section-count { font-size: .8rem; color: var(--ui-text-muted); font-weight: 500; letter-spacing: 0; text-transform: none; }
+    .dp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; }
+    @media (max-width: 600px) {
+      .dp-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: .65rem; }
+    }
+    .dp-card { display: flex; flex-direction: column; gap: .4rem; min-width: 0; }
+    .dp-img-wrap {
+      position: relative; width: 100%; aspect-ratio: 0.72;
+      border-radius: 8px; overflow: hidden; background: var(--ui-surface);
+      box-shadow: 0 4px 10px rgba(0,0,0,.4);
+    }
+    .dp-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .dp-img-fallback {
+      width: 100%; height: 100%; display: grid; place-items: center;
+      color: var(--ui-text-muted); font-size: .75rem; text-align: center; padding: .5rem;
+    }
+    .dp-qty {
+      position: absolute; top: 6px; left: 6px;
+      background: var(--ui-accent, #06b6d4); color: #09090b;
+      padding: .15rem .55rem; border-radius: 999px;
+      font-size: .85rem; font-weight: 700;
+      box-shadow: 0 2px 6px rgba(0,0,0,.45);
+    }
+    .dp-qty.is-single { background: #ffbd39; color: #1a1a2e; }
+    .dp-name {
+      font-size: .82rem; color: var(--ui-text, #e0e0e0); text-align: center;
+      line-height: 1.2; font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
     /* Kept last in the stylesheet on purpose: these overrides share selector
        specificity with their base rules above (e.g. .filters-panel), so source
        order is what makes them win the cascade at narrow widths. */

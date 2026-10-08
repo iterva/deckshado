@@ -2110,6 +2110,8 @@
     gap: 0.5rem;
     justify-content: flex-end;
     margin-top: 1rem;
+    /* En teléfonos los 3 botones de exportar no caben y "Copiar Texto" quedaba cortado a la izquierda. */
+    flex-wrap: wrap;
   }
 }
 

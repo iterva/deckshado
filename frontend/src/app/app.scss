@@ -721,7 +721,10 @@
         background: rgba(18, 18, 23, 0.98);
       }
 
-      .notif-dropdown {
+      /* Con el prefijo del wrapper: la regla base (.notif-wrapper .notif-dropdown) es más
+         específica y dejaba el panel anclado a la campana, cortado a la derecha en teléfonos.
+         `fixed` se resuelve contra .navbar (su backdrop-filter crea el containing block). */
+      .notif-wrapper .notif-dropdown {
         position: fixed;
         top: 56px;
         right: 0;
@@ -731,8 +734,12 @@
         border-radius: 0 0 16px 16px;
       }
 
-      .avatar-dropdown {
-        right: 0;
+      /* Alineado al avatar, el menú (200px) se salía por la izquierda a 320px. */
+      .avatar-wrapper .avatar-dropdown {
+        position: fixed;
+        top: 56px;
+        right: 0.5rem;
+        left: auto;
       }
     }
   }

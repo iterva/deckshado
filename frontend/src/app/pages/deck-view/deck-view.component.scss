@@ -212,6 +212,7 @@
     bottom: 0;
     z-index: 3;
     display: flex;
+    flex-wrap: wrap; /* a 320px "Cerrar" quedaba fuera del modal por la izquierda */
     justify-content: flex-end;
     gap: 0.5rem;
     padding: 0.75rem 0.9rem;
@@ -867,6 +868,22 @@
 @media (max-width: 768px) {
   .hide-mobile { display: none !important; }
   .more-menu .mobile-only-item { display: flex; }
+
+  /* En teléfonos el "⋮" puede quedar al borde izquierdo (la barra se parte en dos filas)
+     y el menú, alineado a la derecha del botón, se abría fuera de pantalla y más alto
+     que ella. Como hoja fija sobre la barra inferior siempre cabe y hace scroll.
+     (.more-wrapper sube la especificidad: la regla base .more-menu está más abajo.) */
+  .more-wrapper .more-menu {
+    position: fixed;
+    top: auto;
+    left: 0.5rem;
+    right: 0.5rem;
+    bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+    z-index: 120;
+    min-width: 0;
+    max-height: calc(100dvh - 8rem);
+    overflow-y: auto;
+  }
 }
 
 .more-orient-group {

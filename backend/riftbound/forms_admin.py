@@ -124,6 +124,10 @@ class RiftboundBanlistEntryForm(forms.ModelForm):
         model = RiftboundBanlistEntry
         fields = ["format", "card", "status", "max_copies", "note", "effective_from"]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["card"].queryset = RiftboundCard.objects.order_by("name", "card_number")
+
 
 class ToggleRiftboundSetsForm(forms.Form):
     set_ids = forms.ModelMultipleChoiceField(

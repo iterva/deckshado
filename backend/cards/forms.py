@@ -67,6 +67,11 @@ class BanlistEntryForm(forms.ModelForm):
         model = BanlistEntry
         fields = ["card_name", "card", "format_code", "sub_format", "status", "max_copies"]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Card.__str__ reads edition.slug; avoid one query per option.
+        self.fields["card"].queryset = Card.objects.select_related("edition").order_by("name", "edition__slug")
+
 
 class ToggleEditionsForm(forms.Form):
     format = forms.ModelChoiceField(

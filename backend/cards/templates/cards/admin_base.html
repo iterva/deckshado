@@ -158,5 +158,44 @@
 
     {% block content %}{% endblock %}
   </div>
+  <script>
+    // Long single-choice selects get a type-to-filter box (accent and case insensitive).
+    (function () {
+      const norm = (v) => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      document.querySelectorAll("select:not([multiple])").forEach((sel) => {
+        if (sel.options.length < 8) return;
+        const all = Array.from(sel.options).map((o) => ({ value: o.value, text: o.text, key: norm(o.text) }));
+        const input = document.createElement("input");
+        input.type = "search";
+        input.placeholder = "Escriba para filtrar...";
+        input.autocomplete = "off";
+        input.style.marginBottom = "4px";
+        sel.parentNode.insertBefore(input, sel);
+
+        input.addEventListener("input", () => {
+          const terms = norm(input.value).split(/\s+/).filter(Boolean);
+          const current = sel.value;
+          const matches = terms.length
+            ? all.filter((o) => o.value !== "" && terms.every((t) => o.key.includes(t)))
+            : all;
+          const selected = terms.length && matches.length ? matches[0].value : current;
+          sel.innerHTML = "";
+          matches.forEach((o) => sel.add(new Option(o.text, o.value, false, o.value === selected)));
+          if (!matches.length) {
+            const keep = all.find((o) => o.value === current);
+            if (keep) sel.add(new Option(keep.text, keep.value, true, true));
+            const none = new Option("Sin coincidencias", "", false, false);
+            none.disabled = true;
+            sel.add(none);
+          }
+          sel.size = terms.length ? Math.min(Math.max(sel.options.length, 2), 8) : 0;
+        });
+        input.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter") { ev.preventDefault(); sel.focus(); }
+          if (ev.key === "ArrowDown") { ev.preventDefault(); sel.focus(); }
+        });
+      });
+    })();
+  </script>
 </body>
 </html>

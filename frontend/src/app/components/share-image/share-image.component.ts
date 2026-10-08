@@ -300,11 +300,26 @@ export class ShareImageComponent implements OnChanges {
   private displayImageCandidates(item: ShareImageItem): string[] {
     const expanded: string[] = [];
     for (const raw of this.rawImageCandidates(item)) {
+      // Hosts sin CORS (p. ej. blog.myl.cl) se ven en pantalla pero html2canvas los
+      // dibuja vacíos: los pasamos primero por el proxy de Cloudinary, que sí envía CORS.
+      const proxied = this.toCloudinaryFetchUrl(raw);
+      if (proxied) expanded.push(proxied);
       const thumb = this.thumbnailPipe.transform(raw, 400);
       if (thumb) expanded.push(thumb);
       expanded.push(raw);
     }
     return Array.from(new Set(expanded.filter(Boolean)));
+  }
+
+  /** Proxy CORS de Cloudinary para URLs fuera de los CDN que ya envían CORS; null si no hace falta. */
+  private toCloudinaryFetchUrl(url: string): string | null {
+    const normalized = url.startsWith('//') ? `https:${url}` : url;
+    const lower = normalized.toLowerCase();
+    if (!lower.startsWith('http')) return null;
+    if (lower.includes('localhost') || lower.includes('127.0.0.1')) return null;
+    const corsSafeHosts = ['res.cloudinary.com/', 'ik.imagekit.io/', '.r2.dev/', '.r2.cloudflarestorage.com/'];
+    if (corsSafeHosts.some((host) => lower.includes(host))) return null;
+    return `https://res.cloudinary.com/daobfx9yb/image/fetch/w_600,c_limit/${encodeURIComponent(normalized)}`;
   }
 
   private currentImageStep(index: number, candidates: string[]): number {

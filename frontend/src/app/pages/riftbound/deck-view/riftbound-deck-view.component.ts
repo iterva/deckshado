@@ -2265,6 +2265,8 @@ export class RiftboundDeckViewComponent implements OnInit {
   private metaSvc = inject(Meta);
   private cdr = inject(ChangeDetectorRef);
   private brokenImageUrlsByKey = new Map<string, Set<string>>();
+  /** URLs that fail a CORS load: fine on screen, blank in the html2canvas capture. */
+  private exportBrokenImageUrlsByKey = new Map<string, Set<string>>();
   private imageFallbackNonce = signal(0);
   private exportSafeImageMode = signal(false);
   private readonly stackOrientationStorageKey = 'rb-deck-view:stack-orientation';
@@ -2421,8 +2423,9 @@ export class RiftboundDeckViewComponent implements OnInit {
 
     const key = this.cardImageKey(card);
     const broken = this.brokenImageUrlsByKey.get(key);
+    const exportBroken = this.exportSafeImageMode() ? this.exportBrokenImageUrlsByKey.get(key) : undefined;
     for (const url of candidates) {
-      if (!broken?.has(url)) return url;
+      if (!broken?.has(url) && !exportBroken?.has(url)) return url;
     }
 
     // Si todas las URLs candidatas ya fallaron, devolvemos vacío para renderizar
@@ -2991,7 +2994,7 @@ export class RiftboundDeckViewComponent implements OnInit {
     if (previousViewMode !== 'grid') this.viewMode.set('grid');
 
     try {
-      await this.ensureExportQrDataUrl();
+      await Promise.all([this.ensureExportQrDataUrl(), this.verifyExportImageUrls()]);
       this.cdr.detectChanges();
       await this.nextRenderTick();
       await this.waitForImagesToSettle(el);
@@ -3138,6 +3141,49 @@ export class RiftboundDeckViewComponent implements OnInit {
         }
       }
     };
+  }
+
+  /**
+   * Cards are stored on different hosts (ImageKit, Cloudinary, Riot) and some copies are
+   * missing (404) or lack CORS headers, which html2canvas paints as an empty box. Load each
+   * card's candidates the way html2canvas will (crossOrigin) and mark failures as broken,
+   * so cardImageUrl() lands on the first URL that really works in the capture.
+   */
+  private async verifyExportImageUrls(): Promise<void> {
+    const cards = [
+      ...(this.deck()?.entries ?? []).map((e) => e.card_data as CardImageLike | null | undefined),
+      this.exportCoverCardData(),
+    ];
+    const byKey = new Map<string, CardImageLike>();
+    for (const card of cards) {
+      const key = this.cardImageKey(card);
+      if (card && key && !byKey.has(key)) byKey.set(key, card);
+    }
+
+    const loadsWithCors = (url: string) => new Promise<boolean>((resolve) => {
+      const img = new Image();
+      const timer = setTimeout(() => resolve(false), 8000);
+      img.crossOrigin = 'anonymous';
+      img.onload = () => { clearTimeout(timer); resolve(img.naturalWidth > 0); };
+      img.onerror = () => { clearTimeout(timer); resolve(false); };
+      img.src = url;
+    });
+
+    let changed = false;
+    await Promise.all(Array.from(byKey, async ([key, card]) => {
+      // Only meaningful while exportSafeImageMode is on: the candidates include the Cloudinary proxies.
+      for (const url of this.prioritizedImageCandidates(this.candidateImageUrls(card))) {
+        if (this.brokenImageUrlsByKey.get(key)?.has(url)) continue;
+        if (this.exportBrokenImageUrlsByKey.get(key)?.has(url)) continue;
+        if (await loadsWithCors(url)) return;
+        let broken = this.exportBrokenImageUrlsByKey.get(key);
+        if (!broken) this.exportBrokenImageUrlsByKey.set(key, broken = new Set<string>());
+        broken.add(url);
+        changed = true;
+      }
+    }));
+
+    if (changed) this.imageFallbackNonce.update((value) => value + 1);
   }
 
   private waitForImages(el: HTMLElement): Promise<void[]> {

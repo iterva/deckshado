@@ -268,7 +268,7 @@ Autenticación: `Authorization: Bearer <access_token>` (el *access* dura 7 días
 ### 1. Clonar el repositorio
 
 ```bash
-git clone <url-del-repositorio> shadowforge
+git clone https://github.com/iterva/deckshado.git shadowforge
 ```
 
 ### 2. Backend (Django)

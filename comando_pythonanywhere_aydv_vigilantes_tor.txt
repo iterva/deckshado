@@ -1,4 +1,0 @@
-# Cartas AYDV Vigilantes ya subidas localmente a ImageKit.
-# Este comando solo aplica el mapping y no depende de acceso web desde PythonAnywhere.
-cd ~/deckshado/backend
-python manage.py seed_aydv_vigilantes_tor_imagekit --mapping-file ../aydv_vigilantes_tor_imagekit_mapping.json --apply-mapping-only

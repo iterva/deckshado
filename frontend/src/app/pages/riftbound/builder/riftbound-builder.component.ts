@@ -994,8 +994,13 @@ function typeRank(t?: string): number {
     .img-wrapper:hover .eye-btn { opacity: 1; }
 
     .hover-info {
-      position: absolute; inset: 0 0 auto 0; padding: 0.35rem 0.4rem;
-      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.85), transparent);
+      position: absolute; inset: 0 0 auto 0; padding: 0.35rem 0.4rem 0.6rem;
+      /* Fondo desenfocado (en vez del degradado oscuro) para leer el texto. */
+      background: rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent);
+      mask-image: linear-gradient(to bottom, #000 70%, transparent);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
       opacity: 0; transition: opacity 0.15s ease; pointer-events: none; z-index: 2;
     }
     .img-wrapper:hover .hover-info { opacity: 1; }

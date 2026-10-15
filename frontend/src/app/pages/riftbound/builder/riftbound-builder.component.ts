@@ -276,6 +276,9 @@ function typeRank(t?: string): number {
                  [class.maxed]="getQuantityInDeck(card.id) >= getMaxCopies(card)"
                  [class.banned]="isBanned(card)"
                  [class.limited]="banStatus(card) === 'limited' || banStatus(card) === 'restricted'"
+                 (mouseenter)="hoveredCard = card"
+                 (mouseleave)="hoveredCard = null"
+                 (focusin)="hoveredCard = card"
                  [title]="card.name">
               <div class="img-wrapper" (click)="openPreview(card)">
                 @if (cardImageUrl(card); as img) {
@@ -1507,6 +1510,34 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
   @HostListener('document:keydown.escape')
   onEscapeCollapseSelector() {
     if (this.expandedCardId() !== null) this.collapseSelector();
+  }
+
+  /** Carta del catálogo bajo el mouse / con foco (destino de los atajos M y S). */
+  hoveredCard: RiftboundCardLite | null = null;
+
+  /** M = +1 al mazo principal, S = +1 al side, sobre la carta seleccionada
+   *  (preview abierto → selector expandido → hover/foco), respetando los máximos. */
+  @HostListener('document:keydown', ['$event'])
+  onZoneShortcut(e: KeyboardEvent) {
+    if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+    const target = e.target as HTMLElement | null;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA'
+        || target.tagName === 'SELECT' || target.isContentEditable)) return;
+    const k = e.key.toLowerCase();
+    const zone: RiftboundZone | null = k === 'm' ? 'main' : k === 's' ? 'side' : null;
+    if (!zone) return;
+
+    const expandedId = this.expandedCardId();
+    const card = this.previewCard()
+      ?? (expandedId !== null ? this.results().find(c => c.id === expandedId) : undefined)
+      ?? this.hoveredCard;
+    if (!card || !this.canShowMainSide(card)) return;
+
+    e.preventDefault();
+    // Mismas condiciones que deshabilitan el botón "+" del selector.
+    if (this.zoneCount(zone) >= this.rules[zone]) return;
+    if (this.getNameCount(card.name) >= this.getMaxCopies(card)) return;
+    this.addToZone(card, zone);
   }
 
   /** Cartas mostradas en el listado: oculta los demás legends cuando ya hay

@@ -127,6 +127,8 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // Card browser
   availableCards: Card[] = [];
+  /** Carta del catálogo bajo el mouse / con foco (destino de los atajos M y S). */
+  hoveredCard: Card | null = null;
   editions: Edition[] = [];
   allEditions: Edition[] = [];
   types: CardType[] = [];
@@ -665,6 +667,17 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.previewCard()) { this.hidePreview(); return; }
   }
 
+  /** Carta seleccionada para los atajos M/S: preview abierto → selector expandido → hover/foco. */
+  private getKeyboardTargetCard(): Card | null {
+    const preview = this.previewCard();
+    if (preview) return preview;
+    if (this.expandedCardId !== null) {
+      const expanded = this.availableCards.find(c => c.id === this.expandedCardId);
+      if (expanded) return expanded;
+    }
+    return this.hoveredCard;
+  }
+
   toggleShortcutsHelp(event: Event) {
     event.stopPropagation();
     this.showShortcutsHelp = !this.showShortcutsHelp;
@@ -695,6 +708,21 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
         e.preventDefault();
         this.redo();
         return;
+      }
+    }
+
+    // M = +1 al mazo principal, S = +1 al side, sobre la carta seleccionada.
+    // addCard/addToSide ya respetan los máximos (copias, banlist, 50/15, raza).
+    if (!inField && !e.ctrlKey && !e.metaKey && !e.altKey && !e.repeat
+        && !this.showExportModal && !this.showImportModal) {
+      const k = e.key.toLowerCase();
+      if (k === 'm' || k === 's') {
+        const card = this.getKeyboardTargetCard();
+        if (card) {
+          e.preventDefault();
+          if (k === 'm') this.addCard(card); else this.addToSide(card);
+          return;
+        }
       }
     }
 

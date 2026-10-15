@@ -208,7 +208,9 @@
           class="mini-card"
           (mousedown)="holdStart(card, $event)"
           (mouseup)="holdEnd()"
-          (mouseleave)="holdCancel()"
+          (mouseenter)="hoveredCard = card"
+          (mouseleave)="holdCancel(); hoveredCard = null"
+          (focusin)="hoveredCard = card"
           [class.in-deck]="getQuantityInDeck(card.id) > 0 || getQuantityInSide(card.id) > 0"
           [class.off-format]="!isCardAllowedByFormat(card)"
           [class.banned]="getBanStatus(card)?.status === 'banned'"
@@ -438,6 +440,8 @@
             <div class="sp-row"><kbd>/</kbd><span>Enfocar el buscador</span></div>
             <div class="sp-row"><kbd>Ctrl+Z</kbd><span>Deshacer</span></div>
             <div class="sp-row"><kbd>Ctrl+Y</kbd><span>Rehacer</span></div>
+            <div class="sp-row"><kbd>M</kbd><span>+1 al mazo (carta seleccionada)</span></div>
+            <div class="sp-row"><kbd>S</kbd><span>+1 al side (carta seleccionada)</span></div>
             <div class="sp-row"><kbd>Esc</kbd><span>Cerrar modal / preview</span></div>
             <div class="sp-foot">Mantén presionada una carta para previsualizarla.</div>
           </div>

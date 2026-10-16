@@ -283,7 +283,7 @@
             <button
               type="button"
               class="fs-trigger"
-              (click)="toggleSelector(card.id, 'side', $event)"
+              (click)="quickAdd(card, 'side', $event)"
               [attr.aria-expanded]="isExpanded(card.id, 'side')"
               [attr.aria-label]="'Sideboard: ' + getQuantityInSide(card.id) + ' copias'"
             >{{ getQuantityInSide(card.id) > 0 ? getQuantityInSide(card.id) : 'S' }}</button>
@@ -322,7 +322,7 @@
             <button
               type="button"
               class="fs-trigger"
-              (click)="toggleSelector(card.id, 'main', $event)"
+              (click)="quickAdd(card, 'main', $event)"
               [attr.aria-expanded]="isExpanded(card.id, 'main')"
               [attr.aria-label]="'Mazo principal: ' + getQuantityInDeck(card.id) + ' copias'"
             >{{ getQuantityInDeck(card.id) > 0 ? getQuantityInDeck(card.id) : 'M' }}</button>

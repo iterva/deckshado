@@ -325,7 +325,7 @@ function typeRank(t?: string): number {
                        [class.filled]="getQuantityInZone(card.id, 'side') > 0"
                        (click)="$event.stopPropagation()">
                     <button type="button" class="fs-trigger"
-                            (click)="toggleSelector(card.id, 'side', $event)"
+                            (click)="quickAdd(card, 'side', $event)"
                             [attr.aria-expanded]="isExpanded(card.id, 'side')"
                             [attr.aria-label]="'Sideboard: ' + getQuantityInZone(card.id, 'side') + ' copias'"
                     >{{ getQuantityInZone(card.id, 'side') > 0 ? getQuantityInZone(card.id, 'side') : 'S' }}</button>
@@ -349,7 +349,7 @@ function typeRank(t?: string): number {
                        [class.filled]="getQuantityInZone(card.id, z) > 0"
                        (click)="$event.stopPropagation()">
                     <button type="button" class="fs-trigger"
-                            (click)="toggleSelector(card.id, z, $event)"
+                            (click)="quickAdd(card, z, $event)"
                             [attr.aria-expanded]="isExpanded(card.id, z)"
                             [attr.aria-label]="labels[z] + ': ' + getQuantityInZone(card.id, z) + ' copias'"
                     >{{ getQuantityInZone(card.id, z) > 0 ? getQuantityInZone(card.id, z) : zoneLetter(z) }}</button>
@@ -372,7 +372,7 @@ function typeRank(t?: string): number {
                        [class.filled]="getQuantityInZone(card.id, 'main') > 0"
                        (click)="$event.stopPropagation()">
                     <button type="button" class="fs-trigger"
-                            (click)="toggleSelector(card.id, 'main', $event)"
+                            (click)="quickAdd(card, 'main', $event)"
                             [attr.aria-expanded]="isExpanded(card.id, 'main')"
                             [attr.aria-label]="'Mazo principal: ' + getQuantityInZone(card.id, 'main') + ' copias'"
                     >{{ getQuantityInZone(card.id, 'main') > 0 ? getQuantityInZone(card.id, 'main') : 'M' }}</button>
@@ -1498,6 +1498,22 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
     }
   }
 
+  /** Mismas condiciones que habilitan el botón "+" del selector de esa zona. */
+  canAddFromSelector(c: RiftboundCardLite, z: RiftboundZone): boolean {
+    if (z === 'main' || z === 'side') {
+      return this.zoneCount(z) < this.rules[z] && this.getNameCount(c.name) < this.getMaxCopies(c);
+    }
+    return this.canAddToAuto(c, z);
+  }
+
+  /** Click en M/S/R/C/B: suma 1 copia (si se puede) y abre el selector para ajustar. */
+  quickAdd(c: RiftboundCardLite, z: RiftboundZone, event?: Event) {
+    event?.stopPropagation();
+    if (this.canAddFromSelector(c, z)) this.addToZone(c, z);
+    this.expandedCardId.set(c.id);
+    this.expandedZone.set(z);
+  }
+
   isExpanded(cardId: number, zone: RiftboundZone): boolean {
     return this.expandedCardId() === cardId && this.expandedZone() === zone;
   }
@@ -1539,10 +1555,7 @@ export class RiftboundBuilderComponent implements OnInit, AfterViewInit, OnDestr
     if (!card || !this.canShowMainSide(card)) return;
 
     e.preventDefault();
-    // Mismas condiciones que deshabilitan el botón "+" del selector.
-    if (this.zoneCount(zone) >= this.rules[zone]) return;
-    if (this.getNameCount(card.name) >= this.getMaxCopies(card)) return;
-    this.addToZone(card, zone);
+    if (this.canAddFromSelector(card, zone)) this.addToZone(card, zone);
   }
 
   /** Cartas mostradas en el listado: oculta los demás legends cuando ya hay

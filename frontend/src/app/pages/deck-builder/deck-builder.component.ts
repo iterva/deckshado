@@ -640,6 +640,14 @@ export class DeckBuilderComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  /** Click en M o S: suma 1 copia (con los mismos límites que "+") y abre el selector para ajustar. */
+  quickAdd(card: Card, mode: 'main' | 'side', event?: Event) {
+    event?.stopPropagation();
+    if (mode === 'main') this.addCard(card); else this.addToSide(card);
+    this.expandedCardId = card.id;
+    this.expandedMode = mode;
+  }
+
   isExpanded(cardId: number, mode: 'main' | 'side'): boolean {
     return this.expandedCardId === cardId && this.expandedMode === mode;
   }

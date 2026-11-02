@@ -51,7 +51,11 @@ def _verify_google_token(id_token_str: str) -> dict | None:
 
     try:
         payload = google_id_token.verify_oauth2_token(
-            id_token_str, google_requests.Request(), client_id
+            id_token_str,
+            google_requests.Request(),
+            client_id,
+            # Tolerate small clock drift between this server and Google.
+            clock_skew_in_seconds=10,
         )
         return payload
     except Exception as e:  # pragma: no cover - defensivo

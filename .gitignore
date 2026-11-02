@@ -62,3 +62,73 @@ cartas-blog2/
 cartas-blog-vigilantes/
 cartas-dracula/
 tmp_bf/
+
+# ─────────────────────────────────────────────────────────────
+# Archivos locales de trabajo (no forman parte de ShadowForge)
+# Se conservan en disco pero no se suben al repositorio.
+# ─────────────────────────────────────────────────────────────
+
+# Carpetas de imágenes y temporales
+cartas-blog3/
+cartas por subir*/
+tmp/
+backend/tmp_check*/
+backend/pb_api_cache/
+
+# Configuración de asistentes de IA / herramientas locales
+.claude/
+frontend/.claude/
+frontend/.gemini/
+frontend/.junie/
+frontend/.windsurf/
+
+# Scripts sueltos de raíz (análisis, scraping y migraciones ya aplicadas)
+/check_*.py
+/chile_oscuro_deep.py
+/discover_*.py
+/download_cards.py
+/extract_blog_cards.ps1
+/extract_pe_abilities.py
+/fix_insert_cards.py
+/generate_*.py
+/list_all_images.py
+/migrate_*.py
+/run_migration_priority.py
+/scrape_card_explorer.py
+/scrape_primera_era.py
+/seed_primera_era.py
+/straighten_card.py
+/upload_*.py
+/tmp_*
+/explorador_blog.html
+/comando_pythonanywhere_*.txt
+/cartas_por_subir_template.csv
+
+# Volcados e informes regenerables de raíz
+/aydv_api_seed_report_snapshot*.json
+/myl_cloudinary_mapping_imp_esc_daob_only.json
+/primera_era_raw.json
+/riftbound_cards_by_edition.csv
+/riftbound_missing_cards.csv
+
+# Scripts sueltos del backend (los comandos vigentes viven en <app>/management/commands)
+/backend/analyze_*.py
+/backend/check_*.py
+/backend/compare_prod_local.py
+/backend/download_riftcodex.py
+/backend/export_imperio_abilities.py
+/backend/find_*.py
+/backend/fix_*.py
+/backend/generate_tcg_snapshot.py
+/backend/investigate_*.py
+/backend/move_shadowban.py
+/backend/seed_formats.py
+/backend/seed_pe_banlist.py
+/backend/sync_pe_abilities*.py
+/backend/verify_*.py
+/backend/tmp_*
+/backend/pending_*.txt
+/backend/imperio_abilities.xlsx
+/backend/pe_abilities_by_name.json
+/backend/pe_correct_state.json
+/backend/riftcodex_all_cards.json

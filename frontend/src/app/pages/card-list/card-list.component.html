@@ -24,30 +24,14 @@
         [placeholder]="isTouch ? 'Buscar carta…' : 'Buscar por nombre… ( / para enfocar)'"
         [(ngModel)]="search" (ngModelChange)="onSearchInput()" (keyup.enter)="onSearch()" />
     </div>
-    <select aria-label="Filtrar por edición" [(ngModel)]="selectedEdition" (change)="onFilterChange()">
-      <option value="">Todas las ediciones</option>
-      @for (ed of editions; track ed.id) {
-        <option [value]="ed.slug">{{ ed.title }}</option>
-      }
-    </select>
-    <select aria-label="Filtrar por tipo" [(ngModel)]="selectedType" (change)="onFilterChange()">
-      <option value="">Todos los tipos</option>
-      @for (t of types; track t.id) {
-        <option [value]="t.slug">{{ t.name }}</option>
-      }
-    </select>
-    <select aria-label="Filtrar por raza" [(ngModel)]="selectedRace" (change)="onFilterChange()">
-      <option value="">Todas las razas</option>
-      @for (r of races; track r.id) {
-        <option [value]="r.slug">{{ r.name }}</option>
-      }
-    </select>
-    <select aria-label="Filtrar por rareza" [(ngModel)]="selectedRarity" (change)="onFilterChange()">
-      <option value="">Todas las frecuencias</option>
-      @for (r of rarities; track r.id) {
-        <option [value]="r.slug">{{ r.name }}</option>
-      }
-    </select>
+    <app-multi-select ariaLabel="Filtrar por edición" placeholder="Todas las ediciones" noun="ediciones"
+      [options]="editionOptions" [selected]="selectedEditions" (selectedChange)="selectedEditions = $event; onFilterChange()" />
+    <app-multi-select ariaLabel="Filtrar por tipo" placeholder="Todos los tipos" noun="tipos"
+      [options]="typeOptions" [selected]="selectedTypes" (selectedChange)="selectedTypes = $event; onFilterChange()" />
+    <app-multi-select ariaLabel="Filtrar por raza" placeholder="Todas las razas" noun="razas"
+      [options]="raceOptions" [selected]="selectedRaces" (selectedChange)="selectedRaces = $event; onFilterChange()" />
+    <app-multi-select ariaLabel="Filtrar por rareza" placeholder="Todas las frecuencias" noun="frecuencias"
+      [options]="rarityOptions" [selected]="selectedRarities" (selectedChange)="selectedRarities = $event; onFilterChange()" />
   </div>
 
   @if (loading && cards.length === 0) {

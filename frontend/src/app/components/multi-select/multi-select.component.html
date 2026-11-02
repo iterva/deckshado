@@ -1,0 +1,25 @@
+<button type="button" class="ms-trigger"
+  [class.open]="open()" [class.has-value]="selected().length > 0"
+  [attr.aria-label]="ariaLabel() || null"
+  [attr.aria-expanded]="open()" [attr.aria-controls]="panelId"
+  (click)="toggleOpen()">
+  <span class="ms-summary">{{ summary() }}</span>
+  <app-icon name="chevron-down" [size]="14"></app-icon>
+</button>
+
+@if (open()) {
+  <div class="ms-panel" [id]="panelId" role="group" [attr.aria-label]="ariaLabel() || placeholder()">
+    <button type="button" class="ms-clear" [disabled]="selected().length === 0" (click)="clear()">
+      {{ placeholder() }}
+    </button>
+    <div class="ms-options">
+      @for (opt of options(); track opt.value) {
+        <label class="ms-option" [class.checked]="selectedSet().has(opt.value)">
+          <input type="checkbox" [checked]="selectedSet().has(opt.value)" (change)="toggle(opt.value)" />
+          <span class="ms-box"><app-icon name="check" [size]="12"></app-icon></span>
+          <span class="ms-label">{{ opt.label }}</span>
+        </label>
+      }
+    </div>
+  </div>
+}

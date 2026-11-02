@@ -1,0 +1,152 @@
+:host {
+  position: relative;
+  display: block;
+  flex: 1;
+  min-width: 160px;
+}
+
+.ms-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface);
+  color: var(--ui-text-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+
+  &:hover { border-color: var(--ui-border-hover); }
+  &.has-value { color: var(--ui-text); }
+
+  // Una sola línea de foco: el borde (sin el outline global encima).
+  &.open,
+  &:focus-visible {
+    border-color: var(--ui-accent);
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  app-icon {
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+  }
+  &.open app-icon { transform: rotate(180deg); }
+}
+
+.ms-summary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ms-panel {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 100%;
+  max-width: min(320px, calc(100vw - 32px));
+  padding: 0.35rem;
+  border: 1px solid var(--ui-border-hover);
+  border-radius: 10px;
+  background: #18181b;
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.ms-clear {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  margin-bottom: 0.25rem;
+  border: none;
+  border-bottom: 1px solid var(--ui-border);
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  color: var(--ui-accent);
+  font: inherit;
+  font-size: 0.8rem;
+  text-align: left;
+  cursor: pointer;
+
+  &:disabled {
+    color: var(--ui-text-muted);
+    cursor: default;
+  }
+}
+
+.ms-options {
+  max-height: 280px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.ms-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 6px;
+  color: var(--ui-text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+
+  &:hover { background: rgba(255, 255, 255, 0.05); }
+  &.checked { color: var(--ui-text); }
+
+  // Casilla nativa invisible (accesible por teclado); se dibuja .ms-box.
+  input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    min-height: 0;
+    margin: 0;
+    pointer-events: none;
+
+    &:focus-visible {
+      outline: none !important;
+      box-shadow: none !important;
+    }
+  }
+
+  &:has(input:focus-visible) {
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: inset 0 0 0 1px var(--ui-accent);
+  }
+}
+
+.ms-box {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ui-border-hover);
+  border-radius: 4px;
+  color: transparent;
+
+  .checked & {
+    background: var(--ui-accent);
+    border-color: var(--ui-accent);
+    color: #09090b;
+  }
+}
+
+.ms-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .ms-option { padding: 0.65rem 0.6rem; }
+}

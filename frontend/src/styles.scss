@@ -975,6 +975,14 @@ textarea:focus-visible,
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-accent) 24%, transparent) !important;
 }
 
+/* Buscadores con ícono: el foco lo marca el contenedor (:focus-within), no el input. */
+.search-wrap input:focus-visible,
+.search-input-wrap input:focus-visible,
+body.mode-riftbound .search-row .search-input-wrap input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 button,
 .btn,
 .btn-primary,

@@ -174,36 +174,31 @@ class CardListView(generics.ListAPIView):
             )
 
         # deck_race: MYL racial deck filter
-        deck_race = self.request.query_params.get("deck_race")
-        if deck_race and deck_race != "dream":
+        # Accepts a comma-separated list (catalog multi-select): allies matching ANY race pass.
+        deck_race = self.request.query_params.get("deck_race") or ""
+        race_slugs = [s for s in deck_race.split(",") if s]
+        if race_slugs and "dream" not in race_slugs:
             # Non-allies (Oro, Arma, Talismán, Tótem) always pass
             non_ally = ~Q(card_type__slug="aliado")
             # Allies without race should be available for all racial decks.
             raceless_ally = Q(card_type__slug="aliado") & (Q(race__isnull=True) | Q(race__slug="noraza"))
-            if deck_race == "totem":
-                # Only raceless allies
-                qs = qs.filter(non_ally | raceless_ally)
-            elif deck_race in ESC_MULTI_RACE:
-                # Multi-race ESC archetypes: allies matching ANY of the races
-                race_q = Q()
-                for r in ESC_MULTI_RACE[deck_race]:
-                    race_q |= Q(race__slug__icontains=r)
-                qs = qs.filter(non_ally | raceless_ally | race_q)
-            elif deck_race in ("luz", "oscuridad"):
-                # Ability-based: first line of ability starts with Luz / Oscuridad
-                keyword = "Luz" if deck_race == "luz" else "Oscuridad"
-                qs = qs.filter(
-                    non_ally
-                    | raceless_ally
-                    | Q(ability__istartswith=keyword)
-                )
-            else:
-                # Matching race (including sub-races)
-                qs = qs.filter(
-                    non_ally
-                    | raceless_ally
-                    | Q(race__slug__icontains=deck_race)
-                )
+            race_q = Q()
+            for slug in race_slugs:
+                if slug == "totem":
+                    # Only raceless allies (already covered by raceless_ally)
+                    continue
+                if slug in ESC_MULTI_RACE:
+                    # Multi-race ESC archetypes: allies matching ANY of the races
+                    for r in ESC_MULTI_RACE[slug]:
+                        race_q |= Q(race__slug__icontains=r)
+                elif slug in ("luz", "oscuridad"):
+                    # Ability-based: first line of ability starts with Luz / Oscuridad
+                    keyword = "Luz" if slug == "luz" else "Oscuridad"
+                    race_q |= Q(ability__istartswith=keyword)
+                else:
+                    # Matching race (including sub-races)
+                    race_q |= Q(race__slug__icontains=slug)
+            qs = qs.filter(non_ally | raceless_ally | race_q)
 
         # Default ordering: rarity priority (precomputed in DB), then edition, then edid
         qs = qs.order_by("rarity__display_order", "edition", "edid")

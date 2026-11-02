@@ -109,22 +109,6 @@
     }
   }
 
-  select {
-    flex: 1;
-    min-width: 160px;
-    padding: 0.6rem 0.75rem;
-    border-radius: 10px;
-    border: 1px solid var(--ui-border);
-    background: var(--ui-surface);
-    color: var(--ui-text-muted);
-    font-size: 0.85rem;
-    cursor: pointer;
-    outline: none;
-    transition: border-color 0.15s ease;
-
-    &:focus { border-color: var(--ui-accent); }
-    option { background: #18181b; }
-  }
 }
 
 // ── Loading State ──

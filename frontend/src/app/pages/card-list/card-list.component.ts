@@ -16,11 +16,12 @@ import { CardService } from '../../services/card.service';
 import { Card, Edition, CardType, Race, Rarity } from '../../models';
 import { ThumbnailPipe } from '../../pipes/thumbnail.pipe';
 import { IconComponent } from '../../components/icon/icon.component';
+import { MultiSelectComponent, MultiSelectOption } from '../../components/multi-select/multi-select.component';
 
 @Component({
   selector: 'app-card-list',
   standalone: true,
-  imports: [FormsModule, ThumbnailPipe, IconComponent],
+  imports: [FormsModule, ThumbnailPipe, IconComponent, MultiSelectComponent],
   templateUrl: './card-list.component.html',
   styleUrl: './card-list.component.scss',
 })
@@ -32,10 +33,15 @@ export class CardListComponent implements OnInit, AfterViewInit, OnDestroy {
   rarities: Rarity[] = [];
 
   search = '';
-  selectedEdition = '';
-  selectedType = '';
-  selectedRace = '';
-  selectedRarity = '';
+  selectedEditions: string[] = [];
+  selectedTypes: string[] = [];
+  selectedRaces: string[] = [];
+  selectedRarities: string[] = [];
+
+  editionOptions: MultiSelectOption[] = [];
+  typeOptions: MultiSelectOption[] = [];
+  raceOptions: MultiSelectOption[] = [];
+  rarityOptions: MultiSelectOption[] = [];
 
   totalCards = 0;
   currentPage = 1;
@@ -110,10 +116,26 @@ export class CardListComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   loadFilters() {
-    this.cardService.getEditions().subscribe(d => { this.editions = d; this.cdr.detectChanges(); });
-    this.cardService.getTypes().subscribe(d => { this.types = d; this.cdr.detectChanges(); });
-    this.cardService.getRaces().subscribe(d => { this.races = d; this.cdr.detectChanges(); });
-    this.cardService.getRarities().subscribe(d => { this.rarities = d; this.cdr.detectChanges(); });
+    this.cardService.getEditions().subscribe(d => {
+      this.editions = d;
+      this.editionOptions = d.map(e => ({ value: e.slug, label: e.title }));
+      this.cdr.detectChanges();
+    });
+    this.cardService.getTypes().subscribe(d => {
+      this.types = d;
+      this.typeOptions = d.map(t => ({ value: t.slug, label: t.name }));
+      this.cdr.detectChanges();
+    });
+    this.cardService.getRaces().subscribe(d => {
+      this.races = d;
+      this.raceOptions = d.map(r => ({ value: r.slug, label: r.name }));
+      this.cdr.detectChanges();
+    });
+    this.cardService.getRarities().subscribe(d => {
+      this.rarities = d;
+      this.rarityOptions = d.map(r => ({ value: r.slug, label: r.name }));
+      this.cdr.detectChanges();
+    });
   }
 
   loadCards(append = false) {
@@ -123,10 +145,10 @@ export class CardListComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loadError = false;
     this.cardsSub = this.cardService.getCards({
       search: this.search || undefined,
-      edition: this.selectedEdition || undefined,
-      type: this.selectedType || undefined,
-      deck_race: this.selectedRace || undefined,
-      rarity: this.selectedRarity || undefined,
+      edition: this.selectedEditions.join(',') || undefined,
+      type: this.selectedTypes.join(',') || undefined,
+      deck_race: this.selectedRaces.join(',') || undefined,
+      rarity: this.selectedRarities.join(',') || undefined,
       page: this.currentPage,
     }).subscribe({
       next: (res) => {
@@ -152,10 +174,10 @@ export class CardListComponent implements OnInit, AfterViewInit, OnDestroy {
   clearFilters() {
     this.clearSearchDebounce();
     this.search = '';
-    this.selectedEdition = '';
-    this.selectedType = '';
-    this.selectedRace = '';
-    this.selectedRarity = '';
+    this.selectedEditions = [];
+    this.selectedTypes = [];
+    this.selectedRaces = [];
+    this.selectedRarities = [];
     this.reloadCards();
   }
 

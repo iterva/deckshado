@@ -1,0 +1,142 @@
+[
+  {
+    "key": "drac_imp26_04", "edid": "IMP26-04", "name": "Gilgamesh, Paladín de Uruk",
+    "type_slug": "aliado", "race_slug": "caballero/guerrero/heroe", "cost": "2", "damage": "4",
+    "ability": "Furia.\nCuando entra en juego o ataque, puedes Desterrar un Aliado de Fuerza 4 o menos. Si lo haces, busca un Aliado o Arma en tu Castillo y ponlo en tu mano.\nUna vez por turno, cuando un Aliado salga del juego, tu oponente Bota tres cartas.",
+    "flavour": "Tras vencer al Toro Celestial, comprendió que ni el mayor de los reyes puede escapar al destino que aguarda a los mortales.",
+    "illustrator": "Hans Lobos", "image_file": "3.webp"
+  },
+  {
+    "key": "drac_imp26_22", "edid": "IMP26-22", "name": "Arturo Pendragón, Rey Paladín",
+    "type_slug": "aliado", "race_slug": "caballero/guerrero/heroe", "cost": "2", "damage": "2",
+    "ability": "Cuando entra en juego, hasta dos Aliados ganan Furia e Imbloqueable, por el turno.\nAl comienzo de cada Vigilia, tu oponente Bota dos cartas y Descarta una carta de su mano.\nTus demás Aliados ganan 1 de Fuerza y no pueden cambiar de controlador.",
+    "flavour": "La espada lo proclamó rey, pero fueron sus actos los que hicieron eterna su corona. Mientras lo recuerden, su leyenda jamás morirá.",
+    "illustrator": "Hans Lobos", "image_file": "4.webp"
+  },
+  {
+    "key": "drac_imp26_47", "edid": "IMP26-47", "name": "Mordred, el Traidor Tenebris",
+    "type_slug": "aliado", "race_slug": "bestia/dragon/sombra", "cost": "2", "damage": "0",
+    "ability": "Exhumar.\nEn tu Vigilia, una vez por turno, Destierra hasta tantas cartas del Cementerio oponente como Oros controles y un Aliado gana Furia y 1 de Fuerza por cada Aliado en el Destierro oponente.",
+    "flavour": "Nacido de la traición y destinado a la ruina, alzó su espada contra Arturo. En Camlann selló el ocaso de Camelot con la sangre de ambos.",
+    "illustrator": "Ikkitouch", "image_file": "5.webp"
+  },
+  {
+    "key": "drac_imp26_05", "edid": "IMP26-05", "name": "Zeus, Desafiante del Olimpo",
+    "type_slug": "aliado", "race_slug": "eterno/faerie/sacerdote", "cost": "3", "damage": "4",
+    "ability": "Indestructible.\nCuando entra en juego, los jugadores Barajan las cartas que controlen que no sean Zeus ni Oro.\nUna vez por turno, puedes Robar hasta tener seis cartas en tu mano.",
+    "flavour": "Desde la cumbre del Olimpo dicta el destino de dioses y hombres; el rayo en su mano recuerda que ningún juramento escapa a su justicia.",
+    "illustrator": "Seba Gallardo", "image_file": "6.webp"
+  },
+  {
+    "key": "drac_imp26_06", "edid": "IMP26-06", "name": "Quetzalcóatl, el Sol Tenebris",
+    "type_slug": "aliado", "race_slug": "bestia/dragon/sombra", "cost": "4", "damage": "6",
+    "ability": "Furia. Exhumar.\nNo se puede Anular, ni cancelar su habilidad.\nCuando entra en juego, puedes subir hasta dos cartas de tu Cementerio a tu mano.\nUna vez por turno, puedes Barajar hasta seis cartas de los Cementerios y Robar dos cartas.",
+    "flavour": "Trajo el aliento que dio vida a los hombres y descendió por ellos al reino de los muertos. Su sabiduría aún viaja con el viento del amanecer.",
+    "illustrator": "Ikkitouch", "image_file": "7.webp"
+  },
+  {
+    "key": "drac_imp26_07", "edid": "IMP26-07", "name": "Pirámide de Guiza",
+    "type_slug": "totem", "race_slug": null, "cost": "3", "damage": null,
+    "ability": "Sólo puedes controlar una copia de esta carta.\nCuando entra en juego, elige una Raza.\nLos Aliados que controles de la Raza elegida ganan 2 de Fuerza.\nCuando sea Destruido o Desterrado, Destruye todos los Aliados que no sean de la Raza elegida.",
+    "flavour": "",
+    "illustrator": "Thor Odenson", "image_file": "8.webp"
+  },
+  {
+    "key": "drac_imp26_32", "edid": "IMP26-32", "name": "Odín, Padre de los Desafiantes",
+    "type_slug": "aliado", "race_slug": "eterno/faerie/sacerdote", "cost": "3", "damage": "4",
+    "ability": "Indestructible.\nCuando entra en juego, puedes Barajar cartas en juego cuyos costes sumen hasta 5 y busca dos cartas en tu Castillo y ponlas en tu mano.\nEn tu Fase Final, Baraja cuatro cartas de los Cementerios y agrupa un Aliado que controles.",
+    "flavour": "Entregó un ojo por la sabiduría y colgó del fresno sagrado para dominar las runas. Ningún sacrificio fue demasiado grande por el conocimiento.",
+    "illustrator": "Seba Gallardo", "image_file": "9.webp"
+  },
+  {
+    "key": "drac_imp26_33", "edid": "IMP26-33", "name": "Fenrir, Tenebris Desencadenado",
+    "type_slug": "aliado", "race_slug": "bestia/dragon/sombra", "cost": "2", "damage": "4",
+    "ability": "Furia.\nCuando entra en juego, Roba dos cartas y busca dos cartas de distinto nombre en el Castillo oponente y Destiérralas.\nEl ataque de tus Aliados de coste 2 o menos no puede ser cancelado.",
+    "flavour": "Engañado por los dioses, aceptó la cadena que sellaría su destino. Cuando llegue el Ragnarök, ninguna atadura podrá contener su venganza.",
+    "illustrator": "Hans Lobos", "image_file": "10.webp"
+  },
+  {
+    "key": "drac_imp26_13", "edid": "IMP26-13", "name": "Heracles, Paladín Invencible",
+    "type_slug": "aliado", "race_slug": "caballero/guerrero/heroe", "cost": "2", "damage": "4",
+    "ability": "Furia.\nCuando entra en juego, sube dos cartas que no sean Talismán de tu Cementerio a tu mano.\nUna vez por turno, un Aliado gana 2 de Fuerza permanentemente y no puede salir ni cambiar de controlador hasta tu próximo turno.",
+    "flavour": "Ni monstruos, ni reyes, ni dioses doblegaron su voluntad. Cada trabajo superado forjó la leyenda del héroe que conquistó la inmortalidad.",
+    "illustrator": "Hans Lobos", "image_file": "11.webp"
+  },
+  {
+    "key": "drac_imp26_08", "edid": "IMP26-08", "name": "Abrazo de Maipú",
+    "type_slug": "talisman", "race_slug": null, "cost": "3", "damage": null,
+    "ability": "Única.\nCuando lo juegues, Destiérralo.\nSi es Anulado, genera un Oro por el turno.\nBaraja cualquier cantidad de cartas de tu Cementerio y Destierro en tu Castillo y Roba tres cartas.",
+    "flavour": "",
+    "illustrator": "Matias Novoa", "image_file": "12.webp"
+  },
+  {
+    "key": "drac_imp26_09", "edid": "IMP26-09", "name": "Aaru",
+    "type_slug": "talisman", "race_slug": null, "cost": "3", "damage": null,
+    "ability": "Sólo puedes jugar un Aaru por turno y cuesta un Oro menos por cada Oro que controles.\nBaraja cualquier cantidad de cartas de tu mano en tu Castillo. Luego, pon la misma cantidad de cartas de la parte superior de tu Castillo en tu mano más dos cartas.",
+    "flavour": "",
+    "illustrator": "JP Aguirre", "image_file": "13.webp"
+  },
+  {
+    "key": "drac_imp26_03", "edid": "IMP26-03", "name": "Aho",
+    "type_slug": "arma", "race_slug": null, "cost": "2", "damage": null,
+    "ability": "Exhumar.\nEl portador gana 3 de Fuerza y no puede ser afectado por Aliados oponentes.\nUna vez por turno, Destierra un Aliado o Tótem y cinco cartas del tope de un Castillo.\nCuando el portador fuera a salir del juego, súbela a tu mano o cámbiala de portador.",
+    "flavour": "",
+    "illustrator": "Nitrox", "image_file": "14.webp"
+  },
+  {
+    "key": "drac_imp26_02", "edid": "IMP26-02", "name": "Gran Yggdrasil",
+    "type_slug": "totem", "race_slug": null, "cost": "4", "damage": null,
+    "ability": "Cuando entra en juego, juega un Tótem de coste 3 de tu Castillo sin pagar su coste.\nLos Aliados en juego pierden su habilidad.\nEn tu Vigilia, una vez por turno, tu oponente Destierra una carta de la parte superior de su Castillo por cada Tótem que controles.",
+    "flavour": "",
+    "illustrator": "Francisco Sereno", "image_file": "15.webp"
+  },
+  {
+    "key": "drac_imp26_37", "edid": "IMP26-37", "name": "Olimpia",
+    "type_slug": "totem", "race_slug": null, "cost": "2", "damage": null,
+    "ability": "Una vez por turno, cuando juegues un Talismán, si no controlas Aliados, tu oponente Bota una carta.\nLos Talismanes de coste 3 o más que juegues no pueden ser Anulados.\nAl comienzo de tu Fase Final, si no controlas Aliados, puedes buscar un Talismán de coste 3 o más en tu Castillo y ponerlo en tu mano.",
+    "flavour": "",
+    "illustrator": "Joyce Maureira", "image_file": "16.webp"
+  },
+  {
+    "key": "drac_aydv192p", "edid": "AYDV-192P", "name": "Custodios",
+    "type_slug": "aliado", "race_slug": "caballero/guerrero/heroe", "cost": "3", "damage": "5",
+    "ability": "Furia. Imbloqueable.\nCuando entra en juego, puedes jugar un Arma de coste 2 o menos desde tu mano o Cementerio sin pagar su coste.\nUna vez por turno, puedes Barajar un Arma que controles o de tu mano para prevenir un efecto que fuera a afectar una de tus cartas.",
+    "flavour": "Guardianes del umbral sagrado, firmes como murallas bajo la tormenta. Sus armas no solo defienden piedra y templo, sino el último orden que separa la luz del abismo.",
+    "illustrator": "Peyeyo", "image_file": "17.webp"
+  },
+  {
+    "key": "drac_p065", "edid": "DRAC-065P", "name": "Pánico Vampiro",
+    "type_slug": "talisman", "race_slug": null, "cost": "0", "damage": null,
+    "ability": "Baraja tu Castillo, muestra la primera carta y aplica un efecto según su tipo de carta:\n- Aliado: Pon ese Aliado en tu mano.\n- Oro o Talismán: Baraja hasta dos cartas de los Cementerios y Destierra este Talismán.\n- Arma o Tótem: Destruye una carta de coste 1.",
+    "flavour": "Cuando la enfermedad entró en las casas, el pueblo buscó culpables entre los muertos. El pánico vampiro abrió tumbas, encendió hogueras y convirtió el duelo en una guerra contra cadáveres inocentes.",
+    "illustrator": "Cristián Huerta", "image_file": "18.webp"
+  },
+  {
+    "key": "drac_p067", "edid": "DRAC-067P", "name": "Quemar el Corazón",
+    "type_slug": "talisman", "race_slug": null, "cost": "2", "damage": null,
+    "ability": "Si es Anulado, agrupa un Oro. Cuando lo juegues, Destiérralo. Elige hasta dos efectos:\n- Busca una carta en un Castillo y Destiérrala.\n- Tu oponente Destierra dos cartas de su mano.\n- Un Aliado pierde su habilidad y Destiérralo.\n- No recibes daño hasta tu próximo turno.",
+    "flavour": "Sacar el corazón del muerto era desafiar al miedo en su propio altar. Al quemarlo, los vivos creían destruir la sed invisible que regresaba de la tumba para beber la fuerza de los enfermos.",
+    "illustrator": "Claudio Montoya", "image_file": "19.webp"
+  },
+  {
+    "key": "drac_p068", "edid": "DRAC-068P", "name": "Exhumar",
+    "type_slug": "talisman", "race_slug": null, "cost": "1", "damage": null,
+    "ability": "Juega un Aliado de tu Cementerio pagando su coste. Si tiene Fuerza 4 o más, ese Aliado gana Furia y puedes mirar la mano de tu oponente y Desterrar un Talismán de ahí. Si tiene Fuerza 3 o menos, gana Indesterrable y puedes Desterrar un Aliado de coste 3 o menos.",
+    "flavour": "Abrir la tierra no siempre busca justicia: a veces busca una respuesta desesperada. Exhumar es romper el descanso de los muertos para preguntarles, con palas y antorchas, por qué siguen muriendo los vivos.",
+    "illustrator": "Claudio Montoya", "image_file": "20.webp"
+  },
+  {
+    "key": "drac_imp26_01", "edid": "IMP26-01", "name": "La Sentencia de los Dioses",
+    "type_slug": "talisman", "race_slug": null, "cost": "1", "damage": null,
+    "ability": "Puedes jugarlo al comienzo de la Vigilia.\nHasta tu próximo turno no se pueden jugar cartas reduciendo su coste, sin pagar su coste, generar Oros y utilizar habilidades fuera del juego cuesta un Oro adicional.",
+    "flavour": "La muerte ya no era un castigo para los hombres. Era una certeza para el Olimpo, para el Valhalla, para Duat. Se proclamó lo impensable: La sentencia de la muerte de un Dios.",
+    "illustrator": "Gonzo Snow", "image_file": "21.webp"
+  },
+  {
+    "key": "drac_imp26_23", "edid": "IMP26-23", "name": "Merlín, el Mago Desafiante",
+    "type_slug": "aliado", "race_slug": "eterno/faerie/sacerdote", "cost": "2", "damage": "2",
+    "ability": "Cuando entra en juego, puedes pagar un Oro. Si lo haces, busca un Talismán de coste 2 en tu Castillo y juégalo sin pagar su coste.\nUna vez por turno, puedes subir un Aliado que controles a tu mano para Barajar hasta cuatro cartas de los Cementerios.",
+    "flavour": "Conocía el lenguaje de los bosques y el destino de los reyes. Su sabiduría dio origen a Camelot, aunque no pudo escapar a la profecía de su propio final.",
+    "illustrator": "Seba Gallardo", "image_file": "22.webp"
+  }
+]
